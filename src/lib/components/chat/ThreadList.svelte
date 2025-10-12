@@ -2,6 +2,8 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKKind, type NDKEvent } from '@nostr-dev-kit/ndk';
 	import type { NDKProject } from '$lib/events/NDKProject';
+	import { formatRelativeTime } from '$lib/utils/time';
+	import { MessageSquare, Users } from 'lucide-svelte';
 
 	interface Props {
 		project: NDKProject;
@@ -25,9 +27,69 @@
 
 	const threads = $derived(threadsSubscription.events);
 
-	// Sort by most recent
+	// Subscribe to all replies (kind:1111) for this project
+	const repliesSubscription = ndk.$subscribe(() => ({
+		filters: [
+			{
+				kinds: [NDKKind.GenericReply],
+				'#a': [project.tagId()],
+				limit: 500
+			}
+		],
+		closeOnEose: false
+	}));
+
+	const replies = $derived(repliesSubscription.events);
+
+	// Build thread metadata (reply count, participants, latest reply)
+	const threadMetadata = $derived.by(() => {
+		const metadata = new Map<
+			string,
+			{ replyCount: number; participants: Set<string>; latestReply: NDKEvent | null }
+		>();
+
+		// Initialize metadata for each thread
+		for (const thread of threads) {
+			metadata.set(thread.id, {
+				replyCount: 0,
+				participants: new Set([thread.pubkey]),
+				latestReply: null
+			});
+		}
+
+		// Process replies
+		for (const reply of replies) {
+			// Find which thread this reply belongs to
+			const eTags = reply.tags.filter((tag) => tag[0] === 'e');
+			for (const eTag of eTags) {
+				const threadId = eTag[1];
+				const meta = metadata.get(threadId);
+				if (meta) {
+					meta.replyCount++;
+					meta.participants.add(reply.pubkey);
+					// Update latest reply if this is newer
+					if (
+						!meta.latestReply ||
+						(reply.created_at || 0) > (meta.latestReply.created_at || 0)
+					) {
+						meta.latestReply = reply;
+					}
+				}
+			}
+		}
+
+		return metadata;
+	});
+
+	// Sort by most recent activity (either thread creation or latest reply)
 	const sortedThreads = $derived.by(() => {
-		return [...threads].sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+		return [...threads].sort((a, b) => {
+			const aMeta = threadMetadata.get(a.id);
+			const bMeta = threadMetadata.get(b.id);
+			const aTime = aMeta?.latestReply?.created_at || a.created_at || 0;
+			const bTime = bMeta?.latestReply?.created_at || b.created_at || 0;
+			return bTime - aTime;
+		});
 	});
 
 	function handleNewConversation() {

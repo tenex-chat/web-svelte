@@ -179,16 +179,16 @@
 
 <div
 	class={cn(
-		'bg-white border-r border-gray-200 flex flex-col transition-all duration-300',
+		'bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300',
 		collapsed ? 'w-16' : 'w-64'
 	)}
 	data-collapsed={collapsed}
 >
 	<!-- Header -->
-	<div class="border-b border-gray-200 px-3 py-3">
+	<div class="border-b border-gray-200 dark:border-gray-700 px-3 py-3">
 		<div class="flex items-center justify-between">
 			{#if !collapsed}
-				<a href="/projects" class="flex items-center gap-2 flex-1 hover:opacity-80 transition-opacity">
+				<a href="/projects" class="flex items-center gap-2 flex-1 hover:opacity-80 transition-opacity text-gray-900 dark:text-gray-100">
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"

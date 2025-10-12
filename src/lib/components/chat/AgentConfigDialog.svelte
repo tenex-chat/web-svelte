@@ -28,7 +28,7 @@
 		const groups: Map<string, string[]> = new Map();
 		const ungrouped: string[] = [];
 
-		const allTools = agent.tools || [];
+		const allTools = availableTools || [];
 
 		for (const tool of allTools) {
 			// MCP tools: mcp__<server>__<method>

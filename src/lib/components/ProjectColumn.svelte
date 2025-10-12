@@ -45,7 +45,7 @@
 	] as const;
 </script>
 
-<div class={cn('w-96 flex-shrink-0 flex flex-col bg-white border-r border-gray-200 relative', className)}>
+<div class={cn('w-96 flex-shrink-0 flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 relative', className)}>
 	<!-- Glow effect at top -->
 	<div
 		class="absolute top-0 left-0 right-0 h-32 pointer-events-none"
@@ -53,7 +53,7 @@
 	></div>
 
 	<!-- Column Header -->
-	<div class="border-b border-gray-200 relative">
+	<div class="border-b border-gray-200 dark:border-gray-700 relative">
 		<div class="px-3 py-2">
 			<div class="flex items-center gap-2">
 				<!-- Project Avatar -->
@@ -65,13 +65,13 @@
 				</div>
 
 				<!-- Project Title -->
-				<h3 class="font-medium text-sm truncate flex-1">{project.title || 'Untitled Project'}</h3>
+				<h3 class="font-medium text-sm truncate flex-1 text-gray-900 dark:text-gray-100">{project.title || 'Untitled Project'}</h3>
 
 				<!-- Status Indicator -->
 				<button
 					class={cn(
 						'w-2 h-2 rounded-full transition-all',
-						isOnline ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-300'
+						isOnline ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-300 dark:bg-gray-600'
 					)}
 					title={isOnline ? 'Project is online' : 'Project is offline'}
 					aria-label={isOnline ? 'Project is online' : 'Project is offline'}
@@ -87,7 +87,7 @@
 						onclick={() => (activeTab = tab.id)}
 						class={cn(
 							'px-3 py-1.5 relative transition-all rounded-sm group text-xs',
-							activeTab === tab.id ? 'text-gray-900' : 'text-gray-500 hover:text-gray-900'
+							activeTab === tab.id ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
 						)}
 						style={activeTab === tab.id
 							? `background-color: ${projectColor.replace(')', ', 0.12)')}`
@@ -108,7 +108,7 @@
 			<!-- Add button -->
 			{#if activeTab === 'conversations' || activeTab === 'docs' || activeTab === 'agents'}
 				<button
-					class="h-6 w-6 flex items-center justify-center text-gray-500 hover:text-gray-900 rounded hover:bg-gray-100 transition-colors"
+					class="h-6 w-6 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
 					title="Add new"
 					aria-label="Add new"
 				>
@@ -126,32 +126,32 @@
 	</div>
 
 	<!-- Tab Content -->
-	<div class="flex-1 overflow-hidden bg-gray-50">
+	<div class="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900">
 		{#if activeTab === 'conversations'}
 			{#await import('./chat/ConversationsTab.svelte') then { default: ConversationsTab }}
 				<ConversationsTab {project} {onlineAgents} />
 			{/await}
 		{:else if activeTab === 'docs'}
-			<div class="h-full flex items-center justify-center text-gray-500 text-sm">
+			<div class="h-full flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm">
 				Documentation (TODO)
 			</div>
 		{:else if activeTab === 'agents'}
 			<div class="h-full p-2">
 				{#if onlineAgents.length === 0}
 					<div class="flex flex-col items-center justify-center h-32 text-center">
-						<Bot class="w-12 h-12 text-gray-400 mb-2" />
-						<p class="text-sm text-gray-500">No agents online</p>
+						<Bot class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-2" />
+						<p class="text-sm text-gray-500 dark:text-gray-400">No agents online</p>
 					</div>
 				{:else}
 					<div class="space-y-1">
 						{#each onlineAgents as agent (agent.pubkey)}
 							<button
 								onclick={() => windowManager.openAgent(project, agent.pubkey, agent.name)}
-								class="w-full text-left px-3 py-2 rounded hover:bg-white transition-colors border border-gray-200"
+								class="w-full text-left px-3 py-2 rounded hover:bg-white dark:hover:bg-gray-800 transition-colors border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
 							>
 								<div class="font-medium text-sm">{agent.name}</div>
 								{#if agent.model}
-									<div class="text-xs text-gray-500">{agent.model}</div>
+									<div class="text-xs text-gray-500 dark:text-gray-400">{agent.model}</div>
 								{/if}
 							</button>
 						{/each}
@@ -159,7 +159,7 @@
 				{/if}
 			</div>
 		{:else if activeTab === 'hashtags'}
-			<div class="h-full flex items-center justify-center text-gray-500 text-sm">
+			<div class="h-full flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm">
 				Hashtags (TODO)
 			</div>
 		{:else if activeTab === 'feed'}
@@ -189,14 +189,14 @@
 			{/await}
 		{:else if activeTab === 'settings'}
 			<div class="h-full flex flex-col items-center justify-center gap-3 text-center p-4">
-				<SettingsIcon class="w-16 h-16 text-gray-400" />
+				<SettingsIcon class="w-16 h-16 text-gray-400 dark:text-gray-500" />
 				<button
 					onclick={() => windowManager.openSettings(project)}
 					class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
 				>
 					Open Settings
 				</button>
-				<p class="text-xs text-gray-500">Settings will open in a drawer</p>
+				<p class="text-xs text-gray-500 dark:text-gray-400">Settings will open in a drawer</p>
 			</div>
 		{/if}
 	</div>
