@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { MessageSquare, FileText, Hash, Bot, Phone } from 'lucide-svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { Avatar } from '@nostr-dev-kit/svelte';
 	import { ndk } from '$lib/ndk.svelte';
 	import { formatRelativeTime } from '$lib/utils/time';
 
@@ -11,34 +12,13 @@
 
 	let { event, onclick }: Props = $props();
 
-	// Subscribe to author profile
-	const authorProfile = $derived(
-		ndk.$subscribe({ kinds: [0], authors: [event.pubkey] }, { wrap: true })
-	);
-
-	// Parse author profile metadata
-	const profile = $derived.by(() => {
-		if (!authorProfile?.events?.[0]) return null;
-		try {
-			return JSON.parse(authorProfile.events[0].content);
-		} catch {
-			return null;
-		}
-	});
+	// Fetch author profile using NDK's built-in utility
+	const profile = ndk.$fetchProfile(() => event.pubkey);
 
 	// Get author display name (fallback to truncated pubkey)
 	const authorName = $derived(
 		profile?.name || profile?.displayName || profile?.display_name || event.pubkey.slice(0, 8) + '...' + event.pubkey.slice(-4)
 	);
-
-	// Get first letter for avatar (from name or pubkey)
-	const avatarLetter = $derived.by(() => {
-		if (profile?.name) return profile.name.charAt(0).toUpperCase();
-		if (profile?.displayName) return profile.displayName.charAt(0).toUpperCase();
-		if (profile?.display_name) return profile.display_name.charAt(0).toUpperCase();
-		// Fallback to first letter of pubkey
-		return event.pubkey.charAt(0).toUpperCase();
-	});
 
 	// Determine event type and rendering details based on actual kind
 	const eventDetails = $derived.by(() => {
@@ -106,11 +86,7 @@
 >
 	<div class="flex gap-3">
 		<!-- Author Avatar -->
-		<div
-			class="w-9 h-9 shrink-0 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold"
-		>
-			{avatarLetter}
-		</div>
+		<Avatar {ndk} pubkey={event.pubkey} size={36} />
 
 		<!-- Content -->
 		<div class="flex-1 min-w-0">

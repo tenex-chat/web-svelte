@@ -3,6 +3,7 @@
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
+	import type { Message } from '$lib/utils/messageProcessor';
 	import MessageList from './MessageList.svelte';
 	import ChatInput from './ChatInput.svelte';
 
@@ -17,6 +18,8 @@
 
 	let localRootEvent = $state<NDKEvent | null>(rootEvent);
 	let viewMode = $state<ThreadViewMode>('threaded');
+	let replyToEvent = $state<NDKEvent | null>(null);
+	let initialContent = $state<string>('');
 
 	// Update local root when prop changes
 	$effect(() => {
@@ -34,6 +37,26 @@
 
 	function toggleViewMode() {
 		viewMode = viewMode === 'threaded' ? 'flattened' : 'threaded';
+	}
+
+	function handleReply(message: Message) {
+		replyToEvent = message.event;
+		initialContent = '';
+	}
+
+	function handleQuote(message: Message) {
+		replyToEvent = null;
+		// Format the quoted text with markdown quote syntax
+		const quotedText = message.event.content
+			.split('\n')
+			.map((line) => `> ${line}`)
+			.join('\n');
+		initialContent = `${quotedText}\n\n`;
+	}
+
+	function handleCancelReply() {
+		replyToEvent = null;
+		initialContent = '';
 	}
 </script>
 
@@ -78,7 +101,12 @@
 		</div>
 
 		<!-- Messages -->
-		<MessageList rootEvent={localRootEvent} {viewMode} />
+		<MessageList
+			rootEvent={localRootEvent}
+			{viewMode}
+			onReply={handleReply}
+			onQuote={handleQuote}
+		/>
 
 		<!-- Input -->
 		<ChatInput
@@ -86,6 +114,9 @@
 			rootEvent={localRootEvent}
 			{onlineAgents}
 			onThreadCreated={handleThreadCreated}
+			{replyToEvent}
+			{initialContent}
+			onCancelReply={handleCancelReply}
 		/>
 	{:else}
 		<!-- New Conversation -->

@@ -1,12 +1,13 @@
 <script lang="ts">
 	import ndk from '$lib/ndk.svelte';
-	import { useSession } from '@nostr-dev-kit/svelte';
 
-	const session = useSession();
-	const currentUser = $derived(session.currentUser);
+	const currentUser = $derived(ndk.$currentUser);
 
 	function logout() {
-		session.logout();
+		if (currentUser?.pubkey) {
+			ndk.logout(currentUser.pubkey);
+		}
+		window.location.href = '/';
 	}
 
 	function copyPublicKey() {

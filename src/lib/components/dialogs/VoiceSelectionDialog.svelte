@@ -151,7 +151,7 @@
 		tabindex="0"
 	>
 		<div
-			class="relative w-full max-w-lg bg-white rounded-lg shadow-xl p-6"
+			class="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6"
 			onclick={(e) => e.stopPropagation()}
 			role="dialog"
 			aria-modal="true"
@@ -159,7 +159,7 @@
 			<!-- Close Button -->
 			<button
 				onclick={handleClose}
-				class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+				class="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
 				aria-label="Close dialog"
 			>
 				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -173,10 +173,10 @@
 			</button>
 
 			<!-- Header -->
-			<h2 class="text-xl font-semibold text-gray-900 mb-2">
+			<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
 				{multiSelect ? 'Select Voices' : 'Select Voice'}
 			</h2>
-			<p class="text-sm text-gray-500 mb-4">
+			<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
 				{#if multiSelect}
 					Select multiple voices for deterministic assignment to agents
 				{:else}
@@ -189,15 +189,15 @@
 				{#if fetchingVoices}
 					<div class="flex items-center justify-center py-8">
 						<div class="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
-						<span class="ml-2 text-gray-600">Loading voices...</span>
+						<span class="ml-2 text-gray-600 dark:text-gray-400">Loading voices...</span>
 					</div>
 				{:else if fetchError}
-					<div class="p-4 bg-red-50 border border-red-200 rounded-md">
-						<p class="text-sm text-red-800">{fetchError}</p>
+					<div class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+						<p class="text-sm text-red-800 dark:text-red-300">{fetchError}</p>
 					</div>
 				{:else if availableVoices.length > 0}
 					<div>
-						<h3 class="text-sm font-medium text-gray-700 mb-2">
+						<h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 							{provider === 'openai' ? 'OpenAI Voices' : 'ElevenLabs Voices'}
 						</h3>
 						<div class="grid grid-cols-1 gap-2">
@@ -215,20 +215,20 @@
 									class={cn(
 										'px-4 py-3 border rounded-md text-left transition-colors relative cursor-pointer',
 										selectedVoices.includes(voice.id)
-											? 'bg-blue-50 border-blue-500'
-											: 'border-gray-300 hover:bg-gray-50'
+											? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400'
+											: 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50'
 									)}
 								>
 									<div class="flex items-center justify-between">
 										<div class="flex-1">
-											<div class="font-medium text-sm">{voice.name}</div>
+											<div class="font-medium text-sm text-gray-900 dark:text-gray-100">{voice.name}</div>
 											{#if voice.description}
-												<div class="text-xs text-gray-500 mt-1">{voice.description}</div>
+												<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{voice.description}</div>
 											{/if}
 											{#if voice.labels}
 												<div class="flex flex-wrap gap-1 mt-1">
 													{#each Object.entries(voice.labels) as [key, value]}
-														<span class="text-xs px-1.5 py-0.5 bg-gray-100 rounded">
+														<span class="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
 															{value}
 														</span>
 													{/each}
@@ -242,7 +242,7 @@
 												handlePreviewVoice(voice.id);
 											}}
 											disabled={previewingVoiceId === voice.id}
-											class="preview-button ml-2 px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
+											class="preview-button ml-2 px-3 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50"
 										>
 											{previewingVoiceId === voice.id ? '🔊 Playing...' : '🔊 Preview'}
 										</button>
@@ -252,7 +252,7 @@
 						</div>
 					</div>
 				{:else}
-					<div class="text-center py-8 text-gray-500">
+					<div class="text-center py-8 text-gray-500 dark:text-gray-400">
 						<p>No voices available</p>
 					</div>
 				{/if}
@@ -260,16 +260,16 @@
 				<!-- Selected Voices (for multi-select) -->
 				{#if multiSelect && selectedVoices.length > 0}
 					<div>
-						<h3 class="text-sm font-medium text-gray-700 mb-2">
+						<h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 							Selected ({selectedVoices.length})
 						</h3>
 						<div class="flex flex-wrap gap-2">
 							{#each selectedVoices as voice (voice)}
-								<div class="flex items-center gap-1 px-2 py-1 bg-blue-100 rounded text-sm">
+								<div class="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-sm">
 									<span>{voice}</span>
 									<button
 										onclick={() => removeVoice(voice)}
-										class="text-blue-600 hover:text-blue-800"
+										class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
 										aria-label="Remove voice"
 									>
 										×
@@ -283,24 +283,24 @@
 				<!-- Custom Voice ID (for ElevenLabs) -->
 				{#if provider === 'elevenlabs'}
 					<div>
-						<h3 class="text-sm font-medium text-gray-700 mb-2">Custom Voice ID</h3>
+						<h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Custom Voice ID</h3>
 						<div class="flex gap-2">
 							<input
 								type="text"
 								bind:value={customVoiceId}
 								placeholder="Enter voice ID"
-								class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
 								onkeydown={(e) => e.key === 'Enter' && addCustomVoice()}
 							/>
 							<button
 								onclick={addCustomVoice}
-								class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+								class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md transition-colors"
 								disabled={!customVoiceId.trim()}
 							>
 								Add
 							</button>
 						</div>
-						<p class="text-xs text-gray-500 mt-1">
+						<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
 							Get voice IDs from your ElevenLabs dashboard
 						</p>
 					</div>
@@ -311,7 +311,7 @@
 			<div class="flex gap-3 mt-6">
 				<button
 					onclick={handleClose}
-					class="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+					class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
 				>
 					Cancel
 				</button>

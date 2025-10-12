@@ -1,13 +1,16 @@
 <script lang="ts">
 	import type { ThreadedMessage } from '$lib/utils/threadBuilder';
+	import type { Message as MessageType } from '$lib/utils/messageProcessor';
 	import Message from './Message.svelte';
 
 	interface Props {
 		message: ThreadedMessage;
 		maxDepth?: number;
+		onReply?: (message: MessageType) => void;
+		onQuote?: (message: MessageType) => void;
 	}
 
-	let { message, maxDepth = 5 }: Props = $props();
+	let { message, maxDepth = 5, onReply, onQuote }: Props = $props();
 
 	// Limit nesting depth to prevent extreme indentation
 	const depth = $derived(Math.min(message.depth, maxDepth));
@@ -38,7 +41,7 @@
 				></div>
 			{/if}
 
-			<Message message={message} />
+			<Message {message} {onReply} {onQuote} />
 		</div>
 	</div>
 
@@ -46,7 +49,7 @@
 	{#if hasReplies}
 		<div class="replies">
 			{#each message.replies as reply (reply.id)}
-				<svelte:self message={reply} {maxDepth} />
+				<svelte:self message={reply} {maxDepth} {onReply} {onQuote} />
 			{/each}
 		</div>
 	{/if}

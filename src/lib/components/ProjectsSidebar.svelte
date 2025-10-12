@@ -1,10 +1,12 @@
 <script lang="ts">
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { ndk } from '$lib/ndk.svelte';
+	import { Avatar } from '@nostr-dev-kit/svelte';
 	import { openProjects } from '$lib/stores/openProjects.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { sidebarCollapsedStore } from '$lib/stores/sidebarCollapsed.svelte';
 	import { inboxStore } from '$lib/stores/inbox.svelte';
+	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import { cn } from '$lib/utils/cn';
 	import { registerShortcut } from '$lib/utils/keyboardShortcuts';
 	import DropdownMenu, { type DropdownMenuItem } from './ui/DropdownMenu.svelte';
@@ -88,9 +90,9 @@
 			label: 'Theme',
 			icon: '🌙',
 			submenu: [
-				{ label: 'Light', icon: '☀️', onClick: () => console.log('Light theme') },
-				{ label: 'Dark', icon: '🌙', onClick: () => console.log('Dark theme') },
-				{ label: 'System', icon: '💻', onClick: () => console.log('System theme') }
+				{ label: 'Light', icon: '☀️', onClick: () => uiSettingsStore.setTheme('light') },
+				{ label: 'Dark', icon: '🌙', onClick: () => uiSettingsStore.setTheme('dark') },
+				{ label: 'System', icon: '💻', onClick: () => uiSettingsStore.setTheme('system') }
 			]
 		},
 		{ separator: true },
@@ -381,14 +383,13 @@
 					collapsed ? 'w-10 h-10 justify-center' : 'w-full gap-2 px-2 py-2'
 				)}
 			>
-				<div
-					class={cn(
-						'rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold',
-						collapsed ? 'w-8 h-8 text-sm' : 'w-8 h-8 text-sm'
-					)}
-				>
-					{profile?.name?.[0]?.toUpperCase() || profile?.displayName?.[0]?.toUpperCase() || 'U'}
-				</div>
+				{#if currentUser?.pubkey}
+					<Avatar {ndk} pubkey={currentUser.pubkey} size={32} />
+				{:else}
+					<div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-white font-semibold text-sm">
+						U
+					</div>
+				{/if}
 				{#if !collapsed}
 					<div class="flex-1 text-left min-w-0">
 						<div class="text-sm font-medium truncate">

@@ -10,9 +10,20 @@
 		rootEvent?: NDKEvent | null;
 		onlineAgents?: ProjectAgent[];
 		onThreadCreated?: (thread: NDKEvent) => void;
+		replyToEvent?: NDKEvent | null;
+		onCancelReply?: () => void;
+		initialContent?: string;
 	}
 
-	let { project, rootEvent, onlineAgents = [], onThreadCreated }: Props = $props();
+	let {
+		project,
+		rootEvent,
+		onlineAgents = [],
+		onThreadCreated,
+		replyToEvent = null,
+		onCancelReply,
+		initialContent = ''
+	}: Props = $props();
 
 	const currentUser = $derived(ndk.$sessions.currentUser);
 	const projectId = $derived(project?.tagId());
@@ -23,8 +34,27 @@
 	let isSubmitting = $state(false);
 	let textareaElement: HTMLTextAreaElement | null = $state(null);
 
+	// Set initial content when provided
+	$effect(() => {
+		if (initialContent) {
+			messageInput = initialContent;
+		}
+	});
+
 	// Derive the current agent (selected or default to first agent)
-	const currentAgent = $derived(selectedAgent || (onlineAgents.length > 0 ? onlineAgents[0].pubkey : null));
+	const currentAgent = $derived(
+		selectedAgent || (onlineAgents.length > 0 ? onlineAgents[0].pubkey : null)
+	);
+
+	// Fetch profile for reply-to user
+	const replyToProfile = $derived.by(() => {
+		if (!replyToEvent) return null;
+		return ndk.$fetchProfile(() => replyToEvent.pubkey);
+	});
+
+	const replyToAuthorName = $derived(
+		replyToProfile?.displayName || replyToProfile?.name || replyToEvent?.pubkey.slice(0, 8)
+	);
 
 	// Automatically sync model with the selected/current agent from project status
 	const currentAgentModel = $derived.by(() => {
@@ -174,6 +204,22 @@
 					}
 				}
 
+				// If replying to a specific message, add e-tag for that event
+				if (replyToEvent) {
+					// Check if e-tag doesn't already exist
+					const hasETag = reply.tags.some((tag) => tag[0] === 'e' && tag[1] === replyToEvent.id);
+					if (!hasETag) {
+						reply.tags.push(['e', replyToEvent.id, '', 'reply']);
+					}
+					// Also add p-tag for the author of the message being replied to
+					const hasReplyAuthorPTag = reply.tags.some(
+						(tag) => tag[0] === 'p' && tag[1] === replyToEvent.pubkey
+					);
+					if (!hasReplyAuthorPTag) {
+						reply.tags.push(['p', replyToEvent.pubkey]);
+					}
+				}
+
 				// P-TAG ROUTING for reply (PRIORITY: @mentions > selectedAgent > default PM)
 				if (mentionedAgents.length > 0) {
 					// Add all mentioned agents as p-tags
@@ -195,6 +241,10 @@
 			// Reset state
 			selectedAgent = null;
 			mentionedAgents = [];
+			// Clear reply context
+			if (onCancelReply) {
+				onCancelReply();
+			}
 		} catch (error) {
 			console.error('Failed to send message:', error);
 			messageInput = content; // Restore message on error
@@ -238,6 +288,41 @@
 </script>
 
 <div class="border-t border-gray-200 p-4 bg-white">
+	<!-- Reply Context -->
+	{#if replyToEvent}
+		<div class="mb-3 px-3 py-2 bg-blue-50 border-l-4 border-blue-500 rounded flex items-center gap-2">
+			<svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+				/>
+			</svg>
+			<div class="flex-1 min-w-0">
+				<div class="text-xs text-blue-600 font-medium">Replying to {replyToAuthorName}</div>
+				<div class="text-xs text-blue-800 truncate">
+					{replyToEvent.content.slice(0, 100)}{replyToEvent.content.length > 100 ? '...' : ''}
+				</div>
+			</div>
+			<button
+				type="button"
+				onclick={onCancelReply}
+				class="p-1 rounded hover:bg-blue-100 transition-colors text-blue-600"
+				aria-label="Cancel reply"
+			>
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M6 18L18 6M6 6l12 12"
+					/>
+				</svg>
+			</button>
+		</div>
+	{/if}
+
 	<!-- Input Area -->
 	<div class="flex flex-col gap-3">
 		<div class="flex-1 relative">

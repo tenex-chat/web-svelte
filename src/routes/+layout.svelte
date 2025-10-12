@@ -2,14 +2,13 @@
 	import { ndkReady } from '$lib/ndk.svelte';
 	import { browser } from '$app/environment';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
-	import { themeStore } from '$lib/stores/theme.svelte';
+	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import LoginModal from '$lib/components/LoginModal.svelte';
 	import WindowManagerOverlay from '$lib/components/window-manager/WindowManagerOverlay.svelte';
-	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import '../app.css';
 
-	// Initialize theme store (will auto-detect preference on first run)
-	themeStore;
+	// Initialize UI settings (including theme)
+	uiSettingsStore;
 
 	let { children } = $props();
 
@@ -38,11 +37,6 @@
 </svelte:head>
 
 <LoginModal />
-
-<!-- Theme Toggle (Fixed Position) -->
-<div class="fixed top-4 right-4 z-50">
-	<ThemeToggle />
-</div>
 
 {#if ready}
 	{@render children?.()}

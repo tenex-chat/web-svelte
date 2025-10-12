@@ -1,11 +1,9 @@
 <script lang="ts">
 	import ndk from '$lib/ndk.svelte';
-	import { useSession } from '@nostr-dev-kit/svelte';
 	import type { NDKAgentDefinition } from '$lib/events/NDKAgentDefinition';
 	import { onMount } from 'svelte';
 
-	const session = useSession();
-	const currentUser = $derived(session.currentUser);
+	const currentUser = $derived(ndk.$currentUser);
 
 	let agents = $state<NDKAgentDefinition[]>([]);
 	let loading = $state(true);

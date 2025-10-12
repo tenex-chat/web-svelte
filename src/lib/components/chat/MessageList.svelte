@@ -10,9 +10,17 @@
 		rootEvent: NDKEvent;
 		viewMode?: 'threaded' | 'flattened';
 		isBrainstorm?: boolean;
+		onReply?: (message: Message) => void;
+		onQuote?: (message: Message) => void;
 	}
 
-	let { rootEvent, viewMode = 'threaded', isBrainstorm = false }: Props = $props();
+	let {
+		rootEvent,
+		viewMode = 'threaded',
+		isBrainstorm = false,
+		onReply,
+		onQuote
+	}: Props = $props();
 
 	const currentUser = $derived(ndk.$sessions.currentUser);
 
@@ -66,13 +74,18 @@
 	{:else if viewMode === 'threaded'}
 		<div class="flex flex-col">
 			{#each messageTree as message (message.id)}
-				<ThreadedMessage {message} />
+				<ThreadedMessage {message} {onReply} {onQuote} />
 			{/each}
 		</div>
 	{:else}
 		<div class="flex flex-col">
 			{#each displayMessages as message, index (message.id)}
-				<Message {message} isLastMessage={index === displayMessages.length - 1} />
+				<Message
+					{message}
+					isLastMessage={index === displayMessages.length - 1}
+					{onReply}
+					{onQuote}
+				/>
 			{/each}
 		</div>
 	{/if}
