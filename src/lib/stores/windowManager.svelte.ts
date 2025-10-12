@@ -1,0 +1,269 @@
+import { browser } from '$app/environment';
+import type { NDKEvent } from '@nostr-dev-kit/ndk';
+import type { NDKProject } from '$lib/events/NDKProject';
+
+export type WindowType = 'chat' | 'settings' | 'agent' | 'document' | 'hashtag';
+
+export interface WindowConfig {
+	id: string;
+	type: WindowType;
+	title: string;
+	project?: NDKProject;
+	data?: any; // thread event, agent, etc.
+	isDetached: boolean;
+	position?: { x: number; y: number };
+	size?: { width: number; height: number };
+	zIndex: number;
+}
+
+class WindowManager {
+	private windowsArray = $state<WindowConfig[]>([]);
+	private nextZIndex = $state(1000);
+
+	constructor() {
+		if (browser) {
+			this.loadFromStorage();
+		}
+	}
+
+	private loadFromStorage() {
+		try {
+			const saved = localStorage.getItem('tenex-windows');
+			if (saved) {
+				const data = JSON.parse(saved);
+				// Don't restore windows on load - start fresh
+				// Could restore detached windows if desired
+			}
+		} catch (e) {
+			console.error('Failed to load windows from storage:', e);
+		}
+	}
+
+	private saveToStorage() {
+		try {
+			const detachedWindows = this.windowsArray.filter((w) => w.isDetached);
+			localStorage.setItem('tenex-windows', JSON.stringify(detachedWindows));
+		} catch (e) {
+			console.error('Failed to save windows to storage:', e);
+		}
+	}
+
+	/**
+	 * Open a window (drawer or detached)
+	 */
+	open(config: Omit<WindowConfig, 'id' | 'zIndex' | 'isDetached'>) {
+		const id = crypto.randomUUID();
+		const window: WindowConfig = {
+			...config,
+			id,
+			isDetached: false,
+			zIndex: this.nextZIndex++
+		};
+		this.windowsArray = [...this.windowsArray, window];
+		this.saveToStorage();
+		return id;
+	}
+
+	/**
+	 * Open a chat conversation
+	 */
+	openChat(project: NDKProject, thread?: NDKEvent) {
+		const title = thread?.tagValue('title') || 'New Conversation';
+		return this.open({
+			type: 'chat',
+			title,
+			project,
+			data: { thread }
+		});
+	}
+
+	/**
+	 * Open project settings
+	 */
+	openSettings(project: NDKProject) {
+		return this.open({
+			type: 'settings',
+			title: `${project.title} - Settings`,
+			project
+		});
+	}
+
+	/**
+	 * Open agent details
+	 */
+	openAgent(project: NDKProject, agentPubkey: string, agentName: string) {
+		return this.open({
+			type: 'agent',
+			title: agentName,
+			project,
+			data: { agentPubkey, agentName }
+		});
+	}
+
+	/**
+	 * Close a window
+	 */
+	close(id: string) {
+		this.windowsArray = this.windowsArray.filter((w) => w.id !== id);
+		this.saveToStorage();
+	}
+
+	/**
+	 * Close all windows
+	 */
+	closeAll() {
+		this.windowsArray = [];
+		this.saveToStorage();
+	}
+
+	/**
+	 * Detach window (convert drawer to floating window)
+	 */
+	detach(id: string, position?: { x: number; y: number }) {
+		const index = this.windowsArray.findIndex((w) => w.id === id);
+		if (index === -1) return;
+
+		const window = this.windowsArray[index];
+		const updatedWindow = {
+			...window,
+			isDetached: true,
+			position: position || { x: 100, y: 100 },
+			size: window.size || { width: 800, height: 600 },
+			zIndex: this.nextZIndex++
+		};
+
+		this.windowsArray = [
+			...this.windowsArray.slice(0, index),
+			updatedWindow,
+			...this.windowsArray.slice(index + 1)
+		];
+		this.saveToStorage();
+	}
+
+	/**
+	 * Re-attach window (convert floating to drawer)
+	 */
+	attach(id: string) {
+		const index = this.windowsArray.findIndex((w) => w.id === id);
+		if (index === -1) return;
+
+		const window = this.windowsArray[index];
+		const updatedWindow = {
+			...window,
+			isDetached: false,
+			position: undefined,
+			zIndex: this.nextZIndex++
+		};
+
+		this.windowsArray = [
+			...this.windowsArray.slice(0, index),
+			updatedWindow,
+			...this.windowsArray.slice(index + 1)
+		];
+		this.saveToStorage();
+	}
+
+	/**
+	 * Bring window to front
+	 */
+	focus(id: string) {
+		const index = this.windowsArray.findIndex((w) => w.id === id);
+		if (index === -1) return;
+
+		const window = this.windowsArray[index];
+		const updatedWindow = {
+			...window,
+			zIndex: this.nextZIndex++
+		};
+
+		this.windowsArray = [
+			...this.windowsArray.slice(0, index),
+			updatedWindow,
+			...this.windowsArray.slice(index + 1)
+		];
+	}
+
+	/**
+	 * Update window position (for dragging)
+	 */
+	updatePosition(id: string, position: { x: number; y: number }) {
+		const index = this.windowsArray.findIndex((w) => w.id === id);
+		if (index === -1) return;
+
+		const window = this.windowsArray[index];
+		if (!window.isDetached) return;
+
+		const updatedWindow = {
+			...window,
+			position
+		};
+
+		this.windowsArray = [
+			...this.windowsArray.slice(0, index),
+			updatedWindow,
+			...this.windowsArray.slice(index + 1)
+		];
+		this.saveToStorage();
+	}
+
+	/**
+	 * Update window size (for resizing)
+	 */
+	updateSize(id: string, size: { width: number; height: number }) {
+		const index = this.windowsArray.findIndex((w) => w.id === id);
+		if (index === -1) return;
+
+		const window = this.windowsArray[index];
+		if (!window.isDetached) return;
+
+		const updatedWindow = {
+			...window,
+			size
+		};
+
+		this.windowsArray = [
+			...this.windowsArray.slice(0, index),
+			updatedWindow,
+			...this.windowsArray.slice(index + 1)
+		];
+		this.saveToStorage();
+	}
+
+	/**
+	 * Get a specific window
+	 */
+	get(id: string): WindowConfig | undefined {
+		return this.windowsArray.find((w) => w.id === id);
+	}
+
+	/**
+	 * Get all windows
+	 */
+	get all(): WindowConfig[] {
+		return [...this.windowsArray].sort((a, b) => a.zIndex - b.zIndex);
+	}
+
+	/**
+	 * Get drawer windows (not detached)
+	 */
+	get drawers(): WindowConfig[] {
+		return this.all.filter((w) => !w.isDetached);
+	}
+
+	/**
+	 * Get detached windows (floating)
+	 */
+	get detached(): WindowConfig[] {
+		return this.all.filter((w) => w.isDetached);
+	}
+
+	/**
+	 * Get the active drawer (top drawer)
+	 */
+	get activeDrawer(): WindowConfig | undefined {
+		const drawers = this.drawers;
+		return drawers.length > 0 ? drawers[drawers.length - 1] : undefined;
+	}
+}
+
+export const windowManager = new WindowManager();

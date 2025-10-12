@@ -1,0 +1,83 @@
+<script lang="ts">
+	import { ndk } from '$lib/ndk.svelte';
+	import type { Message } from '$lib/utils/messageProcessor';
+	import { marked } from 'marked';
+	import DOMPurify from 'dompurify';
+	import { EVENT_KINDS } from '$lib/constants';
+
+	interface Props {
+		message: Message;
+	}
+
+	let { message }: Props = $props();
+
+	const currentUser = $derived(ndk.$sessions.currentUser);
+	const isCurrentUser = $derived(message.event.pubkey === currentUser?.pubkey);
+	const isStreaming = $derived(message.event.kind === EVENT_KINDS.STREAMING_RESPONSE);
+	const isTyping = $derived(message.event.kind === EVENT_KINDS.TYPING_INDICATOR);
+
+	// Get author profile
+	const author = $derived.by(() => {
+		const user = ndk.getUser({ pubkey: message.event.pubkey });
+		return user;
+	});
+
+	// Fetch profile
+	const profile = ndk.$fetchProfile(() => message.event.pubkey);
+
+	const authorName = $derived(
+		profile?.displayName || profile?.name || message.event.pubkey.slice(0, 8)
+	);
+
+	// Format timestamp
+	const timestamp = $derived.by(() => {
+		if (!message.event.created_at) return '';
+		const date = new Date(message.event.created_at * 1000);
+		return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+	});
+
+	// Render markdown with sanitization
+	const renderedContent = $derived.by(() => {
+		if (isTyping) return message.event.content;
+		try {
+			const rawHtml = marked(message.event.content || '');
+			return DOMPurify.sanitize(rawHtml);
+		} catch {
+			return message.event.content || '';
+		}
+	});
+</script>
+
+<div
+	class="px-4 py-3 hover:bg-gray-50 transition-colors {isCurrentUser ? 'bg-blue-50/30' : ''}"
+>
+	<div class="flex gap-3">
+		<!-- Avatar -->
+		<div
+			class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
+		>
+			{authorName.charAt(0).toUpperCase()}
+		</div>
+
+		<!-- Message Content -->
+		<div class="flex-1 min-w-0">
+			<div class="flex items-baseline gap-2 mb-1">
+				<span class="font-semibold text-sm text-gray-900">{authorName}</span>
+				<span class="text-xs text-gray-500">{timestamp}</span>
+				{#if isStreaming}
+					<span class="text-xs text-blue-600 flex items-center gap-1">
+						<span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+						streaming...
+					</span>
+				{/if}
+				{#if isTyping}
+					<span class="text-xs text-gray-500 italic">typing...</span>
+				{/if}
+			</div>
+
+			<div class="prose prose-sm max-w-none">
+				{@html renderedContent}
+			</div>
+		</div>
+	</div>
+</div>
