@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { NDKProject } from '$lib/events/NDKProject';
+	import { ndk } from '$lib/ndk.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { cn } from '$lib/utils/cn';
@@ -164,9 +165,24 @@
 			{#await import('./feed/FeedTab.svelte') then { default: FeedTab }}
 				<FeedTab
 					{project}
-					onEventClick={(event) => {
-						// TODO: Handle event click - open event in drawer/window
-						console.log('Event clicked:', event);
+					onEventClick={async (event) => {
+						if (event.kind === 1111) {
+							// Reply event - find and open the parent conversation
+							const eTags = event.tags.filter((tag) => tag[0] === 'e');
+							if (eTags.length > 0) {
+								const parentId = eTags[0][1];
+								if (parentId) {
+									// Fetch the parent event and open it
+									const parentEvent = await ndk.fetchEvent(parentId);
+									if (parentEvent) {
+										windowManager.openChat(project, parentEvent);
+									}
+								}
+							}
+						} else {
+							// For other events (kind 1, kind 24133, etc), open directly
+							windowManager.openChat(project, event);
+						}
 					}}
 				/>
 			{/await}

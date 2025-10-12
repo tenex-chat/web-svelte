@@ -14,11 +14,11 @@
 	});
 </script>
 
-<div class="flex min-h-screen items-center justify-center bg-white">
+<div class="flex min-h-screen items-center justify-center bg-white dark:bg-gray-900">
 	<div class="text-center">
 		<div
 			class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"
 		></div>
-		<p class="mt-4 text-gray-600">Loading...</p>
+		<p class="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
 	</div>
 </div>

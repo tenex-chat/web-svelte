@@ -95,6 +95,17 @@
 		},
 		{ separator: true },
 		{
+			label: 'Debug',
+			icon: '🐛',
+			submenu: [
+				{
+					label: 'Project Status Debug Tool',
+					onClick: () => (debugDialogOpen = true)
+				}
+			]
+		},
+		{ separator: true },
+		{
 			label: 'Logout',
 			icon: '🚪',
 			onClick: () => {
@@ -396,3 +407,4 @@
 <!-- Dialogs -->
 <CreateProjectDialog bind:open={createDialogOpen} />
 <GlobalSearchDialog bind:open={searchDialogOpen} />
+<ProjectStatusDebug bind:open={debugDialogOpen} />

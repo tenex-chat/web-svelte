@@ -62,8 +62,8 @@
 <div class="container mx-auto px-4 py-6 max-w-7xl">
 	<!-- Header -->
 	<div class="mb-6">
-		<h1 class="text-3xl font-bold text-gray-900 mb-2">MCP Tools</h1>
-		<p class="text-gray-600">Manage Model Context Protocol tools for your projects</p>
+		<h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">MCP Tools</h1>
+		<p class="text-gray-600 dark:text-gray-400">Manage Model Context Protocol tools for your projects</p>
 	</div>
 
 	<!-- Toolbar -->
@@ -74,7 +74,7 @@
 				type="text"
 				bind:value={searchQuery}
 				placeholder="Search tools by name, command, or capability..."
-				class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
 			/>
 		</div>
 
@@ -85,7 +85,7 @@
 				class={`px-4 py-2 rounded-lg transition-colors ${
 					filterMode === 'all'
 						? 'bg-blue-600 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
 				}`}
 			>
 				All Tools ({allTools.length})
@@ -95,7 +95,7 @@
 				class={`px-4 py-2 rounded-lg transition-colors ${
 					filterMode === 'mine'
 						? 'bg-blue-600 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
 				}`}
 			>
 				My Tools ({myToolsCount})
@@ -123,9 +123,9 @@
 
 	<!-- Tools Grid -->
 	{#if filteredTools().length === 0}
-		<div class="text-center py-16 bg-white rounded-lg border border-gray-200">
+		<div class="text-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
 			<svg
-				class="w-16 h-16 mx-auto text-gray-400 mb-4"
+				class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-500 mb-4"
 				fill="none"
 				stroke="currentColor"
 				viewBox="0 0 24 24"
@@ -143,8 +143,8 @@
 					d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
 				/>
 			</svg>
-			<h3 class="text-lg font-medium text-gray-900 mb-2">No tools found</h3>
-			<p class="text-gray-600 mb-4">
+			<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No tools found</h3>
+			<p class="text-gray-600 dark:text-gray-400 mb-4">
 				{#if searchQuery}
 					Try adjusting your search criteria
 				{:else if filterMode === 'mine' && !currentUser}

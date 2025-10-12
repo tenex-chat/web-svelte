@@ -202,10 +202,18 @@
 						</h3>
 						<div class="grid grid-cols-1 gap-2">
 							{#each availableVoices as voice (voice.id)}
-								<button
+								<div
+									role="button"
+									tabindex="0"
 									onclick={(e) => toggleVoice(voice.id, e)}
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											toggleVoice(voice.id, e);
+										}
+									}}
 									class={cn(
-										'px-4 py-3 border rounded-md text-left transition-colors relative',
+										'px-4 py-3 border rounded-md text-left transition-colors relative cursor-pointer',
 										selectedVoices.includes(voice.id)
 											? 'bg-blue-50 border-blue-500'
 											: 'border-gray-300 hover:bg-gray-50'
@@ -239,7 +247,7 @@
 											{previewingVoiceId === voice.id ? '🔊 Playing...' : '🔊 Preview'}
 										</button>
 									</div>
-								</button>
+								</div>
 							{/each}
 						</div>
 					</div>
