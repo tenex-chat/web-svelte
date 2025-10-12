@@ -62,12 +62,12 @@
 
 <div class="space-y-6">
 	<!-- AI Providers Section -->
-	<div class="bg-white border border-gray-200 rounded-lg p-6">
+	<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
 		<div class="mb-4">
-			<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+			<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
 				<span>🤖</span> AI Providers
 			</h3>
-			<p class="text-sm text-gray-500 mt-1">Manage your LLM configurations for text generation</p>
+			<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your LLM configurations for text generation</p>
 		</div>
 
 		{#if llmConfigs.length > 0}
@@ -76,7 +76,7 @@
 					<div
 						class={cn(
 							'flex items-center justify-between p-4 border rounded-lg',
-							activeConfigId === llmConfig.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+							activeConfigId === llmConfig.id ? 'border-blue-500 bg-blue-50 dark:bg-gray-700' : 'border-gray-200 dark:border-gray-700'
 						)}
 					>
 						<div class="flex items-center gap-3">
@@ -88,8 +88,8 @@
 								class="w-4 h-4"
 							/>
 							<div>
-								<div class="font-medium">{llmConfig.name}</div>
-								<div class="flex items-center gap-2 text-sm text-gray-500">
+								<div class="font-medium dark:text-gray-100">{llmConfig.name}</div>
+								<div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
 									<span class="capitalize">{llmConfig.provider}</span>
 									<span>•</span>
 									<span>{llmConfig.model}</span>
@@ -107,13 +107,13 @@
 							<button
 								onclick={() => handleTestConnection(llmConfig)}
 								disabled={testingConnection === llmConfig.id}
-								class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+								class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700"
 							>
 								{testingConnection === llmConfig.id ? 'Testing...' : 'Test'}
 							</button>
 							<button
 								onclick={() => handleDeleteConfig(llmConfig.id)}
-								class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+								class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700"
 								aria-label="Delete configuration"
 							>
 								🗑️
@@ -123,14 +123,14 @@
 				{/each}
 				<button
 					onclick={() => (showAddProvider = true)}
-					class="w-full px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+					class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
 				>
 					+ Add New Configuration
 				</button>
 			</div>
 		{:else}
 			<div class="flex flex-col items-center justify-center py-8 space-y-4">
-				<p class="text-sm text-gray-500">No LLM configurations added yet</p>
+				<p class="text-sm text-gray-500 dark:text-gray-400">No LLM configurations added yet</p>
 				<button
 					onclick={() => (showAddProvider = true)}
 					class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
@@ -143,12 +143,12 @@
 
 	<!-- UI Features Configuration -->
 	{#if llmConfigs.length > 0}
-		<div class="bg-white border border-gray-200 rounded-lg p-6">
+		<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
 			<div class="mb-4">
-				<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+				<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
 					<span>✨</span> UI Features Configuration
 				</h3>
-				<p class="text-sm text-gray-500 mt-1">
+				<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
 					Choose which LLM configurations to use for specific UI features
 				</p>
 			</div>
@@ -156,7 +156,7 @@
 			<div class="space-y-4">
 				<!-- Title Generation -->
 				<div class="space-y-2">
-					<label for="title-gen" class="block text-sm font-medium text-gray-700">
+					<label for="title-gen" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 						Title Generation
 					</label>
 					<select
@@ -166,19 +166,19 @@
 							aiConfigStore.updateUILLMConfigs({
 								titleGeneration: e.currentTarget.value === 'default' ? undefined : e.currentTarget.value
 							})}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
 					>
 						<option value="default">Use active configuration</option>
 						{#each llmConfigs as llmConfig (llmConfig.id)}
 							<option value={llmConfig.id}>{llmConfig.name} ({llmConfig.provider})</option>
 						{/each}
 					</select>
-					<p class="text-xs text-gray-500">Used when generating titles for conversations</p>
+					<p class="text-xs text-gray-500 dark:text-gray-400">Used when generating titles for conversations</p>
 				</div>
 
 				<!-- Summaries -->
 				<div class="space-y-2">
-					<label for="summaries" class="block text-sm font-medium text-gray-700">
+					<label for="summaries" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 						Conversation Summaries
 					</label>
 					<select
@@ -188,33 +188,33 @@
 							aiConfigStore.updateUILLMConfigs({
 								summaries: e.currentTarget.value === 'default' ? undefined : e.currentTarget.value
 							})}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
 					>
 						<option value="default">Use active configuration</option>
 						{#each llmConfigs as llmConfig (llmConfig.id)}
 							<option value={llmConfig.id}>{llmConfig.name} ({llmConfig.provider})</option>
 						{/each}
 					</select>
-					<p class="text-xs text-gray-500">Used for generating conversation summaries</p>
+					<p class="text-xs text-gray-500 dark:text-gray-400">Used for generating conversation summaries</p>
 				</div>
 			</div>
 		</div>
 	{/if}
 
 	<!-- Voice Settings -->
-	<div class="bg-white border border-gray-200 rounded-lg p-6">
+	<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
 		<div class="mb-4">
-			<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+			<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
 				<span>🎤</span> Voice Settings
 			</h3>
-			<p class="text-sm text-gray-500 mt-1">Configure speech-to-text and text-to-speech</p>
+			<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Configure speech-to-text and text-to-speech</p>
 		</div>
 
 		<div class="space-y-6">
 			<!-- Speech-to-Text -->
 			<div class="space-y-4">
 				<div class="flex items-center justify-between">
-					<label for="stt-enabled" class="text-sm font-medium text-gray-700">
+					<label for="stt-enabled" class="text-sm font-medium text-gray-700 dark:text-gray-300">
 						Speech-to-Text
 					</label>
 					<input
@@ -229,7 +229,7 @@
 				{#if sttSettings.enabled}
 					<div class="space-y-4 pl-4">
 						<div class="space-y-2">
-							<p class="text-sm font-medium text-gray-700">STT Provider</p>
+							<p class="text-sm font-medium text-gray-700 dark:text-gray-300">STT Provider</p>
 							<div class="space-y-2">
 								<label class="flex items-center gap-2">
 									<input
@@ -256,7 +256,7 @@
 
 						{#if sttSettings.provider === 'whisper'}
 							<div class="space-y-2">
-								<label for="openai-key-stt" class="block text-sm font-medium text-gray-700">
+								<label for="openai-key-stt" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 									🔑 OpenAI API Key for STT
 								</label>
 								<input
@@ -264,16 +264,16 @@
 									type="password"
 									bind:value={config.openAIApiKey}
 									onchange={(e) => aiConfigStore.setOpenAIApiKey(e.currentTarget.value)}
-									class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+									class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
 									placeholder="sk-..."
 								/>
-								<p class="text-xs text-gray-500">Uses Whisper model: {sttSettings.model}</p>
+								<p class="text-xs text-gray-500 dark:text-gray-400">Uses Whisper model: {sttSettings.model}</p>
 							</div>
 						{/if}
 
 						{#if sttSettings.provider === 'elevenlabs'}
 							<div class="space-y-2">
-								<label for="elevenlabs-key-stt" class="block text-sm font-medium text-gray-700">
+								<label for="elevenlabs-key-stt" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 									🔑 ElevenLabs API Key
 								</label>
 								<input
@@ -282,10 +282,10 @@
 									bind:value={voiceSettings.apiKey}
 									onchange={(e) =>
 										aiConfigStore.updateVoiceSettings({ apiKey: e.currentTarget.value })}
-									class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+									class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
 									placeholder="Enter your ElevenLabs API key"
 								/>
-								<p class="text-xs text-gray-500">
+								<p class="text-xs text-gray-500 dark:text-gray-400">
 									{voiceSettings.apiKey
 										? 'This key is shared with Text-to-Speech settings'
 										: 'Get your API key from the ElevenLabs dashboard'}
@@ -299,7 +299,7 @@
 			<!-- Text-to-Speech -->
 			<div class="space-y-4">
 				<div class="flex items-center justify-between">
-					<label for="tts-enabled" class="text-sm font-medium text-gray-700">
+					<label for="tts-enabled" class="text-sm font-medium text-gray-700 dark:text-gray-300">
 						Text-to-Speech
 					</label>
 					<input
@@ -318,7 +318,7 @@
 				{#if voiceSettings.enabled}
 					<div class="space-y-4 pl-4">
 						<div class="space-y-2">
-							<p class="text-sm font-medium text-gray-700">Voice Provider</p>
+							<p class="text-sm font-medium text-gray-700 dark:text-gray-300">Voice Provider</p>
 							<div class="space-y-2">
 								<label class="flex items-center gap-2">
 									<input
@@ -345,7 +345,7 @@
 
 						{#if voiceSettings.provider === 'openai'}
 							<div class="space-y-2">
-								<label for="openai-key-tts" class="block text-sm font-medium text-gray-700">
+								<label for="openai-key-tts" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 									🔑 OpenAI API Key
 								</label>
 								<input
@@ -353,16 +353,16 @@
 									type="password"
 									bind:value={config.openAIApiKey}
 									onchange={(e) => aiConfigStore.setOpenAIApiKey(e.currentTarget.value)}
-									class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+									class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
 									placeholder="sk-..."
 								/>
-								<p class="text-xs text-gray-500">Get your API key from platform.openai.com</p>
+								<p class="text-xs text-gray-500 dark:text-gray-400">Get your API key from platform.openai.com</p>
 							</div>
 						{/if}
 
 						{#if voiceSettings.provider === 'elevenlabs'}
 							<div class="space-y-2">
-								<label for="elevenlabs-key-tts" class="block text-sm font-medium text-gray-700">
+								<label for="elevenlabs-key-tts" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 									🔑 ElevenLabs API Key
 								</label>
 								<input
@@ -371,10 +371,10 @@
 									bind:value={voiceSettings.apiKey}
 									onchange={(e) =>
 										aiConfigStore.updateVoiceSettings({ apiKey: e.currentTarget.value })}
-									class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+									class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
 									placeholder="Enter your ElevenLabs API key"
 								/>
-								<p class="text-xs text-gray-500">
+								<p class="text-xs text-gray-500 dark:text-gray-400">
 									{voiceSettings.apiKey
 										? 'This key is shared with Speech-to-Text settings'
 										: 'Get your API key from the ElevenLabs dashboard'}
@@ -384,19 +384,19 @@
 
 						<!-- Voice Selection -->
 						<div class="space-y-2">
-							<p class="text-sm font-medium text-gray-700">
+							<p class="text-sm font-medium text-gray-700 dark:text-gray-300">
 								Voice{voiceSettings.voiceIds?.length > 1 ? 's' : ''}: {voiceSettings.voiceIds?.join(', ') || 'None'}
 							</p>
 							<div class="flex gap-2">
 								<button
 									onclick={() => (showVoiceSelection = true)}
-									class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+									class="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
 								>
 									Select Voice
 								</button>
 								<button
 									onclick={() => (showVoiceSelection = 'multi')}
-									class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+									class="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
 								>
 									👥 Select Multiple
 								</button>
@@ -404,14 +404,14 @@
 									onclick={handlePreviewVoice}
 									disabled={!voiceSettings.voiceIds?.length || previewingVoice}
 									class={cn(
-										'px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors',
+										'px-4 py-2 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors',
 										(!voiceSettings.voiceIds?.length || previewingVoice) && 'opacity-50 cursor-not-allowed'
 									)}
 								>
 									{previewingVoice ? '🔊 Playing...' : '🔊 Preview'}
 								</button>
 							</div>
-							<p class="text-xs text-gray-500">
+							<p class="text-xs text-gray-500 dark:text-gray-400">
 								{#if voiceSettings.voiceIds?.length > 1}
 									Each agent gets a consistent voice based on their ID
 								{:else}
@@ -422,7 +422,7 @@
 
 						<!-- Speed -->
 						<div class="space-y-2">
-							<label for="speed" class="block text-sm font-medium text-gray-700">
+							<label for="speed" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
 								Speed: {voiceSettings.speed}x
 							</label>
 							<input
@@ -440,7 +440,7 @@
 
 						<!-- Auto-speak -->
 						<div class="flex items-center justify-between">
-							<label for="auto-speak" class="text-sm font-medium text-gray-700">
+							<label for="auto-speak" class="text-sm font-medium text-gray-700 dark:text-gray-300">
 								Auto-speak replies
 							</label>
 							<input
@@ -459,9 +459,9 @@
 	</div>
 
 	<!-- Quick Actions -->
-	<div class="bg-white border border-gray-200 rounded-lg p-6">
+	<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
 		<div class="mb-4">
-			<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+			<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
 				<span>⚡</span> Quick Actions
 			</h3>
 		</div>
@@ -473,7 +473,7 @@
 						alert('Settings reset successfully');
 					}
 				}}
-				class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+				class="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
 			>
 				Reset to Defaults
 			</button>

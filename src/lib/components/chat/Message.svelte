@@ -12,7 +12,7 @@
 	import SuggestionButtons from './SuggestionButtons.svelte';
 	import LLMMetadataDialog from './LLMMetadataDialog.svelte';
 	import DropdownMenu, { type DropdownMenuItem } from '$lib/components/ui/DropdownMenu.svelte';
-	import { Copy, Reply, Quote, FileJson, MoreVertical, Info } from 'lucide-svelte';
+	import { Copy, Reply, Quote, FileJson, MoreVertical, Info, Eye } from 'lucide-svelte';
 
 	interface Props {
 		message: Message;
@@ -89,34 +89,35 @@
 	const dropdownItems: DropdownMenuItem[] = [
 		{
 			label: 'Reply',
-			icon: '↩️',
+			icon: Reply,
 			onClick: () => onReply?.(message)
 		},
 		{
 			label: 'Quote',
-			icon: '💬',
+			icon: Quote,
 			onClick: () => onQuote?.(message)
 		},
 		{
 			label: 'Copy content',
-			icon: '📋',
+			icon: Copy,
 			onClick: () => {
 				navigator.clipboard.writeText(message.event.content);
 			}
 		},
 		{
-			separator: true
+			separator: true,
+			label: ''
 		},
 		{
 			label: 'View LLM metadata',
-			icon: 'ℹ️',
+			icon: Info,
 			onClick: () => {
 				showLLMMetadata = true;
 			}
 		},
 		{
 			label: 'View raw event',
-			icon: '🔍',
+			icon: Eye,
 			onClick: () => {
 				showRawEvent = true;
 			}

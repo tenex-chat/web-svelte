@@ -6,11 +6,12 @@
 		open: boolean;
 		agent: ProjectAgent;
 		availableModels: string[];
+		availableTools: string[];
 		onClose: () => void;
 		onSave: (config: { model: string; tools: string[] }) => void;
 	}
 
-	let { open = $bindable(), agent, availableModels, onClose, onSave }: Props = $props();
+	let { open = $bindable(), agent, availableModels, availableTools, onClose, onSave }: Props = $props();
 
 	// Local state for editing
 	let selectedModel = $state(agent.model || '');

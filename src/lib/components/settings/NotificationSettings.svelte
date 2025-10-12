@@ -35,18 +35,18 @@
 
 <div class="space-y-6">
 	<!-- Notification Types Section -->
-	<div class="bg-white rounded-lg border p-6">
-		<h3 class="text-lg font-semibold text-gray-900 mb-4">Notification Types</h3>
-		<p class="text-sm text-gray-500 mb-4">Choose which notifications you want to receive</p>
+	<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Notification Types</h3>
+		<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Choose which notifications you want to receive</p>
 
 		<div class="space-y-4">
 			<!-- Project Updates -->
 			<div class="flex items-center justify-between">
 				<div>
-					<label for="project-updates" class="text-sm font-medium text-gray-900">
+					<label for="project-updates" class="text-sm font-medium text-gray-900 dark:text-gray-100">
 						Project Updates
 					</label>
-					<p class="text-xs text-gray-500">Notifications about project changes and status</p>
+					<p class="text-xs text-gray-500 dark:text-gray-400">Notifications about project changes and status</p>
 				</div>
 				<button
 					id="project-updates"
@@ -56,7 +56,7 @@
 						})}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						notifications.projectUpdates ? 'bg-blue-600' : 'bg-gray-200'
+						notifications.projectUpdates ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
 					)}
 					role="switch"
 					aria-checked={notifications.projectUpdates}
@@ -73,10 +73,10 @@
 			<!-- Task Assignments -->
 			<div class="flex items-center justify-between">
 				<div>
-					<label for="task-assignments" class="text-sm font-medium text-gray-900">
+					<label for="task-assignments" class="text-sm font-medium text-gray-900 dark:text-gray-100">
 						Task Assignments
 					</label>
-					<p class="text-xs text-gray-500">When you are assigned to a task</p>
+					<p class="text-xs text-gray-500 dark:text-gray-400">When you are assigned to a task</p>
 				</div>
 				<button
 					id="task-assignments"
@@ -86,7 +86,7 @@
 						})}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						notifications.taskAssignments ? 'bg-blue-600' : 'bg-gray-200'
+						notifications.taskAssignments ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
 					)}
 					role="switch"
 					aria-checked={notifications.taskAssignments}
@@ -103,10 +103,10 @@
 			<!-- Agent Responses -->
 			<div class="flex items-center justify-between">
 				<div>
-					<label for="agent-responses" class="text-sm font-medium text-gray-900">
+					<label for="agent-responses" class="text-sm font-medium text-gray-900 dark:text-gray-100">
 						Agent Responses
 					</label>
-					<p class="text-xs text-gray-500">When an agent completes a task or responds</p>
+					<p class="text-xs text-gray-500 dark:text-gray-400">When an agent completes a task or responds</p>
 				</div>
 				<button
 					id="agent-responses"
@@ -116,7 +116,7 @@
 						})}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						notifications.agentResponses ? 'bg-blue-600' : 'bg-gray-200'
+						notifications.agentResponses ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
 					)}
 					role="switch"
 					aria-checked={notifications.agentResponses}
@@ -133,10 +133,10 @@
 			<!-- Thread Replies -->
 			<div class="flex items-center justify-between">
 				<div>
-					<label for="thread-replies" class="text-sm font-medium text-gray-900">
+					<label for="thread-replies" class="text-sm font-medium text-gray-900 dark:text-gray-100">
 						Thread Replies
 					</label>
-					<p class="text-xs text-gray-500">When someone replies to a thread you're in</p>
+					<p class="text-xs text-gray-500 dark:text-gray-400">When someone replies to a thread you're in</p>
 				</div>
 				<button
 					id="thread-replies"
@@ -144,7 +144,7 @@
 						uiSettingsStore.updateNotifications({ threadReplies: !notifications.threadReplies })}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						notifications.threadReplies ? 'bg-blue-600' : 'bg-gray-200'
+						notifications.threadReplies ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
 					)}
 					role="switch"
 					aria-checked={notifications.threadReplies}
@@ -161,8 +161,8 @@
 			<!-- Mentions -->
 			<div class="flex items-center justify-between">
 				<div>
-					<label for="mentions" class="text-sm font-medium text-gray-900"> Mentions </label>
-					<p class="text-xs text-gray-500">When someone mentions you</p>
+					<label for="mentions" class="text-sm font-medium text-gray-900 dark:text-gray-100"> Mentions </label>
+					<p class="text-xs text-gray-500 dark:text-gray-400">When someone mentions you</p>
 				</div>
 				<button
 					id="mentions"
@@ -170,7 +170,7 @@
 						uiSettingsStore.updateNotifications({ mentions: !notifications.mentions })}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						notifications.mentions ? 'bg-blue-600' : 'bg-gray-200'
+						notifications.mentions ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
 					)}
 					role="switch"
 					aria-checked={notifications.mentions}
@@ -187,17 +187,17 @@
 	</div>
 
 	<!-- Sound Settings Section -->
-	<div class="bg-white rounded-lg border p-6">
-		<h3 class="text-lg font-semibold text-gray-900 mb-4">Sound Settings</h3>
+	<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Sound Settings</h3>
 
 		<div class="space-y-4">
 			<!-- Sound Enabled -->
 			<div class="flex items-center justify-between">
 				<div>
-					<label for="sound-enabled" class="text-sm font-medium text-gray-900">
+					<label for="sound-enabled" class="text-sm font-medium text-gray-900 dark:text-gray-100">
 						Sound Enabled
 					</label>
-					<p class="text-xs text-gray-500">Play sounds for notifications</p>
+					<p class="text-xs text-gray-500 dark:text-gray-400">Play sounds for notifications</p>
 				</div>
 				<button
 					id="sound-enabled"
@@ -205,7 +205,7 @@
 						uiSettingsStore.updateNotifications({ soundEnabled: !notifications.soundEnabled })}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						notifications.soundEnabled ? 'bg-blue-600' : 'bg-gray-200'
+						notifications.soundEnabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
 					)}
 					role="switch"
 					aria-checked={notifications.soundEnabled}
@@ -223,7 +223,7 @@
 			{#if notifications.soundEnabled}
 				<button
 					onclick={playTestSound}
-					class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors text-sm font-medium"
+					class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors text-sm font-medium"
 				>
 					Test Sound
 				</button>
@@ -232,9 +232,9 @@
 	</div>
 
 	<!-- Browser Notifications Section -->
-	<div class="bg-white rounded-lg border p-6">
-		<h3 class="text-lg font-semibold text-gray-900 mb-4">Browser Notifications</h3>
-		<p class="text-sm text-gray-500 mb-4">
+	<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Browser Notifications</h3>
+		<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
 			Receive browser notifications even when TENEX is not in focus
 		</p>
 

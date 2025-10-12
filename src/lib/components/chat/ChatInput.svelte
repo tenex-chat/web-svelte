@@ -4,8 +4,8 @@
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
-	import { Settings } from 'lucide-svelte';
 	import AgentConfigDialog from './AgentConfigDialog.svelte';
+	import AgentSelector from './AgentSelector.svelte';
 
 	interface Props {
 		project?: NDKProject;
@@ -30,6 +30,7 @@
 	const currentUser = $derived(ndk.$sessions.currentUser);
 	const projectId = $derived(project?.tagId());
 	const availableModels = $derived(projectId ? projectStatusStore.getModels(projectId) : []);
+	const availableTools = $derived(projectId ? projectStatusStore.getTools(projectId) : []);
 
 	let messageInput = $state('');
 	let selectedAgent = $state<string | null>(null);
@@ -376,74 +377,17 @@
 			{/if}
 		</div>
 
-		<!-- Controls Row: Merged Agent Selector, Attachment -->
+		<!-- Controls Row: Agent Selector, Attachment -->
 		<div class="flex items-center gap-2">
-			<!-- Merged Agent + Model Selector -->
+			<!-- Agent Selector -->
 			{#if onlineAgents.length > 0}
-				{@const selectedAgentData = onlineAgents.find((a) => a.pubkey === selectedAgent)}
-				{@const displayAgent = selectedAgentData || onlineAgents[0]}
-				<div class="flex items-center gap-1">
-					<!-- Agent Selector Button -->
-					<div class="relative">
-						<button
-							class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-sm min-w-0"
-							onclick={() => {
-								const select = document.getElementById('agent-select') as HTMLSelectElement;
-								select?.click();
-							}}
-							type="button"
-						>
-							<!-- Avatar -->
-							<div
-								class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
-							>
-								{displayAgent.name.charAt(0).toUpperCase()}
-							</div>
-							<div class="flex flex-col items-start min-w-0">
-								<span class="font-medium text-sm truncate">{displayAgent.name}</span>
-								{#if currentAgentModel}
-									<span class="text-xs text-gray-500 truncate">{currentAgentModel}</span>
-								{/if}
-							</div>
-							<svg
-								class="w-4 h-4 text-gray-400 flex-shrink-0"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M19 9l-7 7-7-7"
-								/>
-							</svg>
-						</button>
-						<select
-							id="agent-select"
-							bind:value={selectedAgent}
-							class="absolute inset-0 opacity-0 cursor-pointer"
-						>
-							<option value={null}>Project Manager (default)</option>
-							{#each onlineAgents as agent}
-								<option value={agent.pubkey}>
-									{agent.name}
-								</option>
-							{/each}
-						</select>
-					</div>
-
-					<!-- Configure Button -->
-					<button
-						type="button"
-						onclick={() => (configDialogOpen = true)}
-						class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-						title="Configure agent"
-						aria-label="Configure agent"
-					>
-						<Settings class="w-4 h-4 text-gray-600" />
-					</button>
-				</div>
+				<AgentSelector
+					agents={onlineAgents}
+					selectedAgent={selectedAgent}
+					currentModel={currentAgentModel}
+					onSelect={(pubkey) => (selectedAgent = pubkey)}
+					onConfigure={() => (configDialogOpen = true)}
+				/>
 			{/if}
 
 			<!-- Attachment Button -->
@@ -508,6 +452,7 @@
 		bind:open={configDialogOpen}
 		agent={displayAgent}
 		availableModels={availableModels}
+		availableTools={availableTools}
 		onClose={() => (configDialogOpen = false)}
 		onSave={handleAgentConfigSave}
 	/>

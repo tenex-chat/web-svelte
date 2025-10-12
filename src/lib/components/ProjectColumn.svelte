@@ -4,6 +4,7 @@
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { cn } from '$lib/utils/cn';
+	import { MessageSquare, FileText, Bot, Hash, Rss, Settings as SettingsIcon } from 'lucide-svelte';
 
 	interface Props {
 		project: NDKProject;
@@ -35,12 +36,12 @@
 	});
 
 	const tabs = [
-		{ id: 'conversations', label: 'Chat', icon: '💬' },
-		{ id: 'docs', label: 'Docs', icon: '📄' },
-		{ id: 'agents', label: 'Agents', icon: '🤖' },
-		{ id: 'hashtags', label: 'Tags', icon: '#' },
-		{ id: 'feed', label: 'Feed', icon: '📡' },
-		{ id: 'settings', label: 'Settings', icon: '⚙️' }
+		{ id: 'conversations', label: 'Chat', icon: MessageSquare },
+		{ id: 'docs', label: 'Docs', icon: FileText },
+		{ id: 'agents', label: 'Agents', icon: Bot },
+		{ id: 'hashtags', label: 'Tags', icon: Hash },
+		{ id: 'feed', label: 'Feed', icon: Rss },
+		{ id: 'settings', label: 'Settings', icon: SettingsIcon }
 	] as const;
 </script>
 
@@ -93,7 +94,7 @@
 							: ''}
 						title={tab.label}
 					>
-						<span class="text-base leading-none">{tab.icon}</span>
+						<svelte:component this={tab.icon} class="w-4 h-4" />
 						{#if activeTab === tab.id}
 							<div
 								class="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full"
@@ -138,7 +139,7 @@
 			<div class="h-full p-2">
 				{#if onlineAgents.length === 0}
 					<div class="flex flex-col items-center justify-center h-32 text-center">
-						<span class="text-3xl mb-2">🤖</span>
+						<Bot class="w-12 h-12 text-gray-400 mb-2" />
 						<p class="text-sm text-gray-500">No agents online</p>
 					</div>
 				{:else}
@@ -188,7 +189,7 @@
 			{/await}
 		{:else if activeTab === 'settings'}
 			<div class="h-full flex flex-col items-center justify-center gap-3 text-center p-4">
-				<span class="text-4xl">⚙️</span>
+				<SettingsIcon class="w-16 h-16 text-gray-400" />
 				<button
 					onclick={() => windowManager.openSettings(project)}
 					class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"

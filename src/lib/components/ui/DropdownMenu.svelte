@@ -1,7 +1,9 @@
 <script lang="ts" module>
+	import type { ComponentType } from 'svelte';
+
 	export interface DropdownMenuItem {
 		label: string;
-		icon?: string;
+		icon?: string | ComponentType;
 		onClick?: () => void;
 		href?: string;
 		separator?: boolean;
@@ -135,7 +137,11 @@
 							type="button"
 						>
 							{#if item.icon}
-								<span class="mr-2">{item.icon}</span>
+								{#if typeof item.icon === 'string'}
+									<span class="mr-2">{item.icon}</span>
+								{:else}
+									<svelte:component this={item.icon} class="w-4 h-4 mr-2" />
+								{/if}
 							{/if}
 							<span class="flex-1 text-left">{item.label}</span>
 							<svg
@@ -167,7 +173,11 @@
 											class="flex items-center w-full px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
 										>
 											{#if subitem.icon}
-												<span class="mr-2">{subitem.icon}</span>
+												{#if typeof subitem.icon === 'string'}
+													<span class="mr-2">{subitem.icon}</span>
+												{:else}
+													<svelte:component this={subitem.icon} class="w-4 h-4 mr-2" />
+												{/if}
 											{/if}
 											<span>{subitem.label}</span>
 										</a>
@@ -178,7 +188,11 @@
 											type="button"
 										>
 											{#if subitem.icon}
-												<span class="mr-2">{subitem.icon}</span>
+												{#if typeof subitem.icon === 'string'}
+													<span class="mr-2">{subitem.icon}</span>
+												{:else}
+													<svelte:component this={subitem.icon} class="w-4 h-4 mr-2" />
+												{/if}
 											{/if}
 											<span>{subitem.label}</span>
 										</button>
@@ -194,7 +208,11 @@
 						class="flex items-center w-full px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
 					>
 						{#if item.icon}
-							<span class="mr-2">{item.icon}</span>
+							{#if typeof item.icon === 'string'}
+								<span class="mr-2">{item.icon}</span>
+							{:else}
+								<svelte:component this={item.icon} class="w-4 h-4 mr-2" />
+							{/if}
 						{/if}
 						<span>{item.label}</span>
 					</a>
@@ -205,7 +223,11 @@
 						type="button"
 					>
 						{#if item.icon}
-							<span class="mr-2">{item.icon}</span>
+							{#if typeof item.icon === 'string'}
+								<span class="mr-2">{item.icon}</span>
+							{:else}
+								<svelte:component this={item.icon} class="w-4 h-4 mr-2" />
+							{/if}
 						{/if}
 						<span>{item.label}</span>
 					</button>

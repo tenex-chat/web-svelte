@@ -66,12 +66,12 @@
 
 <div class="space-y-6">
 	<!-- Upload Configuration Section -->
-	<div class="bg-white rounded-lg border p-6">
-		<h3 class="text-lg font-semibold text-gray-900 mb-4">Upload Configuration</h3>
+	<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Upload Configuration</h3>
 		<div class="space-y-4">
 			<!-- Max File Size -->
 			<div>
-				<label for="max-size" class="block text-sm font-medium text-gray-900 mb-2">
+				<label for="max-size" class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
 					Maximum File Size (MB)
 				</label>
 				<input
@@ -84,18 +84,18 @@
 						blossomSettingsStore.updateUploadConfig({
 							maxSizeMB: parseInt(e.currentTarget.value)
 						})}
-					class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+					class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
 				/>
-				<p class="text-xs text-gray-500 mt-1">Maximum file size for uploads (1-100 MB)</p>
+				<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Maximum file size for uploads (1-100 MB)</p>
 			</div>
 
 			<!-- Compress Images -->
 			<div class="flex items-center justify-between">
 				<div>
-					<label for="compress-images" class="text-sm font-medium text-gray-900">
+					<label for="compress-images" class="text-sm font-medium text-gray-900 dark:text-gray-100">
 						Compress Images
 					</label>
-					<p class="text-xs text-gray-500">Automatically compress images before upload</p>
+					<p class="text-xs text-gray-500 dark:text-gray-400">Automatically compress images before upload</p>
 				</div>
 				<button
 					id="compress-images"
@@ -105,7 +105,7 @@
 						})}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						uploadConfig.compressImages ? 'bg-blue-600' : 'bg-gray-200'
+						uploadConfig.compressImages ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
 					)}
 					role="switch"
 					aria-checked={uploadConfig.compressImages}
@@ -122,10 +122,10 @@
 			<!-- Strip EXIF -->
 			<div class="flex items-center justify-between">
 				<div>
-					<label for="strip-exif" class="text-sm font-medium text-gray-900">
+					<label for="strip-exif" class="text-sm font-medium text-gray-900 dark:text-gray-100">
 						Strip EXIF Data
 					</label>
-					<p class="text-xs text-gray-500">Remove metadata from images for privacy</p>
+					<p class="text-xs text-gray-500 dark:text-gray-400">Remove metadata from images for privacy</p>
 				</div>
 				<button
 					id="strip-exif"
@@ -133,7 +133,7 @@
 						blossomSettingsStore.updateUploadConfig({ stripExif: !uploadConfig.stripExif })}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						uploadConfig.stripExif ? 'bg-blue-600' : 'bg-gray-200'
+						uploadConfig.stripExif ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
 					)}
 					role="switch"
 					aria-checked={uploadConfig.stripExif}
@@ -150,13 +150,13 @@
 	</div>
 
 	<!-- Blossom Servers Section -->
-	<div class="bg-white rounded-lg border p-6">
+	<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
 		<div class="flex items-center justify-between mb-4">
-			<h3 class="text-lg font-semibold text-gray-900">Blossom Servers</h3>
+			<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Blossom Servers</h3>
 			<div class="flex gap-2">
 				<button
 					onclick={checkAllServers}
-					class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+					class="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors"
 					disabled={servers.length === 0}
 				>
 					Check All
@@ -172,9 +172,9 @@
 
 		<!-- Add Server Form -->
 		{#if showAddServer}
-			<div class="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+			<div class="mb-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg space-y-3">
 				<div>
-					<label for="server-url" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="server-url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
 						Server URL
 					</label>
 					<input
@@ -182,11 +182,11 @@
 						type="url"
 						bind:value={serverUrl}
 						placeholder="https://blossom.example.com"
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
 					/>
 				</div>
 				<div>
-					<label for="server-name" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="server-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
 						Server Name (Optional)
 					</label>
 					<input
@@ -194,7 +194,7 @@
 						type="text"
 						bind:value={serverName}
 						placeholder="My Blossom Server"
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
 					/>
 				</div>
 				<button
@@ -212,42 +212,42 @@
 
 		<!-- Server List -->
 		{#if servers.length === 0}
-			<div class="text-center py-8 text-gray-500">
+			<div class="text-center py-8 text-gray-500 dark:text-gray-400">
 				<p class="text-sm">No Blossom servers configured</p>
 				<p class="text-xs mt-1">Add a server to start uploading files</p>
 			</div>
 		{:else}
 			<div class="space-y-2">
 				{#each servers as server (server.url)}
-					<div class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+					<div class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
 						<div class="flex items-center gap-3 flex-1">
 							<div class={cn('w-3 h-3 rounded-full', getStatusColor(server.status))}></div>
 							<div class="flex-1 min-w-0">
-								<p class="text-sm font-medium text-gray-900 truncate">
+								<p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
 									{server.name || server.url}
 								</p>
-								<p class="text-xs text-gray-500 truncate">{server.url}</p>
+								<p class="text-xs text-gray-500 dark:text-gray-400 truncate">{server.url}</p>
 								{#if server.lastChecked}
-									<p class="text-xs text-gray-400">
+									<p class="text-xs text-gray-400 dark:text-gray-500">
 										Last checked: {new Date(server.lastChecked).toLocaleString()}
 									</p>
 								{/if}
 							</div>
-							<span class="text-xs font-medium text-gray-600">
+							<span class="text-xs font-medium text-gray-600 dark:text-gray-400">
 								{getStatusText(server.status)}
 							</span>
 						</div>
 						<div class="flex items-center gap-2 ml-4">
 							<button
 								onclick={() => checkServer(server.url)}
-								class="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+								class="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
 								disabled={server.status === 'checking'}
 							>
 								Test
 							</button>
 							<button
 								onclick={() => removeServer(server.url)}
-								class="px-3 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded transition-colors"
+								class="px-3 py-1 text-xs bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800 text-red-700 dark:text-red-300 rounded transition-colors"
 							>
 								Remove
 							</button>

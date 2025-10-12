@@ -15,6 +15,17 @@
 	import GlobalSearchDialog from './dialogs/GlobalSearchDialog.svelte';
 	import InboxPopover from './inbox/InboxPopover.svelte';
 	import ProjectStatusDebug from './debug/ProjectStatusDebug.svelte';
+	import {
+		Plus,
+		Bot,
+		Wrench,
+		Settings,
+		Moon,
+		Sun,
+		Monitor,
+		Bug,
+		LogOut
+	} from 'lucide-svelte';
 
 	interface Props {
 		projects: NDKProject[];
@@ -66,39 +77,39 @@
 	const userMenuItems: DropdownMenuItem[] = [
 		{
 			label: 'New project',
-			icon: '➕',
+			icon: Plus,
 			onClick: () => (createDialogOpen = true)
 		},
-		{ separator: true },
+		{ separator: true, label: '' },
 		{
 			label: 'Agents',
-			icon: '🤖',
+			icon: Bot,
 			href: '/agents'
 		},
 		{
 			label: 'MCP Tools',
-			icon: '🔧',
-			href: '/mcp-tools'
+			icon: Wrench,
+			href: '/tools'
 		},
 		{
 			label: 'Settings',
-			icon: '⚙️',
+			icon: Settings,
 			href: '/settings'
 		},
-		{ separator: true },
+		{ separator: true, label: '' },
 		{
 			label: 'Theme',
-			icon: '🌙',
+			icon: Moon,
 			submenu: [
-				{ label: 'Light', icon: '☀️', onClick: () => uiSettingsStore.setTheme('light') },
-				{ label: 'Dark', icon: '🌙', onClick: () => uiSettingsStore.setTheme('dark') },
-				{ label: 'System', icon: '💻', onClick: () => uiSettingsStore.setTheme('system') }
+				{ label: 'Light', icon: Sun, onClick: () => uiSettingsStore.setTheme('light') },
+				{ label: 'Dark', icon: Moon, onClick: () => uiSettingsStore.setTheme('dark') },
+				{ label: 'System', icon: Monitor, onClick: () => uiSettingsStore.setTheme('system') }
 			]
 		},
-		{ separator: true },
+		{ separator: true, label: '' },
 		{
 			label: 'Debug',
-			icon: '🐛',
+			icon: Bug,
 			submenu: [
 				{
 					label: 'Project Status Debug Tool',
@@ -106,10 +117,10 @@
 				}
 			]
 		},
-		{ separator: true },
+		{ separator: true, label: '' },
 		{
 			label: 'Logout',
-			icon: '🚪',
+			icon: LogOut,
 			onClick: () => {
 				if (currentUser) {
 					ndk.logout(currentUser.pubkey);
