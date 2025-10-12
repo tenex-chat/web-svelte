@@ -77,7 +77,7 @@
 			<div class="flex gap-1">
 				<button
 					onclick={handleEdit}
-					class="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+					class="p-1.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
 					aria-label="Edit tool"
 				>
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,7 +91,7 @@
 				</button>
 				<button
 					onclick={handleDelete}
-					class="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+					class="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
 					aria-label="Delete tool"
 				>
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -108,14 +108,14 @@
 	</div>
 
 	<!-- Description -->
-	<p class="text-sm text-gray-600 mb-3 line-clamp-2">
+	<p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
 		{tool.description || 'No description available'}
 	</p>
 
 	<!-- Command -->
 	{#if tool.command}
 		<div class="mb-3">
-			<code class="text-xs bg-gray-100 px-2 py-1 rounded font-mono text-gray-700 break-all">
+			<code class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono text-gray-700 dark:text-gray-300 break-all">
 				{tool.command}
 			</code>
 		</div>
@@ -125,12 +125,12 @@
 	{#if tool.capabilities.length > 0}
 		<div class="flex flex-wrap gap-1">
 			{#each tool.capabilities.slice(0, 3) as capability}
-				<span class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+				<span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
 					{capability}
 				</span>
 			{/each}
 			{#if tool.capabilities.length > 3}
-				<span class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+				<span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
 					+{tool.capabilities.length - 3} more
 				</span>
 			{/if}

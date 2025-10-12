@@ -4,9 +4,11 @@
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import { EVENT_KINDS } from '$lib/constants';
-	import { NDKKind } from '@nostr-dev-kit/ndk';
+	import { NDKKind, NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKProject } from '$lib/events/NDKProject';
 	import AIReasoningBlock from './AIReasoningBlock.svelte';
 	import ToolCallContent from './ToolCallContent.svelte';
+	import SuggestionButtons from './SuggestionButtons.svelte';
 
 	interface Props {
 		message: Message;
@@ -23,6 +25,7 @@
 	const isToolCallEvent = $derived(
 		message.event.kind === NDKKind.GenericReply && message.event.hasTag('tool')
 	);
+	const hasSuggestions = $derived(message.event.tags?.some((tag) => tag[0] === 'suggestion'));
 
 	// Get author profile
 	const author = $derived.by(() => {
@@ -54,6 +57,46 @@
 			return message.event.content || '';
 		}
 	});
+
+	// Handle suggestion click - create kind:1111 reply
+	async function handleSuggestionClick(suggestion: string, _index: number) {
+		if (!currentUser) {
+			alert('Unable to send response. Please ensure you are logged in.');
+			return;
+		}
+
+		try {
+			// Create a kind:1111 (GenericReply) event with the selected suggestion as content
+			const replyEvent = new NDKEvent(ndk);
+			replyEvent.kind = NDKKind.GenericReply;
+			replyEvent.content = suggestion;
+
+			// Add necessary tags for the reply
+			replyEvent.tags = [
+				['e', message.event.id] // Reply to the event with suggestions
+			];
+
+			// Add p-tag for the author of the original event
+			replyEvent.tags.push(['p', message.event.pubkey]);
+
+			// If this is in a project context, add the project tag
+			const projectTag = message.event.tags.find(
+				(tag) => tag[0] === 'a' && tag[1]?.startsWith(NDKProject.kind.toString())
+			);
+			if (projectTag) {
+				replyEvent.tags.push(projectTag);
+			}
+
+			// Sign and publish the event
+			await replyEvent.sign();
+			await replyEvent.publish();
+
+			console.log('Suggestion response sent:', suggestion);
+		} catch (error) {
+			console.error('Failed to send suggestion response:', error);
+			alert('Failed to send response. Please try again.');
+		}
+	}
 </script>
 
 <div
@@ -99,6 +142,14 @@
 						<span class="inline-block w-1.5 h-4 ml-0.5 bg-blue-600 animate-pulse"></span>
 					{/if}
 				</div>
+
+				<!-- Render suggestion buttons if they exist -->
+				{#if hasSuggestions}
+					<SuggestionButtons
+						event={message.event}
+						onSuggestionClick={handleSuggestionClick}
+					/>
+				{/if}
 			{/if}
 		</div>
 	</div>

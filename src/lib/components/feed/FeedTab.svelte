@@ -15,6 +15,7 @@
 	let searchQuery = $state('');
 	let selectedAuthor = $state<string | null>(null);
 	let groupThreads = $state(false);
+	let visibleCount = $state(20); // Start with 20 events
 
 	const currentUser = $derived(ndk.$sessions.currentUser);
 
@@ -127,8 +128,24 @@
 		return filtered;
 	});
 
+	// Reset visible count when filters change
+	$effect(() => {
+		// When search query or author filter changes, reset to initial count
+		searchQuery;
+		selectedAuthor;
+		visibleCount = 20;
+	});
+
+	// Visible events (lazy loaded)
+	const visibleEvents = $derived(filteredEvents.slice(0, visibleCount));
+	const hasMore = $derived(filteredEvents.length > visibleCount);
+
 	// Handle empty states
 	const showNoResults = $derived(searchQuery && filteredEvents.length === 0);
+
+	function loadMore() {
+		visibleCount += 20;
+	}
 </script>
 
 <div class="h-full flex flex-col">
@@ -200,9 +217,24 @@
 		</div>
 	{:else}
 		<div class="flex-1 overflow-auto">
-			{#each filteredEvents as event (event.id)}
-				<EventItem {event} onclick={() => onEventClick?.(event)} />
-			{/each}
+			<div>
+				{#each visibleEvents as event (event.id)}
+					<EventItem {event} onclick={() => onEventClick?.(event)} />
+				{/each}
+			</div>
+
+			<!-- Load More Button -->
+			{#if hasMore}
+				<div class="p-4 flex justify-center border-t">
+					<button
+						type="button"
+						onclick={loadMore}
+						class="px-6 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+					>
+						Load More ({filteredEvents.length - visibleCount} remaining)
+					</button>
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>

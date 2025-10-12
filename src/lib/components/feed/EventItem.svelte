@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { MessageSquare, FileText, Hash, Bot, Phone } from 'lucide-svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { ndk } from '$lib/ndk.svelte';
 	import { formatRelativeTime } from '$lib/utils/time';
 
 	interface Props {
@@ -9,6 +10,35 @@
 	}
 
 	let { event, onclick }: Props = $props();
+
+	// Subscribe to author profile
+	const authorProfile = $derived(
+		ndk.$subscribe({ kinds: [0], authors: [event.pubkey] }, { wrap: true })
+	);
+
+	// Parse author profile metadata
+	const profile = $derived.by(() => {
+		if (!authorProfile?.events?.[0]) return null;
+		try {
+			return JSON.parse(authorProfile.events[0].content);
+		} catch {
+			return null;
+		}
+	});
+
+	// Get author display name (fallback to truncated pubkey)
+	const authorName = $derived(
+		profile?.name || profile?.displayName || profile?.display_name || event.pubkey.slice(0, 8) + '...' + event.pubkey.slice(-4)
+	);
+
+	// Get first letter for avatar (from name or pubkey)
+	const avatarLetter = $derived.by(() => {
+		if (profile?.name) return profile.name.charAt(0).toUpperCase();
+		if (profile?.displayName) return profile.displayName.charAt(0).toUpperCase();
+		if (profile?.display_name) return profile.display_name.charAt(0).toUpperCase();
+		// Fallback to first letter of pubkey
+		return event.pubkey.charAt(0).toUpperCase();
+	});
 
 	// Determine event type and rendering details based on actual kind
 	const eventDetails = $derived.by(() => {
@@ -67,9 +97,6 @@
 			.map((tag) => tag[1])
 			.slice(0, 3)
 	);
-
-	// Format author display name from pubkey
-	const authorName = $derived(event.pubkey.slice(0, 8) + '...' + event.pubkey.slice(-4));
 </script>
 
 <button
@@ -82,7 +109,7 @@
 		<div
 			class="w-9 h-9 shrink-0 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold"
 		>
-			{authorName.slice(0, 2).toUpperCase()}
+			{avatarLetter}
 		</div>
 
 		<!-- Content -->
