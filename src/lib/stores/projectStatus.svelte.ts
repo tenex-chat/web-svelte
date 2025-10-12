@@ -1,6 +1,9 @@
-import { browser } from '$app/environment';
-import { ndk } from '$lib/ndk.svelte';
-import { NDKProjectStatus, type ProjectAgent } from '$lib/events/NDKProjectStatus';
+import { browser } from "$app/environment";
+import { ndk } from "$lib/ndk.svelte";
+import {
+  NDKProjectStatus,
+  type ProjectAgent,
+} from "$lib/events/NDKProjectStatus";
 
 /**
  * Centralized store for project status (kind:24010)
@@ -8,187 +11,225 @@ import { NDKProjectStatus, type ProjectAgent } from '$lib/events/NDKProjectStatu
  */
 
 class ProjectStatusStore {
-	// Map of project ID -> latest status event
-	private statusMap = $state<Map<string, NDKProjectStatus>>(new Map());
-	private initialized = false;
+  // Map of project ID -> latest status event
+  private statusMap = $state<Map<string, NDKProjectStatus>>(new Map());
+  private initialized = false;
 
-	/**
-	 * Initialize the store - MUST be called from a component context
-	 * (e.g. in +layout.svelte)
-	 */
-	init() {
-		if (this.initialized || !browser) return;
-		this.initialized = true;
+  /**
+   * Initialize the store - MUST be called from a component context
+   * (e.g. in +layout.svelte)
+   */
+  init() {
+    if (this.initialized || !browser) return;
+    this.initialized = true;
 
-		// Subscribe to ALL kind:24010 events
-		const subscription = ndk.$subscribe(
-			() => ({
-				filters: [
-					{
-						kinds: [24010]
-						// No project filter - get all status events
-					}
-				],
-				closeOnEose: false,
-				eventClass: NDKProjectStatus
-			}),
-			{ bufferMs: 100 }
-		);
+    // Subscribe to kind:24010 events for current user
+    const subscription = ndk.$subscribe(
+      () => {
+        const currentUser = ndk.$sessions.currentUser;
+        if (!currentUser?.pubkey) {
+          return {
+            filters: [{ kinds: [24010], limit: 0 }],
+            closeOnEose: true,
+            eventClass: NDKProjectStatus,
+            wrap: true,
+          };
+        }
 
-		// Update map when events arrive
-		$effect(() => {
-			const events = subscription.events as NDKProjectStatus[];
+        return {
+          filters: [
+            {
+              kinds: [24010],
+              "#p": [currentUser.pubkey],
+            },
+          ],
+          eventClass: NDKProjectStatus,
+          subId: "project-status-store",
+          wrap: true,
+          closeOnEose: false,
+        };
+      },
+      { bufferMs: 100 },
+    );
 
-			// Group by project, keep only latest per project
-			const latestByProject = new Map<string, NDKProjectStatus>();
+    // Update map when events arrive
+    $effect(() => {
+      const events = subscription.events as NDKProjectStatus[];
 
-			for (const event of events) {
-				const projectId = event.projectId;
-				if (!projectId) continue;
+      // Group by project, keep only latest per project
+      const latestByProject = new Map<string, NDKProjectStatus>();
 
-				const existing = latestByProject.get(projectId);
-				if (!existing || (event.created_at || 0) > (existing.created_at || 0)) {
-					latestByProject.set(projectId, event);
-				}
-			}
+      for (const event of events) {
+        const projectId = event.projectId;
+        if (!projectId) continue;
 
-			this.statusMap = latestByProject;
-		});
-	}
+        // Extract dTag from projectId (format: kind:pubkey:dTag)
+        // The "a" tag is in format: kind:pubkey:dTag, we want just the dTag
+        let key = projectId;
+        if (projectId.includes(":")) {
+          const parts = projectId.split(":");
+          if (parts.length >= 3) {
+            key = parts[2]; // Use dTag as key
+          }
+        }
 
-	/**
-	 * Get status for a specific project
-	 */
-	getStatus(projectId: string): NDKProjectStatus | undefined {
-		return this.statusMap.get(projectId);
-	}
+        const existing = latestByProject.get(key);
+        if (!existing || (event.created_at || 0) > (existing.created_at || 0)) {
+          latestByProject.set(key, event);
+        }
+      }
 
-	/**
-	 * Check if a project is online (status < 5 minutes old)
-	 */
-	isProjectOnline(projectId: string): boolean {
-		const status = this.statusMap.get(projectId);
-		return status?.isOnline ?? false;
-	}
+      this.statusMap = latestByProject;
+    });
+  }
 
-	/**
-	 * Get all online agents for a project
-	 */
-	getOnlineAgents(projectId: string): ProjectAgent[] {
-		const status = this.statusMap.get(projectId);
-		if (!status || !status.isOnline) return [];
-		return status.agents;
-	}
+  /**
+   * Helper to extract dTag from projectId
+   */
+  private extractDTag(projectId: string): string {
+    if (projectId.includes(":")) {
+      const parts = projectId.split(":");
+      if (parts.length >= 3) {
+        return parts[2]; // Return dTag
+      }
+    }
+    return projectId;
+  }
 
-	/**
-	 * Get all available models for a project
-	 */
-	getModels(projectId: string): string[] {
-		const status = this.statusMap.get(projectId);
-		if (!status) return [];
-		return status.models.map((m) => m.name);
-	}
+  /**
+   * Get status for a specific project
+   */
+  getStatus(projectId: string): NDKProjectStatus | undefined {
+    const key = this.extractDTag(projectId);
+    return this.statusMap.get(key);
+  }
 
-	/**
-	 * Get all available tools for a project
-	 */
-	getTools(projectId: string): string[] {
-		const status = this.statusMap.get(projectId);
-		if (!status) return [];
+  /**
+   * Check if a project is online (status < 5 minutes old)
+   */
+  isProjectOnline(projectId: string): boolean {
+    const status = this.getStatus(projectId);
+    return status?.isOnline ?? false;
+  }
 
-		const tools = new Set<string>();
-		for (const tag of status.tags) {
-			if (tag[0] === 'tool' && tag[1]) {
-				tools.add(tag[1]);
-			}
-		}
-		return Array.from(tools);
-	}
+  /**
+   * Get all online agents for a project
+   */
+  getOnlineAgents(projectId: string): ProjectAgent[] {
+    const status = this.getStatus(projectId);
+    if (!status || !status.isOnline) return [];
+    return status.agents;
+  }
 
-	/**
-	 * Get specific agent by pubkey for a project
-	 */
-	getAgent(projectId: string, agentPubkey: string): ProjectAgent | undefined {
-		const agents = this.getOnlineAgents(projectId);
-		return agents.find((a) => a.pubkey === agentPubkey);
-	}
+  /**
+   * Get all available models for a project
+   */
+  getModels(projectId: string): string[] {
+    const status = this.getStatus(projectId);
+    if (!status) return [];
+    return status.models.map((m) => m.name);
+  }
 
-	/**
-	 * Get which model a specific agent is using
-	 */
-	getAgentModel(projectId: string, agentName: string): string | undefined {
-		const agents = this.getOnlineAgents(projectId);
-		const agent = agents.find((a) => a.name === agentName);
-		return agent?.model;
-	}
+  /**
+   * Get all available tools for a project
+   */
+  getTools(projectId: string): string[] {
+    const status = this.getStatus(projectId);
+    if (!status) return [];
 
-	/**
-	 * Get which tools a specific agent has
-	 */
-	getAgentTools(projectId: string, agentName: string): string[] {
-		const agents = this.getOnlineAgents(projectId);
-		const agent = agents.find((a) => a.name === agentName);
-		return agent?.tools || [];
-	}
+    const tools = new Set<string>();
+    for (const tag of status.tags) {
+      if (tag[0] === "tool" && tag[1]) {
+        tools.add(tag[1]);
+      }
+    }
+    return Array.from(tools);
+  }
 
-	/**
-	 * Get all online project IDs
-	 */
-	get onlineProjects(): string[] {
-		const online: string[] = [];
-		for (const [projectId, status] of this.statusMap) {
-			if (status.isOnline) {
-				online.push(projectId);
-			}
-		}
-		return online;
-	}
+  /**
+   * Get specific agent by pubkey for a project
+   */
+  getAgent(projectId: string, agentPubkey: string): ProjectAgent | undefined {
+    const agents = this.getOnlineAgents(projectId);
+    return agents.find((a) => a.pubkey === agentPubkey);
+  }
 
-	/**
-	 * Get count of online agents across all projects
-	 */
-	get totalOnlineAgents(): number {
-		let count = 0;
-		for (const [_, status] of this.statusMap) {
-			if (status.isOnline) {
-				count += status.agents.length;
-			}
-		}
-		return count;
-	}
+  /**
+   * Get which model a specific agent is using
+   */
+  getAgentModel(projectId: string, agentName: string): string | undefined {
+    const agents = this.getOnlineAgents(projectId);
+    const agent = agents.find((a) => a.name === agentName);
+    return agent?.model;
+  }
 
-	/**
-	 * Get all unique models across all projects
-	 */
-	get allModels(): string[] {
-		const models = new Set<string>();
-		for (const [_, status] of this.statusMap) {
-			status.models.forEach((m) => models.add(m.name));
-		}
-		return Array.from(models);
-	}
+  /**
+   * Get which tools a specific agent has
+   */
+  getAgentTools(projectId: string, agentName: string): string[] {
+    const agents = this.getOnlineAgents(projectId);
+    const agent = agents.find((a) => a.name === agentName);
+    return agent?.tools || [];
+  }
 
-	/**
-	 * Get all unique tools across all projects
-	 */
-	get allTools(): string[] {
-		const tools = new Set<string>();
-		for (const [_, status] of this.statusMap) {
-			for (const tag of status.tags) {
-				if (tag[0] === 'tool' && tag[1]) {
-					tools.add(tag[1]);
-				}
-			}
-		}
-		return Array.from(tools);
-	}
+  /**
+   * Get all online project IDs
+   */
+  get onlineProjects(): string[] {
+    const online: string[] = [];
+    for (const [projectId, status] of this.statusMap) {
+      if (status.isOnline) {
+        online.push(projectId);
+      }
+    }
+    return online;
+  }
 
-	/**
-	 * Get the full status map (for debugging or advanced use)
-	 */
-	get allStatus(): Map<string, NDKProjectStatus> {
-		return this.statusMap;
-	}
+  /**
+   * Get count of online agents across all projects
+   */
+  get totalOnlineAgents(): number {
+    let count = 0;
+    for (const [_, status] of this.statusMap) {
+      if (status.isOnline) {
+        count += status.agents.length;
+      }
+    }
+    return count;
+  }
+
+  /**
+   * Get all unique models across all projects
+   */
+  get allModels(): string[] {
+    const models = new Set<string>();
+    for (const [_, status] of this.statusMap) {
+      status.models.forEach((m) => models.add(m.name));
+    }
+    return Array.from(models);
+  }
+
+  /**
+   * Get all unique tools across all projects
+   */
+  get allTools(): string[] {
+    const tools = new Set<string>();
+    for (const [_, status] of this.statusMap) {
+      for (const tag of status.tags) {
+        if (tag[0] === "tool" && tag[1]) {
+          tools.add(tag[1]);
+        }
+      }
+    }
+    return Array.from(tools);
+  }
+
+  /**
+   * Get the full status map (for debugging or advanced use)
+   */
+  get allStatus(): Map<string, NDKProjectStatus> {
+    return this.statusMap;
+  }
 }
 
 // Export singleton instance

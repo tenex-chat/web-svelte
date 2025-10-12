@@ -13,6 +13,9 @@
 		"copy-wasm": "node scripts/copy-wasm.js"
 	},
 	"dependencies": {
+		"@ai-sdk/anthropic": "^2.0.27",
+		"@ai-sdk/google": "^2.0.20",
+		"@ai-sdk/openai": "^2.0.50",
 		"@nostr-dev-kit/blossom": "latest",
 		"@nostr-dev-kit/cache-sqlite-wasm": "latest",
 		"@nostr-dev-kit/ndk": "latest",
@@ -20,9 +23,11 @@
 		"@nostr-dev-kit/svelte": "latest",
 		"@nostr-dev-kit/sync": "latest",
 		"@nostr-dev-kit/wallet": "latest",
+		"@openrouter/ai-sdk-provider": "^1.2.0",
+		"ai": "^5.0.68",
 		"clsx": "^2.1.1",
 		"dompurify": "^3.2.7",
-		"marked": "^16.3.0",
+		"marked": "^16.4.0",
 		"nostr-tools": "^2.17.0",
 		"tailwind-merge": "^3.3.1"
 	},

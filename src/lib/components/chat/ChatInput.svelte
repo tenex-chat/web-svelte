@@ -3,6 +3,7 @@
 	import { NDKThread, NDKKind, type NDKEvent } from '@nostr-dev-kit/ndk';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
+	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 
 	interface Props {
 		project?: NDKProject;
@@ -14,11 +15,25 @@
 	let { project, rootEvent, onlineAgents = [], onThreadCreated }: Props = $props();
 
 	const currentUser = $derived(ndk.$sessions.currentUser);
+	const projectId = $derived(project?.tagId());
+	const availableModels = $derived(projectId ? projectStatusStore.getModels(projectId) : []);
 
 	let messageInput = $state('');
 	let selectedAgent = $state<string | null>(null);
 	let isSubmitting = $state(false);
 	let textareaElement: HTMLTextAreaElement | null = $state(null);
+
+	// Derive the current agent (selected or default to first agent)
+	const currentAgent = $derived(selectedAgent || (onlineAgents.length > 0 ? onlineAgents[0].pubkey : null));
+
+	// Automatically sync model with the selected/current agent from project status
+	const currentAgentModel = $derived.by(() => {
+		if (!currentAgent || !projectId) return null;
+		const status = projectStatusStore.getStatus(projectId);
+		if (!status) return null;
+		const agent = status.agents.find((a) => a.pubkey === currentAgent);
+		return agent?.model || null;
+	});
 
 	// @mention autocomplete state
 	let showMentionAutocomplete = $state(false);
@@ -99,9 +114,9 @@
 	async function handleSend() {
 		if (!ndk || !currentUser || !messageInput.trim() || isSubmitting) return;
 
+		const content = messageInput.trim();
 		isSubmitting = true;
 		try {
-			const content = messageInput.trim();
 			messageInput = ''; // Clear immediately for better UX
 
 			if (!rootEvent) {
@@ -222,27 +237,9 @@
 	}
 </script>
 
-<div class="border-t border-gray-200 p-3 bg-white">
-	<!-- Agent Selector -->
-	{#if onlineAgents.length > 0}
-		<div class="mb-2 flex items-center gap-2">
-			<span class="text-xs text-gray-500">To:</span>
-			<select
-				bind:value={selectedAgent}
-				class="text-sm px-2 py-1 border border-gray-300 rounded bg-white"
-			>
-				<option value={null}>Project Manager (default)</option>
-				{#each onlineAgents as agent}
-					<option value={agent.pubkey}>
-						{agent.name}{agent.model ? ` (${agent.model})` : ''}
-					</option>
-				{/each}
-			</select>
-		</div>
-	{/if}
-
+<div class="border-t border-gray-200 p-4 bg-white">
 	<!-- Input Area -->
-	<div class="flex gap-2 relative">
+	<div class="flex flex-col gap-3">
 		<div class="flex-1 relative">
 			<textarea
 				bind:this={textareaElement}
@@ -285,42 +282,129 @@
 			{/if}
 		</div>
 
-		<button
-			onclick={handleSend}
-			disabled={isSubmitting || !messageInput.trim() || !currentUser}
-			class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium self-end"
-			aria-label="Send message"
-		>
-			{#if isSubmitting}
-				<svg
-					class="w-5 h-5 animate-spin"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-					/>
-				</svg>
-			{:else}
+		<!-- Controls Row: Agent Selector, Model Selector, Attachment -->
+		<div class="flex items-center gap-2">
+			<!-- Agent Selector -->
+			{#if onlineAgents.length > 0}
+				{@const selectedAgentData = onlineAgents.find((a) => a.pubkey === selectedAgent)}
+				{@const displayAgent = selectedAgentData || onlineAgents[0]}
+				<div class="relative">
+					<button
+						class="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+						onclick={() => {
+							const select = document.getElementById('agent-select') as HTMLSelectElement;
+							select?.click();
+						}}
+						type="button"
+					>
+						<!-- Avatar -->
+						<div
+							class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold"
+						>
+							{displayAgent.name.charAt(0).toUpperCase()}
+						</div>
+						<span class="font-medium">{displayAgent.name}</span>
+						<svg
+							class="w-4 h-4 text-gray-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M19 9l-7 7-7-7"
+							/>
+						</svg>
+					</button>
+					<select
+						id="agent-select"
+						bind:value={selectedAgent}
+						class="absolute inset-0 opacity-0 cursor-pointer"
+					>
+						<option value={null}>Project Manager (default)</option>
+						{#each onlineAgents as agent}
+							<option value={agent.pubkey}>
+								{agent.name}
+							</option>
+						{/each}
+					</select>
+				</div>
+			{/if}
+
+			<!-- Model Selector -->
+			{#if availableModels.length > 0}
+				{@const displayModel = selectedModel || availableModels[0]}
+				<div class="relative">
+					<button
+						class="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+						onclick={() => {
+							const select = document.getElementById('model-select') as HTMLSelectElement;
+							select?.click();
+						}}
+						type="button"
+					>
+						<!-- Model Icon -->
+						<svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+							/>
+						</svg>
+						<span class="font-medium">{displayModel}</span>
+						<svg
+							class="w-4 h-4 text-gray-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M19 9l-7 7-7-7"
+							/>
+						</svg>
+					</button>
+					<select
+						id="model-select"
+						bind:value={selectedModel}
+						class="absolute inset-0 opacity-0 cursor-pointer"
+					>
+						{#each availableModels as model}
+							<option value={model}>
+								{model}
+							</option>
+						{/each}
+					</select>
+				</div>
+			{/if}
+
+			<!-- Attachment Button -->
+			<button
+				class="p-2 rounded-lg hover:bg-gray-50 transition-colors text-gray-600"
+				type="button"
+				title="Attach file"
+				aria-label="Attach file"
+			>
 				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
 						stroke-width="2"
-						d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+						d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
 					/>
 				</svg>
-			{/if}
-		</button>
+			</button>
+		</div>
 	</div>
 
 	<!-- Mentioned Agents Indicator -->
 	{#if mentionedAgents.length > 0}
-		<div class="mt-2 flex items-center gap-2 flex-wrap">
+		<div class="mt-3 flex items-center gap-2 flex-wrap">
 			<span class="text-xs text-gray-500">Mentioning:</span>
 			{#each mentionedAgents as pubkey (pubkey)}
 				{@const agent = onlineAgents.find((a) => a.pubkey === pubkey)}
@@ -351,8 +435,4 @@
 			{/each}
 		</div>
 	{/if}
-
-	<p class="text-xs text-gray-500 mt-2">
-		Press Enter to send, Shift+Enter for new line. Type @ to mention agents.
-	</p>
 </div>

@@ -78,11 +78,11 @@
 
 	$effect(() => {
 		if (isDragging || isResizing) {
-			window.addEventListener('mousemove', handleMouseMove);
-			window.addEventListener('mouseup', handleMouseUp);
+			globalThis.addEventListener('mousemove', handleMouseMove);
+			globalThis.addEventListener('mouseup', handleMouseUp);
 			return () => {
-				window.removeEventListener('mousemove', handleMouseMove);
-				window.removeEventListener('mouseup', handleMouseUp);
+				globalThis.removeEventListener('mousemove', handleMouseMove);
+				globalThis.removeEventListener('mouseup', handleMouseUp);
 			};
 		}
 	});
@@ -163,7 +163,7 @@
 				rootEvent={window.data?.thread}
 				{onlineAgents}
 			/>
-		{:else if window.type === 'settings'}
+		{:else if window.type === 'settings' && window.project}
 			<SettingsTab project={window.project} {onlineAgents} />
 		{:else if window.type === 'agent'}
 			<div class="p-4">

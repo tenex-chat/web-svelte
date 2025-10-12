@@ -21,7 +21,7 @@
 </script>
 
 <div
-	class={cn('relative inline-block', className)}
+	class={cn('relative block', className)}
 	onmouseenter={() => (showTooltip = true)}
 	onmouseleave={() => (showTooltip = false)}
 >
