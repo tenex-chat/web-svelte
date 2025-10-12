@@ -52,7 +52,7 @@
 </script>
 
 <div
-	class="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer"
+	class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
 	onclick={handleCardClick}
 	role="button"
 	tabindex="0"
@@ -63,11 +63,11 @@
 		<div class="flex items-center gap-2 flex-1 min-w-0">
 			<span class="text-2xl flex-shrink-0">{getToolIcon(tool.command)}</span>
 			<div class="min-w-0 flex-1">
-				<h3 class="font-semibold text-gray-900 truncate">
+				<h3 class="font-semibold text-gray-900 dark:text-gray-100 truncate">
 					{tool.name || 'Unnamed Tool'}
 				</h3>
 				{#if isOwner}
-					<span class="text-xs text-blue-600 font-medium">You</span>
+					<span class="text-xs text-blue-600 dark:text-blue-400 font-medium">You</span>
 				{/if}
 			</div>
 		</div>
