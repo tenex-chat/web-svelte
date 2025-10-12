@@ -71,8 +71,8 @@
 		</div>
 	{:else}
 		<div class="flex flex-col">
-			{#each displayMessages as message (message.id)}
-				<Message {message} />
+			{#each displayMessages as message, index (message.id)}
+				<Message {message} isLastMessage={index === displayMessages.length - 1} />
 			{/each}
 		</div>
 	{/if}

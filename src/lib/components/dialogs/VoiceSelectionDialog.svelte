@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { TTSProvider } from '$lib/stores/aiConfig.svelte';
+	import { aiConfigStore } from '$lib/stores/aiConfig.svelte';
 	import { cn } from '$lib/utils/cn';
+	import { fetchVoices, previewVoice, type VoiceInfo } from '$lib/services/voice-discovery';
 
 	interface Props {
 		open?: boolean;
@@ -22,25 +24,64 @@
 		onMultiSelect
 	}: Props = $props();
 
-	// Pre-defined voices
-	const openAIVoices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
-
-	const elevenLabsVoices = [
-		'Rachel',
-		'Domi',
-		'Bella',
-		'Antoni',
-		'Elli',
-		'Josh',
-		'Arnold',
-		'Adam',
-		'Sam'
-	];
-
 	let selectedVoices = $state<string[]>(currentVoiceIds || []);
 	let customVoiceId = $state('');
+	let availableVoices = $state<VoiceInfo[]>([]);
+	let fetchingVoices = $state(false);
+	let fetchError = $state('');
+	let previewingVoiceId = $state<string | null>(null);
 
-	const availableVoices = $derived(provider === 'openai' ? openAIVoices : elevenLabsVoices);
+	// Fetch voices when dialog opens or provider changes
+	$effect(() => {
+		if (open) {
+			handleFetchVoices();
+		}
+	});
+
+	async function handleFetchVoices() {
+		fetchingVoices = true;
+		fetchError = '';
+
+		try {
+			const apiKey =
+				provider === 'openai'
+					? aiConfigStore.config.openAIApiKey
+					: aiConfigStore.config.voiceSettings.apiKey;
+
+			if (!apiKey && provider === 'elevenlabs') {
+				fetchError = 'Please set your ElevenLabs API key in settings first';
+				availableVoices = [];
+				return;
+			}
+
+			const voices = await fetchVoices(provider, apiKey);
+			availableVoices = voices;
+		} catch (error) {
+			console.error('Failed to fetch voices:', error);
+			fetchError = error instanceof Error ? error.message : 'Failed to fetch voices';
+			availableVoices = [];
+		} finally {
+			fetchingVoices = false;
+		}
+	}
+
+	async function handlePreviewVoice(voiceId: string) {
+		previewingVoiceId = voiceId;
+
+		try {
+			const apiKey =
+				provider === 'openai'
+					? aiConfigStore.config.openAIApiKey
+					: aiConfigStore.config.voiceSettings.apiKey;
+
+			await previewVoice(provider, voiceId, apiKey);
+		} catch (error) {
+			console.error('Failed to preview voice:', error);
+			alert(`Failed to preview voice: ${error instanceof Error ? error.message : 'Unknown error'}`);
+		} finally {
+			previewingVoiceId = null;
+		}
+	}
 
 	function handleClose() {
 		open = false;
@@ -49,7 +90,12 @@
 		customVoiceId = '';
 	}
 
-	function toggleVoice(voiceId: string) {
+	function toggleVoice(voiceId: string, event?: Event) {
+		// Prevent toggle when clicking preview button
+		if (event && (event.target as HTMLElement).closest('.preview-button')) {
+			return;
+		}
+
 		if (multiSelect) {
 			if (selectedVoices.includes(voiceId)) {
 				selectedVoices = selectedVoices.filter((v) => v !== voiceId);
@@ -140,26 +186,68 @@
 
 			<!-- Voice Grid -->
 			<div class="space-y-4 max-h-96 overflow-y-auto">
-				<div>
-					<h3 class="text-sm font-medium text-gray-700 mb-2">
-						{provider === 'openai' ? 'OpenAI Voices' : 'ElevenLabs Voices'}
-					</h3>
-					<div class="grid grid-cols-2 gap-2">
-						{#each availableVoices as voice (voice)}
-							<button
-								onclick={() => toggleVoice(voice)}
-								class={cn(
-									'px-4 py-2 border rounded-md text-sm transition-colors',
-									selectedVoices.includes(voice)
-										? 'bg-blue-50 border-blue-500 text-blue-700'
-										: 'border-gray-300 hover:bg-gray-50'
-								)}
-							>
-								{voice}
-							</button>
-						{/each}
+				{#if fetchingVoices}
+					<div class="flex items-center justify-center py-8">
+						<div class="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+						<span class="ml-2 text-gray-600">Loading voices...</span>
 					</div>
-				</div>
+				{:else if fetchError}
+					<div class="p-4 bg-red-50 border border-red-200 rounded-md">
+						<p class="text-sm text-red-800">{fetchError}</p>
+					</div>
+				{:else if availableVoices.length > 0}
+					<div>
+						<h3 class="text-sm font-medium text-gray-700 mb-2">
+							{provider === 'openai' ? 'OpenAI Voices' : 'ElevenLabs Voices'}
+						</h3>
+						<div class="grid grid-cols-1 gap-2">
+							{#each availableVoices as voice (voice.id)}
+								<button
+									onclick={(e) => toggleVoice(voice.id, e)}
+									class={cn(
+										'px-4 py-3 border rounded-md text-left transition-colors relative',
+										selectedVoices.includes(voice.id)
+											? 'bg-blue-50 border-blue-500'
+											: 'border-gray-300 hover:bg-gray-50'
+									)}
+								>
+									<div class="flex items-center justify-between">
+										<div class="flex-1">
+											<div class="font-medium text-sm">{voice.name}</div>
+											{#if voice.description}
+												<div class="text-xs text-gray-500 mt-1">{voice.description}</div>
+											{/if}
+											{#if voice.labels}
+												<div class="flex flex-wrap gap-1 mt-1">
+													{#each Object.entries(voice.labels) as [key, value]}
+														<span class="text-xs px-1.5 py-0.5 bg-gray-100 rounded">
+															{value}
+														</span>
+													{/each}
+												</div>
+											{/if}
+										</div>
+										<button
+											type="button"
+											onclick={(e) => {
+												e.stopPropagation();
+												handlePreviewVoice(voice.id);
+											}}
+											disabled={previewingVoiceId === voice.id}
+											class="preview-button ml-2 px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
+										>
+											{previewingVoiceId === voice.id ? '🔊 Playing...' : '🔊 Preview'}
+										</button>
+									</div>
+								</button>
+							{/each}
+						</div>
+					</div>
+				{:else}
+					<div class="text-center py-8 text-gray-500">
+						<p>No voices available</p>
+					</div>
+				{/if}
 
 				<!-- Selected Voices (for multi-select) -->
 				{#if multiSelect && selectedVoices.length > 0}

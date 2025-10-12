@@ -161,9 +161,15 @@
 				Hashtags (TODO)
 			</div>
 		{:else if activeTab === 'feed'}
-			<div class="h-full flex items-center justify-center text-gray-500 text-sm">
-				Feed (TODO)
-			</div>
+			{#await import('./feed/FeedTab.svelte') then { default: FeedTab }}
+				<FeedTab
+					{project}
+					onEventClick={(event) => {
+						// TODO: Handle event click - open event in drawer/window
+						console.log('Event clicked:', event);
+					}}
+				/>
+			{/await}
 		{:else if activeTab === 'settings'}
 			<div class="h-full flex flex-col items-center justify-center gap-3 text-center p-4">
 				<span class="text-4xl">⚙️</span>

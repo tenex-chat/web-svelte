@@ -53,10 +53,40 @@ Created the following route structure:
   - Apply or reject AI suggestions
   - Integrates with aiConfigStore for LLM configurations
 
-### 4. Utilities
+- ✅ **AddProviderDialog.svelte** (Enhanced) - LLM provider configuration dialog
+  - Manual model entry
+  - **NEW: Fetch Available Models button** - Automatically discovers models from provider APIs
+  - Smart dropdown with context length information
+  - Support for OpenAI, Anthropic, Google, OpenRouter, and custom providers
+  - Error handling and loading states
+
+- ✅ **VoiceSelectionDialog.svelte** (Enhanced) - Voice selection dialog
+  - Automatic voice fetching from provider APIs
+  - **NEW: Voice preview buttons** - Play sample audio for each voice
+  - Single and multi-select modes
+  - Voice metadata display (descriptions, labels)
+  - Custom voice ID support for ElevenLabs
+  - Loading states and error handling
+
+### 4. Services
+**Location:** `src/lib/services/`
+
+- ✅ **model-discovery.ts** - Model discovery service
+  - Fetches available models from OpenAI and OpenRouter APIs
+  - Returns curated lists for Anthropic and Google
+  - 24-hour caching to reduce API calls
+  - Error handling for failed requests
+
+- ✅ **voice-discovery.ts** - Voice discovery and preview service
+  - Fetches voices from OpenAI (hardcoded) and ElevenLabs (API)
+  - Generates and plays preview audio samples
+  - Supports both OpenAI TTS and ElevenLabs TTS
+  - Audio playback with automatic cleanup
+
+### 5. Utilities
 - ✅ **agent-colors.ts** - Deterministic color generation for agent avatars
 
-### 5. Pages
+### 6. Pages
 
 #### Agent Definitions List Page (`/agents`)
 **Features:**
@@ -105,7 +135,7 @@ Created the following route structure:
 
 ## Key Features
 
-### AI-Assisted Prompt Editing (NEW!)
+### AI-Assisted Prompt Editing
 - **AI Edit Button:** Located in the System Prompt step of the Create Agent wizard
 - **Natural Language Instructions:** Describe how you want to modify the prompt in plain English
 - **Multi-Provider Support:** Works with OpenAI, Anthropic, Google, and OpenRouter
@@ -115,6 +145,30 @@ Created the following route structure:
   - "Add instructions for the agent to cite sources"
   - "Make it friendlier and more conversational"
   - "Add specific expertise in Python and machine learning"
+
+### Model Discovery & Browsing
+- **Fetch Available Models:** Button in Add Provider dialog fetches models from API
+- **Supported Providers:**
+  - **OpenAI:** Fetches via `/v1/models` endpoint
+  - **OpenRouter:** Fetches via `/api/v1/models` endpoint with model metadata
+  - **Anthropic:** Shows curated list (Claude 3.5 Sonnet, Haiku, Opus, etc.)
+  - **Google:** Shows curated list (Gemini 2.0 Flash, 1.5 Pro/Flash, etc.)
+  - **Custom:** Attempts OpenAI-compatible endpoint
+- **Smart Dropdown:** Populates dropdown with fetched models showing context length
+- **Fallback Manual Entry:** Can still type model name manually
+- **24-Hour Caching:** Reduces API calls for model lists
+
+### Voice Discovery & Preview
+- **Automatic Voice Fetching:** Loads voices when voice selection dialog opens
+- **OpenAI Voices:** Shows 6 built-in voices (Alloy, Echo, Fable, Onyx, Nova, Shimmer) with descriptions
+- **ElevenLabs Integration:**
+  - Fetches user's voices via API
+  - Shows voice metadata and labels
+  - Supports custom voice IDs
+- **Voice Preview:** Play button generates and plays sample audio for each voice
+- **Multi-Select Support:** Select multiple voices for deterministic agent assignment
+- **Real-time Preview:** Uses actual TTS APIs to generate preview audio
+- **Loading States:** Shows loading spinner while fetching voices
 
 ### Reactive Data Flow
 - Uses NDK Svelte's `$subscribe()` for automatic reactivity
@@ -159,6 +213,12 @@ All components follow the patterns outlined in MIGRATION_PLAN.md:
 - Search and filtering
 - Agent deduplication logic
 
+**Enhanced:**
+- Model browsing now fetches from actual APIs (OpenAI, OpenRouter)
+- Voice selection now fetches and displays real voices from providers
+- Voice preview uses actual TTS APIs to generate sample audio
+- Better error handling and loading states throughout
+
 ## Dependencies Added
 - `marked` - For markdown rendering
 - `ai` - Vercel AI SDK core
@@ -169,13 +229,34 @@ All components follow the patterns outlined in MIGRATION_PLAN.md:
 
 ## Testing
 
-The development server starts successfully at `http://localhost:5174/` without errors.
+The development server starts successfully without errors.
 
-To test:
+**Agent CRUD Testing:**
 1. Navigate to `/agents` to see the agent list
 2. Click "Create Agent" to test the creation wizard
-3. Click on an agent card to view details
-4. Test forking and cloning from the detail page
+3. In Step 2, test the "AI Edit" button for prompt improvement
+4. Click on an agent card to view details
+5. Test forking and cloning from the detail page
+
+**Model Discovery Testing:**
+1. Navigate to Settings → AI Settings
+2. Click "Add New Configuration"
+3. Select a provider (OpenAI or OpenRouter)
+4. Enter your API key
+5. Click "Fetch Available Models" to see the model list
+6. Select a model from the dropdown or enter manually
+7. Save the configuration
+
+**Voice Discovery & Preview Testing:**
+1. Navigate to Settings → AI Settings → Voice Settings
+2. Enable Text-to-Speech
+3. Select a provider (OpenAI or ElevenLabs)
+4. Enter API key (if required)
+5. Click "Select Voice" to open the voice selection dialog
+6. Wait for voices to load automatically
+7. Click the "Preview" button on any voice to hear a sample
+8. Select a voice and confirm
+9. Test the "Preview" button in the main settings to hear your selected voice
 
 ## Next Steps
 

@@ -4,17 +4,25 @@
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import { EVENT_KINDS } from '$lib/constants';
+	import { NDKKind } from '@nostr-dev-kit/ndk';
+	import AIReasoningBlock from './AIReasoningBlock.svelte';
+	import ToolCallContent from './ToolCallContent.svelte';
 
 	interface Props {
 		message: Message;
+		isLastMessage?: boolean;
 	}
 
-	let { message }: Props = $props();
+	let { message, isLastMessage = false }: Props = $props();
 
 	const currentUser = $derived(ndk.$sessions.currentUser);
 	const isCurrentUser = $derived(message.event.pubkey === currentUser?.pubkey);
 	const isStreaming = $derived(message.event.kind === EVENT_KINDS.STREAMING_RESPONSE);
 	const isTyping = $derived(message.event.kind === EVENT_KINDS.TYPING_INDICATOR);
+	const isReasoningEvent = $derived(message.event.hasTag('reasoning'));
+	const isToolCallEvent = $derived(
+		message.event.kind === NDKKind.GenericReply && message.event.hasTag('tool')
+	);
 
 	// Get author profile
 	const author = $derived.by(() => {
@@ -75,9 +83,23 @@
 				{/if}
 			</div>
 
-			<div class="prose prose-sm max-w-none">
-				{@html renderedContent}
-			</div>
+			<!-- Render content based on type -->
+			{#if isToolCallEvent}
+				<ToolCallContent event={message.event} />
+			{:else if isReasoningEvent}
+				<AIReasoningBlock
+					reasoningEvent={message.event}
+					{isStreaming}
+					{isLastMessage}
+				/>
+			{:else}
+				<div class="prose prose-sm max-w-none">
+					{@html renderedContent}
+					{#if isStreaming}
+						<span class="inline-block w-1.5 h-4 ml-0.5 bg-blue-600 animate-pulse"></span>
+					{/if}
+				</div>
+			{/if}
 		</div>
 	</div>
 </div>

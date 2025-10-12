@@ -219,6 +219,16 @@ export class NDKProject extends NDKEvent {
 	}
 
 	/**
+	 * Create a filter for events related to this project
+	 * Returns a filter object that can be used with subscriptions
+	 */
+	filter(): Record<string, unknown> {
+		const projectRef = this.tagId();
+		if (!projectRef) return {};
+		return { '#a': [projectRef] };
+	}
+
+	/**
 	 * Create an NDKProject from an existing event
 	 */
 	static from(event: NDKEvent): NDKProject {

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { aiConfigStore, type LLMConfig, type TTSProvider, type STTProvider } from '$lib/stores/aiConfig.svelte';
 	import { cn } from '$lib/utils/cn';
+	import { previewVoice } from '$lib/services/voice-discovery';
 	import AddProviderDialog from '../dialogs/AddProviderDialog.svelte';
 	import VoiceSelectionDialog from '../dialogs/VoiceSelectionDialog.svelte';
 
@@ -32,7 +33,7 @@
 		}
 	}
 
-	function handlePreviewVoice() {
+	async function handlePreviewVoice() {
 		if (!voiceSettings.voiceIds || voiceSettings.voiceIds.length === 0) {
 			alert('No voice selected');
 			return;
@@ -48,11 +49,14 @@
 
 		previewingVoice = true;
 
-		// Simulate preview (in production, you'd call the actual TTS API)
-		setTimeout(() => {
-			alert(`Preview voice: ${voiceSettings.voiceIds[0]}`);
+		try {
+			await previewVoice(voiceSettings.provider, voiceSettings.voiceIds[0], apiKey);
+		} catch (error) {
+			console.error('Failed to preview voice:', error);
+			alert(`Failed to preview voice: ${error instanceof Error ? error.message : 'Unknown error'}`);
+		} finally {
 			previewingVoice = false;
-		}, 1000);
+		}
 	}
 </script>
 

@@ -12,6 +12,7 @@
 	import CreateProjectDialog from './dialogs/CreateProjectDialog.svelte';
 	import GlobalSearchDialog from './dialogs/GlobalSearchDialog.svelte';
 	import InboxPopover from './inbox/InboxPopover.svelte';
+	import ProjectStatusDebug from './debug/ProjectStatusDebug.svelte';
 
 	interface Props {
 		projects: NDKProject[];
@@ -23,6 +24,7 @@
 	let createDialogOpen = $state(false);
 	let searchDialogOpen = $state(false);
 	let inboxPopoverOpen = $state(false);
+	let debugDialogOpen = $state(false);
 	let userMenuOpen = $state(false);
 	let longPressTimer: NodeJS.Timeout | null = null;
 	let longPressProjectId: string | null = null;

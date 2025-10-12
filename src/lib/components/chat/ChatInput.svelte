@@ -333,53 +333,19 @@
 				</div>
 			{/if}
 
-			<!-- Model Selector -->
-			{#if availableModels.length > 0}
-				{@const displayModel = selectedModel || availableModels[0]}
-				<div class="relative">
-					<button
-						class="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-						onclick={() => {
-							const select = document.getElementById('model-select') as HTMLSelectElement;
-							select?.click();
-						}}
-						type="button"
-					>
-						<!-- Model Icon -->
-						<svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
-							/>
-						</svg>
-						<span class="font-medium">{displayModel}</span>
-						<svg
-							class="w-4 h-4 text-gray-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M19 9l-7 7-7-7"
-							/>
-						</svg>
-					</button>
-					<select
-						id="model-select"
-						bind:value={selectedModel}
-						class="absolute inset-0 opacity-0 cursor-pointer"
-					>
-						{#each availableModels as model}
-							<option value={model}>
-								{model}
-							</option>
-						{/each}
-					</select>
+			<!-- Model Display (Synced with Agent) -->
+			{#if currentAgentModel}
+				<div class="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm">
+					<!-- Model Icon -->
+					<svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+						/>
+					</svg>
+					<span class="font-medium">{currentAgentModel}</span>
 				</div>
 			{/if}
 

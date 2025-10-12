@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { aiConfigStore, type LLMConfig, type AIProvider } from '$lib/stores/aiConfig.svelte';
 	import { cn } from '$lib/utils/cn';
+	import { fetchModels, type ModelInfo } from '$lib/services/model-discovery';
 
 	interface Props {
 		open?: boolean;
@@ -15,11 +16,15 @@
 	let apiKey = $state('');
 	let baseUrl = $state('');
 	let saving = $state(false);
+	let fetchingModels = $state(false);
+	let availableModels = $state<ModelInfo[]>([]);
+	let fetchError = $state('');
 
 	const providerOptions = [
-		{ value: 'openai', label: 'OpenAI', defaultModel: 'gpt-4' },
+		{ value: 'openai', label: 'OpenAI', defaultModel: 'gpt-4o-mini' },
 		{ value: 'anthropic', label: 'Anthropic', defaultModel: 'claude-3-5-sonnet-20241022' },
-		{ value: 'google', label: 'Google', defaultModel: 'gemini-pro' },
+		{ value: 'google', label: 'Google', defaultModel: 'gemini-1.5-flash' },
+		{ value: 'openrouter', label: 'OpenRouter', defaultModel: 'openai/gpt-4o-mini' },
 		{ value: 'custom', label: 'Custom', defaultModel: '' }
 	];
 
@@ -31,6 +36,8 @@
 		model = '';
 		apiKey = '';
 		baseUrl = '';
+		availableModels = [];
+		fetchError = '';
 	}
 
 	function handleProviderChange(newProvider: AIProvider) {
@@ -38,6 +45,35 @@
 		const option = providerOptions.find((p) => p.value === newProvider);
 		if (option) {
 			model = option.defaultModel;
+		}
+		// Clear fetched models when provider changes
+		availableModels = [];
+		fetchError = '';
+	}
+
+	async function handleFetchModels() {
+		if (!apiKey.trim()) {
+			fetchError = 'Please enter an API key first';
+			return;
+		}
+
+		fetchingModels = true;
+		fetchError = '';
+
+		try {
+			const models = await fetchModels(provider, apiKey, baseUrl || undefined);
+			availableModels = models;
+
+			// Set first model as default if current model is empty
+			if (!model && models.length > 0) {
+				model = models[0].id;
+			}
+		} catch (error) {
+			console.error('Failed to fetch models:', error);
+			fetchError = error instanceof Error ? error.message : 'Failed to fetch models';
+			availableModels = [];
+		} finally {
+			fetchingModels = false;
 		}
 	}
 
@@ -147,25 +183,72 @@
 				</div>
 
 				<div>
-					<label for="model" class="block text-sm font-medium text-gray-700 mb-1"> Model </label>
-					<input
-						id="model"
-						type="text"
-						bind:value={model}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-						placeholder="gpt-4"
-					/>
-					<p class="text-xs text-gray-500 mt-1">
-						{#if provider === 'openai'}
-							Examples: gpt-4, gpt-4-turbo, gpt-3.5-turbo
-						{:else if provider === 'anthropic'}
-							Examples: claude-3-5-sonnet-20241022, claude-3-opus-20240229
-						{:else if provider === 'google'}
-							Examples: gemini-pro, gemini-1.5-pro
-						{:else}
-							Enter your custom model identifier
-						{/if}
-					</p>
+					<div class="flex items-center justify-between mb-1">
+						<label for="model" class="block text-sm font-medium text-gray-700"> Model </label>
+						<button
+							type="button"
+							onclick={handleFetchModels}
+							disabled={!apiKey.trim() || fetchingModels}
+							class={cn(
+								'text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-50 transition-colors',
+								(!apiKey.trim() || fetchingModels) && 'opacity-50 cursor-not-allowed'
+							)}
+						>
+							{fetchingModels ? '🔄 Fetching...' : '🔍 Fetch Available Models'}
+						</button>
+					</div>
+
+					{#if availableModels.length > 0}
+						<select
+							id="model"
+							bind:value={model}
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						>
+							<option value="">Select a model</option>
+							{#each availableModels as modelInfo (modelInfo.id)}
+								<option value={modelInfo.id}>
+									{modelInfo.name || modelInfo.id}
+									{#if modelInfo.contextLength}
+										({(modelInfo.contextLength / 1000).toFixed(0)}k context)
+									{/if}
+								</option>
+							{/each}
+						</select>
+						<p class="text-xs text-gray-500 mt-1">
+							Found {availableModels.length} models. You can also enter a model name manually below.
+						</p>
+						<input
+							type="text"
+							bind:value={model}
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-2"
+							placeholder="Or enter model name manually"
+						/>
+					{:else}
+						<input
+							id="model"
+							type="text"
+							bind:value={model}
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							placeholder="gpt-4"
+						/>
+						<p class="text-xs text-gray-500 mt-1">
+							{#if provider === 'openai'}
+								Examples: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo
+							{:else if provider === 'anthropic'}
+								Examples: claude-3-5-sonnet-20241022, claude-3-opus-20240229
+							{:else if provider === 'google'}
+								Examples: gemini-1.5-pro, gemini-1.5-flash, gemini-pro
+							{:else if provider === 'openrouter'}
+								Examples: openai/gpt-4o, anthropic/claude-3.5-sonnet
+							{:else}
+								Enter your custom model identifier
+							{/if}
+						</p>
+					{/if}
+
+					{#if fetchError}
+						<p class="text-xs text-red-600 mt-1">{fetchError}</p>
+					{/if}
 				</div>
 
 				<div>
