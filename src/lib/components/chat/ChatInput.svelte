@@ -4,6 +4,8 @@
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
+	import { Settings } from 'lucide-svelte';
+	import AgentConfigDialog from './AgentConfigDialog.svelte';
 
 	interface Props {
 		project?: NDKProject;
@@ -33,6 +35,7 @@
 	let selectedAgent = $state<string | null>(null);
 	let isSubmitting = $state(false);
 	let textareaElement: HTMLTextAreaElement | null = $state(null);
+	let configDialogOpen = $state(false);
 
 	// Set initial content when provided
 	$effect(() => {
@@ -285,6 +288,12 @@
 			handleSend();
 		}
 	}
+
+	function handleAgentConfigSave(config: { model: string; tools: string[] }) {
+		// TODO: Implement agent config update via Nostr event
+		console.log('Saving agent config:', config);
+		// This would publish a kind:24010 event to update the agent configuration
+	}
 </script>
 
 <div class="border-t border-gray-200 p-4 bg-white">
@@ -367,70 +376,73 @@
 			{/if}
 		</div>
 
-		<!-- Controls Row: Agent Selector, Model Selector, Attachment -->
+		<!-- Controls Row: Merged Agent Selector, Attachment -->
 		<div class="flex items-center gap-2">
-			<!-- Agent Selector -->
+			<!-- Merged Agent + Model Selector -->
 			{#if onlineAgents.length > 0}
 				{@const selectedAgentData = onlineAgents.find((a) => a.pubkey === selectedAgent)}
 				{@const displayAgent = selectedAgentData || onlineAgents[0]}
-				<div class="relative">
-					<button
-						class="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-						onclick={() => {
-							const select = document.getElementById('agent-select') as HTMLSelectElement;
-							select?.click();
-						}}
-						type="button"
-					>
-						<!-- Avatar -->
-						<div
-							class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold"
+				<div class="flex items-center gap-1">
+					<!-- Agent Selector Button -->
+					<div class="relative">
+						<button
+							class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-sm min-w-0"
+							onclick={() => {
+								const select = document.getElementById('agent-select') as HTMLSelectElement;
+								select?.click();
+							}}
+							type="button"
 						>
-							{displayAgent.name.charAt(0).toUpperCase()}
-						</div>
-						<span class="font-medium">{displayAgent.name}</span>
-						<svg
-							class="w-4 h-4 text-gray-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
+							<!-- Avatar -->
+							<div
+								class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
+							>
+								{displayAgent.name.charAt(0).toUpperCase()}
+							</div>
+							<div class="flex flex-col items-start min-w-0">
+								<span class="font-medium text-sm truncate">{displayAgent.name}</span>
+								{#if currentAgentModel}
+									<span class="text-xs text-gray-500 truncate">{currentAgentModel}</span>
+								{/if}
+							</div>
+							<svg
+								class="w-4 h-4 text-gray-400 flex-shrink-0"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M19 9l-7 7-7-7"
+								/>
+							</svg>
+						</button>
+						<select
+							id="agent-select"
+							bind:value={selectedAgent}
+							class="absolute inset-0 opacity-0 cursor-pointer"
 						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M19 9l-7 7-7-7"
-							/>
-						</svg>
-					</button>
-					<select
-						id="agent-select"
-						bind:value={selectedAgent}
-						class="absolute inset-0 opacity-0 cursor-pointer"
-					>
-						<option value={null}>Project Manager (default)</option>
-						{#each onlineAgents as agent}
-							<option value={agent.pubkey}>
-								{agent.name}
-							</option>
-						{/each}
-					</select>
-				</div>
-			{/if}
+							<option value={null}>Project Manager (default)</option>
+							{#each onlineAgents as agent}
+								<option value={agent.pubkey}>
+									{agent.name}
+								</option>
+							{/each}
+						</select>
+					</div>
 
-			<!-- Model Display (Synced with Agent) -->
-			{#if currentAgentModel}
-				<div class="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm">
-					<!-- Model Icon -->
-					<svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
-						/>
-					</svg>
-					<span class="font-medium">{currentAgentModel}</span>
+					<!-- Configure Button -->
+					<button
+						type="button"
+						onclick={() => (configDialogOpen = true)}
+						class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+						title="Configure agent"
+						aria-label="Configure agent"
+					>
+						<Settings class="w-4 h-4 text-gray-600" />
+					</button>
 				</div>
 			{/if}
 
@@ -487,3 +499,16 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Agent Configuration Dialog -->
+{#if onlineAgents.length > 0}
+	{@const selectedAgentData = onlineAgents.find((a) => a.pubkey === selectedAgent)}
+	{@const displayAgent = selectedAgentData || onlineAgents[0]}
+	<AgentConfigDialog
+		bind:open={configDialogOpen}
+		agent={displayAgent}
+		availableModels={availableModels}
+		onClose={() => (configDialogOpen = false)}
+		onSave={handleAgentConfigSave}
+	/>
+{/if}

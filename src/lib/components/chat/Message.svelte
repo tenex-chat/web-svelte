@@ -10,8 +10,9 @@
 	import AIReasoningBlock from './AIReasoningBlock.svelte';
 	import ToolCallContent from './ToolCallContent.svelte';
 	import SuggestionButtons from './SuggestionButtons.svelte';
+	import LLMMetadataDialog from './LLMMetadataDialog.svelte';
 	import DropdownMenu, { type DropdownMenuItem } from '$lib/components/ui/DropdownMenu.svelte';
-	import { Copy, Reply, Quote, FileJson, MoreVertical } from 'lucide-svelte';
+	import { Copy, Reply, Quote, FileJson, MoreVertical, Info } from 'lucide-svelte';
 
 	interface Props {
 		message: Message;
@@ -82,6 +83,7 @@
 
 	let dropdownOpen = $state(false);
 	let showRawEvent = $state(false);
+	let showLLMMetadata = $state(false);
 
 	// Message actions dropdown items
 	const dropdownItems: DropdownMenuItem[] = [
@@ -104,6 +106,13 @@
 		},
 		{
 			separator: true
+		},
+		{
+			label: 'View LLM metadata',
+			icon: 'ℹ️',
+			onClick: () => {
+				showLLMMetadata = true;
+			}
 		},
 		{
 			label: 'View raw event',
@@ -290,4 +299,9 @@
 			</div>
 		</div>
 	</div>
+{/if}
+
+<!-- LLM Metadata Dialog -->
+{#if showLLMMetadata}
+	<LLMMetadataDialog event={message.event} onClose={() => (showLLMMetadata = false)} />
 {/if}
