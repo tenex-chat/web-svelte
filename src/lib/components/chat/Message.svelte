@@ -70,15 +70,10 @@
 		return pTags.map((tag) => tag[1]).filter(Boolean);
 	});
 
-	// Fetch profiles for p-tagged users
-	const replyingToProfiles = $derived.by(() => {
-		return replyingTo.map((pubkey) => {
-			const profile = ndk.$fetchProfile(() => pubkey);
-			return {
-				pubkey,
-				name: profile?.displayName || profile?.name || pubkey.slice(0, 8)
-			};
-		});
+	// Get phase information
+	const phaseInfo = $derived.by(() => {
+		const phaseTag = message.event.tags.find((tag) => tag[0] === 'phase');
+		return phaseTag ? phaseTag[1] : null;
 	});
 
 	let dropdownOpen = $state(false);
@@ -205,17 +200,31 @@
 				</div>
 			</div>
 
-			<!-- Reply-to indicator (p-tags) -->
-			{#if replyingToProfiles.length > 0}
-				<div class="flex items-center gap-1 mb-1 text-xs text-gray-600 dark:text-gray-300">
-					<Reply class="w-3 h-3" />
-					<span>replying to</span>
-					{#each replyingToProfiles as profile, index}
-						<span class="font-medium text-blue-600 dark:text-blue-300">@{profile.name}</span>
-						{#if index < replyingToProfiles.length - 1}
-							<span>,</span>
-						{/if}
-					{/each}
+			<!-- P-tagged users and phase indicator -->
+			{#if replyingTo.length > 0 || phaseInfo}
+				<div class="flex items-center gap-2 mb-2">
+					<!-- P-tagged user avatars -->
+					{#if replyingTo.length > 0}
+						<div class="flex items-center -space-x-2">
+							{#each replyingTo as pubkey (pubkey)}
+								<div class="relative">
+									<Avatar {ndk} {pubkey} size={20} class="ring-2 ring-white dark:ring-zinc-900" />
+								</div>
+							{/each}
+						</div>
+					{/if}
+
+					<!-- Phase indicator -->
+					{#if phaseInfo}
+						<div class="flex items-center gap-1.5 text-xs">
+							<svg class="w-3 h-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+							</svg>
+							<span class="px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium uppercase text-[10px] tracking-wide">
+								{phaseInfo}
+							</span>
+						</div>
+					{/if}
 				</div>
 			{/if}
 

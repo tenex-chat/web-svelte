@@ -9,7 +9,7 @@
 	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import { cn } from '$lib/utils/cn';
 	import { registerShortcut } from '$lib/utils/keyboardShortcuts';
-	import DropdownMenu, { type DropdownMenuItem } from './ui/DropdownMenu.svelte';
+	import * as DropdownMenu from './ui/dropdown-menu';
 	import Tooltip from './ui/Tooltip.svelte';
 	import CreateProjectDialog from './dialogs/CreateProjectDialog.svelte';
 	import GlobalSearchDialog from './dialogs/GlobalSearchDialog.svelte';
@@ -73,62 +73,13 @@
 		};
 	});
 
-	// User menu items
-	const userMenuItems: DropdownMenuItem[] = [
-		{
-			label: 'New project',
-			icon: Plus,
-			onClick: () => (createDialogOpen = true)
-		},
-		{ separator: true, label: '' },
-		{
-			label: 'Agents',
-			icon: Bot,
-			href: '/agents'
-		},
-		{
-			label: 'MCP Tools',
-			icon: Wrench,
-			href: '/tools'
-		},
-		{
-			label: 'Settings',
-			icon: Settings,
-			href: '/settings'
-		},
-		{ separator: true, label: '' },
-		{
-			label: 'Theme',
-			icon: Moon,
-			submenu: [
-				{ label: 'Light', icon: Sun, onClick: () => uiSettingsStore.setTheme('light') },
-				{ label: 'Dark', icon: Moon, onClick: () => uiSettingsStore.setTheme('dark') },
-				{ label: 'System', icon: Monitor, onClick: () => uiSettingsStore.setTheme('system') }
-			]
-		},
-		{ separator: true, label: '' },
-		{
-			label: 'Debug',
-			icon: Bug,
-			submenu: [
-				{
-					label: 'Project Status Debug Tool',
-					onClick: () => (debugDialogOpen = true)
-				}
-			]
-		},
-		{ separator: true, label: '' },
-		{
-			label: 'Logout',
-			icon: LogOut,
-			onClick: () => {
-				if (currentUser) {
-					ndk.logout(currentUser.pubkey);
-				}
-				window.location.href = '/';
-			}
+	// User menu handlers
+	function handleLogout() {
+		if (currentUser) {
+			ndk.logout(currentUser.pubkey);
 		}
-	];
+		window.location.href = '/';
+	}
 
 	function handleProjectClick(project: NDKProject) {
 		openProjects.toggle(project);
@@ -387,32 +338,91 @@
 
 	<!-- Footer - User Profile -->
 	<div class="border-t border-gray-200 dark:border-zinc-700 p-3">
-		<DropdownMenu items={userMenuItems} bind:open={userMenuOpen} align="start" side="top">
-			<button
-				class={cn(
-					'flex items-center rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors',
-					collapsed ? 'w-10 h-10 justify-center' : 'w-full gap-2 px-2 py-2'
-				)}
-			>
-				{#if currentUser?.pubkey}
-					<Avatar {ndk} pubkey={currentUser.pubkey} size={32} />
-				{:else}
-					<div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-zinc-700 flex items-center justify-center text-white font-semibold text-sm">
-						U
-					</div>
-				{/if}
-				{#if !collapsed}
-					<div class="flex-1 text-left min-w-0">
-						<div class="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
-							{profile?.name || profile?.displayName || 'User'}
+		<DropdownMenu.Root bind:open={userMenuOpen}>
+			<DropdownMenu.Trigger asChild>
+				<button
+					class={cn(
+						'flex items-center rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors',
+						collapsed ? 'w-10 h-10 justify-center' : 'w-full gap-2 px-2 py-2'
+					)}
+				>
+					{#if currentUser?.pubkey}
+						<Avatar {ndk} pubkey={currentUser.pubkey} size={32} />
+					{:else}
+						<div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-zinc-700 flex items-center justify-center text-white font-semibold text-sm">
+							U
 						</div>
-						<div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-							{profile?.nip05 || currentUser?.npub?.slice(0, 12) + '...' || ''}
+					{/if}
+					{#if !collapsed}
+						<div class="flex-1 text-left min-w-0">
+							<div class="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
+								{profile?.name || profile?.displayName || 'User'}
+							</div>
+							<div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+								{profile?.nip05 || currentUser?.npub?.slice(0, 12) + '...' || ''}
+							</div>
 						</div>
-					</div>
-				{/if}
-			</button>
-		</DropdownMenu>
+					{/if}
+				</button>
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="start" side="top" class="w-56">
+				<DropdownMenu.Item onclick={() => (createDialogOpen = true)}>
+					<Plus class="mr-2 h-4 w-4" />
+					<span>New project</span>
+				</DropdownMenu.Item>
+				<DropdownMenu.Separator />
+				<DropdownMenu.Item href="/agents">
+					<Bot class="mr-2 h-4 w-4" />
+					<span>Agents</span>
+				</DropdownMenu.Item>
+				<DropdownMenu.Item href="/tools">
+					<Wrench class="mr-2 h-4 w-4" />
+					<span>MCP Tools</span>
+				</DropdownMenu.Item>
+				<DropdownMenu.Item href="/settings">
+					<Settings class="mr-2 h-4 w-4" />
+					<span>Settings</span>
+				</DropdownMenu.Item>
+				<DropdownMenu.Separator />
+				<DropdownMenu.Sub>
+					<DropdownMenu.SubTrigger>
+						<Moon class="mr-2 h-4 w-4" />
+						<span>Theme</span>
+					</DropdownMenu.SubTrigger>
+					<DropdownMenu.SubContent>
+						<DropdownMenu.Item onclick={() => uiSettingsStore.setTheme('light')}>
+							<Sun class="mr-2 h-4 w-4" />
+							<span>Light</span>
+						</DropdownMenu.Item>
+						<DropdownMenu.Item onclick={() => uiSettingsStore.setTheme('dark')}>
+							<Moon class="mr-2 h-4 w-4" />
+							<span>Dark</span>
+						</DropdownMenu.Item>
+						<DropdownMenu.Item onclick={() => uiSettingsStore.setTheme('system')}>
+							<Monitor class="mr-2 h-4 w-4" />
+							<span>System</span>
+						</DropdownMenu.Item>
+					</DropdownMenu.SubContent>
+				</DropdownMenu.Sub>
+				<DropdownMenu.Separator />
+				<DropdownMenu.Sub>
+					<DropdownMenu.SubTrigger>
+						<Bug class="mr-2 h-4 w-4" />
+						<span>Debug</span>
+					</DropdownMenu.SubTrigger>
+					<DropdownMenu.SubContent>
+						<DropdownMenu.Item onclick={() => (debugDialogOpen = true)}>
+							<span>Project Status Debug Tool</span>
+						</DropdownMenu.Item>
+					</DropdownMenu.SubContent>
+				</DropdownMenu.Sub>
+				<DropdownMenu.Separator />
+				<DropdownMenu.Item onclick={handleLogout}>
+					<LogOut class="mr-2 h-4 w-4" />
+					<span>Logout</span>
+				</DropdownMenu.Item>
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
 	</div>
 </div>
 

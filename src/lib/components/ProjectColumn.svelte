@@ -5,7 +5,7 @@
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { cn } from '$lib/utils/cn';
 	import { MessageSquare, FileText, Bot, Hash, Rss, Settings as SettingsIcon, Filter, Clock, MoreVertical, MessageCircleQuestion } from 'lucide-svelte';
-	import DropdownMenu, { type DropdownMenuItem } from './ui/DropdownMenu.svelte';
+	import * as DropdownMenu from './ui/dropdown-menu';
 
 	interface Props {
 		project: NDKProject;
@@ -47,48 +47,6 @@
 		{ id: 'settings', label: 'Settings', icon: SettingsIcon }
 	] as const;
 
-	// Filter dropdown menu items
-	const filterMenuItems: DropdownMenuItem[] = [
-		{
-			label: 'All conversations',
-			icon: Clock,
-			onClick: () => (timeFilter = null)
-		},
-		{ separator: true, label: '' },
-		{ label: 'Activity filters', separator: true },
-		{
-			label: 'Active in last hour',
-			icon: Clock,
-			onClick: () => (timeFilter = '1h')
-		},
-		{
-			label: 'Active in last 4 hours',
-			icon: Clock,
-			onClick: () => (timeFilter = '4h')
-		},
-		{
-			label: 'Active in last 24 hours',
-			icon: Clock,
-			onClick: () => (timeFilter = '1d')
-		},
-		{ separator: true, label: '' },
-		{ label: 'Response filters', separator: true },
-		{
-			label: 'Needs response (1h)',
-			icon: MessageCircleQuestion,
-			onClick: () => (timeFilter = 'needs-response-1h')
-		},
-		{
-			label: 'Needs response (4h)',
-			icon: MessageCircleQuestion,
-			onClick: () => (timeFilter = 'needs-response-4h')
-		},
-		{
-			label: 'Needs response (24h)',
-			icon: MessageCircleQuestion,
-			onClick: () => (timeFilter = 'needs-response-1d')
-		}
-	];
 </script>
 
 <div class={cn('w-96 flex-shrink-0 flex flex-col bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-700 relative', className)}>
@@ -115,7 +73,7 @@
 
 				<!-- Activity Filter Button (only for conversations tab) -->
 				{#if activeTab === 'conversations'}
-					<DropdownMenu items={filterMenuItems} bind:open={filterDropdownOpen} align="end">
+					<DropdownMenu.Root bind:open={filterDropdownOpen}>
 						{#snippet trigger()}
 							<button
 								class={cn(
