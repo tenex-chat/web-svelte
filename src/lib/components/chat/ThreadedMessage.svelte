@@ -54,51 +54,26 @@
 	// Uses NIP-22 threading: looks for events with 'e' tags matching this event's ID
 	const repliesSubscription = $derived(
 		currentEvent
-			? ndk.$subscribe(() => {
-					const filter = {
-						kinds: [1111 as NDKKind], // Generic Reply
-						'#e': [currentEvent.id],
-						limit: 100
-					};
-
-					console.log(`[ThreadedMessage depth=${depth}] Subscribing for replies to:`, {
-						eventId: currentEvent.id.slice(0, 8),
-						eventKind: currentEvent.kind,
-						filter
-					});
-
-					return {
-						filters: [filter],
-						closeOnEose: false
-					};
-				})
+			? ndk.$subscribe(() => ({
+					filters: [
+						{
+							kinds: [1111 as NDKKind], // Generic Reply
+							'#e': [currentEvent.id],
+							limit: 100
+						}
+					],
+					closeOnEose: false
+				}))
 			: null
 	);
 
 	const replies = $derived.by(() => {
-		if (!repliesSubscription) {
-			console.log(`[ThreadedMessage depth=${depth}] No subscription (no currentEvent)`);
-			return [];
-		}
-
+		if (!repliesSubscription) return [];
 		const events = repliesSubscription.events || [];
-
-		console.log(`[ThreadedMessage depth=${depth}] Received replies for ${currentEvent?.id.slice(0, 8)}:`, {
-			count: events.length,
-			eventIds: events.map((e) => ({ id: e.id.slice(0, 8), kind: e.kind, eTags: e.tags.filter(t => t[0] === 'e').map(t => t[1]?.slice(0, 8)) }))
-		});
-
 		// Convert to Message objects and sort by created_at
-		const sorted = events
+		return events
 			.map((event) => ({ id: event.id, event }))
 			.sort((a, b) => (a.event.created_at || 0) - (b.event.created_at || 0));
-
-		console.log(`[ThreadedMessage depth=${depth}] Sorted replies:`, {
-			count: sorted.length,
-			messageIds: sorted.map((m) => ({ id: m.id.slice(0, 8), timestamp: m.event.created_at }))
-		});
-
-		return sorted;
 	});
 
 	// Calculate properties for replies
@@ -112,21 +87,8 @@
 		currentEvent ? expandedRepliesStore.isExpanded(currentEvent.id) : false
 	);
 
-	// Log rendering state
-	$effect(() => {
-		console.log(`[ThreadedMessage depth=${depth}] Rendering:`, {
-			eventId: currentEvent?.id.slice(0, 8),
-			eventKind: currentEvent?.kind,
-			replyCount: replies.length,
-			isExpanded: depth === 0 ? 'always (root)' : isExpanded,
-			hasMessage: !!message,
-			hasEventId: !!eventId
-		});
-	});
-
 	function handleToggle() {
 		if (currentEvent) {
-			console.log(`[ThreadedMessage depth=${depth}] Toggling expand for:`, currentEvent.id.slice(0, 8));
 			expandedRepliesStore.toggle(currentEvent.id);
 		}
 	}

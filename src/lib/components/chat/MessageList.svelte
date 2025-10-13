@@ -38,24 +38,13 @@
 
 	// Process raw events into flat messages with streaming support
 	const flatMessages = $derived.by(() => {
-		console.log('[MessageList] Raw subscription events:', {
-			count: messagesSubscription.events.length,
-			eventIds: messagesSubscription.events.map((e) => ({ id: e.id.slice(0, 8), kind: e.kind })),
-			hasRootEvent: messagesSubscription.events.some((e) => e.id === rootEvent.id)
-		});
-
 		// Always include the root event (kind 11) as the first message
 		// The subscription filter doesn't return it because it looks for events that reference the root
 		const allEvents = messagesSubscription.events.some((e) => e.id === rootEvent.id)
 			? messagesSubscription.events
 			: [rootEvent, ...messagesSubscription.events];
 
-		console.log('[MessageList] All events (with root):', {
-			count: allEvents.length,
-			eventIds: allEvents.map((e) => ({ id: e.id.slice(0, 8), kind: e.kind }))
-		});
-
-		const processed = processEventsToMessages(
+		return processEventsToMessages(
 			allEvents,
 			rootEvent,
 			'flattened', // Always process as flattened first
@@ -63,13 +52,6 @@
 			false, // showAll
 			currentUser?.pubkey
 		);
-
-		console.log('[MessageList] Processed flat messages:', {
-			count: processed.length,
-			messageIds: processed.map((m) => ({ id: m.id.slice(0, 8), kind: m.event.kind }))
-		});
-
-		return processed;
 	});
 </script>
 
