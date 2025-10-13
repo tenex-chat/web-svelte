@@ -4,7 +4,6 @@
 	import Message from './Message.svelte';
 	import ThreadedMessage from './ThreadedMessage.svelte';
 	import { processEventsToMessages } from '$lib/utils/messageProcessor';
-	import { buildMessageTree, flattenMessageTree } from '$lib/utils/threadBuilder';
 
 	interface Props {
 		rootEvent: NDKEvent;
@@ -41,7 +40,7 @@
 	const flatMessages = $derived.by(() => {
 		// Always include the root event (kind 11) as the first message
 		// The subscription filter doesn't return it because it looks for events that reference the root
-		const allEvents = messagesSubscription.events.some(e => e.id === rootEvent.id)
+		const allEvents = messagesSubscription.events.some((e) => e.id === rootEvent.id)
 			? messagesSubscription.events
 			: [rootEvent, ...messagesSubscription.events];
 
@@ -54,41 +53,25 @@
 			currentUser?.pubkey
 		);
 	});
-
-	// Build message tree for threaded view
-	const messageTree = $derived.by(() => {
-		if (viewMode === 'threaded') {
-			return buildMessageTree(flatMessages, rootEvent);
-		}
-		return [];
-	});
-
-	// Flatten tree for flattened view
-	const displayMessages = $derived.by(() => {
-		if (viewMode === 'threaded') {
-			return [];
-		}
-		return flatMessages;
-	});
 </script>
 
 <div class="flex-1 overflow-y-auto">
 	{#if flatMessages.length === 0}
-		<div class="flex items-center justify-center h-full text-gray-500 text-sm">
+		<div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 text-sm">
 			No messages yet. Start the conversation!
 		</div>
 	{:else if viewMode === 'threaded'}
+		<!-- Threaded view: Use recursive ThreadedMessage component -->
 		<div class="flex flex-col">
-			{#each messageTree as message (message.id)}
-				<ThreadedMessage {message} {onReply} {onQuote} />
-			{/each}
+			<ThreadedMessage {rootEvent} depth={0} />
 		</div>
 	{:else}
+		<!-- Flattened view: Render messages in chronological order -->
 		<div class="flex flex-col">
-			{#each displayMessages as message, index (message.id)}
+			{#each flatMessages as message, index (message.id)}
 				<Message
 					{message}
-					isLastMessage={index === displayMessages.length - 1}
+					isLastMessage={index === flatMessages.length - 1}
 					{onReply}
 					{onQuote}
 				/>
