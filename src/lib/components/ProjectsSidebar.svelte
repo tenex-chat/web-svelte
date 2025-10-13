@@ -10,7 +10,7 @@
 	import { cn } from '$lib/utils/cn';
 	import { registerShortcut } from '$lib/utils/keyboardShortcuts';
 	import * as DropdownMenu from './ui/dropdown-menu';
-	import Tooltip from './ui/Tooltip.svelte';
+	import * as Tooltip from './ui/tooltip';
 	import CreateProjectDialog from './dialogs/CreateProjectDialog.svelte';
 	import GlobalSearchDialog from './dialogs/GlobalSearchDialog.svelte';
 	import InboxPopover from './inbox/InboxPopover.svelte';
@@ -151,7 +151,7 @@
 					<span class="font-bold">TENEX</span>
 				</a>
 			{:else}
-				<Tooltip text="TENEX" side="right">
+				<Tooltip.Root><Tooltip.Trigger asChild>
 					<a href="/projects" class="flex items-center justify-center w-10 h-10 hover:opacity-80 transition-opacity text-gray-900 dark:text-gray-100" aria-label="TENEX home">
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
@@ -162,7 +162,7 @@
 							/>
 						</svg>
 					</a>
-				</Tooltip>
+				</Tooltip.Trigger><Tooltip.Content side="right">TENEX</Tooltip.Content></Tooltip.Root>
 			{/if}
 
 			<button
@@ -190,7 +190,7 @@
 				<div class="flex items-center justify-between px-2 py-1 mb-1">
 					<span class="text-xs font-medium text-gray-500 dark:text-gray-400">Projects</span>
 					<div class="flex items-center gap-0.5">
-						<Tooltip text="Global Search (⌘K)" side="bottom">
+						<Tooltip.Root><Tooltip.Trigger asChild>
 							<button
 								onclick={() => (searchDialogOpen = true)}
 								class="h-5 w-5 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 rounded text-gray-700 dark:text-gray-300"
@@ -205,7 +205,7 @@
 									/>
 								</svg>
 							</button>
-						</Tooltip>
+						</Tooltip.Trigger><Tooltip.Content side="bottom">Global Search (⌘K)</Tooltip.Content></Tooltip.Root>
 						<button
 							onclick={() => (createDialogOpen = true)}
 							class="h-5 w-5 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 rounded -mr-1 text-gray-700 dark:text-gray-300"
@@ -236,7 +236,42 @@
 						{@const isOpen = openProjects.isOpen(project)}
 						{@const projectColor = getProjectColor(project)}
 
-						<Tooltip text={collapsed ? project.title || 'Untitled' : ''} side="right">
+						{#if collapsed}
+							<Tooltip.Root>
+								<Tooltip.Trigger asChild>
+									<button
+										onmousedown={(e) =>
+											handleProjectMouseDown(project.dTag || project.id || '', e)}
+										onmouseup={() => handleProjectMouseUp(project)}
+										onmouseleave={handleProjectMouseLeave}
+										class={cn(
+											'w-full text-left px-3 py-2 rounded-lg transition-all flex items-center gap-2',
+											isOpen ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-blue-900 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300',
+											!isOnline && 'opacity-75'
+										)}
+									>
+										<!-- Project Avatar -->
+										<div class="relative flex-shrink-0">
+											<div
+												class={cn(
+													'rounded-lg flex items-center justify-center text-white font-semibold',
+													collapsed ? 'w-8 h-8 text-sm' : 'w-8 h-8 text-sm'
+												)}
+												style="background: {projectColor}"
+											>
+												{project.title?.charAt(0).toUpperCase() || 'P'}
+											</div>
+											{#if isOnline}
+												<div
+													class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-white dark:border-zinc-900"
+												></div>
+											{/if}
+										</div>
+									</button>
+								</Tooltip.Trigger>
+								<Tooltip.Content side="right">{project.title || 'Untitled'}</Tooltip.Content>
+							</Tooltip.Root>
+						{:else}
 							<button
 								onmousedown={(e) =>
 									handleProjectMouseDown(project.dTag || project.id || '', e)}
@@ -266,26 +301,24 @@
 									{/if}
 								</div>
 
-								{#if !collapsed}
-									<div class="flex-1 min-w-0">
-										<div class="font-medium text-sm truncate">{project.title || 'Untitled'}</div>
-										<div class="text-xs text-gray-500 dark:text-gray-400">
-											{project.agents.length} agents
-										</div>
+								<div class="flex-1 min-w-0">
+									<div class="font-medium text-sm truncate">{project.title || 'Untitled'}</div>
+									<div class="text-xs text-gray-500 dark:text-gray-400">
+										{project.agents.length} agents
 									</div>
+								</div>
 
-									{#if isOpen}
-										<svg class="w-3.5 h-3.5 flex-shrink-0 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-											<path
-												fill-rule="evenodd"
-												d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-												clip-rule="evenodd"
-											/>
-										</svg>
-									{/if}
+								{#if isOpen}
+									<svg class="w-3.5 h-3.5 flex-shrink-0 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+										<path
+											fill-rule="evenodd"
+											d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+											clip-rule="evenodd"
+										/>
+									</svg>
 								{/if}
 							</button>
-						</Tooltip>
+						{/if}
 					{/each}
 				{/if}
 			</div>

@@ -46,7 +46,6 @@
 		{ id: 'feed', label: 'Feed', icon: Rss },
 		{ id: 'settings', label: 'Settings', icon: SettingsIcon }
 	] as const;
-
 </script>
 
 <div class={cn('w-96 flex-shrink-0 flex flex-col bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-700 relative', className)}>
@@ -74,7 +73,7 @@
 				<!-- Activity Filter Button (only for conversations tab) -->
 				{#if activeTab === 'conversations'}
 					<DropdownMenu.Root bind:open={filterDropdownOpen}>
-						{#snippet trigger()}
+						<DropdownMenu.Trigger asChild>
 							<button
 								class={cn(
 									'h-6 w-6 p-0 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors',
@@ -89,8 +88,42 @@
 									<MoreVertical class="h-3.5 w-3.5" />
 								{/if}
 							</button>
-						{/snippet}
-					</DropdownMenu>
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content align="end" class="w-56">
+							<DropdownMenu.Item onclick={() => (timeFilter = null)}>
+								<Clock class="mr-2 h-4 w-4" />
+								<span>All conversations</span>
+							</DropdownMenu.Item>
+							<DropdownMenu.Separator />
+							<DropdownMenu.GroupHeading>Activity filters</DropdownMenu.GroupHeading>
+							<DropdownMenu.Item onclick={() => (timeFilter = '1h')}>
+								<Clock class="mr-2 h-4 w-4" />
+								<span>Active in last hour</span>
+							</DropdownMenu.Item>
+							<DropdownMenu.Item onclick={() => (timeFilter = '4h')}>
+								<Clock class="mr-2 h-4 w-4" />
+								<span>Active in last 4 hours</span>
+							</DropdownMenu.Item>
+							<DropdownMenu.Item onclick={() => (timeFilter = '1d')}>
+								<Clock class="mr-2 h-4 w-4" />
+								<span>Active in last 24 hours</span>
+							</DropdownMenu.Item>
+							<DropdownMenu.Separator />
+							<DropdownMenu.GroupHeading>Response filters</DropdownMenu.GroupHeading>
+							<DropdownMenu.Item onclick={() => (timeFilter = 'needs-response-1h')}>
+								<MessageCircleQuestion class="mr-2 h-4 w-4" />
+								<span>Needs response (1h)</span>
+							</DropdownMenu.Item>
+							<DropdownMenu.Item onclick={() => (timeFilter = 'needs-response-4h')}>
+								<MessageCircleQuestion class="mr-2 h-4 w-4" />
+								<span>Needs response (4h)</span>
+							</DropdownMenu.Item>
+							<DropdownMenu.Item onclick={() => (timeFilter = 'needs-response-1d')}>
+								<MessageCircleQuestion class="mr-2 h-4 w-4" />
+								<span>Needs response (24h)</span>
+							</DropdownMenu.Item>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
 				{/if}
 
 				<!-- Status Indicator -->

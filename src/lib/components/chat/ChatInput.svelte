@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKThread, NDKKind, type NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKThread, NDKKind, NDKEvent } from '@nostr-dev-kit/ndk';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
@@ -290,10 +290,38 @@
 		}
 	}
 
-	function handleAgentConfigSave(config: { model: string; tools: string[] }) {
-		// TODO: Implement agent config update via Nostr event
-		console.log('Saving agent config:', config);
-		// This would publish a kind:24010 event to update the agent configuration
+	async function handleAgentConfigSave(config: { model: string; tools: string[] }) {
+		if (!ndk || !currentUser || !project || !currentAgent) return;
+
+		try {
+			const projectTagId = project.tagId();
+			if (!projectTagId) {
+				console.error('[ChatInput] Project tag ID not found');
+				return;
+			}
+
+			// Create a kind 24020 event to update agent configuration
+			const changeEvent = new NDKEvent(ndk);
+			changeEvent.kind = 24020 as NDKKind;
+			changeEvent.content = '';
+			changeEvent.tags = [
+				['p', currentAgent], // Target agent
+				['model', config.model], // New model slug
+				['a', projectTagId] // Project reference
+			];
+
+			// Add tool tags - one tag per tool
+			config.tools.forEach((tool) => {
+				changeEvent.tags.push(['tool', tool]);
+			});
+
+			await changeEvent.sign();
+			await changeEvent.publish();
+
+			console.log('[ChatInput] Agent settings updated successfully');
+		} catch (error) {
+			console.error('[ChatInput] Failed to update agent settings:', error);
+		}
 	}
 </script>
 

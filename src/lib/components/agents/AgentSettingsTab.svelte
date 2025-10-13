@@ -9,29 +9,88 @@
 
 	let { pubkey, agentDef }: Props = $props();
 
-	// TODO: Implement voice settings
-	let voiceProvider = $state('openai');
-	let voiceId = $state('');
-	let voiceSpeed = $state(1.0);
+	const AGENT_VOICE_STORAGE_KEY = 'agent-voice-configs';
 
-	// TODO: Implement project settings
+	interface AgentVoiceConfig {
+		voiceId: string;
+		provider: 'openai' | 'elevenlabs';
+		speed?: number;
+	}
+
+	// Load voice settings from localStorage
+	function loadVoiceConfig(): AgentVoiceConfig | null {
+		try {
+			const stored = localStorage.getItem(AGENT_VOICE_STORAGE_KEY);
+			if (!stored) return null;
+			const configs = JSON.parse(stored);
+			return configs[pubkey] || null;
+		} catch {
+			return null;
+		}
+	}
+
+	// Save voice settings to localStorage
+	function saveVoiceConfig(config: AgentVoiceConfig) {
+		try {
+			const stored = localStorage.getItem(AGENT_VOICE_STORAGE_KEY);
+			const configs = stored ? JSON.parse(stored) : {};
+			configs[pubkey] = config;
+			localStorage.setItem(AGENT_VOICE_STORAGE_KEY, JSON.stringify(configs));
+		} catch (error) {
+			console.error('[AgentSettingsTab] Failed to save voice config:', error);
+		}
+	}
+
+	// Initialize with saved config or defaults
+	const savedConfig = loadVoiceConfig();
+	let voiceProvider = $state<'openai' | 'elevenlabs'>(savedConfig?.provider || 'openai');
+	let voiceId = $state(savedConfig?.voiceId || '');
+	let voiceSpeed = $state(savedConfig?.speed || 1.0);
+
 	let isSaving = $state(false);
 
 	async function handleSaveSettings() {
 		isSaving = true;
-		// TODO: Implement save logic
-		console.log('Saving settings for agent:', pubkey);
-		setTimeout(() => {
-			isSaving = false;
-		}, 1000);
+		try {
+			// Save voice settings to localStorage
+			saveVoiceConfig({
+				voiceId,
+				provider: voiceProvider,
+				speed: voiceSpeed
+			});
+			console.log('[AgentSettingsTab] Settings saved successfully for agent:', pubkey);
+		} catch (error) {
+			console.error('[AgentSettingsTab] Failed to save settings:', error);
+		} finally {
+			setTimeout(() => {
+				isSaving = false;
+			}, 1000);
+		}
 	}
 
 	async function handleTestVoice() {
-		console.log('Testing voice:', voiceId);
+		// TODO: Implement TTS preview using the selected voice
+		console.log('[AgentSettingsTab] Testing voice:', voiceId, voiceProvider);
 	}
 
 	function handleResetVoice() {
-		console.log('Resetting voice settings');
+		try {
+			const stored = localStorage.getItem(AGENT_VOICE_STORAGE_KEY);
+			if (stored) {
+				const configs = JSON.parse(stored);
+				delete configs[pubkey];
+				localStorage.setItem(AGENT_VOICE_STORAGE_KEY, JSON.stringify(configs));
+			}
+
+			// Reset to defaults
+			voiceProvider = 'openai';
+			voiceId = '';
+			voiceSpeed = 1.0;
+
+			console.log('[AgentSettingsTab] Voice settings reset to global defaults');
+		} catch (error) {
+			console.error('[AgentSettingsTab] Failed to reset voice settings:', error);
+		}
 	}
 </script>
 

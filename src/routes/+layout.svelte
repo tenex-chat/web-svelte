@@ -5,6 +5,7 @@
 	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import LoginModal from '$lib/components/LoginModal.svelte';
 	import WindowManagerOverlay from '$lib/components/window-manager/WindowManagerOverlay.svelte';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import '../app.css';
 
 	// Initialize UI settings (including theme)
@@ -36,20 +37,22 @@
 	<title>TENEX</title>
 </svelte:head>
 
-<LoginModal />
+<Tooltip.Provider>
+	<LoginModal />
 
-{#if ready}
-	{@render children?.()}
+	{#if ready}
+		{@render children?.()}
 
-	<!-- Window Manager (Drawers + Floating Windows) -->
-	<WindowManagerOverlay />
-{:else}
-	<div class="flex items-center justify-center min-h-screen bg-white dark:bg-zinc-950">
-		<div class="text-center">
-			<div
-				class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"
-			></div>
-			<p class="mt-4 text-gray-600 dark:text-gray-400">Initializing...</p>
+		<!-- Window Manager (Drawers + Floating Windows) -->
+		<WindowManagerOverlay />
+	{:else}
+		<div class="flex items-center justify-center min-h-screen bg-white dark:bg-zinc-950">
+			<div class="text-center">
+				<div
+					class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"
+				></div>
+				<p class="mt-4 text-gray-600 dark:text-gray-400">Initializing...</p>
+			</div>
 		</div>
-	</div>
-{/if}
+	{/if}
+</Tooltip.Provider>

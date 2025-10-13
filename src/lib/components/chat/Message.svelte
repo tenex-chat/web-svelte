@@ -11,7 +11,7 @@
 	import ToolCallContent from './ToolCallContent.svelte';
 	import SuggestionButtons from './SuggestionButtons.svelte';
 	import LLMMetadataDialog from './LLMMetadataDialog.svelte';
-	import DropdownMenu, { type DropdownMenuItem } from '$lib/components/ui/DropdownMenu.svelte';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Copy, Reply, Quote, FileJson, MoreVertical, Info, Eye } from 'lucide-svelte';
 
 	interface Props {
@@ -80,45 +80,6 @@
 	let showRawEvent = $state(false);
 	let showLLMMetadata = $state(false);
 
-	// Message actions dropdown items
-	const dropdownItems: DropdownMenuItem[] = [
-		{
-			label: 'Reply',
-			icon: Reply,
-			onClick: () => onReply?.(message)
-		},
-		{
-			label: 'Quote',
-			icon: Quote,
-			onClick: () => onQuote?.(message)
-		},
-		{
-			label: 'Copy content',
-			icon: Copy,
-			onClick: () => {
-				navigator.clipboard.writeText(message.event.content);
-			}
-		},
-		{
-			separator: true,
-			label: ''
-		},
-		{
-			label: 'View LLM metadata',
-			icon: Info,
-			onClick: () => {
-				showLLMMetadata = true;
-			}
-		},
-		{
-			label: 'View raw event',
-			icon: Eye,
-			onClick: () => {
-				showRawEvent = true;
-			}
-		}
-	];
-
 	function closeRawEventDialog() {
 		showRawEvent = false;
 	}
@@ -165,7 +126,7 @@
 </script>
 
 <div
-	class="group px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors {isCurrentUser ? 'bg-blue-50/30 dark:bg-blue-900/20' : ''}"
+	class="group px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors"
 >
 	<div class="flex gap-3">
 		<!-- Avatar -->
@@ -173,9 +134,33 @@
 
 		<!-- Message Content -->
 		<div class="flex-1 min-w-0">
-			<div class="flex items-baseline gap-2 mb-1">
+			<div class="flex items-center gap-2 mb-1">
 				<span class="font-semibold text-sm text-gray-900 dark:text-gray-100">{authorName}</span>
 				<span class="text-xs text-gray-600 dark:text-gray-300">{timestamp}</span>
+
+				<!-- P-tagged user avatars -->
+				{#if replyingTo.length > 0}
+					<div class="flex items-center -space-x-2">
+						{#each replyingTo as pubkey (pubkey)}
+							<div class="relative">
+								<Avatar {ndk} {pubkey} size={20} class="ring-2 ring-white dark:ring-zinc-900" />
+							</div>
+						{/each}
+					</div>
+				{/if}
+
+				<!-- Phase indicator -->
+				{#if phaseInfo}
+					<div class="flex items-center gap-1.5 text-xs">
+						<svg class="w-3 h-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+						</svg>
+						<span class="px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium uppercase text-[10px] tracking-wide">
+							{phaseInfo}
+						</span>
+					</div>
+				{/if}
+
 				{#if isStreaming}
 					<span class="text-xs text-blue-600 dark:text-blue-300 flex items-center gap-1">
 						<span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-300 animate-pulse"></span>
@@ -188,45 +173,46 @@
 
 				<!-- Message Actions Dropdown -->
 				<div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-					<DropdownMenu items={dropdownItems} bind:open={dropdownOpen} align="end">
-						<button
-							type="button"
-							class="p-1 rounded hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
-							aria-label="Message actions"
-						>
-							<MoreVertical class="w-4 h-4 text-gray-500 dark:text-gray-400" />
-						</button>
-					</DropdownMenu>
+					<DropdownMenu.Root bind:open={dropdownOpen}>
+						<DropdownMenu.Trigger asChild>
+							<button
+								type="button"
+								class="p-1 rounded hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+								aria-label="Message actions"
+							>
+								<MoreVertical class="w-4 h-4 text-gray-500 dark:text-gray-400" />
+							</button>
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content align="end" class="w-48">
+							{#if onReply}
+								<DropdownMenu.Item onclick={() => onReply?.(message)}>
+									<Reply class="mr-2 h-4 w-4" />
+									<span>Reply</span>
+								</DropdownMenu.Item>
+							{/if}
+							{#if onQuote}
+								<DropdownMenu.Item onclick={() => onQuote?.(message)}>
+									<Quote class="mr-2 h-4 w-4" />
+									<span>Quote</span>
+								</DropdownMenu.Item>
+							{/if}
+							<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.content)}>
+								<Copy class="mr-2 h-4 w-4" />
+								<span>Copy content</span>
+							</DropdownMenu.Item>
+							<DropdownMenu.Separator />
+							<DropdownMenu.Item onclick={() => (showLLMMetadata = true)}>
+								<Info class="mr-2 h-4 w-4" />
+								<span>View LLM metadata</span>
+							</DropdownMenu.Item>
+							<DropdownMenu.Item onclick={() => (showRawEvent = true)}>
+								<Eye class="mr-2 h-4 w-4" />
+								<span>View raw event</span>
+							</DropdownMenu.Item>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
 				</div>
 			</div>
-
-			<!-- P-tagged users and phase indicator -->
-			{#if replyingTo.length > 0 || phaseInfo}
-				<div class="flex items-center gap-2 mb-2">
-					<!-- P-tagged user avatars -->
-					{#if replyingTo.length > 0}
-						<div class="flex items-center -space-x-2">
-							{#each replyingTo as pubkey (pubkey)}
-								<div class="relative">
-									<Avatar {ndk} {pubkey} size={20} class="ring-2 ring-white dark:ring-zinc-900" />
-								</div>
-							{/each}
-						</div>
-					{/if}
-
-					<!-- Phase indicator -->
-					{#if phaseInfo}
-						<div class="flex items-center gap-1.5 text-xs">
-							<svg class="w-3 h-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-							</svg>
-							<span class="px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium uppercase text-[10px] tracking-wide">
-								{phaseInfo}
-							</span>
-						</div>
-					{/if}
-				</div>
-			{/if}
 
 			<!-- Render content based on type -->
 			{#if isToolCallEvent}
@@ -238,7 +224,7 @@
 					{isLastMessage}
 				/>
 			{:else}
-				<div class="prose prose-sm max-w-none dark:prose-invert">
+				<div class="prose prose-sm max-w-none dark:prose-invert text-gray-900 dark:text-gray-100">
 					{@html renderedContent}
 					{#if isStreaming}
 						<span class="inline-block w-1.5 h-4 ml-0.5 bg-blue-600 dark:bg-blue-400 animate-pulse"></span>

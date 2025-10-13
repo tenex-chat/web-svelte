@@ -43,7 +43,7 @@ export const ndk = browser
 				fetches: {
 					follows: true,
 					mutes: true,
-					wallet: true,
+					wallet: false,
 					relayList: true
 				}
 			}
