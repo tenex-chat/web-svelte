@@ -2,7 +2,7 @@
 	import type { TTSProvider } from '$lib/stores/aiConfig.svelte';
 	import { aiConfigStore } from '$lib/stores/aiConfig.svelte';
 	import { cn } from '$lib/utils/cn';
-	import { fetchVoices, previewVoice, type VoiceInfo } from '$lib/services/voice-discovery';
+	import { voiceDiscovery, type Voice } from '$lib/services/voice-discovery';
 
 	interface Props {
 		open?: boolean;
@@ -26,7 +26,7 @@
 
 	let selectedVoices = $state<string[]>(currentVoiceIds || []);
 	let customVoiceId = $state('');
-	let availableVoices = $state<VoiceInfo[]>([]);
+	let availableVoices = $state<Voice[]>([]);
 	let fetchingVoices = $state(false);
 	let fetchError = $state('');
 	let previewingVoiceId = $state<string | null>(null);
@@ -54,7 +54,7 @@
 				return;
 			}
 
-			const voices = await fetchVoices(provider, apiKey);
+			const voices = await voiceDiscovery.fetchVoices(provider, apiKey);
 			availableVoices = voices;
 		} catch (error) {
 			console.error('Failed to fetch voices:', error);
@@ -74,7 +74,13 @@
 					? aiConfigStore.config.openAIApiKey
 					: aiConfigStore.config.voiceSettings.apiKey;
 
-			await previewVoice(provider, voiceId, apiKey);
+			const audioBlob = await voiceDiscovery.previewVoice(provider, voiceId, 'Hello, this is a preview of this voice.', apiKey);
+
+			// Play the audio
+			const audioUrl = URL.createObjectURL(audioBlob);
+			const audio = new Audio(audioUrl);
+			await audio.play();
+			audio.onended = () => URL.revokeObjectURL(audioUrl);
 		} catch (error) {
 			console.error('Failed to preview voice:', error);
 			alert(`Failed to preview voice: ${error instanceof Error ? error.message : 'Unknown error'}`);

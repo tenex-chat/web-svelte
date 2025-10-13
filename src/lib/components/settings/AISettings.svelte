@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { aiConfigStore, type LLMConfig, type TTSProvider, type STTProvider } from '$lib/stores/aiConfig.svelte';
 	import { cn } from '$lib/utils/cn';
-	import { previewVoice } from '$lib/services/voice-discovery';
+	import { voiceDiscovery } from '$lib/services/voice-discovery';
 	import AddProviderDialog from '../dialogs/AddProviderDialog.svelte';
 	import VoiceSelectionDialog from '../dialogs/VoiceSelectionDialog.svelte';
 
@@ -50,7 +50,18 @@
 		previewingVoice = true;
 
 		try {
-			await previewVoice(voiceSettings.provider, voiceSettings.voiceIds[0], apiKey);
+			const audioBlob = await voiceDiscovery.previewVoice(
+				voiceSettings.provider,
+				voiceSettings.voiceIds[0],
+				'Hello, this is a preview of this voice.',
+				apiKey
+			);
+
+			// Play the audio
+			const audioUrl = URL.createObjectURL(audioBlob);
+			const audio = new Audio(audioUrl);
+			await audio.play();
+			audio.onended = () => URL.revokeObjectURL(audioUrl);
 		} catch (error) {
 			console.error('Failed to preview voice:', error);
 			alert(`Failed to preview voice: ${error instanceof Error ? error.message : 'Unknown error'}`);
