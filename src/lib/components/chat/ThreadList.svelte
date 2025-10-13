@@ -227,7 +227,7 @@
 		{#if sortedThreads.length === 0}
 			<div class="flex flex-col items-center justify-center h-32 text-center px-4">
 				<MessageSquare class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-2" />
-				<p class="text-sm text-gray-500 dark:text-gray-400">
+				<p class="text-sm text-gray-600 dark:text-gray-300">
 					{#if timeFilter}
 						{#if timeFilter.startsWith('needs-response-')}
 							No conversations need your response
@@ -277,11 +277,11 @@
 						{title}
 					</div>
 					{#if latestReply}
-						<div class="text-xs text-gray-600 dark:text-gray-400 truncate mb-2">
+						<div class="text-xs text-gray-600 dark:text-gray-300 truncate mb-2">
 							{latestReply.content.slice(0, 80)}{latestReply.content.length > 80 ? '...' : ''}
 						</div>
 					{/if}
-					<div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+					<div class="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-300">
 						<div class="flex items-center gap-1">
 							<MessageSquare class="w-3 h-3" />
 							<span>{replyCount}</span>

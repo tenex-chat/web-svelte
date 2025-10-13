@@ -180,15 +180,15 @@
 		<div class="flex-1 min-w-0">
 			<div class="flex items-baseline gap-2 mb-1">
 				<span class="font-semibold text-sm text-gray-900 dark:text-gray-100">{authorName}</span>
-				<span class="text-xs text-gray-500 dark:text-gray-400">{timestamp}</span>
+				<span class="text-xs text-gray-600 dark:text-gray-300">{timestamp}</span>
 				{#if isStreaming}
-					<span class="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-						<span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse"></span>
+					<span class="text-xs text-blue-600 dark:text-blue-300 flex items-center gap-1">
+						<span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-300 animate-pulse"></span>
 						streaming...
 					</span>
 				{/if}
 				{#if isTyping}
-					<span class="text-xs text-gray-500 dark:text-gray-400 italic">typing...</span>
+					<span class="text-xs text-gray-600 dark:text-gray-300 italic">typing...</span>
 				{/if}
 
 				<!-- Message Actions Dropdown -->
@@ -207,11 +207,11 @@
 
 			<!-- Reply-to indicator (p-tags) -->
 			{#if replyingToProfiles.length > 0}
-				<div class="flex items-center gap-1 mb-1 text-xs text-gray-500 dark:text-gray-400">
+				<div class="flex items-center gap-1 mb-1 text-xs text-gray-600 dark:text-gray-300">
 					<Reply class="w-3 h-3" />
 					<span>replying to</span>
 					{#each replyingToProfiles as profile, index}
-						<span class="font-medium text-blue-600 dark:text-blue-400">@{profile.name}</span>
+						<span class="font-medium text-blue-600 dark:text-blue-300">@{profile.name}</span>
 						{#if index < replyingToProfiles.length - 1}
 							<span>,</span>
 						{/if}

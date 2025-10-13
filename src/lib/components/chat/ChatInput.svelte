@@ -301,7 +301,7 @@
 	<!-- Reply Context -->
 	{#if replyToEvent}
 		<div class="mb-3 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-400 rounded flex items-center gap-2">
-			<svg class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<svg class="w-4 h-4 text-blue-600 dark:text-blue-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path
 					stroke-linecap="round"
 					stroke-linejoin="round"
@@ -310,15 +310,15 @@
 				/>
 			</svg>
 			<div class="flex-1 min-w-0">
-				<div class="text-xs text-blue-600 dark:text-blue-400 font-medium">Replying to {replyToAuthorName}</div>
-				<div class="text-xs text-blue-800 dark:text-blue-300 truncate">
+				<div class="text-xs text-blue-600 dark:text-blue-300 font-medium">Replying to {replyToAuthorName}</div>
+				<div class="text-xs text-blue-800 dark:text-blue-200 truncate">
 					{replyToEvent.content.slice(0, 100)}{replyToEvent.content.length > 100 ? '...' : ''}
 				</div>
 			</div>
 			<button
 				type="button"
 				onclick={onCancelReply}
-				class="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors text-blue-600 dark:text-blue-400"
+				class="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors text-blue-600 dark:text-blue-300"
 				aria-label="Cancel reply"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

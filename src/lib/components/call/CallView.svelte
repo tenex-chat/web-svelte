@@ -5,8 +5,8 @@
 	import VoiceVisualizer from './VoiceVisualizer.svelte';
 	import AudioControls from './AudioControls.svelte';
 	import CallStatus from './CallStatus.svelte';
-	// import AgentSelector from '../chat/AgentSelector.svelte'; // TODO: Import when available
-	// import AgentAvatar from './AgentAvatar.svelte'; // TODO: Create AgentAvatar component
+	import AgentSelector from '../chat/AgentSelector.svelte';
+	import AgentAvatar from './AgentAvatar.svelte';
 
 	interface Props {
 		project: any; // TODO: Replace with NDKProject type when available
@@ -131,6 +131,19 @@
 		}
 		onClose(threadManagement.localRootEvent || initialRootEvent);
 	}
+
+	// Handle agent selection
+	function handleAgentSelect(pubkey: string | null) {
+		selectedAgentPubkey = pubkey;
+		if (callStore) {
+			callStore.updateOptions({ activeAgent });
+		}
+	}
+
+	// Handle agent configuration
+	function handleAgentConfigure() {
+		console.log('[CallView] Agent configuration not yet implemented');
+	}
 </script>
 
 <div class="flex flex-col bg-black {isEmbedded ? 'h-full' : 'fixed inset-0 z-50'}">
@@ -138,17 +151,15 @@
 	<div class="flex items-center justify-between p-4">
 		<div class="flex items-center gap-3">
 			<h2 class="text-lg font-medium text-white">{project?.title || 'Voice Call'}</h2>
-			<!-- TODO: Add AgentSelector when available
 			{#if agents.length > 0}
 				<AgentSelector
 					{agents}
-					{messages}
 					selectedAgent={selectedAgentPubkey}
-					onAgentSelect={(pubkey) => (selectedAgentPubkey = pubkey)}
-					disabled={callState === 'processing'}
+					currentModel={activeAgent?.model}
+					onSelect={handleAgentSelect}
+					onConfigure={handleAgentConfigure}
 				/>
 			{/if}
-			-->
 		</div>
 		<div class="text-sm text-white/60">
 			{vadModeDisplay}
@@ -158,13 +169,9 @@
 	<!-- Main content -->
 	<div class="flex flex-1 flex-col items-center justify-center px-6">
 		<!-- Agent display -->
-		<!-- TODO: Add AgentAvatar when component is created
 		{#if activeAgent}
 			<AgentAvatar agent={activeAgent} isActive={callState === 'playing'} />
-		{/if}
-		-->
-
-		{#if !activeAgent}
+		{:else}
 			<div class="h-20 w-20 rounded-full bg-white/10 flex items-center justify-center text-white">
 				{project?.title?.[0]?.toUpperCase() || 'P'}
 			</div>
