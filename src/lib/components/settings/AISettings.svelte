@@ -62,7 +62,7 @@
 
 <div class="space-y-6">
 	<!-- AI Providers Section -->
-	<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+	<div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg p-6">
 		<div class="mb-4">
 			<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
 				<span>🤖</span> AI Providers
@@ -76,7 +76,7 @@
 					<div
 						class={cn(
 							'flex items-center justify-between p-4 border rounded-lg',
-							activeConfigId === llmConfig.id ? 'border-blue-500 bg-blue-50 dark:bg-gray-700' : 'border-gray-200 dark:border-gray-700'
+							activeConfigId === llmConfig.id ? 'border-blue-500 bg-blue-50 dark:bg-zinc-800' : 'border-gray-200 dark:border-zinc-700'
 						)}
 					>
 						<div class="flex items-center gap-3">
@@ -107,13 +107,13 @@
 							<button
 								onclick={() => handleTestConnection(llmConfig)}
 								disabled={testingConnection === llmConfig.id}
-								class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700"
+								class="px-3 py-1 text-sm border border-gray-300 dark:border-zinc-700 rounded hover:bg-gray-50 dark:hover:bg-zinc-800"
 							>
 								{testingConnection === llmConfig.id ? 'Testing...' : 'Test'}
 							</button>
 							<button
 								onclick={() => handleDeleteConfig(llmConfig.id)}
-								class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700"
+								class="px-3 py-1 text-sm border border-gray-300 dark:border-zinc-700 rounded hover:bg-gray-50 dark:hover:bg-zinc-800"
 								aria-label="Delete configuration"
 							>
 								🗑️
@@ -123,7 +123,7 @@
 				{/each}
 				<button
 					onclick={() => (showAddProvider = true)}
-					class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+					class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
 				>
 					+ Add New Configuration
 				</button>
@@ -143,7 +143,7 @@
 
 	<!-- UI Features Configuration -->
 	{#if llmConfigs.length > 0}
-		<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+		<div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg p-6">
 			<div class="mb-4">
 				<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
 					<span>✨</span> UI Features Configuration
@@ -166,7 +166,7 @@
 							aiConfigStore.updateUILLMConfigs({
 								titleGeneration: e.currentTarget.value === 'default' ? undefined : e.currentTarget.value
 							})}
-						class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+						class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
 					>
 						<option value="default">Use active configuration</option>
 						{#each llmConfigs as llmConfig (llmConfig.id)}
@@ -188,7 +188,7 @@
 							aiConfigStore.updateUILLMConfigs({
 								summaries: e.currentTarget.value === 'default' ? undefined : e.currentTarget.value
 							})}
-						class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+						class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
 					>
 						<option value="default">Use active configuration</option>
 						{#each llmConfigs as llmConfig (llmConfig.id)}
@@ -202,7 +202,7 @@
 	{/if}
 
 	<!-- Voice Settings -->
-	<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+	<div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg p-6">
 		<div class="mb-4">
 			<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
 				<span>🎤</span> Voice Settings
@@ -264,7 +264,7 @@
 									type="password"
 									bind:value={config.openAIApiKey}
 									onchange={(e) => aiConfigStore.setOpenAIApiKey(e.currentTarget.value)}
-									class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+									class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
 									placeholder="sk-..."
 								/>
 								<p class="text-xs text-gray-500 dark:text-gray-400">Uses Whisper model: {sttSettings.model}</p>
@@ -282,7 +282,7 @@
 									bind:value={voiceSettings.apiKey}
 									onchange={(e) =>
 										aiConfigStore.updateVoiceSettings({ apiKey: e.currentTarget.value })}
-									class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+									class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
 									placeholder="Enter your ElevenLabs API key"
 								/>
 								<p class="text-xs text-gray-500 dark:text-gray-400">
@@ -353,7 +353,7 @@
 									type="password"
 									bind:value={config.openAIApiKey}
 									onchange={(e) => aiConfigStore.setOpenAIApiKey(e.currentTarget.value)}
-									class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+									class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
 									placeholder="sk-..."
 								/>
 								<p class="text-xs text-gray-500 dark:text-gray-400">Get your API key from platform.openai.com</p>
@@ -371,7 +371,7 @@
 									bind:value={voiceSettings.apiKey}
 									onchange={(e) =>
 										aiConfigStore.updateVoiceSettings({ apiKey: e.currentTarget.value })}
-									class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+									class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
 									placeholder="Enter your ElevenLabs API key"
 								/>
 								<p class="text-xs text-gray-500 dark:text-gray-400">
@@ -390,13 +390,13 @@
 							<div class="flex gap-2">
 								<button
 									onclick={() => (showVoiceSelection = true)}
-									class="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+									class="px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
 								>
 									Select Voice
 								</button>
 								<button
 									onclick={() => (showVoiceSelection = 'multi')}
-									class="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+									class="px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
 								>
 									👥 Select Multiple
 								</button>
@@ -404,7 +404,7 @@
 									onclick={handlePreviewVoice}
 									disabled={!voiceSettings.voiceIds?.length || previewingVoice}
 									class={cn(
-										'px-4 py-2 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors',
+										'px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors',
 										(!voiceSettings.voiceIds?.length || previewingVoice) && 'opacity-50 cursor-not-allowed'
 									)}
 								>
@@ -459,7 +459,7 @@
 	</div>
 
 	<!-- Quick Actions -->
-	<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+	<div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg p-6">
 		<div class="mb-4">
 			<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
 				<span>⚡</span> Quick Actions
@@ -473,7 +473,7 @@
 						alert('Settings reset successfully');
 					}
 				}}
-				class="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+				class="px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
 			>
 				Reset to Defaults
 			</button>

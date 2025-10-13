@@ -170,7 +170,7 @@
 </script>
 
 <div
-	class="group px-4 py-3 hover:bg-gray-50 transition-colors {isCurrentUser ? 'bg-blue-50/30' : ''}"
+	class="group px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors {isCurrentUser ? 'bg-blue-50/30 dark:bg-blue-900/20' : ''}"
 >
 	<div class="flex gap-3">
 		<!-- Avatar -->
@@ -179,16 +179,16 @@
 		<!-- Message Content -->
 		<div class="flex-1 min-w-0">
 			<div class="flex items-baseline gap-2 mb-1">
-				<span class="font-semibold text-sm text-gray-900">{authorName}</span>
-				<span class="text-xs text-gray-500">{timestamp}</span>
+				<span class="font-semibold text-sm text-gray-900 dark:text-gray-100">{authorName}</span>
+				<span class="text-xs text-gray-500 dark:text-gray-400">{timestamp}</span>
 				{#if isStreaming}
-					<span class="text-xs text-blue-600 flex items-center gap-1">
-						<span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+					<span class="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+						<span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse"></span>
 						streaming...
 					</span>
 				{/if}
 				{#if isTyping}
-					<span class="text-xs text-gray-500 italic">typing...</span>
+					<span class="text-xs text-gray-500 dark:text-gray-400 italic">typing...</span>
 				{/if}
 
 				<!-- Message Actions Dropdown -->
@@ -196,10 +196,10 @@
 					<DropdownMenu items={dropdownItems} bind:open={dropdownOpen} align="end">
 						<button
 							type="button"
-							class="p-1 rounded hover:bg-gray-200 transition-colors"
+							class="p-1 rounded hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
 							aria-label="Message actions"
 						>
-							<MoreVertical class="w-4 h-4 text-gray-500" />
+							<MoreVertical class="w-4 h-4 text-gray-500 dark:text-gray-400" />
 						</button>
 					</DropdownMenu>
 				</div>
@@ -207,11 +207,11 @@
 
 			<!-- Reply-to indicator (p-tags) -->
 			{#if replyingToProfiles.length > 0}
-				<div class="flex items-center gap-1 mb-1 text-xs text-gray-500">
+				<div class="flex items-center gap-1 mb-1 text-xs text-gray-500 dark:text-gray-400">
 					<Reply class="w-3 h-3" />
 					<span>replying to</span>
 					{#each replyingToProfiles as profile, index}
-						<span class="font-medium text-blue-600">@{profile.name}</span>
+						<span class="font-medium text-blue-600 dark:text-blue-400">@{profile.name}</span>
 						{#if index < replyingToProfiles.length - 1}
 							<span>,</span>
 						{/if}
@@ -229,10 +229,10 @@
 					{isLastMessage}
 				/>
 			{:else}
-				<div class="prose prose-sm max-w-none">
+				<div class="prose prose-sm max-w-none dark:prose-invert">
 					{@html renderedContent}
 					{#if isStreaming}
-						<span class="inline-block w-1.5 h-4 ml-0.5 bg-blue-600 animate-pulse"></span>
+						<span class="inline-block w-1.5 h-4 ml-0.5 bg-blue-600 dark:bg-blue-400 animate-pulse"></span>
 					{/if}
 				</div>
 
@@ -251,7 +251,7 @@
 <!-- Raw Event Dialog -->
 {#if showRawEvent}
 	<div
-		class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+		class="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50"
 		onclick={closeRawEventDialog}
 		onkeydown={(e) => {
 			if (e.key === 'Escape') closeRawEventDialog();
@@ -261,16 +261,16 @@
 		tabindex="-1"
 	>
 		<div
-			class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
+			class="bg-white dark:bg-zinc-900 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
 			onclick={(e) => e.stopPropagation()}
 			role="document"
 		>
-			<div class="flex items-center justify-between px-4 py-3 border-b">
-				<h3 class="font-semibold text-gray-900">Raw Event</h3>
+			<div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-zinc-700">
+				<h3 class="font-semibold text-gray-900 dark:text-gray-100">Raw Event</h3>
 				<button
 					type="button"
 					onclick={closeRawEventDialog}
-					class="p-1 rounded hover:bg-gray-100 transition-colors"
+					class="p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
 					aria-label="Close"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -285,15 +285,15 @@
 			</div>
 			<div class="flex-1 overflow-y-auto p-4">
 				<pre
-					class="text-xs bg-gray-50 rounded p-4 overflow-x-auto">{JSON.stringify(message.event.rawEvent(), null, 2)}</pre>
+					class="text-xs bg-gray-50 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 rounded p-4 overflow-x-auto">{JSON.stringify(message.event.rawEvent(), null, 2)}</pre>
 			</div>
-			<div class="flex items-center justify-end gap-2 px-4 py-3 border-t">
+			<div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-zinc-700">
 				<button
 					type="button"
 					onclick={() => {
 						navigator.clipboard.writeText(JSON.stringify(message.event.rawEvent(), null, 2));
 					}}
-					class="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+					class="px-3 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
 				>
 					Copy JSON
 				</button>

@@ -14,7 +14,7 @@
 	});
 </script>
 
-<div class="flex min-h-screen items-center justify-center bg-white dark:bg-gray-900">
+<div class="flex min-h-screen items-center justify-center bg-white dark:bg-zinc-950">
 	<div class="text-center">
 		<div
 			class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"

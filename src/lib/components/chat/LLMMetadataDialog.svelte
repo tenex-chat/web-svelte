@@ -105,12 +105,12 @@
 		tabindex="-1"
 	>
 		<div
-			class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
+			class="bg-white dark:bg-zinc-900 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
 			onclick={(e) => e.stopPropagation()}
 			role="document"
 		>
 			<!-- Header -->
-			<div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+			<div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-zinc-700">
 				<div class="flex items-center gap-2">
 					<Info class="w-5 h-5 text-blue-600" />
 					<h3 id="llm-metadata-title" class="font-semibold text-gray-900 dark:text-gray-100">
@@ -120,7 +120,7 @@
 				<button
 					type="button"
 					onclick={onClose}
-					class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+					class="p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
 					aria-label="Close"
 				>
 					<X class="w-5 h-5 text-gray-500" />
@@ -143,7 +143,7 @@
 					<div class="space-y-4">
 						{#each Object.entries(groupedMetadata) as [categoryKey, category]}
 							{#if category.items.length > 0}
-								<div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+								<div class="border border-gray-200 dark:border-zinc-700 rounded-lg p-4">
 									<div class="flex items-center gap-2 mb-3">
 										<svelte:component
 											this={category.icon}
@@ -174,7 +174,7 @@
 
 			<!-- Footer -->
 			{#if hasMetadata}
-				<div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+				<div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-zinc-700">
 					<button
 						type="button"
 						onclick={copyMetadata}

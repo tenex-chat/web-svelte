@@ -173,24 +173,21 @@
 				{/each}
 			</div>
 
-			<!-- Add button - shown for conversations tab -->
-			{#if activeTab === 'conversations'}
-				<button
-					onclick={() => windowManager.openChat(project)}
-					class="h-6 w-6 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
-					title="New conversation"
-					aria-label="New conversation"
-				>
-					<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 4v16m8-8H4"
-						/>
-					</svg>
-				</button>
-			{/if}
+			<!-- Add button -->
+			<button
+				class="h-6 w-6 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+				title="Add new"
+				aria-label="Add new"
+			>
+				<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M12 4v16m8-8H4"
+					/>
+				</svg>
+			</button>
 		</div>
 	</div>
 

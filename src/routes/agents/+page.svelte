@@ -79,7 +79,7 @@
 
 <div class="flex-1 flex flex-col">
 	<!-- Header -->
-	<div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+	<div class="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-700">
 		<div class="max-w-6xl mx-auto px-4 py-4">
 			<div class="flex items-center justify-between mb-4">
 				<div>
@@ -115,13 +115,13 @@
 						type="text"
 						bind:value={searchQuery}
 						placeholder="Search agents by name, description, or role..."
-						class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
 					/>
 				</div>
 				{#if currentUser}
 					<select
 						bind:value={activeFilter}
-						class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
 					>
 						<option value="all">All Definitions</option>
 						<option value="owned">My Definitions</option>
@@ -133,7 +133,7 @@
 	</div>
 
 	<!-- Content -->
-	<div class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+	<div class="flex-1 overflow-y-auto bg-gray-50 dark:bg-zinc-950">
 		<div class="max-w-6xl mx-auto p-4">
 			{#if filteredAgents.length === 0}
 				<div class="flex flex-col items-center justify-center py-12">

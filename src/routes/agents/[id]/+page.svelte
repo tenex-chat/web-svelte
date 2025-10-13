@@ -83,7 +83,7 @@
 
 <div class="flex-1 flex flex-col">
 	{#if !agent}
-		<div class="flex-1 flex items-center justify-center bg-white dark:bg-gray-900">
+		<div class="flex-1 flex items-center justify-center bg-white dark:bg-zinc-950">
 			<div class="text-center">
 				<svg
 					class="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4"
@@ -110,12 +110,12 @@
 		</div>
 	{:else}
 		<!-- Header -->
-		<div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+		<div class="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-700">
 			<div class="max-w-4xl mx-auto px-4 py-4">
 				<div class="flex items-center gap-4 mb-4">
 					<button
 						onclick={() => goto('/agents')}
-						class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+						class="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
 					>
 						<svg class="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
@@ -142,7 +142,7 @@
 						</h1>
 						<div class="flex items-center gap-2 mt-1">
 							{#if agent.role}
-								<span class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">{agent.role}</span>
+								<span class="px-2 py-1 text-xs bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded">{agent.role}</span>
 							{/if}
 							<button
 								onclick={handleCopyId}
@@ -178,11 +178,11 @@
 						</button>
 						{#if actionsOpen}
 							<div
-								class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-10"
+								class="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-gray-200 dark:border-zinc-700 z-10"
 							>
 								<button
 									onclick={handleFork}
-									class="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+									class="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-2"
 								>
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path
@@ -196,7 +196,7 @@
 								</button>
 								<button
 									onclick={handleClone}
-									class="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+									class="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-2"
 								>
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path
@@ -216,7 +216,7 @@
 		</div>
 
 		<!-- Tabs -->
-		<div class="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+		<div class="border-b border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900">
 			<div class="max-w-4xl mx-auto px-4">
 				<div class="flex gap-4">
 					<button
@@ -242,18 +242,18 @@
 		</div>
 
 		<!-- Content -->
-		<div class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+		<div class="flex-1 overflow-y-auto bg-gray-50 dark:bg-zinc-950">
 			<div class="max-w-4xl mx-auto p-4 space-y-4">
 				{#if activeTab === 'details'}
 					<!-- Description -->
-					<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+					<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
 						<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Description</h3>
 						<p class="text-gray-700 dark:text-gray-300">{agent.description || 'No description provided'}</p>
 					</div>
 
 					<!-- Instructions -->
 					{#if agent.instructions}
-						<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+						<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
 							<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Instructions</h3>
 							<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">The prompt that defines this agent's behavior</p>
 							<div class="prose prose-sm max-w-none dark:prose-invert">
@@ -264,7 +264,7 @@
 
 					<!-- Use Criteria -->
 					{#if agent.useCriteria && agent.useCriteria.length > 0}
-						<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+						<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
 							<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Use Criteria</h3>
 							<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">When this agent should be used</p>
 							<ul class="space-y-2">
@@ -279,7 +279,7 @@
 					{/if}
 
 					<!-- Tools & MCP Servers -->
-					<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+					<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
 						<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-4">Tools & Capabilities</h3>
 
 						<!-- Direct Tools -->
@@ -304,7 +304,7 @@
 							{#if agent.tools.length > 0}
 								<div class="flex flex-wrap gap-2">
 									{#each agent.tools as tool}
-										<span class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded border border-gray-200 dark:border-gray-600">
+										<span class="px-2 py-1 text-xs bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded border border-gray-200 dark:border-zinc-600">
 											{tool}
 										</span>
 									{/each}
@@ -330,7 +330,7 @@
 							{#if mcpTools.length > 0}
 								<div class="space-y-2">
 									{#each mcpTools as mcp}
-										<div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 bg-gray-50 dark:bg-gray-700/50">
+										<div class="border border-gray-200 dark:border-zinc-600 rounded-lg p-3 bg-gray-50 dark:bg-zinc-800/50">
 											<h4 class="font-medium text-sm text-gray-900 dark:text-gray-100">
 												{mcp.name || 'Unnamed MCP Server'}
 											</h4>
@@ -352,7 +352,7 @@
 					</div>
 
 					<!-- Metadata -->
-					<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+					<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
 						<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-4">Metadata</h3>
 						<div class="space-y-2 text-sm">
 							<div class="flex justify-between">
@@ -381,7 +381,7 @@
 					<!-- Phases Tab -->
 					<div class="space-y-4">
 						{#each agent.phases as phase, index}
-							<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+							<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
 								<div class="flex items-center gap-2 mb-2">
 									<span class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">Phase {index + 1}</span>
 									<h3 class="font-semibold text-gray-900 dark:text-gray-100">{phase.name}</h3>

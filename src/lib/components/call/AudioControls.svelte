@@ -1,0 +1,112 @@
+<script lang="ts">
+	import { PhoneOff, Mic, MicOff, Send } from 'lucide-svelte';
+	import { scale } from 'svelte/transition';
+	import { tweened } from 'svelte/motion';
+	import { cubicOut } from 'svelte/easing';
+
+	interface Props {
+		isRecording: boolean;
+		isProcessing: boolean;
+		hasTranscript: boolean;
+		audioLevel: number;
+		onEndCall: () => void;
+		onMicToggle: () => void;
+		onSend: () => void;
+	}
+
+	let {
+		isRecording,
+		isProcessing,
+		hasTranscript,
+		audioLevel,
+		onEndCall,
+		onMicToggle,
+		onSend
+	}: Props = $props();
+
+	// Smooth audio level for visualizations
+	const smoothLevel = tweened(0, {
+		duration: 50,
+		easing: cubicOut
+	});
+
+	$effect(() => {
+		smoothLevel.set(audioLevel);
+	});
+
+	const levelScale = $derived(1 + $smoothLevel * 0.5);
+</script>
+
+<div class="flex items-center justify-center gap-4 p-6">
+	<!-- End call button -->
+	<button
+		onclick={onEndCall}
+		class="h-16 w-16 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 active:scale-95 transition-all"
+		aria-label="End call"
+	>
+		<PhoneOff class="h-7 w-7 text-white" />
+	</button>
+
+	<!-- Mic toggle button -->
+	<button
+		onclick={onMicToggle}
+		disabled={isProcessing}
+		class="relative h-16 w-16 overflow-hidden rounded-full flex items-center justify-center active:scale-95 transition-all {isRecording
+			? 'bg-white text-black'
+			: 'bg-gray-700 text-white hover:bg-gray-600'} disabled:opacity-50 disabled:cursor-not-allowed"
+		aria-label={isRecording ? 'Stop recording' : 'Start recording'}
+	>
+		<!-- Recording indicator ring -->
+		{#if isRecording}
+			<div class="absolute inset-0 rounded-full recording-ring"></div>
+		{/if}
+
+		<!-- Audio level visualization -->
+		{#if isRecording}
+			<div
+				class="absolute inset-0 rounded-full bg-red-500/20 transition-transform duration-[50ms]"
+				style:transform="scale({levelScale})"
+			></div>
+		{/if}
+
+		<div class="relative z-10">
+			{#if isRecording}
+				<Mic class="h-7 w-7 animate-pulse" />
+			{:else}
+				<MicOff class="h-7 w-7" />
+			{/if}
+		</div>
+	</button>
+
+	<!-- Send button -->
+	<button
+		onclick={onSend}
+		disabled={!hasTranscript || isProcessing}
+		class="h-16 w-16 rounded-full flex items-center justify-center active:scale-95 transition-all {hasTranscript &&
+		!isProcessing
+			? 'bg-green-500 hover:bg-green-600 text-white'
+			: 'bg-gray-700 text-gray-400 cursor-not-allowed'}"
+		aria-label="Send message"
+	>
+		<Send class="h-7 w-7" />
+	</button>
+</div>
+
+<style>
+	.recording-ring {
+		border: 3px solid rgb(239, 68, 68); /* red-500 */
+		animation: pulse-ring 1.5s ease-out infinite;
+	}
+
+	@keyframes pulse-ring {
+		0%,
+		100% {
+			transform: scale(1);
+			opacity: 1;
+		}
+		50% {
+			transform: scale(1.3);
+			opacity: 0;
+		}
+	}
+</style>

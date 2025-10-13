@@ -35,7 +35,7 @@
 
 <div class="space-y-6">
 	<!-- Notification Types Section -->
-	<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+	<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
 		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Notification Types</h3>
 		<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Choose which notifications you want to receive</p>
 
@@ -56,7 +56,7 @@
 						})}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						notifications.projectUpdates ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+						notifications.projectUpdates ? 'bg-blue-600' : 'bg-gray-200 dark:bg-zinc-800'
 					)}
 					role="switch"
 					aria-checked={notifications.projectUpdates}
@@ -86,7 +86,7 @@
 						})}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						notifications.taskAssignments ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+						notifications.taskAssignments ? 'bg-blue-600' : 'bg-gray-200 dark:bg-zinc-800'
 					)}
 					role="switch"
 					aria-checked={notifications.taskAssignments}
@@ -116,7 +116,7 @@
 						})}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						notifications.agentResponses ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+						notifications.agentResponses ? 'bg-blue-600' : 'bg-gray-200 dark:bg-zinc-800'
 					)}
 					role="switch"
 					aria-checked={notifications.agentResponses}
@@ -144,7 +144,7 @@
 						uiSettingsStore.updateNotifications({ threadReplies: !notifications.threadReplies })}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						notifications.threadReplies ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+						notifications.threadReplies ? 'bg-blue-600' : 'bg-gray-200 dark:bg-zinc-800'
 					)}
 					role="switch"
 					aria-checked={notifications.threadReplies}
@@ -170,7 +170,7 @@
 						uiSettingsStore.updateNotifications({ mentions: !notifications.mentions })}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						notifications.mentions ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+						notifications.mentions ? 'bg-blue-600' : 'bg-gray-200 dark:bg-zinc-800'
 					)}
 					role="switch"
 					aria-checked={notifications.mentions}
@@ -187,7 +187,7 @@
 	</div>
 
 	<!-- Sound Settings Section -->
-	<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+	<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
 		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Sound Settings</h3>
 
 		<div class="space-y-4">
@@ -205,7 +205,7 @@
 						uiSettingsStore.updateNotifications({ soundEnabled: !notifications.soundEnabled })}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						notifications.soundEnabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+						notifications.soundEnabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-zinc-800'
 					)}
 					role="switch"
 					aria-checked={notifications.soundEnabled}
@@ -223,7 +223,7 @@
 			{#if notifications.soundEnabled}
 				<button
 					onclick={playTestSound}
-					class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors text-sm font-medium"
+					class="px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium"
 				>
 					Test Sound
 				</button>
@@ -232,7 +232,7 @@
 	</div>
 
 	<!-- Browser Notifications Section -->
-	<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+	<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
 		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Browser Notifications</h3>
 		<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
 			Receive browser notifications even when TENEX is not in focus

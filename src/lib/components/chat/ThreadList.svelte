@@ -9,9 +9,13 @@
 		project: NDKProject;
 		selectedThread?: NDKEvent;
 		onThreadSelect?: (thread: NDKEvent) => void;
+		timeFilter?: string | null;
 	}
 
-	let { project, selectedThread, onThreadSelect }: Props = $props();
+	let { project, selectedThread, onThreadSelect, timeFilter = null }: Props = $props();
+
+	// Get current user from NDK sessions
+	const currentUser = $derived(ndk.$sessions?.[0]);
 
 	// Subscribe to all threads (kind:11) for this project
 	const threadsSubscription = ndk.$subscribe(() => ({
@@ -81,9 +85,127 @@
 		return metadata;
 	});
 
-	// Sort by most recent activity (either thread creation or latest reply)
+	// Sort and filter threads based on timeFilter
 	const sortedThreads = $derived.by(() => {
-		return [...threads].sort((a, b) => {
+		if (threads.length === 0) return [];
+
+		let filteredThreads = [...threads].filter((thread) => thread.created_at !== undefined);
+
+		// Apply time filter if set
+		if (timeFilter && replies) {
+			const now = Math.floor(Date.now() / 1000);
+
+			// Check if this is a "needs response" filter
+			const isNeedsResponseFilter = timeFilter.startsWith('needs-response-');
+
+			if (isNeedsResponseFilter && currentUser) {
+				// Handle "needs response" filters - shows threads where others have replied but user hasn't
+				const filterTime = timeFilter.replace('needs-response-', '');
+				const thresholds: Record<string, number> = {
+					'1h': 60 * 60,
+					'4h': 4 * 60 * 60,
+					'1d': 24 * 60 * 60
+				};
+				const threshold = thresholds[filterTime];
+
+				if (threshold) {
+					// Track the last response from others and the user per thread
+					const threadLastOtherReplyMap = new Map<string, number>();
+					const threadLastUserReplyMap = new Map<string, number>();
+
+					// Group replies by thread and categorize by author
+					replies.forEach((reply) => {
+						const threadIdTag = reply.tags?.find((tag) => tag[0] === 'e');
+						if (threadIdTag && threadIdTag[1] && reply.created_at) {
+							if (reply.pubkey === currentUser.pubkey) {
+								// Track user's own replies
+								const currentLast = threadLastUserReplyMap.get(threadIdTag[1]) || 0;
+								if (reply.created_at > currentLast) {
+									threadLastUserReplyMap.set(threadIdTag[1], reply.created_at);
+								}
+							} else {
+								// Track replies from others
+								const currentLast = threadLastOtherReplyMap.get(threadIdTag[1]) || 0;
+								if (reply.created_at > currentLast) {
+									threadLastOtherReplyMap.set(threadIdTag[1], reply.created_at);
+								}
+							}
+						}
+					});
+
+					// Filter threads that need a response from the current user
+					filteredThreads = filteredThreads.filter((thread) => {
+						const lastOtherReplyTime = threadLastOtherReplyMap.get(thread.id);
+						const lastUserReplyTime = threadLastUserReplyMap.get(thread.id);
+
+						// If someone else has replied
+						if (lastOtherReplyTime) {
+							// Check if user has already responded after this reply
+							if (lastUserReplyTime && lastUserReplyTime > lastOtherReplyTime) {
+								// User has already responded, don't show
+								return false;
+							}
+
+							// Check if the time since the other person's reply exceeds the threshold
+							const timeSinceLastOtherReply = now - lastOtherReplyTime;
+							if (timeSinceLastOtherReply < threshold) {
+								// Reply is still within the threshold time, don't show yet
+								return false;
+							}
+
+							// Someone replied more than threshold ago and user hasn't responded yet
+							return true;
+						}
+
+						// Don't include threads without replies from others
+						return false;
+					});
+				}
+			} else {
+				// Handle regular activity filters - shows threads with any activity within the time frame
+				const thresholds: Record<string, number> = {
+					'1h': 60 * 60,
+					'4h': 4 * 60 * 60,
+					'1d': 24 * 60 * 60
+				};
+				const threshold = thresholds[timeFilter];
+
+				if (threshold) {
+					// Track the last response time per thread (from anyone)
+					const threadLastReplyMap = new Map<string, number>();
+
+					// Group all replies by thread
+					replies.forEach((reply) => {
+						const threadIdTag = reply.tags?.find((tag) => tag[0] === 'e');
+						if (threadIdTag && threadIdTag[1] && reply.created_at) {
+							const currentLast = threadLastReplyMap.get(threadIdTag[1]) || 0;
+							if (reply.created_at > currentLast) {
+								threadLastReplyMap.set(threadIdTag[1], reply.created_at);
+							}
+						}
+					});
+
+					// Filter threads based on last activity time
+					filteredThreads = filteredThreads.filter((thread) => {
+						const lastReplyTime = threadLastReplyMap.get(thread.id);
+
+						// If thread has any replies
+						if (lastReplyTime) {
+							const timeSinceLastReply = now - lastReplyTime;
+							// Show threads that have had a reply within the selected timeframe
+							return timeSinceLastReply <= threshold;
+						}
+
+						// Also include threads created within the timeframe (even if no replies yet)
+						const timeSinceCreation = now - (thread.created_at || 0);
+						return timeSinceCreation <= threshold;
+					});
+				}
+			}
+		}
+
+		// Sort by most recent activity (either thread creation or latest reply)
+		return filteredThreads.sort((a, b) => {
 			const aMeta = threadMetadata.get(a.id);
 			const bMeta = threadMetadata.get(b.id);
 			const aTime = aMeta?.latestReply?.created_at || a.created_at || 0;
@@ -100,46 +222,76 @@
 </script>
 
 <div class="flex flex-col h-full">
-	<!-- Header with New button -->
-	<div class="p-2 border-b border-gray-200 flex items-center justify-between">
-		<span class="text-xs font-medium text-gray-500">{threads.length} conversations</span>
-		<button
-			onclick={handleNewConversation}
-			class="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-		>
-			New
-		</button>
-	</div>
-
 	<!-- Thread List -->
 	<div class="flex-1 overflow-y-auto">
 		{#if sortedThreads.length === 0}
 			<div class="flex flex-col items-center justify-center h-32 text-center px-4">
-				<span class="text-3xl mb-2">💬</span>
-				<p class="text-sm text-gray-500">No conversations yet</p>
-				<p class="text-xs text-gray-400 mt-1">Click "New" to start</p>
+				<MessageSquare class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-2" />
+				<p class="text-sm text-gray-500 dark:text-gray-400">
+					{#if timeFilter}
+						{#if timeFilter.startsWith('needs-response-')}
+							No conversations need your response
+						{:else}
+							No active conversations
+						{/if}
+					{:else}
+						No conversations yet
+					{/if}
+				</p>
+				<p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+					{#if !timeFilter}
+						Click "New" to start
+					{:else if timeFilter.startsWith('needs-response-')}
+						{@const time = timeFilter.replace('needs-response-', '')}
+						All caught up! No threads waiting for your response longer than {time === '1h'
+							? '1 hour'
+							: time === '4h'
+								? '4 hours'
+								: '24 hours'}
+					{:else}
+						No conversations with activity in the last {timeFilter === '1h'
+							? 'hour'
+							: timeFilter === '4h'
+								? '4 hours'
+								: '24 hours'}
+					{/if}
+				</p>
 			</div>
 		{:else}
 			{#each sortedThreads as thread (thread.id)}
 				{@const isSelected = selectedThread?.id === thread.id}
 				{@const title = thread.tagValue('title') || thread.content?.slice(0, 50) || 'Untitled'}
-				{@const timestamp = thread.created_at
-					? new Date(thread.created_at * 1000).toLocaleString('en-US', {
-							month: 'short',
-							day: 'numeric',
-							hour: 'numeric',
-							minute: '2-digit'
-						})
-					: ''}
+				{@const meta = threadMetadata.get(thread.id)}
+				{@const latestReply = meta?.latestReply}
+				{@const replyCount = meta?.replyCount || 0}
+				{@const participantCount = meta?.participants.size || 0}
+				{@const displayTime = latestReply?.created_at || thread.created_at || 0}
 
 				<button
 					onclick={() => onThreadSelect?.(thread)}
-					class="w-full text-left px-3 py-2 hover:bg-gray-100 transition-colors border-l-2 {isSelected
-						? 'border-blue-600 bg-blue-50'
-						: 'border-transparent'}"
+					class="w-full text-left px-3 py-3 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors border-b border-gray-200 dark:border-zinc-700 {isSelected
+						? 'bg-blue-50 dark:bg-blue-900/20'
+						: ''}"
 				>
-					<div class="font-medium text-sm text-gray-900 truncate mb-1">{title}</div>
-					<div class="text-xs text-gray-500">{timestamp}</div>
+					<div class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate mb-1">
+						{title}
+					</div>
+					{#if latestReply}
+						<div class="text-xs text-gray-600 dark:text-gray-400 truncate mb-2">
+							{latestReply.content.slice(0, 80)}{latestReply.content.length > 80 ? '...' : ''}
+						</div>
+					{/if}
+					<div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+						<div class="flex items-center gap-1">
+							<MessageSquare class="w-3 h-3" />
+							<span>{replyCount}</span>
+						</div>
+						<div class="flex items-center gap-1">
+							<Users class="w-3 h-3" />
+							<span>{participantCount}</span>
+						</div>
+						<span class="ml-auto">{formatRelativeTime(displayTime)}</span>
+					</div>
 				</button>
 			{/each}
 		{/if}

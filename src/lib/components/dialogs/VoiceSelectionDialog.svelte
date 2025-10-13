@@ -151,7 +151,7 @@
 		tabindex="0"
 	>
 		<div
-			class="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6"
+			class="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-lg shadow-xl p-6"
 			onclick={(e) => e.stopPropagation()}
 			role="dialog"
 			aria-modal="true"
@@ -216,7 +216,7 @@
 										'px-4 py-3 border rounded-md text-left transition-colors relative cursor-pointer',
 										selectedVoices.includes(voice.id)
 											? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400'
-											: 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+											: 'border-gray-300 dark:border-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-800/50'
 									)}
 								>
 									<div class="flex items-center justify-between">
@@ -228,7 +228,7 @@
 											{#if voice.labels}
 												<div class="flex flex-wrap gap-1 mt-1">
 													{#each Object.entries(voice.labels) as [key, value]}
-														<span class="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+														<span class="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded">
 															{value}
 														</span>
 													{/each}
@@ -242,7 +242,7 @@
 												handlePreviewVoice(voice.id);
 											}}
 											disabled={previewingVoiceId === voice.id}
-											class="preview-button ml-2 px-3 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50"
+											class="preview-button ml-2 px-3 py-1 text-xs border border-gray-300 dark:border-zinc-600 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50"
 										>
 											{previewingVoiceId === voice.id ? '🔊 Playing...' : '🔊 Preview'}
 										</button>
@@ -289,12 +289,12 @@
 								type="text"
 								bind:value={customVoiceId}
 								placeholder="Enter voice ID"
-								class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="flex-1 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
 								onkeydown={(e) => e.key === 'Enter' && addCustomVoice()}
 							/>
 							<button
 								onclick={addCustomVoice}
-								class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md transition-colors"
+								class="px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md transition-colors"
 								disabled={!customVoiceId.trim()}
 							>
 								Add
@@ -311,7 +311,7 @@
 			<div class="flex gap-3 mt-6">
 				<button
 					onclick={handleClose}
-					class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+					class="flex-1 px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 transition-colors"
 				>
 					Cancel
 				</button>

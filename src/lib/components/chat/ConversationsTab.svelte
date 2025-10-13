@@ -8,9 +8,10 @@
 	interface Props {
 		project: NDKProject;
 		onlineAgents?: ProjectAgent[];
+		timeFilter?: string | null;
 	}
 
-	let { project, onlineAgents = [] }: Props = $props();
+	let { project, onlineAgents = [], timeFilter = null }: Props = $props();
 
 	function handleThreadSelect(thread: NDKEvent | null) {
 		if (thread) {
@@ -23,5 +24,5 @@
 </script>
 
 <div class="h-full flex flex-col">
-	<ThreadList {project} onThreadSelect={handleThreadSelect} />
+	<ThreadList {project} {timeFilter} onThreadSelect={handleThreadSelect} />
 </div>

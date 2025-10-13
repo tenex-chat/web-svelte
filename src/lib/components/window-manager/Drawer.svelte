@@ -32,7 +32,7 @@
 </script>
 
 <div
-	class="drawer fixed top-0 right-0 bottom-0 w-[800px] bg-white border-l border-gray-200 shadow-2xl flex flex-col"
+	class="drawer fixed top-0 right-0 bottom-0 w-[800px] bg-white dark:bg-zinc-900 border-l border-gray-200 dark:border-zinc-700 shadow-2xl flex flex-col"
 	style="z-index: {window.zIndex}"
 	transition:slide={{ axis: 'x', duration: 200 }}
 	onclick={handleFocus}
@@ -40,12 +40,12 @@
 	aria-label={window.title}
 >
 	<!-- Drawer Header -->
-	<div class="drawer-header flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
+	<div class="drawer-header flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800">
 		<div class="flex items-center gap-3 flex-1 min-w-0">
 			<!-- Back/Close button -->
 			<button
 				onclick={handleClose}
-				class="p-1 hover:bg-gray-200 rounded transition-colors"
+				class="p-1 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors"
 				aria-label="Close"
 			>
 				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,9 +55,9 @@
 
 			<!-- Title -->
 			<div class="flex-1 min-w-0">
-				<h2 class="text-sm font-semibold truncate">{window.title}</h2>
+				<h2 class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{window.title}</h2>
 				{#if window.project}
-					<p class="text-xs text-gray-500 truncate">{window.project.title}</p>
+					<p class="text-xs text-gray-500 dark:text-gray-400 truncate">{window.project.title}</p>
 				{/if}
 			</div>
 		</div>
@@ -67,7 +67,7 @@
 			<!-- Detach button -->
 			<button
 				onclick={handleDetach}
-				class="p-2 hover:bg-gray-200 rounded transition-colors"
+				class="p-2 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors"
 				title="Open in window"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,7 +83,7 @@
 			<!-- Close button -->
 			<button
 				onclick={handleClose}
-				class="p-2 hover:bg-gray-200 rounded transition-colors"
+				class="p-2 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors"
 				title="Close"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,12 +110,12 @@
 			<SettingsTab project={window.project} {onlineAgents} />
 		{:else if window.type === 'agent'}
 			<div class="p-4">
-				<h3 class="text-lg font-semibold">Agent: {window.data?.agentName}</h3>
-				<p class="text-sm text-gray-500 mt-2">Agent details coming soon...</p>
+				<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Agent: {window.data?.agentName}</h3>
+				<p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Agent details coming soon...</p>
 			</div>
 		{:else}
 			<div class="p-4">
-				<p class="text-sm text-gray-500">Unknown window type: {window.type}</p>
+				<p class="text-sm text-gray-500 dark:text-gray-400">Unknown window type: {window.type}</p>
 			</div>
 		{/if}
 	</div>

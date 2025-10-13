@@ -52,7 +52,7 @@
 </script>
 
 <div
-	class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
+	class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
 	onclick={handleCardClick}
 	role="button"
 	tabindex="0"
@@ -115,7 +115,7 @@
 	<!-- Command -->
 	{#if tool.command}
 		<div class="mb-3">
-			<code class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono text-gray-700 dark:text-gray-300 break-all">
+			<code class="text-xs bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded font-mono text-gray-700 dark:text-gray-300 break-all">
 				{tool.command}
 			</code>
 		</div>
@@ -130,7 +130,7 @@
 				</span>
 			{/each}
 			{#if tool.capabilities.length > 3}
-				<span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+				<span class="text-xs px-2 py-1 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 rounded">
 					+{tool.capabilities.length - 3} more
 				</span>
 			{/if}

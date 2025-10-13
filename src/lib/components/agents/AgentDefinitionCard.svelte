@@ -15,7 +15,7 @@
 
 <button
 	onclick={onclick}
-	class="w-full text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-lg transition-shadow p-4 space-y-3"
+	class="w-full text-left bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg hover:shadow-lg transition-shadow p-4 space-y-3"
 >
 	<!-- Header with Avatar and Name -->
 	<div class="flex items-start gap-3">
@@ -35,14 +35,14 @@
 				{agent.name || 'Unnamed Agent Definition'}
 			</h3>
 			{#if agent.role}
-				<span class="inline-block px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded mt-1">
+				<span class="inline-block px-2 py-0.5 text-xs bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded mt-1">
 					{agent.role}
 				</span>
 			{/if}
 		</div>
 
 		{#if agent.version}
-			<span class="text-xs text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 px-2 py-0.5 rounded">
+			<span class="text-xs text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-zinc-600 px-2 py-0.5 rounded">
 				v{agent.version}
 			</span>
 		{/if}
@@ -71,7 +71,7 @@
 	{/if}
 
 	<!-- Author -->
-	<div class="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+	<div class="pt-3 border-t border-gray-100 dark:border-zinc-700 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
 		<span class="truncate">{agent.pubkey.slice(0, 16)}...</span>
 		{#if agent.created_at}
 			<span>{new Date(agent.created_at * 1000).toLocaleDateString()}</span>

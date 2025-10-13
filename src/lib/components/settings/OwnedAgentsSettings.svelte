@@ -31,7 +31,7 @@
 
 <div class="space-y-6">
 	<!-- Owned Agents Section -->
-	<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+	<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
 		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Your Agents</h3>
 		<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
 			Agents you've created and published to the Nostr network
@@ -54,7 +54,7 @@
 		{:else}
 			<div class="space-y-3">
 				{#each agents as agent (agent.id)}
-					<div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+					<div class="p-4 border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800">
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
 								<h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -68,7 +68,7 @@
 										Kind {agent.kind}
 									</span>
 									{#if agent.created_at}
-										<span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+										<span class="text-xs px-2 py-1 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 rounded">
 											{new Date(agent.created_at * 1000).toLocaleDateString()}
 										</span>
 									{/if}

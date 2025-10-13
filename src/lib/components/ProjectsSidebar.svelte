@@ -179,13 +179,13 @@
 
 <div
 	class={cn(
-		'bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300',
+		'bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-700 flex flex-col transition-all duration-300',
 		collapsed ? 'w-16' : 'w-64'
 	)}
 	data-collapsed={collapsed}
 >
 	<!-- Header -->
-	<div class="border-b border-gray-200 dark:border-gray-700 px-3 py-3">
+	<div class="border-b border-gray-200 dark:border-zinc-700 px-3 py-3">
 		<div class="flex items-center justify-between">
 			{#if !collapsed}
 				<a href="/projects" class="flex items-center gap-2 flex-1 hover:opacity-80 transition-opacity text-gray-900 dark:text-gray-100">
@@ -201,7 +201,7 @@
 				</a>
 			{:else}
 				<Tooltip text="TENEX" side="right">
-					<a href="/projects" class="flex items-center justify-center w-10 h-10 hover:opacity-80 transition-opacity" aria-label="TENEX home">
+					<a href="/projects" class="flex items-center justify-center w-10 h-10 hover:opacity-80 transition-opacity text-gray-900 dark:text-gray-100" aria-label="TENEX home">
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
 								stroke-linecap="round"
@@ -216,7 +216,7 @@
 
 			<button
 				onclick={() => sidebarCollapsedStore.toggle()}
-				class="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
+				class="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-gray-900 dark:text-gray-100"
 				aria-label="Toggle sidebar"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -237,12 +237,12 @@
 		<div class="p-2">
 			{#if !collapsed}
 				<div class="flex items-center justify-between px-2 py-1 mb-1">
-					<span class="text-xs font-medium text-gray-500">Projects</span>
+					<span class="text-xs font-medium text-gray-500 dark:text-gray-400">Projects</span>
 					<div class="flex items-center gap-0.5">
 						<Tooltip text="Global Search (⌘K)" side="bottom">
 							<button
 								onclick={() => (searchDialogOpen = true)}
-								class="h-5 w-5 flex items-center justify-center hover:bg-gray-100 rounded"
+								class="h-5 w-5 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 rounded text-gray-700 dark:text-gray-300"
 								aria-label="Global Search"
 							>
 								<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -257,7 +257,7 @@
 						</Tooltip>
 						<button
 							onclick={() => (createDialogOpen = true)}
-							class="h-5 w-5 flex items-center justify-center hover:bg-gray-100 rounded -mr-1"
+							class="h-5 w-5 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 rounded -mr-1 text-gray-700 dark:text-gray-300"
 							aria-label="Create new project"
 						>
 							<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,7 +276,7 @@
 			<div class="flex flex-col gap-1">
 				{#if projects.length === 0}
 					{#if !collapsed}
-						<div class="text-center py-8 text-muted-foreground text-sm">No projects yet</div>
+						<div class="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">No projects yet</div>
 					{/if}
 				{:else}
 					{#each projects as project (project.dTag || project.id)}
@@ -293,7 +293,7 @@
 								onmouseleave={handleProjectMouseLeave}
 								class={cn(
 									'w-full text-left px-3 py-2 rounded-lg transition-all flex items-center gap-2',
-									isOpen ? 'bg-blue-50 border border-blue-200 text-blue-900' : 'hover:bg-gray-100 text-gray-700',
+									isOpen ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-blue-900 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300',
 									!isOnline && 'opacity-75'
 								)}
 							>
@@ -310,7 +310,7 @@
 									</div>
 									{#if isOnline}
 										<div
-											class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-white"
+											class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-white dark:border-zinc-900"
 										></div>
 									{/if}
 								</div>
@@ -318,7 +318,7 @@
 								{#if !collapsed}
 									<div class="flex-1 min-w-0">
 										<div class="font-medium text-sm truncate">{project.title || 'Untitled'}</div>
-										<div class="text-xs text-gray-500">
+										<div class="text-xs text-gray-500 dark:text-gray-400">
 											{project.agents.length} agents
 										</div>
 									</div>
@@ -342,11 +342,11 @@
 	</div>
 
 	<!-- Inbox Section -->
-	<div class="border-t border-gray-200 px-3 py-2">
+	<div class="border-t border-gray-200 dark:border-zinc-700 px-3 py-2">
 		<InboxPopover bind:open={inboxPopoverOpen}>
 			<button
 				class={cn(
-					'flex items-center rounded hover:bg-gray-100 transition-colors',
+					'flex items-center rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-gray-900 dark:text-gray-100',
 					collapsed ? 'w-10 h-10 justify-center' : 'w-full gap-2 px-3 py-2'
 				)}
 				aria-label="Inbox"
@@ -371,12 +371,12 @@
 				{#if !collapsed}
 					<span class="flex-1 text-left text-sm">Inbox</span>
 					{#if inboxStore.unreadCount > 0}
-						<span class="px-1.5 py-0.5 text-xs font-medium bg-gray-200 text-gray-700 rounded">
+						<span class="px-1.5 py-0.5 text-xs font-medium bg-gray-200 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded">
 							{inboxStore.unreadCount}
 						</span>
 					{/if}
 					<kbd
-						class="px-1.5 py-0.5 text-[9px] font-medium text-gray-500 bg-gray-100 border border-gray-200 rounded"
+						class="px-1.5 py-0.5 text-[9px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded"
 					>
 						⌘I
 					</kbd>
@@ -386,27 +386,27 @@
 	</div>
 
 	<!-- Footer - User Profile -->
-	<div class="border-t border-gray-200 p-3">
+	<div class="border-t border-gray-200 dark:border-zinc-700 p-3">
 		<DropdownMenu items={userMenuItems} bind:open={userMenuOpen} align="start" side="top">
 			<button
 				class={cn(
-					'flex items-center rounded hover:bg-gray-100 transition-colors',
+					'flex items-center rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors',
 					collapsed ? 'w-10 h-10 justify-center' : 'w-full gap-2 px-2 py-2'
 				)}
 			>
 				{#if currentUser?.pubkey}
 					<Avatar {ndk} pubkey={currentUser.pubkey} size={32} />
 				{:else}
-					<div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-white font-semibold text-sm">
+					<div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-zinc-700 flex items-center justify-center text-white font-semibold text-sm">
 						U
 					</div>
 				{/if}
 				{#if !collapsed}
 					<div class="flex-1 text-left min-w-0">
-						<div class="text-sm font-medium truncate">
+						<div class="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
 							{profile?.name || profile?.displayName || 'User'}
 						</div>
-						<div class="text-xs text-gray-500 truncate">
+						<div class="text-xs text-gray-500 dark:text-gray-400 truncate">
 							{profile?.nip05 || currentUser?.npub?.slice(0, 12) + '...' || ''}
 						</div>
 					</div>

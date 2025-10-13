@@ -68,7 +68,7 @@
 
 <div class="space-y-6">
 	<!-- Nostr Relays Section -->
-	<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+	<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
 		<div class="flex items-center justify-between mb-4">
 			<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Nostr Relays</h3>
 			<button
@@ -85,7 +85,7 @@
 
 		<!-- Add Relay Form -->
 		{#if showAddRelay}
-			<div class="mb-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg space-y-3">
+			<div class="mb-4 p-4 bg-gray-50 dark:bg-zinc-950 rounded-lg space-y-3">
 				<div>
 					<label for="relay-url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
 						Relay URL
@@ -95,7 +95,7 @@
 						type="text"
 						bind:value={relayUrl}
 						placeholder="wss://relay.example.com"
-						class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+						class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
 						onkeydown={(e) => e.key === 'Enter' && addRelay()}
 					/>
 					<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Must start with wss:// or ws://</p>
@@ -122,7 +122,7 @@
 		{:else}
 			<div class="space-y-2">
 				{#each relays as relay (relay)}
-					<div class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+					<div class="flex items-center justify-between p-3 border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800">
 						<div class="flex items-center gap-3 flex-1 min-w-0">
 							<div class={cn('w-3 h-3 rounded-full', getStatusColor(relayStatuses[relay]))}></div>
 							<div class="flex-1 min-w-0">
@@ -152,7 +152,7 @@
 	</div>
 
 	<!-- Popular Relays Section -->
-	<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+	<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
 		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Popular Relays</h3>
 		<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Quick add popular public relays</p>
 
@@ -174,8 +174,8 @@
 					class={cn(
 						'px-3 py-2 text-sm border rounded-md transition-colors text-left',
 						relays.includes(popularRelay)
-							? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed border-gray-300 dark:border-gray-700'
-							: 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-300 dark:border-gray-700'
+							? 'bg-gray-100 dark:bg-zinc-800 text-gray-400 cursor-not-allowed border-gray-300 dark:border-zinc-700'
+							: 'bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800 border-gray-300 dark:border-zinc-700'
 					)}
 				>
 					{popularRelay}

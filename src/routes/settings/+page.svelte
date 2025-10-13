@@ -35,7 +35,7 @@
 	<title>Settings - TENEX</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
+<div class="min-h-screen bg-gray-50 dark:bg-zinc-950 p-8">
 	<div class="max-w-5xl mx-auto">
 		<!-- Page Header -->
 		<div class="mb-8">
@@ -44,7 +44,7 @@
 		</div>
 
 		<!-- Tab Navigation -->
-		<div class="mb-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-lg">
+		<div class="mb-6 border-b border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-t-lg">
 			<div class="flex overflow-x-auto">
 				{#each tabs as tab (tab.value)}
 					<button
@@ -63,7 +63,7 @@
 		</div>
 
 		<!-- Tab Content -->
-		<div class="bg-white dark:bg-gray-800 rounded-b-lg shadow-sm p-6">
+		<div class="bg-white dark:bg-zinc-900 rounded-b-lg shadow-sm p-6">
 			{#if activeTab === 'account'}
 				<AccountSettings />
 			{:else if activeTab === 'ai'}

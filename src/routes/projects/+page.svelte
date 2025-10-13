@@ -39,7 +39,7 @@
 </script>
 
 {#if currentUser}
-	<div class="flex h-screen bg-gray-50 dark:bg-gray-900">
+	<div class="flex h-screen bg-gray-50 dark:bg-zinc-950">
 		<!-- Sidebar -->
 		<ProjectsSidebar {projects} />
 
@@ -71,7 +71,7 @@
 		</div>
 	</div>
 {:else}
-	<div class="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+	<div class="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-zinc-950">
 		<p class="text-gray-600 dark:text-gray-400">Redirecting to login...</p>
 	</div>
 {/if}

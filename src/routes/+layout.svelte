@@ -44,7 +44,7 @@
 	<!-- Window Manager (Drawers + Floating Windows) -->
 	<WindowManagerOverlay />
 {:else}
-	<div class="flex items-center justify-center min-h-screen bg-white dark:bg-gray-900">
+	<div class="flex items-center justify-center min-h-screen bg-white dark:bg-zinc-950">
 		<div class="text-center">
 			<div
 				class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"
