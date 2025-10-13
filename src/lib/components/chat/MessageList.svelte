@@ -24,26 +24,17 @@
 	const currentUser = $derived(ndk.$sessions.currentUser);
 
 	// Subscribe to all messages in this conversation
-	const messagesSubscription = ndk.$subscribe(() => {
-		const filter1 = {
-			kinds: [11, 1111, 7, 21111, 513],
-			...rootEvent.filter()
-		};
-		const filter2 = rootEvent.nip22Filter();
-
-		console.log('[MessageList] Subscription filters:', {
-			filter1,
-			filter2,
-			rootEventId: rootEvent.id,
-			viewMode
-		});
-
-		return {
-			filters: [filter1, filter2],
-			closeOnEose: false,
-			bufferMs: 30
-		};
-	});
+	const messagesSubscription = ndk.$subscribe(() => ({
+		filters: [
+			{
+				kinds: [11, 1111, 7, 21111, 513],
+				...rootEvent.filter()
+			},
+			rootEvent.nip22Filter()
+		],
+		closeOnEose: false,
+		bufferMs: 30
+	}));
 
 	// Process raw events into flat messages with streaming support
 	const flatMessages = $derived.by(() => {
