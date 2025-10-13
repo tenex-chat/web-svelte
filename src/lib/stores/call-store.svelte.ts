@@ -154,23 +154,60 @@ export class CallStore {
 				const audioBlob = await this.audioRecorder.stopRecording();
 
 				if (audioBlob) {
-					// TODO: Implement STT transcription
-					// For now, this is a stub that needs to be implemented
-					console.log('[CallStore] Audio recorded, STT transcription needed');
+					console.log('[CallStore] Audio recorded, starting STT transcription');
 					this.callState = 'processing';
 					this.options.onStateChange?.(this.callState);
 
-					// Stub: After transcription completes, send message
-					// await this.messaging.sendMessage(transcribedText);
-					// this.callState = 'idle';
+					// Transcribe audio to text
+					const transcribedText = await this.transcribeAudio(audioBlob);
+
+					if (transcribedText) {
+						console.log('[CallStore] Transcription complete:', transcribedText);
+						this.transcript = transcribedText;
+
+						// Send the transcribed message
+						await this.messaging.sendMessage(transcribedText);
+
+						// Clear transcript and return to idle
+						this.transcript = '';
+					}
+
+					this.callState = 'idle';
+					this.options.onStateChange?.(this.callState);
 				}
 			} catch (error) {
-				console.error('[CallStore] Failed to stop recording:', error);
-				this.error = error instanceof Error ? error.message : 'Failed to stop recording';
+				console.error('[CallStore] Failed to process audio:', error);
+				this.error = error instanceof Error ? error.message : 'Failed to process audio';
 				this.callState = 'idle';
 				this.options.onStateChange?.(this.callState);
 			}
 		}
+	}
+
+	/**
+	 * Transcribe audio blob to text using configured STT provider
+	 */
+	private async transcribeAudio(audioBlob: Blob): Promise<string> {
+		const sttSettings = aiConfigStore.config.sttSettings;
+
+		if (!sttSettings.enabled) {
+			throw new Error('STT is not enabled in configuration');
+		}
+
+		// Determine API key based on provider
+		const apiKey =
+			sttSettings.provider === 'whisper'
+				? aiConfigStore.config.openAIApiKey
+				: aiConfigStore.config.voiceSettings.apiKey;
+
+		if (!apiKey) {
+			throw new Error(`API key required for ${sttSettings.provider} STT`);
+		}
+
+		// Import aiService dynamically to avoid circular dependencies
+		const { aiService } = await import('$lib/services/ai-service');
+
+		return aiService.transcribe(audioBlob, sttSettings.provider, apiKey);
 	}
 
 	/**
@@ -227,9 +264,21 @@ export class CallStore {
 			const audioBlob = await this.audioRecorder.stopRecording();
 
 			if (audioBlob) {
-				// TODO: Implement STT transcription
-				console.log('[CallStore] Audio recorded, STT transcription needed');
+				console.log('[CallStore] Audio recorded, starting STT transcription');
 				this.callState = 'processing';
+				this.options.onStateChange?.(this.callState);
+
+				// Transcribe audio to text
+				const transcribedText = await this.transcribeAudio(audioBlob);
+
+				if (transcribedText) {
+					console.log('[CallStore] Transcription complete:', transcribedText);
+					// Store transcript for display but don't auto-send in manual mode
+					// User can review and click send button
+					this.transcript = transcribedText;
+				}
+
+				this.callState = 'idle';
 				this.options.onStateChange?.(this.callState);
 			}
 		} catch (error) {

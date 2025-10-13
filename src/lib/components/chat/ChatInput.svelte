@@ -297,11 +297,11 @@
 	}
 </script>
 
-<div class="border-t border-gray-200 p-4 bg-white">
+<div class="border-t border-gray-200 dark:border-zinc-700 p-4 bg-white dark:bg-zinc-900">
 	<!-- Reply Context -->
 	{#if replyToEvent}
-		<div class="mb-3 px-3 py-2 bg-blue-50 border-l-4 border-blue-500 rounded flex items-center gap-2">
-			<svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<div class="mb-3 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-400 rounded flex items-center gap-2">
+			<svg class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path
 					stroke-linecap="round"
 					stroke-linejoin="round"
@@ -310,15 +310,15 @@
 				/>
 			</svg>
 			<div class="flex-1 min-w-0">
-				<div class="text-xs text-blue-600 font-medium">Replying to {replyToAuthorName}</div>
-				<div class="text-xs text-blue-800 truncate">
+				<div class="text-xs text-blue-600 dark:text-blue-400 font-medium">Replying to {replyToAuthorName}</div>
+				<div class="text-xs text-blue-800 dark:text-blue-300 truncate">
 					{replyToEvent.content.slice(0, 100)}{replyToEvent.content.length > 100 ? '...' : ''}
 				</div>
 			</div>
 			<button
 				type="button"
 				onclick={onCancelReply}
-				class="p-1 rounded hover:bg-blue-100 transition-colors text-blue-600"
+				class="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors text-blue-600 dark:text-blue-400"
 				aria-label="Cancel reply"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,14 +343,14 @@
 				onkeydown={handleKeyDown}
 				placeholder={rootEvent ? 'Type a message...' : 'Start a new conversation...'}
 				disabled={isSubmitting || !currentUser}
-				class="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+				class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-zinc-700 disabled:cursor-not-allowed placeholder:text-gray-400 dark:placeholder:text-gray-500"
 				rows="2"
 			></textarea>
 
 			<!-- @mention Autocomplete Dropdown -->
 			{#if showMentionAutocomplete && filteredAgents.length > 0}
 				<div
-					class="absolute bottom-full left-0 mb-1 w-full max-w-xs bg-white border border-gray-300 rounded-lg shadow-lg overflow-hidden z-50"
+					class="absolute bottom-full left-0 mb-1 w-full max-w-xs bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg overflow-hidden z-50"
 				>
 					<div class="max-h-48 overflow-y-auto">
 						{#each filteredAgents as agent, index (agent.pubkey)}
@@ -358,19 +358,19 @@
 								type="button"
 								onclick={() => selectMention(agent)}
 								onmouseenter={() => (selectedMentionIndex = index)}
-								class="w-full px-3 py-2 text-left hover:bg-blue-50 transition-colors {index ===
+								class="w-full px-3 py-2 text-left hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors {index ===
 								selectedMentionIndex
-									? 'bg-blue-100'
+									? 'bg-blue-100 dark:bg-blue-900/50'
 									: ''}"
 							>
-								<div class="font-medium text-sm">{agent.name}</div>
+								<div class="font-medium text-sm text-gray-900 dark:text-gray-100">{agent.name}</div>
 								{#if agent.model}
-									<div class="text-xs text-gray-500">{agent.model}</div>
+									<div class="text-xs text-gray-500 dark:text-gray-400">{agent.model}</div>
 								{/if}
 							</button>
 						{/each}
 					</div>
-					<div class="px-3 py-1 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
+					<div class="px-3 py-1 bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-700 text-xs text-gray-500 dark:text-gray-400">
 						↑↓ navigate • ↵ select • esc dismiss
 					</div>
 				</div>
@@ -392,7 +392,7 @@
 
 			<!-- Attachment Button -->
 			<button
-				class="p-2 rounded-lg hover:bg-gray-50 transition-colors text-gray-600"
+				class="p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors text-gray-600 dark:text-gray-400"
 				type="button"
 				title="Attach file"
 				aria-label="Attach file"
@@ -412,12 +412,12 @@
 	<!-- Mentioned Agents Indicator -->
 	{#if mentionedAgents.length > 0}
 		<div class="mt-3 flex items-center gap-2 flex-wrap">
-			<span class="text-xs text-gray-500">Mentioning:</span>
+			<span class="text-xs text-gray-500 dark:text-gray-400">Mentioning:</span>
 			{#each mentionedAgents as pubkey (pubkey)}
 				{@const agent = onlineAgents.find((a) => a.pubkey === pubkey)}
 				{#if agent}
 					<span
-						class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs"
+						class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-full text-xs"
 					>
 						<span>@{agent.name}</span>
 						<button
@@ -425,7 +425,7 @@
 							onclick={() => {
 								mentionedAgents = mentionedAgents.filter((p) => p !== pubkey);
 							}}
-							class="hover:bg-blue-200 rounded-full p-0.5"
+							class="hover:bg-blue-200 dark:hover:bg-blue-800/50 rounded-full p-0.5"
 							aria-label="Remove mention"
 						>
 							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

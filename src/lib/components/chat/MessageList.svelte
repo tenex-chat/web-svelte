@@ -39,8 +39,14 @@
 
 	// Process raw events into flat messages with streaming support
 	const flatMessages = $derived.by(() => {
+		// Always include the root event (kind 11) as the first message
+		// The subscription filter doesn't return it because it looks for events that reference the root
+		const allEvents = messagesSubscription.events.some(e => e.id === rootEvent.id)
+			? messagesSubscription.events
+			: [rootEvent, ...messagesSubscription.events];
+
 		return processEventsToMessages(
-			messagesSubscription.events,
+			allEvents,
 			rootEvent,
 			'flattened', // Always process as flattened first
 			isBrainstorm,

@@ -64,7 +64,7 @@
 		// Process replies
 		for (const reply of replies) {
 			// Find which thread this reply belongs to
-			const eTags = reply.tags.filter((tag) => tag[0] === 'e');
+			const eTags = reply.tags.filter((tag) => tag[0] === 'E');
 			for (const eTag of eTags) {
 				const threadId = eTag[1];
 				const meta = metadata.get(threadId);
@@ -115,7 +115,7 @@
 
 					// Group replies by thread and categorize by author
 					replies.forEach((reply) => {
-						const threadIdTag = reply.tags?.find((tag) => tag[0] === 'e');
+						const threadIdTag = reply.tags?.find((tag) => tag[0] === 'E');
 						if (threadIdTag && threadIdTag[1] && reply.created_at) {
 							if (reply.pubkey === currentUser.pubkey) {
 								// Track user's own replies
@@ -176,7 +176,7 @@
 
 					// Group all replies by thread
 					replies.forEach((reply) => {
-						const threadIdTag = reply.tags?.find((tag) => tag[0] === 'e');
+						const threadIdTag = reply.tags?.find((tag) => tag[0] === 'E');
 						if (threadIdTag && threadIdTag[1] && reply.created_at) {
 							const currentLast = threadLastReplyMap.get(threadIdTag[1]) || 0;
 							if (reply.created_at > currentLast) {
