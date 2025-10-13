@@ -11,6 +11,7 @@
 		isBrainstorm?: boolean;
 		onReply?: (message: Message) => void;
 		onQuote?: (message: Message) => void;
+		messages?: Message[];
 	}
 
 	let {
@@ -18,7 +19,8 @@
 		viewMode = 'threaded',
 		isBrainstorm = false,
 		onReply,
-		onQuote
+		onQuote,
+		messages = $bindable([])
 	}: Props = $props();
 
 	const currentUser = $derived(ndk.$sessions.currentUser);
@@ -52,6 +54,11 @@
 			false, // showAll
 			currentUser?.pubkey
 		);
+	});
+
+	// Sync flatMessages to bindable messages prop
+	$effect(() => {
+		messages = flatMessages;
 	});
 </script>
 

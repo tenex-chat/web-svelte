@@ -51,8 +51,8 @@
 <div class={cn('w-96 flex-shrink-0 flex flex-col bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-700 relative', className)}>
 	<!-- Glow effect at top -->
 	<div
-		class="absolute top-0 left-0 right-0 h-80 pointer-events-none z-0"
-		style="background: linear-gradient(to bottom, {projectColor.replace('55%', '60%').replace('65%', '70%').replace(')', ', 0.18)')}, transparent)"
+		class="absolute top-0 left-0 right-0 h-full pointer-events-none z-0"
+		style="background: linear-gradient(to bottom, {projectColor.replace('55%', '70%').replace('65%', '80%').replace(')', ', 0.35)')}, {projectColor.replace('55%', '60%').replace('65%', '70%').replace(')', ', 0.08)')} 60%, transparent)"
 	></div>
 
 	<!-- Column Header -->
@@ -95,7 +95,8 @@
 								<span>All conversations</span>
 							</DropdownMenu.Item>
 							<DropdownMenu.Separator />
-							<DropdownMenu.GroupHeading>Activity filters</DropdownMenu.GroupHeading>
+							<DropdownMenu.Group>
+								<DropdownMenu.GroupHeading>Activity filters</DropdownMenu.GroupHeading>
 							<DropdownMenu.Item onclick={() => (timeFilter = '1h')}>
 								<Clock class="mr-2 h-4 w-4" />
 								<span>Active in last hour</span>
@@ -108,8 +109,10 @@
 								<Clock class="mr-2 h-4 w-4" />
 								<span>Active in last 24 hours</span>
 							</DropdownMenu.Item>
+							</DropdownMenu.Group>
 							<DropdownMenu.Separator />
-							<DropdownMenu.GroupHeading>Response filters</DropdownMenu.GroupHeading>
+							<DropdownMenu.Group>
+								<DropdownMenu.GroupHeading>Response filters</DropdownMenu.GroupHeading>
 							<DropdownMenu.Item onclick={() => (timeFilter = 'needs-response-1h')}>
 								<MessageCircleQuestion class="mr-2 h-4 w-4" />
 								<span>Needs response (1h)</span>
@@ -122,6 +125,7 @@
 								<MessageCircleQuestion class="mr-2 h-4 w-4" />
 								<span>Needs response (24h)</span>
 							</DropdownMenu.Item>
+							</DropdownMenu.Group>
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>
 				{/if}
@@ -186,7 +190,7 @@
 	</div>
 
 	<!-- Tab Content -->
-	<div class="flex-1 overflow-hidden bg-gray-50 dark:bg-zinc-950 relative z-10">
+	<div class="flex-1 overflow-hidden relative">
 		{#if activeTab === 'conversations'}
 			{#await import('./chat/ConversationsTab.svelte') then { default: ConversationsTab }}
 				<ConversationsTab {project} {onlineAgents} {timeFilter} />
@@ -196,24 +200,38 @@
 				Documentation (TODO)
 			</div>
 		{:else if activeTab === 'agents'}
-			<div class="h-full p-2">
+			<div class="h-full">
 				{#if onlineAgents.length === 0}
 					<div class="flex flex-col items-center justify-center h-32 text-center">
 						<Bot class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-2" />
 						<p class="text-sm text-gray-500 dark:text-gray-400">No agents online</p>
 					</div>
 				{:else}
-					<div class="space-y-1">
+					<div>
 						{#each onlineAgents as agent (agent.pubkey)}
-							<button
-								onclick={() => windowManager.openAgent(project, agent.pubkey, agent.name)}
-								class="w-full text-left px-3 py-2 rounded hover:bg-white dark:hover:bg-gray-800 transition-colors border border-gray-200 dark:border-zinc-700 text-gray-900 dark:text-gray-100"
-							>
-								<div class="font-medium text-sm">{agent.name}</div>
-								{#if agent.model}
-									<div class="text-xs text-gray-500 dark:text-gray-400">{agent.model}</div>
-								{/if}
-							</button>
+							{#await import('@nostr-dev-kit/svelte') then { Avatar }}
+								<button
+									onclick={() => windowManager.openAgent(project, agent.pubkey, agent.name)}
+									class="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors border-b border-gray-200 dark:border-zinc-700 flex items-center gap-3"
+								>
+									<!-- Avatar -->
+									<Avatar.Avatar {ndk} pubkey={agent.pubkey} size={40} />
+
+									<!-- Agent Info -->
+									<div class="flex-1 min-w-0">
+										<div class="font-medium text-sm text-gray-900 dark:text-gray-100">{agent.name}</div>
+										<div class="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+											<span class="w-1.5 h-1.5 rounded-full bg-green-600 dark:bg-green-400"></span>
+											<span>Online</span>
+										</div>
+									</div>
+
+									<!-- Chevron -->
+									<svg class="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+									</svg>
+								</button>
+							{/await}
 						{/each}
 					</div>
 				{/if}

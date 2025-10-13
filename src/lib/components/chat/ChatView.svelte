@@ -6,20 +6,23 @@
 	import type { Message } from '$lib/utils/messageProcessor';
 	import MessageList from './MessageList.svelte';
 	import ChatInput from './ChatInput.svelte';
+	import CopyThreadMenu from './CopyThreadMenu.svelte';
 
 	interface Props {
 		project?: NDKProject;
 		rootEvent?: NDKEvent | null;
 		onlineAgents?: ProjectAgent[];
 		onThreadCreated?: (thread: NDKEvent) => void;
+		viewMode?: ThreadViewMode;
+		hideHeader?: boolean;
 	}
 
-	let { project, rootEvent = null, onlineAgents = [], onThreadCreated }: Props = $props();
+	let { project, rootEvent = null, onlineAgents = [], onThreadCreated, viewMode = $bindable('threaded'), hideHeader = false }: Props = $props();
 
 	let localRootEvent = $state<NDKEvent | null>(rootEvent);
-	let viewMode = $state<ThreadViewMode>('threaded');
 	let replyToEvent = $state<NDKEvent | null>(null);
 	let initialContent = $state<string>('');
+	let messages = $state<Message[]>([]);
 
 	// Update local root when prop changes
 	$effect(() => {
@@ -33,10 +36,6 @@
 		if (onThreadCreated) {
 			onThreadCreated(thread);
 		}
-	}
-
-	function toggleViewMode() {
-		viewMode = viewMode === 'threaded' ? 'flattened' : 'threaded';
 	}
 
 	function handleReply(message: Message) {
@@ -62,43 +61,21 @@
 
 <div class="flex flex-col h-full">
 	{#if localRootEvent}
-		<!-- Chat Header -->
-		<div class="border-b border-gray-200 dark:border-zinc-700 px-4 py-3 bg-white dark:bg-zinc-900">
-			<div class="flex items-center justify-between">
-				<span class="text-sm font-medium text-gray-900 dark:text-gray-100">
-					{localRootEvent.tagValue('title') || 'Conversation'}
-				</span>
+		{#if !hideHeader}
+			<!-- Chat Header -->
+			<div class="border-b border-gray-200 dark:border-zinc-700 px-4 py-3 bg-white dark:bg-zinc-900">
+				<div class="flex items-center justify-between">
+					<span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+						{localRootEvent.tagValue('title') || 'Conversation'}
+					</span>
 
-				<!-- View Mode Toggle -->
-				<button
-					onclick={toggleViewMode}
-					class="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
-					title="Toggle view mode"
-				>
-					{#if viewMode === 'threaded'}
-						<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M4 6h16M4 12h16M4 18h7"
-							/>
-						</svg>
-						<span class="text-gray-600 dark:text-gray-400">Threaded</span>
-					{:else}
-						<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M4 6h16M4 12h16M4 18h16"
-							/>
-						</svg>
-						<span class="text-gray-600 dark:text-gray-400">Flat</span>
-					{/if}
-				</button>
+					<div class="flex items-center gap-2">
+						<!-- Copy Thread Menu -->
+						<CopyThreadMenu {messages} rootEvent={localRootEvent} />
+					</div>
+				</div>
 			</div>
-		</div>
+		{/if}
 
 		<!-- Messages -->
 		<MessageList
@@ -106,6 +83,7 @@
 			{viewMode}
 			onReply={handleReply}
 			onQuote={handleQuote}
+			bind:messages
 		/>
 
 		<!-- Input -->

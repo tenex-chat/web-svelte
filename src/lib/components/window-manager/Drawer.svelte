@@ -4,12 +4,15 @@
 	import ChatView from '../chat/ChatView.svelte';
 	import SettingsTab from '../settings/SettingsTab.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
+	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
 
 	interface Props {
 		window: WindowConfig;
 	}
 
 	let { window }: Props = $props();
+
+	let viewMode = $state<ThreadViewMode>('threaded');
 
 	const onlineAgents = $derived(
 		window.project ? projectStatusStore.getOnlineAgents(window.project.tagId()) : []
@@ -28,6 +31,10 @@
 
 	function handleFocus() {
 		windowManager.focus(window.id);
+	}
+
+	function toggleViewMode() {
+		viewMode = viewMode === 'threaded' ? 'flattened' : 'threaded';
 	}
 </script>
 
@@ -64,6 +71,35 @@
 
 		<!-- Actions -->
 		<div class="flex items-center gap-1">
+			{#if window.type === 'chat'}
+				<!-- View Mode Toggle -->
+				<button
+					onclick={toggleViewMode}
+					class="p-2 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors"
+					title={viewMode === 'threaded' ? 'Switch to flat view' : 'Switch to threaded view'}
+				>
+					{#if viewMode === 'threaded'}
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M4 6h16M4 12h16M4 18h7"
+							/>
+						</svg>
+					{:else}
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M4 6h16M4 12h16M4 18h16"
+							/>
+						</svg>
+					{/if}
+				</button>
+			{/if}
+
 			<!-- Detach button -->
 			<button
 				onclick={handleDetach}
@@ -105,6 +141,8 @@
 				project={window.project}
 				rootEvent={window.data?.thread}
 				{onlineAgents}
+				{viewMode}
+				hideHeader={true}
 			/>
 		{:else if window.type === 'settings' && window.project}
 			<SettingsTab project={window.project} {onlineAgents} />
