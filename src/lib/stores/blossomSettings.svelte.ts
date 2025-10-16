@@ -96,7 +96,7 @@ class BlossomSettingsStore {
 			};
 			this.settings.servers = newServers;
 			this.save();
-		} catch (error) {
+		} catch {
 			const newServers = [...this.settings.servers];
 			newServers[serverIndex] = {
 				...newServers[serverIndex],

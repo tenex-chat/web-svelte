@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import { Users, Search, X, Filter } from 'lucide-svelte';
+	import { Users, Search, X, Filter, Check } from 'lucide-svelte';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import EventItem from './EventItem.svelte';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { Avatar } from '@nostr-dev-kit/svelte';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
 		project: NDKProject;
@@ -16,6 +19,7 @@
 	let selectedAuthor = $state<string | null>(null);
 	let groupThreads = $state(false);
 	let visibleCount = $state(20); // Start with 20 events
+	let filterDropdownOpen = $state(false);
 
 	const currentUser = $derived(ndk.$sessions.currentUser);
 
@@ -32,12 +36,12 @@
 		{ bufferMs: 100 }
 	);
 
-	// Filter out ephemeral events and kind 0, then sort
+	// Filter out ephemeral events and kind 0, then optionally group by E tag, then sort
 	const sortedEvents = $derived.by(() => {
 		const events = subscription.events as NDKEvent[];
 
 		// Filter out unwanted events
-		const validEvents = events.filter((event) => {
+		let validEvents = events.filter((event) => {
 			const kind = event.kind || 0;
 			// Skip kind 0 (metadata) and ephemeral events (kinds 20000-29999)
 			if (kind === 0 || (kind >= 20000 && kind <= 29999)) {
@@ -46,9 +50,50 @@
 			return true;
 		});
 
+		// If groupThreads is enabled, deduplicate by E tag
+		if (groupThreads) {
+			validEvents = deduplicateEventsByETag(validEvents);
+		}
+
 		// Sort by timestamp (newest first)
 		return validEvents.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
 	});
+
+	// Helper function to deduplicate events by E tag (thread grouping)
+	function deduplicateEventsByETag(events: NDKEvent[]): NDKEvent[] {
+		// Group events by E tag value
+		const eventsByETag = new SvelteMap<string | null, NDKEvent[]>();
+
+		events.forEach((event) => {
+			// Get the E tag value (uppercase E tag)
+			const eTag = event.tags.find((tag) => tag[0] === 'E')?.[1] || null;
+
+			// Group events by their E tag value (or null if no E tag)
+			const existing = eventsByETag.get(eTag) || [];
+			existing.push(event);
+			eventsByETag.set(eTag, existing);
+		});
+
+		// For each E tag group, keep only the most recent event
+		const deduplicatedEvents: NDKEvent[] = [];
+
+		eventsByETag.forEach((groupedEvents, eTag) => {
+			if (eTag === null) {
+				// No E tag - include all events from this group
+				deduplicatedEvents.push(...groupedEvents);
+			} else {
+				// Has E tag - only include the most recent one
+				const mostRecent = groupedEvents.reduce((latest, current) => {
+					const latestTime = latest.created_at || 0;
+					const currentTime = current.created_at || 0;
+					return currentTime > latestTime ? current : latest;
+				});
+				deduplicatedEvents.push(mostRecent);
+			}
+		});
+
+		return deduplicatedEvents;
+	}
 
 	// Function to check if an event matches the search query
 	function eventMatchesSearch(event: NDKEvent, query: string): boolean {
@@ -81,7 +126,7 @@
 
 	// Get unique authors
 	const uniqueAuthors = $derived.by(() => {
-		const pubkeysSet = new Set<string>();
+		const pubkeysSet = new SvelteSet<string>();
 
 		sortedEvents.forEach((event) => {
 			pubkeysSet.add(event.pubkey);
@@ -174,22 +219,67 @@
 
 				<!-- Author Filter Dropdown -->
 				<div class="mt-1.5 mr-1.5">
-					<button
-						type="button"
-						class="h-9 w-9 p-0 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-						class:bg-blue-600={selectedAuthor}
-						class:text-white={selectedAuthor}
-					>
-						{#if selectedAuthor}
-							<div
-								class="w-6 h-6 rounded-full bg-white text-blue-600 flex items-center justify-center text-xs font-semibold"
+					<DropdownMenu.Root bind:open={filterDropdownOpen}>
+						<DropdownMenu.Trigger asChild>
+							<button
+								type="button"
+								class="h-9 w-9 p-0 flex items-center justify-center border border-gray-300 dark:border-zinc-600 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+								class:bg-blue-600={selectedAuthor}
+								class:dark:bg-blue-600={selectedAuthor}
+								class:text-white={selectedAuthor}
 							>
-								{selectedAuthor.slice(0, 2).toUpperCase()}
-							</div>
-						{:else}
-							<Filter class="h-3.5 w-3.5" />
-						{/if}
-					</button>
+								{#if selectedAuthor}
+									<Avatar {ndk} pubkey={selectedAuthor} size={24} class="rounded-full" />
+								{:else}
+									<Filter class="h-3.5 w-3.5" />
+								{/if}
+							</button>
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content align="end" class="w-[200px]">
+							<!-- Group threads checkbox -->
+							<DropdownMenu.CheckboxItem bind:checked={groupThreads}>
+								Group threads
+							</DropdownMenu.CheckboxItem>
+							<DropdownMenu.Separator />
+
+							<!-- All Authors option -->
+							<DropdownMenu.Item onclick={() => (selectedAuthor = null)}>
+								<div class="flex items-center justify-between w-full">
+									<span>All Authors</span>
+									{#if !selectedAuthor}
+										<Check class="h-3.5 w-3.5" />
+									{/if}
+								</div>
+							</DropdownMenu.Item>
+
+							{#if uniqueAuthors.length > 0}
+								<DropdownMenu.Separator />
+
+								<!-- List all authors -->
+								{#each uniqueAuthors as pubkey (pubkey)}
+									{@const isCurrentUser = currentUser?.pubkey === pubkey}
+									{@const profile = ndk.$fetchProfile(() => pubkey)}
+									<DropdownMenu.Item onclick={() => (selectedAuthor = pubkey)}>
+										<div class="flex items-center justify-between w-full">
+											<div class="flex items-center gap-2">
+												<Avatar {ndk} {pubkey} size={20} class="rounded-full flex-shrink-0" />
+												{#if isCurrentUser}
+													<span class="text-sm">You</span>
+												{:else}
+													<span class="text-sm">
+														{profile?.name || profile?.displayName || `${pubkey.slice(0, 8)}...`}
+													</span>
+												{/if}
+											</div>
+											{#if selectedAuthor === pubkey}
+												<Check class="h-3.5 w-3.5" />
+											{/if}
+										</div>
+									</DropdownMenu.Item>
+								{/each}
+							{/if}
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
 				</div>
 			</div>
 		</div>

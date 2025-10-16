@@ -233,7 +233,7 @@
 											{/if}
 											{#if voice.labels}
 												<div class="flex flex-wrap gap-1 mt-1">
-													{#each Object.entries(voice.labels) as [key, value]}
+													{#each Object.entries(voice.labels) as [, value]}
 														<span class="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded">
 															{value}
 														</span>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import { ChevronDown, ChevronRight, X } from 'lucide-svelte';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
 		open: boolean;
@@ -15,7 +16,7 @@
 
 	// Local state for editing
 	let selectedModel = $state(agent.model || '');
-	let selectedTools = $state<Set<string>>(new Set(agent.tools || []));
+	let selectedTools: SvelteSet<string> = new SvelteSet(agent.tools || []);
 
 	// Group tools intelligently
 	interface ToolGroup {
@@ -25,7 +26,7 @@
 	}
 
 	const toolGroups = $derived.by(() => {
-		const groups: Map<string, string[]> = new Map();
+		const groups: SvelteMap<string, string[]> = new SvelteMap();
 		const ungrouped: string[] = [];
 
 		const allTools = availableTools || [];
@@ -91,7 +92,7 @@
 		return result.sort((a, b) => a.name.localeCompare(b.name));
 	});
 
-	let expandedGroups = $state<Set<string>>(new Set());
+	let expandedGroups: SvelteSet<string> = new SvelteSet();
 
 	function toggleGroup(groupName: string) {
 		if (expandedGroups.has(groupName)) {
@@ -99,7 +100,7 @@
 		} else {
 			expandedGroups.add(groupName);
 		}
-		expandedGroups = new Set(expandedGroups);
+		expandedGroups = new SvelteSet(expandedGroups);
 	}
 
 	function toggleGroupAll(group: ToolGroup, enable: boolean) {
@@ -110,7 +111,7 @@
 				selectedTools.delete(tool);
 			}
 		}
-		selectedTools = new Set(selectedTools);
+		selectedTools = new SvelteSet(selectedTools);
 	}
 
 	function toggleTool(tool: string) {
@@ -119,7 +120,7 @@
 		} else {
 			selectedTools.add(tool);
 		}
-		selectedTools = new Set(selectedTools);
+		selectedTools = new SvelteSet(selectedTools);
 	}
 
 	function isGroupFullySelected(group: ToolGroup): boolean {
@@ -142,7 +143,7 @@
 	// Reset state when agent changes
 	$effect(() => {
 		selectedModel = agent.model || '';
-		selectedTools = new Set(agent.tools || []);
+		selectedTools = new SvelteSet(agent.tools || []);
 	});
 </script>
 

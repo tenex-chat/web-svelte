@@ -4,7 +4,7 @@
  * NO REFS NEEDED! Direct reactive state access with proper reactivity!
  */
 
-import { VADController, type VADControllerOptions } from '$lib/audio/vad-controller.svelte';
+import { VADController } from '$lib/audio/vad-controller.svelte';
 import { AudioRecorder, type AudioRecorderOptions } from '$lib/audio/audio-recorder.svelte';
 import { TTSPlayer, type TTSPlayerOptions } from '$lib/audio/tts-player.svelte';
 import { TTSQueue, type TTSQueueOptions, type ChatMessage } from '$lib/audio/tts-queue.svelte';

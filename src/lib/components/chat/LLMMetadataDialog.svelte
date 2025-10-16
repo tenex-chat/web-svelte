@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { Info, X, Cpu, Zap, Hash, Settings, Activity } from 'lucide-svelte';
+	import { Info, X, Cpu, Zap, Settings, Activity } from 'lucide-svelte';
 
 	interface Props {
 		event: NDKEvent;
@@ -134,7 +134,7 @@
 					</div>
 				{:else}
 					<div class="space-y-4">
-						{#each Object.entries(groupedMetadata) as [categoryKey, category]}
+						{#each Object.entries(groupedMetadata) as [, category]}
 							{#if category.items.length > 0}
 								<div class="border border-gray-200 dark:border-zinc-700 rounded-lg p-4">
 									<div class="flex items-center gap-2 mb-3">
@@ -147,7 +147,7 @@
 										</h4>
 									</div>
 									<dl class="space-y-2">
-										{#each category.items as item}
+										{#each category.items as item (item.key)}
 											<div class="flex items-start justify-between gap-4 text-sm">
 												<dt class="text-gray-600 dark:text-gray-400 font-medium min-w-[140px]">
 													{item.label}:

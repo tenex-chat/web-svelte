@@ -7,7 +7,7 @@
 		agentDef: NDKEvent | undefined;
 	}
 
-	let { pubkey, agentDef }: Props = $props();
+	let { pubkey }: Props = $props();
 
 	const AGENT_VOICE_STORAGE_KEY = 'agent-voice-configs';
 

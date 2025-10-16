@@ -13,7 +13,7 @@
 	import LLMMetadataDialog from './LLMMetadataDialog.svelte';
 	import TypingIndicator from './TypingIndicator.svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { Copy, Reply, Quote, FileJson, MoreVertical, Info, Eye } from 'lucide-svelte';
+	import { Copy, Reply, Quote, MoreVertical, Info, Eye } from 'lucide-svelte';
 
 	interface Props {
 		message: Message;
@@ -25,7 +25,6 @@
 	let { message, isLastMessage = false, onReply, onQuote }: Props = $props();
 
 	const currentUser = $derived(ndk.$sessions.currentUser);
-	const isCurrentUser = $derived(message.event.pubkey === currentUser?.pubkey);
 	const isStreaming = $derived(message.event.kind === EVENT_KINDS.STREAMING_RESPONSE);
 	const isTyping = $derived(message.event.kind === EVENT_KINDS.TYPING_INDICATOR);
 	const isReasoningEvent = $derived(message.event.hasTag('reasoning'));
@@ -33,12 +32,6 @@
 		message.event.kind === NDKKind.GenericReply && message.event.hasTag('tool')
 	);
 	const hasSuggestions = $derived(message.event.tags?.some((tag) => tag[0] === 'suggestion'));
-
-	// Get author profile
-	const author = $derived.by(() => {
-		const user = ndk.getUser({ pubkey: message.event.pubkey });
-		return user;
-	});
 
 	// Fetch profile
 	const profile = ndk.$fetchProfile(() => message.event.pubkey);
@@ -86,7 +79,7 @@
 	}
 
 	// Handle suggestion click - create kind:1111 reply
-	async function handleSuggestionClick(suggestion: string, _index: number) {
+	async function handleSuggestionClick(suggestion: string) {
 		if (!currentUser) {
 			alert('Unable to send response. Please ensure you are logged in.');
 			return;

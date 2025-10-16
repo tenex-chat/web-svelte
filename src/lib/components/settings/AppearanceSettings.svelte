@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { uiSettingsStore, type Theme, type FontSize } from '$lib/stores/uiSettings.svelte';
+	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import { cn } from '$lib/utils/cn';
 
 	const settings = $derived(uiSettingsStore.settings);

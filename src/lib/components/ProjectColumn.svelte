@@ -22,7 +22,6 @@
 
 	// Get project status from centralized store
 	const projectId = $derived(project.tagId());
-	const projectStatus = $derived(projectStatusStore.getStatus(projectId));
 	const isOnline = $derived(projectStatusStore.isProjectOnline(projectId));
 	const onlineAgents = $derived(projectStatusStore.getOnlineAgents(projectId));
 
@@ -196,9 +195,9 @@
 				<ConversationsTab {project} {onlineAgents} {timeFilter} />
 			{/await}
 		{:else if activeTab === 'docs'}
-			<div class="h-full flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm">
-				Documentation (TODO)
-			</div>
+			{#await import('./docs/DocsTab.svelte') then { default: DocsTab }}
+				<DocsTab {project} />
+			{/await}
 		{:else if activeTab === 'agents'}
 			<div class="h-full">
 				{#if onlineAgents.length === 0}

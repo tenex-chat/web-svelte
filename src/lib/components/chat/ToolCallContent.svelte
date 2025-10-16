@@ -1,7 +1,5 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { cn } from '$lib/utils/cn';
-
 	interface Props {
 		event: NDKEvent;
 	}
@@ -13,7 +11,6 @@
 		if (!toolTag) return null;
 
 		const title = event.tagValue('tool-title');
-		const name = toolTag[1];
 
 		return {
 			name: title || event.content,

@@ -4,6 +4,7 @@
 	import AgentDefinitionCard from '$lib/components/agents/AgentDefinitionCard.svelte';
 	import CreateAgentDialog from '$lib/components/dialogs/CreateAgentDialog.svelte';
 	import { goto } from '$app/navigation';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	let searchQuery = $state('');
 	let activeFilter = $state<'all' | 'owned' | 'subscribed'>('all');
@@ -17,7 +18,7 @@
 		const events = agentSubscription.events || [];
 		const agentEvents = events.map((event) => NDKAgentDefinition.from(event));
 
-		const agentGroups = new Map<string, NDKAgentDefinition[]>();
+		const agentGroups = new SvelteMap<string, NDKAgentDefinition[]>();
 
 		agentEvents.forEach((agent) => {
 			const identifier = agent.slug || agent.dTag || agent.name || agent.id;

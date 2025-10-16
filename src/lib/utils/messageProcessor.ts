@@ -234,8 +234,8 @@ export function processEventsToMessages(
 	events: NDKEvent[],
 	rootEvent: NDKEvent | null = null,
 	viewMode: ThreadViewMode = 'threaded',
-	isBrainstorm: boolean = false,
-	showAll: boolean = false,
+	isBrainstorm = false,
+	showAll = false,
 	currentUserPubkey?: string
 ): Message[] {
 	const finalMessages: Message[] = [];

@@ -4,6 +4,7 @@
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { formatRelativeTime } from '$lib/utils/time';
 	import { MessageSquare, Users } from 'lucide-svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	interface Props {
 		project: NDKProject;
@@ -47,7 +48,7 @@
 
 	// Build thread metadata (reply count, participants, latest reply)
 	const threadMetadata = $derived.by(() => {
-		const metadata = new Map<
+		const metadata = new SvelteMap<
 			string,
 			{ replyCount: number; participants: Set<string>; latestReply: NDKEvent | null }
 		>();
@@ -110,8 +111,8 @@
 
 				if (threshold) {
 					// Track the last response from others and the user per thread
-					const threadLastOtherReplyMap = new Map<string, number>();
-					const threadLastUserReplyMap = new Map<string, number>();
+					const threadLastOtherReplyMap = new SvelteMap<string, number>();
+					const threadLastUserReplyMap = new SvelteMap<string, number>();
 
 					// Group replies by thread and categorize by author
 					replies.forEach((reply) => {
@@ -172,7 +173,7 @@
 
 				if (threshold) {
 					// Track the last response time per thread (from anyone)
-					const threadLastReplyMap = new Map<string, number>();
+					const threadLastReplyMap = new SvelteMap<string, number>();
 
 					// Group all replies by thread
 					replies.forEach((reply) => {
@@ -214,11 +215,6 @@
 		});
 	});
 
-	function handleNewConversation() {
-		if (onThreadSelect) {
-			onThreadSelect(null as any); // Signal new conversation
-		}
-	}
 </script>
 
 <div class="flex flex-col h-full">

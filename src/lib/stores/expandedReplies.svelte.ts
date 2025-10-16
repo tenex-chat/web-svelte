@@ -3,9 +3,11 @@
  * Uses Svelte 5 runes for reactive state management
  */
 
+import { SvelteSet } from 'svelte/reactivity';
+
 class ExpandedRepliesStore {
 	// Set of message IDs that have their replies expanded
-	private expanded = $state<Set<string>>(new Set());
+	private expanded = $state<SvelteSet<string>>(new SvelteSet());
 
 	/**
 	 * Check if a message's replies are expanded
@@ -18,7 +20,7 @@ class ExpandedRepliesStore {
 	 * Toggle the expanded state for a message's replies
 	 */
 	toggle(messageId: string): void {
-		const newSet = new Set(this.expanded);
+		const newSet = new SvelteSet(this.expanded);
 		if (newSet.has(messageId)) {
 			newSet.delete(messageId);
 		} else {
@@ -32,7 +34,7 @@ class ExpandedRepliesStore {
 	 */
 	expand(messageId: string): void {
 		if (!this.expanded.has(messageId)) {
-			const newSet = new Set(this.expanded);
+			const newSet = new SvelteSet(this.expanded);
 			newSet.add(messageId);
 			this.expanded = newSet;
 		}
@@ -43,7 +45,7 @@ class ExpandedRepliesStore {
 	 */
 	collapse(messageId: string): void {
 		if (this.expanded.has(messageId)) {
-			const newSet = new Set(this.expanded);
+			const newSet = new SvelteSet(this.expanded);
 			newSet.delete(messageId);
 			this.expanded = newSet;
 		}
@@ -53,14 +55,14 @@ class ExpandedRepliesStore {
 	 * Collapse all messages
 	 */
 	collapseAll(): void {
-		this.expanded = new Set();
+		this.expanded = new SvelteSet();
 	}
 
 	/**
 	 * Get a derived value that tracks expansion state
 	 * Use this for reactive $derived blocks
 	 */
-	get expandedSet(): Set<string> {
+	get expandedSet(): SvelteSet<string> {
 		return this.expanded;
 	}
 }

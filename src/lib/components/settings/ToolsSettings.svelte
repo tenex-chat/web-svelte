@@ -36,10 +36,9 @@
 		isAddingTool = true;
 		try {
 			// Validate JSON schema
-			let schema: any;
 			try {
-				schema = JSON.parse(newToolSchema);
-			} catch (e) {
+				JSON.parse(newToolSchema);
+			} catch {
 				alert('Invalid JSON schema');
 				isAddingTool = false;
 				return;

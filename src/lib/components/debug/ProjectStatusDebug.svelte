@@ -4,6 +4,7 @@
 	import { openProjects } from '$lib/stores/openProjects.svelte';
 	import { NDKProjectStatus } from '$lib/events/NDKProjectStatus';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
 		open?: boolean;
@@ -18,7 +19,7 @@
 	let selectedProjectDTag = $state<string | null>(null);
 	let showProjectSidebar = $state(true);
 	let activeTab = $state<'comparison' | 'store' | 'wire'>('comparison');
-	let expandedAgents = $state<Set<string>>(new Set());
+	let expandedAgents: SvelteSet<string> = new SvelteSet();
 
 	// Independent wire feed subscription (last 60 seconds)
 	const oneMinuteAgo = Math.floor(Date.now() / 1000) - 60;
@@ -102,7 +103,7 @@
 	);
 
 	function toggleAgentExpanded(agentKey: string) {
-		const newSet = new Set(expandedAgents);
+		const newSet = new SvelteSet(expandedAgents);
 		if (newSet.has(agentKey)) {
 			newSet.delete(agentKey);
 		} else {

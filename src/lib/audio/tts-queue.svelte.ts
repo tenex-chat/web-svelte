@@ -7,6 +7,7 @@
 import type { TTSPlayer } from './tts-player.svelte';
 import { extractTTSContent } from '$lib/utils/extract-tts-content';
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
+import { SvelteSet } from 'svelte/reactivity';
 
 export interface TTSMessage {
 	content: string;
@@ -36,7 +37,7 @@ export class TTSQueue {
 
 	// Internal state (not reactive)
 	private queue: TTSMessage[] = [];
-	private playedMessageIds = new Set<string>();
+	private playedMessageIds = new SvelteSet<string>();
 	private isInitialLoad = true;
 
 	constructor(private options: TTSQueueOptions) {}

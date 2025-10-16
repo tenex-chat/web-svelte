@@ -2,7 +2,7 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
-	import { NDKKind, type NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKKind } from '@nostr-dev-kit/ndk';
 
 	interface Props {
 		project: NDKProject;

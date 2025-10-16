@@ -210,7 +210,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							>
 								<option value="">Choose an LLM to assist you</option>
-								{#each llmConfigs as config}
+								{#each llmConfigs as config (config.id)}
 									<option value={config.id}>
 										{config.name} ({config.provider} - {config.model || 'default'})
 									</option>

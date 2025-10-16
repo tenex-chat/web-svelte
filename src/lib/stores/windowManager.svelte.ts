@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
 import type { NDKProject } from '$lib/events/NDKProject';
+import { isElectron } from '$lib/utils/electron';
 
 export type WindowType = 'chat' | 'settings' | 'agent' | 'document' | 'hashtag';
 
@@ -124,6 +125,23 @@ class WindowManager {
 		if (index === -1) return;
 
 		const window = this.windowsArray[index];
+
+		// In Electron, create a native window
+		if (isElectron() && globalThis.window?.electron) {
+			const { ipcRenderer } = globalThis.window.electron;
+			const url = this.buildWindowUrl(window);
+			ipcRenderer.send('open-window', {
+				url,
+				title: window.title,
+				width: window.size?.width || 800,
+				height: window.size?.height || 600
+			});
+			// Close the drawer since it's now a native window
+			this.close(id);
+			return;
+		}
+
+		// In browser, convert to floating window
 		const updatedWindow = {
 			...window,
 			isDetached: true,
@@ -138,6 +156,29 @@ class WindowManager {
 			...this.windowsArray.slice(index + 1)
 		];
 		this.saveToStorage();
+	}
+
+	/**
+	 * Build URL for window based on type and data
+	 */
+	private buildWindowUrl(window: WindowConfig): string {
+		const params = new URLSearchParams();
+		params.set('type', window.type);
+
+		if (window.project) {
+			params.set('projectId', window.project.tagId());
+		}
+		if (window.data?.thread) {
+			params.set('threadId', window.data.thread.id);
+		}
+		if (window.data?.agentPubkey) {
+			params.set('agentPubkey', window.data.agentPubkey);
+		}
+		if (window.data?.agentName) {
+			params.set('agentName', window.data.agentName);
+		}
+
+		return `/window?${params.toString()}`;
 	}
 
 	/**

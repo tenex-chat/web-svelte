@@ -25,8 +25,7 @@ const cacheAdapter = browser
 // Initialize signature verification worker (only in browser)
 let sigVerifyWorker: Worker | undefined;
 
-export const ndk = browser
-	? new NDKSvelte({
+export const ndk =new NDKSvelte({
 			explicitRelayUrls: DEFAULT_RELAYS,
 			autoConnectUserRelays: false,
 			cacheAdapter,
@@ -44,7 +43,6 @@ export const ndk = browser
 				}
 			}
 		})
-	: (new NDKSvelte({ explicitRelayUrls: DEFAULT_RELAYS }) as any);
 
 // Register custom event classes (only in browser)
 if (browser) {

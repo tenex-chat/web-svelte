@@ -7,10 +7,9 @@
 	import { generateAgentColor } from '$lib/utils/agent-colors';
 	import CreateAgentDialog from '$lib/components/dialogs/CreateAgentDialog.svelte';
 	import { marked } from 'marked';
+	import DOMPurify from 'dompurify';
 
 	const agentId = $derived($page.params.id);
-
-	const currentUser = $derived(ndk.$sessions.currentUser);
 
 	const agentEventSub = ndk.$subscribe(
 		() => (agentId ? { ids: [agentId], kinds: [NDKAgentDefinition.kind] } : undefined),
@@ -77,7 +76,8 @@
 	}
 
 	function renderMarkdown(content: string): string {
-		return marked(content, { breaks: true });
+		const rawHtml = marked(content, { breaks: true });
+		return DOMPurify.sanitize(rawHtml);
 	}
 </script>
 

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { PhoneOff, Mic, MicOff, Send } from 'lucide-svelte';
-	import { scale } from 'svelte/transition';
 	import { tweened } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
 

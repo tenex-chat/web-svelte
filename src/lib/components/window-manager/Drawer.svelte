@@ -3,6 +3,7 @@
 	import { slide } from 'svelte/transition';
 	import ChatView from '../chat/ChatView.svelte';
 	import SettingsTab from '../settings/SettingsTab.svelte';
+	import DocumentView from '../docs/DocumentView.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
 	import type { Message } from '$lib/utils/messageProcessor';
@@ -211,6 +212,12 @@
 			/>
 		{:else if window.type === 'settings' && window.project}
 			<SettingsTab project={window.project} {onlineAgents} />
+		{:else if window.type === 'document'}
+			<DocumentView
+				document={window.data?.document}
+				project={window.project}
+				onBack={handleClose}
+			/>
 		{:else if window.type === 'agent'}
 			<div class="p-4">
 				<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Agent: {window.data?.agentName}</h3>

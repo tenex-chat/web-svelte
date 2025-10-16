@@ -4,6 +4,7 @@
 	import type { NDKAgentDefinition as AgentDefType } from '$lib/events/NDKAgentDefinition';
 	import { cn } from '$lib/utils/cn';
 	import { marked } from 'marked';
+	import DOMPurify from 'dompurify';
 	import AIAssistedPromptEditor from './AIAssistedPromptEditor.svelte';
 
 	interface Props {
@@ -275,7 +276,8 @@
 	}
 
 	function renderMarkdown(content: string): string {
-		return marked(content, { breaks: true });
+		const rawHtml = marked(content, { breaks: true });
+		return DOMPurify.sanitize(rawHtml);
 	}
 </script>
 

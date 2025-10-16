@@ -1,9 +1,4 @@
 <script lang="ts">
-	interface Props {
-		pubkey: string;
-	}
-
-	let { pubkey }: Props = $props();
 </script>
 
 <div class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">

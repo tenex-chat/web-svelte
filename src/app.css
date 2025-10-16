@@ -141,4 +141,15 @@
 	.prose blockquote {
 		@apply border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic my-4;
 	}
+
+	/* Electron title bar drag region - sidebar only */
+	.electron-titlebar-sidebar {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 40px;
+		-webkit-app-region: drag;
+		z-index: 10;
+	}
 }

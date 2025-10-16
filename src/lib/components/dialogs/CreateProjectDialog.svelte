@@ -5,6 +5,7 @@
 	import { NDKMCPTool } from '$lib/events/NDKMCPTool';
 	import { cn } from '$lib/utils/cn';
 	import AgentDefinitionCard from '$lib/components/agents/AgentDefinitionCard.svelte';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
 		open?: boolean;
@@ -28,8 +29,8 @@
 	let creating = $state(false);
 
 	// Selected items
-	let selectedAgents = $state<Set<string>>(new Set());
-	let selectedTools = $state<Set<string>>(new Set());
+	let selectedAgents: SvelteSet<string> = new SvelteSet();
+	let selectedTools: SvelteSet<string> = new SvelteSet();
 
 	// Available items
 	let availableAgents = $state<NDKAgentDefinition[]>([]);
@@ -61,8 +62,8 @@
 			imageUrl: '',
 			repoUrl: ''
 		};
-		selectedAgents = new Set();
-		selectedTools = new Set();
+		selectedAgents = new SvelteSet();
+		selectedTools = new SvelteSet();
 		creating = false;
 		tagInput = '';
 	}
@@ -87,7 +88,7 @@
 			});
 
 			// Group agents by slug (d tag) or name if no slug
-			const agentGroups = new Map<string, NDKAgentDefinition[]>();
+			const agentGroups = new SvelteMap<string, NDKAgentDefinition[]>();
 
 			allAgents.forEach((agent) => {
 				const groupKey = agent.slug || agent.name || agent.id;
@@ -198,7 +199,7 @@
 	}
 
 	function toggleAgent(agentId: string) {
-		const newSelected = new Set(selectedAgents);
+		const newSelected = new SvelteSet(selectedAgents);
 		if (newSelected.has(agentId)) {
 			newSelected.delete(agentId);
 		} else {
@@ -208,7 +209,7 @@
 	}
 
 	function toggleTool(toolId: string) {
-		const newSelected = new Set(selectedTools);
+		const newSelected = new SvelteSet(selectedTools);
 		if (newSelected.has(toolId)) {
 			newSelected.delete(toolId);
 		} else {

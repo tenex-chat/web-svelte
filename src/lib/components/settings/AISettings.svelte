@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { aiConfigStore, type LLMConfig, type TTSProvider, type STTProvider } from '$lib/stores/aiConfig.svelte';
+	import { aiConfigStore, type LLMConfig } from '$lib/stores/aiConfig.svelte';
 	import { cn } from '$lib/utils/cn';
 	import { voiceDiscovery } from '$lib/services/voice-discovery';
 	import AddProviderDialog from '../dialogs/AddProviderDialog.svelte';

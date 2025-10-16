@@ -40,19 +40,14 @@
 		<button
 			type="button"
 			onclick={() => (isOpen = !isOpen)}
-			class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-sm min-w-0"
+			class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-sm min-w-0"
 		>
 			{#if displayAgent}
 				<!-- Avatar -->
 				<Avatar {ndk} pubkey={displayAgent.pubkey} size={20} />
 
-				<!-- Agent Name and Model -->
-				<div class="flex flex-col items-start min-w-0">
-					<span class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{displayAgent.name}</span>
-					{#if currentModel}
-						<span class="text-xs text-gray-500 dark:text-gray-400 truncate">{currentModel}</span>
-					{/if}
-				</div>
+				<!-- Agent Name -->
+				<span class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{displayAgent.name}</span>
 			{/if}
 
 			<!-- Dropdown Icon -->
@@ -134,7 +129,7 @@
 	<button
 		type="button"
 		onclick={onConfigure}
-		class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+		class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
 		title="Configure agent"
 		aria-label="Configure agent"
 	>

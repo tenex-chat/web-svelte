@@ -78,13 +78,11 @@
 	});
 
 	// Subscribe to messages in the thread
+	// Use rootEvent.filter() and nip22Filter() directly - they include all necessary kinds (including 21111 for streaming)
 	const messagesSubscription = ndk.$subscribe(() =>
 		localRootEvent ? {
 			filters: [
-				{
-					kinds: [11, 1111, 7, 21111, 513],
-					...localRootEvent.filter()
-				},
+				localRootEvent.filter(),
 				localRootEvent.nip22Filter()
 			],
 			closeOnEose: false,

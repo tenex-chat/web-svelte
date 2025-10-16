@@ -4,7 +4,7 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKKind } from '@nostr-dev-kit/ndk';
 	import { Avatar, Name } from '@nostr-dev-kit/svelte';
-	import { ArrowLeft, Bot, Copy, CheckCircle2, Sparkles } from 'lucide-svelte';
+	import { ArrowLeft, Copy, CheckCircle2, Sparkles } from 'lucide-svelte';
 	import { cn } from '$lib/utils/cn';
 	import AgentProfileTabs from '$lib/components/agents/AgentProfileTabs.svelte';
 

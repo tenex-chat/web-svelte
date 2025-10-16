@@ -83,7 +83,7 @@
 			</div>
 			<div class="px-4 py-3">
 				<ul class="space-y-2">
-					{#each useCriteria as criteria}
+					{#each useCriteria as criteria (criteria)}
 						<li class="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
 							<span class="text-gray-400 dark:text-gray-500">•</span>
 							<span>{criteria}</span>

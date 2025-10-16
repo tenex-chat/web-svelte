@@ -4,6 +4,7 @@ import {
   NDKProjectStatus,
   type ProjectAgent,
 } from "$lib/events/NDKProjectStatus";
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 /**
  * Centralized store for project status (kind:24010)
@@ -12,7 +13,7 @@ import {
 
 class ProjectStatusStore {
   // Map of project ID -> latest status event
-  private statusMap = $state<Map<string, NDKProjectStatus>>(new Map());
+  private statusMap = $state<SvelteMap<string, NDKProjectStatus>>(new SvelteMap());
   private initialized = false;
 
   /**
@@ -57,7 +58,7 @@ class ProjectStatusStore {
       const events = subscription.events as NDKProjectStatus[];
 
       // Group by project, keep only latest per project
-      const latestByProject = new Map<string, NDKProjectStatus>();
+      const latestByProject = new SvelteMap<string, NDKProjectStatus>();
 
       for (const event of events) {
         const projectId = event.projectId;
@@ -137,7 +138,7 @@ class ProjectStatusStore {
     const status = this.getStatus(projectId);
     if (!status) return [];
 
-    const tools = new Set<string>();
+    const tools = new SvelteSet<string>();
     for (const tag of status.tags) {
       if (tag[0] === "tool" && tag[1]) {
         tools.add(tag[1]);
@@ -190,7 +191,7 @@ class ProjectStatusStore {
    */
   get totalOnlineAgents(): number {
     let count = 0;
-    for (const [_, status] of this.statusMap) {
+    for (const status of this.statusMap.values()) {
       if (status.isOnline) {
         count += status.agents.length;
       }
@@ -202,8 +203,8 @@ class ProjectStatusStore {
    * Get all unique models across all projects
    */
   get allModels(): string[] {
-    const models = new Set<string>();
-    for (const [_, status] of this.statusMap) {
+    const models = new SvelteSet<string>();
+    for (const status of this.statusMap.values()) {
       status.models.forEach((m) => models.add(m.name));
     }
     return Array.from(models);
@@ -213,8 +214,8 @@ class ProjectStatusStore {
    * Get all unique tools across all projects
    */
   get allTools(): string[] {
-    const tools = new Set<string>();
-    for (const [_, status] of this.statusMap) {
+    const tools = new SvelteSet<string>();
+    for (const status of this.statusMap.values()) {
       for (const tag of status.tags) {
         if (tag[0] === "tool" && tag[1]) {
           tools.add(tag[1]);
@@ -227,7 +228,7 @@ class ProjectStatusStore {
   /**
    * Get the full status map (for debugging or advanced use)
    */
-  get allStatus(): Map<string, NDKProjectStatus> {
+  get allStatus(): SvelteMap<string, NDKProjectStatus> {
     return this.statusMap;
   }
 }

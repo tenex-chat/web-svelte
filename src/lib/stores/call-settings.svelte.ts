@@ -90,16 +90,18 @@ class CallSettingsStore {
 	#initialized = false;
 
 	// Auto-save on changes (no useEffect needed!)
-	#autoSave = $effect(() => {
-		// Skip the initial run (when settings are first loaded)
-		if (!this.#initialized) {
-			this.#initialized = true;
-			return;
-		}
+	constructor() {
+		$effect(() => {
+			// Skip the initial run (when settings are first loaded)
+			if (!this.#initialized) {
+				this.#initialized = true;
+				return;
+			}
 
-		// This runs whenever this.settings changes (after initialization)
-		saveSettings(this.settings);
-	});
+			// This runs whenever this.settings changes (after initialization)
+			saveSettings(this.settings);
+		});
+	}
 
 	/**
 	 * Update settings (partial update)

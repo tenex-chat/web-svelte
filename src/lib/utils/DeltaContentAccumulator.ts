@@ -35,7 +35,7 @@ export class DeltaContentAccumulator {
 	private reconstruct(): string {
 		return Array.from(this.deltas.entries())
 			.sort(([a], [b]) => a - b)
-			.map(([_, content]) => content)
+			.map(([, content]) => content)
 			.join('');
 	}
 

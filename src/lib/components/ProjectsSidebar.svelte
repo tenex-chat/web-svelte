@@ -2,6 +2,7 @@
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { ndk } from '$lib/ndk.svelte';
 	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
 	import { Avatar, Name } from '@nostr-dev-kit/svelte';
 	import { openProjects } from '$lib/stores/openProjects.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
@@ -125,11 +126,17 @@
 
 <div
 	class={cn(
-		'bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-700 flex flex-col transition-all duration-300',
-		collapsed ? 'w-16' : 'w-64'
+		'bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-700 flex flex-col transition-all duration-300 relative',
+		collapsed ? 'w-16' : 'w-64',
+		browser && window.electron ? 'pt-10' : ''
 	)}
 	data-collapsed={collapsed}
 >
+	<!-- Electron Title Bar Drag Region (only in sidebar) -->
+	{#if browser && window.electron}
+		<div class="electron-titlebar-sidebar"></div>
+	{/if}
+
 	<!-- Header -->
 	<div class="border-b border-gray-200 dark:border-zinc-700 px-3 py-3">
 		<div class="flex items-center justify-between">

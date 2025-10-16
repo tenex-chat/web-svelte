@@ -11,7 +11,7 @@
 		timeFilter?: string | null;
 	}
 
-	let { project, onlineAgents = [], timeFilter = null }: Props = $props();
+	let { project, timeFilter = null }: Props = $props();
 
 	function handleThreadSelect(thread: NDKEvent | null) {
 		if (thread) {

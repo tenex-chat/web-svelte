@@ -26,14 +26,14 @@
 	const currentUser = $derived(ndk.$sessions.currentUser);
 
 	// Subscribe to all messages in this conversation
+	// Use rootEvent.filter() and nip22Filter() directly - they include all necessary kinds
 	const messagesSubscription = ndk.$subscribe(() => ({
-		filters: [
-			{
-				kinds: [11, 1111, 7, 21111, 513],
-				...rootEvent.filter()
-			},
-			rootEvent.nip22Filter()
-		],
+		filters: isBrainstorm
+			? [
+					{ kinds: [1111, 7], ...rootEvent.filter() },
+					{ kinds: [1111, 7], ...rootEvent.nip22Filter() }
+				]
+			: [rootEvent.filter(), rootEvent.nip22Filter()],
 		closeOnEose: false,
 		bufferMs: 30
 	}));
