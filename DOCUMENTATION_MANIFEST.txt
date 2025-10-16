@@ -1,0 +1,290 @@
+================================================================================
+PROJECT CREATION WIZARD - DOCUMENTATION MANIFEST
+================================================================================
+
+Documentation Package for Svelte 5 Implementation
+Reference: TENEX-web-8bde0h React Project
+Target: TENEX-web-svelte5 Svelte Project
+Created: October 16, 2025
+
+================================================================================
+DOCUMENTATION FILES CREATED
+================================================================================
+
+1. README_WIZARD_DOCS.md
+   Size: ~7 KB
+   Purpose: Master overview and navigation guide
+   Key Sections:
+   - Document collection summary
+   - How to use this documentation
+   - Implementation phases overview
+   - Quick reference tables
+   - Key patterns to master
+   - Success criteria
+
+2. PROJECT_CREATION_WIZARD_REFERENCE.md
+   Size: 11 KB
+   Purpose: Complete feature specification and reference
+   Key Sections:
+   - Overview of 4-step wizard
+   - Core components (CreateProjectDialog, Add dialogs)
+   - State management structure
+   - Data models (NDKProject, NDKAgentDefinition, etc.)
+   - UI/UX patterns
+   - Nostr event kinds
+   - Key technical patterns
+   - Navigation flow
+   - Import structure
+
+3. WIZARD_ARCHITECTURE.md
+   Size: 12 KB
+   Purpose: Technical design and data flow diagrams
+   Key Sections:
+   - Component hierarchy tree
+   - State management flow diagram
+   - Data flow diagram
+   - User interaction flow
+   - Validation logic
+   - Agent selection logic
+   - Component features detail
+   - NDK integration points
+   - Error handling
+   - Edge cases
+   - Performance considerations
+
+4. SVELTE_IMPLEMENTATION_GUIDE.md
+   Size: 14 KB
+   Purpose: React-to-Svelte pattern conversion guide
+   Key Sections:
+   - State management patterns
+   - Effects/lifecycle patterns
+   - Conditional rendering
+   - Set operations
+   - Event handling
+   - Computed values
+   - Class binding
+   - Form validation
+   - Component templates
+   - Store vs local state
+   - Common pitfalls
+   - Testing patterns
+   - Migration checklist
+
+5. REFERENCE_IMPLEMENTATION_SUMMARY.md
+   Size: 9.5 KB
+   Purpose: Code location and implementation reference
+   Key Sections:
+   - Reference file paths and line numbers
+   - Component descriptions
+   - State structure interface
+   - Version management algorithm
+   - Error handling patterns
+   - Testing scenarios
+   - Performance notes
+   - Integration requirements
+   - FAQ with answers
+
+6. IMPLEMENTATION_INDEX.md
+   Size: 11 KB
+   Purpose: Project management and implementation tracking
+   Key Sections:
+   - Quick start guide
+   - 6 implementation phases
+   - State management checklist
+   - Component structure
+   - Key implementation details
+   - Testing checklist
+   - Performance considerations
+   - Integration requirements
+   - Common gotchas
+   - External references
+   - Progress tracking
+
+================================================================================
+REFERENCE IMPLEMENTATION LOCATION
+================================================================================
+
+React Reference Project: /Users/pablofernandez/projects/TENEX-web-8bde0h/src/
+
+Core Components:
+- components/dialogs/CreateProjectDialog.tsx (750 lines)
+- components/dialogs/AddAgentsToProjectDialog.tsx (487 lines)
+- components/dialogs/AddToolsToProjectDialog.tsx (236 lines)
+- components/agents/PackCard.tsx (124 lines)
+- components/agents/AgentDefinitionCard.tsx (99 lines)
+
+================================================================================
+DOCUMENTATION MAP & USAGE
+================================================================================
+
+START HERE → README_WIZARD_DOCS.md
+             ├─ For Feature Understanding → PROJECT_CREATION_WIZARD_REFERENCE.md
+             ├─ For Architecture → WIZARD_ARCHITECTURE.md
+             ├─ For Code Patterns → SVELTE_IMPLEMENTATION_GUIDE.md
+             ├─ For Reference Code → REFERENCE_IMPLEMENTATION_SUMMARY.md
+             └─ For Implementation → IMPLEMENTATION_INDEX.md
+
+WORKFLOW:
+1. Read README_WIZARD_DOCS.md (Master overview)
+2. Read PROJECT_CREATION_WIZARD_REFERENCE.md (What to build)
+3. Read WIZARD_ARCHITECTURE.md (How it fits together)
+4. Read SVELTE_IMPLEMENTATION_GUIDE.md (How to code it in Svelte)
+5. Start Phase 1 of IMPLEMENTATION_INDEX.md
+6. Reference other docs as needed during development
+
+================================================================================
+KEY CONTENT SUMMARY
+================================================================================
+
+Wizard Steps: 4
+├─ Details (Project information)
+├─ Agents (Individual agents and packs)
+├─ Tools (MCP tools)
+└─ Review (Summary and creation)
+
+State Variables: 15
+├─ Navigation: 1 (currentStep)
+├─ Project Data: 5 (name, description, tags, imageUrl, repoUrl)
+├─ Selections: 3 (selectedAgents, selectedTools, selectedPackId)
+├─ Data: 3 (availableAgents, availableTools, packs)
+└─ Loading: 3 (isLoadingAgents, isLoadingTools, isCreating)
+
+Components to Build: 5
+├─ CreateProjectDialog (Main wizard)
+├─ StepDetails (Form step)
+├─ StepAgents (Selection step with packs)
+├─ StepTools (Tool selection)
+└─ StepReview (Summary)
+
+Sub-components: 3
+├─ PackCard (Pack display)
+├─ AgentDefinitionCard (Agent display)
+└─ Tool item (Tool list row)
+
+Nostr Event Kinds: 3
+├─ 4199 (Agent Definition)
+├─ 34199 (Agent Definition Pack)
+└─ 4200 (MCP Tool)
+
+================================================================================
+IMPLEMENTATION TIMELINE
+================================================================================
+
+Phase 1: Core Structure (1-2 days)
+Phase 2: Project Details (1 day)
+Phase 3: Agent Selection (2-3 days)
+Phase 4: Tool Selection (1 day)
+Phase 5: Review & Creation (1 day)
+Phase 6: Polish & Testing (1-2 days)
+
+TOTAL ESTIMATED TIME: 6-10 days
+
+================================================================================
+CRITICAL PATTERNS TO IMPLEMENT
+================================================================================
+
+1. Multi-step form with validation
+2. Set-based selection for O(1) lookup
+3. Agent version management (keep latest only)
+4. Pack pre-selection of all agents
+5. Auto-installation of required MCP servers
+6. Reactive Set mutations in Svelte
+7. Form validation (name & description required)
+8. Data persistence across steps
+9. Error handling with toast notifications
+10. Loading states during data fetches
+
+================================================================================
+DOCUMENT STATISTICS
+================================================================================
+
+Total Documentation:
+- Files: 6
+- Total Size: ~57.5 KB
+- Total Words: ~10,300
+- Total Pages: ~25 (at 400 words/page)
+
+Individual Files:
+- PROJECT_CREATION_WIZARD_REFERENCE.md: 11 KB, ~2,000 words
+- WIZARD_ARCHITECTURE.md: 12 KB, ~2,100 words
+- SVELTE_IMPLEMENTATION_GUIDE.md: 14 KB, ~2,500 words
+- REFERENCE_IMPLEMENTATION_SUMMARY.md: 9.5 KB, ~1,700 words
+- IMPLEMENTATION_INDEX.md: 11 KB, ~2,000 words
+- README_WIZARD_DOCS.md: ~7 KB, ~1,000 words
+
+================================================================================
+HOW TO USE THIS MANIFEST
+================================================================================
+
+This manifest provides a quick overview of what's included and how to navigate
+the documentation package.
+
+For detailed explanations:
+→ Read README_WIZARD_DOCS.md
+
+For specific implementation help:
+1. What to build? → PROJECT_CREATION_WIZARD_REFERENCE.md
+2. How it connects? → WIZARD_ARCHITECTURE.md
+3. How to code it? → SVELTE_IMPLEMENTATION_GUIDE.md
+4. Where's the code? → REFERENCE_IMPLEMENTATION_SUMMARY.md
+5. What's next? → IMPLEMENTATION_INDEX.md
+
+================================================================================
+SUCCESS CRITERIA
+================================================================================
+
+Implementation is complete when:
+✓ All 4 wizard steps render correctly
+✓ Navigation between steps works
+✓ Form validation works (name & description required)
+✓ Agent selection works (individual and packs)
+✓ Tool selection works independently
+✓ Review page shows accurate summary
+✓ Project creation publishes to Nostr
+✓ MCP servers auto-added for agents
+✓ Loading states display
+✓ Error handling with notifications
+✓ All tests pass
+
+================================================================================
+QUICK START
+================================================================================
+
+1. Open README_WIZARD_DOCS.md - Get overview (5 min)
+2. Open PROJECT_CREATION_WIZARD_REFERENCE.md - Understand features (15 min)
+3. Open WIZARD_ARCHITECTURE.md - See structure (10 min)
+4. Open SVELTE_IMPLEMENTATION_GUIDE.md - Learn patterns (20 min)
+5. Open IMPLEMENTATION_INDEX.md - Start Phase 1
+
+TOTAL READING TIME: ~50 minutes to understand everything
+
+================================================================================
+SUPPORT & TROUBLESHOOTING
+================================================================================
+
+Question: "How do I convert React to Svelte?"
+Answer: See SVELTE_IMPLEMENTATION_GUIDE.md (pattern conversion section)
+
+Question: "What's the data flow?"
+Answer: See WIZARD_ARCHITECTURE.md (data flow diagrams)
+
+Question: "Where's the exact code in React?"
+Answer: See REFERENCE_IMPLEMENTATION_SUMMARY.md (file locations & line numbers)
+
+Question: "What should I implement first?"
+Answer: See IMPLEMENTATION_INDEX.md (Phase 1: Core Structure)
+
+Question: "What's the complete feature?"
+Answer: See PROJECT_CREATION_WIZARD_REFERENCE.md (Overview section)
+
+================================================================================
+DOCUMENT VERSION
+================================================================================
+
+Documentation Package Version: 1.0
+Created: October 16, 2025
+Reference Project: TENEX-web-8bde0h (React)
+Target Project: TENEX-web-svelte5 (Svelte 5)
+Status: Complete and Ready for Implementation
+
+================================================================================
