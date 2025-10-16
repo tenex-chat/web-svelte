@@ -203,17 +203,15 @@
 					thread.tags.push(['t', match[1].toLowerCase()]);
 				}
 
-				// P-TAG ROUTING for new thread (PRIORITY: @mentions > selectedAgent > default PM)
-				if (mentionedAgents.length > 0) {
-					// Add all mentioned agents as p-tags
+				// P-TAG ROUTING for new thread
+				if (mentionedAgents.length > 1) {
+					// Multiple mentions - add all as p-tags
 					for (const pubkey of mentionedAgents) {
 						thread.tags.push(['p', pubkey]);
 					}
-				} else if (selectedAgent) {
-					thread.tags.push(['p', selectedAgent]);
-				} else if (onlineAgents.length > 0) {
-					// Default to Project Manager (first agent)
-					thread.tags.push(['p', onlineAgents[0].pubkey]);
+				} else if (currentAgent) {
+					// Single source of truth: use currentAgent (handles single mention, selection, or default)
+					thread.tags.push(['p', currentAgent]);
 				}
 
 				// Sign and publish
@@ -256,17 +254,15 @@
 					}
 				}
 
-				// P-TAG ROUTING for reply (PRIORITY: @mentions > selectedAgent > default PM)
-				if (mentionedAgents.length > 0) {
-					// Add all mentioned agents as p-tags
+				// P-TAG ROUTING for reply
+				if (mentionedAgents.length > 1) {
+					// Multiple mentions - add all as p-tags
 					for (const pubkey of mentionedAgents) {
 						reply.tags.push(['p', pubkey]);
 					}
-				} else if (selectedAgent) {
-					reply.tags.push(['p', selectedAgent]);
-				} else if (onlineAgents.length > 0) {
-					// Default to PM
-					reply.tags.push(['p', onlineAgents[0].pubkey]);
+				} else if (currentAgent) {
+					// Single source of truth: use currentAgent (handles single mention, selection, or default)
+					reply.tags.push(['p', currentAgent]);
 				}
 
 				// Sign and publish
