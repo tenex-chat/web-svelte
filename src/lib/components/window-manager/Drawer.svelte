@@ -17,9 +17,29 @@
 	let viewMode = $state<ThreadViewMode>('threaded');
 	let messages = $state<Message[]>([]);
 
+	const STORAGE_KEY = 'drawer-width-vw';
+	const DEFAULT_WIDTH_VW = 41.67; // ~800px at 1920px width
+	const MIN_WIDTH_VW = 20;
+	const MAX_WIDTH_VW = 80;
+
+	let widthVw = $state(DEFAULT_WIDTH_VW);
+	let isResizing = $state(false);
+
 	const onlineAgents = $derived(
 		window.project ? projectStatusStore.getOnlineAgents(window.project.tagId()) : []
 	);
+
+	$effect(() => {
+		if (typeof localStorage !== 'undefined') {
+			const stored = localStorage.getItem(STORAGE_KEY);
+			if (stored) {
+				const parsed = parseFloat(stored);
+				if (!isNaN(parsed) && parsed >= MIN_WIDTH_VW && parsed <= MAX_WIDTH_VW) {
+					widthVw = parsed;
+				}
+			}
+		}
+	});
 
 	function handleClose() {
 		windowManager.close(window.id);
@@ -39,16 +59,54 @@
 	function toggleViewMode() {
 		viewMode = viewMode === 'threaded' ? 'flattened' : 'threaded';
 	}
+
+	function handleResizeStart(e: MouseEvent) {
+		e.preventDefault();
+		isResizing = true;
+
+		const handleMouseMove = (e: MouseEvent) => {
+			if (!isResizing) return;
+
+			const viewportWidth = globalThis.innerWidth;
+			const distanceFromRight = viewportWidth - e.clientX;
+			let newWidthVw = (distanceFromRight / viewportWidth) * 100;
+
+			newWidthVw = Math.max(MIN_WIDTH_VW, Math.min(MAX_WIDTH_VW, newWidthVw));
+			widthVw = newWidthVw;
+		};
+
+		const handleMouseUp = () => {
+			if (isResizing) {
+				isResizing = false;
+				if (typeof localStorage !== 'undefined') {
+					localStorage.setItem(STORAGE_KEY, widthVw.toString());
+				}
+			}
+			document.removeEventListener('mousemove', handleMouseMove);
+			document.removeEventListener('mouseup', handleMouseUp);
+		};
+
+		document.addEventListener('mousemove', handleMouseMove);
+		document.addEventListener('mouseup', handleMouseUp);
+	}
 </script>
 
 <div
-	class="drawer fixed top-0 right-0 bottom-0 w-[800px] bg-white dark:bg-zinc-900 border-l border-gray-200 dark:border-zinc-700 shadow-2xl flex flex-col"
-	style="z-index: {window.zIndex}"
+	class="drawer fixed top-0 right-0 bottom-0 bg-white dark:bg-zinc-900 border-l border-gray-200 dark:border-zinc-700 shadow-2xl flex flex-col"
+	style="width: {widthVw}vw; z-index: {window.zIndex}; {isResizing ? 'user-select: none;' : ''}"
 	transition:slide={{ axis: 'x', duration: 200 }}
 	onclick={handleFocus}
 	role="dialog"
 	aria-label={window.title}
 >
+	<!-- Resize Handle -->
+	<div
+		class="resize-handle absolute top-0 left-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500/50 transition-colors"
+		onmousedown={handleResizeStart}
+		role="separator"
+		aria-label="Resize drawer"
+		aria-orientation="vertical"
+	></div>
 	<!-- Drawer Header -->
 	<div class="drawer-header flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800">
 		<div class="flex items-center gap-3 flex-1 min-w-0">
@@ -169,5 +227,13 @@
 <style>
 	.drawer {
 		max-width: calc(100vw - 320px); /* Leave space for sidebar */
+	}
+
+	.resize-handle {
+		z-index: 10;
+	}
+
+	.resize-handle:active {
+		background-color: rgb(59 130 246 / 0.7);
 	}
 </style>

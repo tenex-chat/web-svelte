@@ -47,6 +47,13 @@
 		}
 	});
 
+	// Autofocus on mount
+	$effect(() => {
+		if (textareaElement) {
+			textareaElement.focus();
+		}
+	});
+
 	// Compute default agent based on recent messages (SINGLE SOURCE OF TRUTH)
 	const defaultAgent = $derived.by(() => {
 		if (onlineAgents.length === 0) return null;
@@ -277,6 +284,11 @@
 			if (onCancelReply) {
 				onCancelReply();
 			}
+
+			// Restore focus to input
+			setTimeout(() => {
+				textareaElement?.focus();
+			}, 0);
 		} catch (error) {
 			console.error('Failed to send message:', error);
 			messageInput = content; // Restore message on error

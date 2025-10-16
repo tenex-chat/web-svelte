@@ -25,10 +25,6 @@ const cacheAdapter = browser
 // Initialize signature verification worker (only in browser)
 let sigVerifyWorker: Worker | undefined;
 
-if (browser) {
-	console.log('[NDK] Creating NDK instance with relays:', DEFAULT_RELAYS);
-}
-
 export const ndk = browser
 	? new NDKSvelte({
 			explicitRelayUrls: DEFAULT_RELAYS,
@@ -69,13 +65,6 @@ export const ndkReady = (async () => {
 		const SigVerifyWorker = (await import('@nostr-dev-kit/ndk/workers/sig-verification?worker')).default;
 		sigVerifyWorker = new SigVerifyWorker();
 		ndk.signatureVerificationWorker = sigVerifyWorker;
-
-		// Initialize cache
-		if (cacheAdapter) {
-			await cacheAdapter.initializeAsync(ndk);
-			console.log('✅ SQLite WASM cache initialized');
-		}
-
 		ndk.connect();
 	} catch (error) {
 		console.error('❌ Failed to initialize cache:', error);

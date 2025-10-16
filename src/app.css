@@ -131,7 +131,7 @@
 	}
 
 	.prose p {
-		@apply my-3 leading-relaxed;
+		@apply leading-relaxed mb-2;
 	}
 
 	.prose a {

@@ -14,27 +14,17 @@
 		const tags = event.tags;
 		const data: Record<string, string> = {};
 
-		// Common LLM metadata tags
-		const metadataKeys = [
-			'model',
-			'temperature',
-			'max_tokens',
-			'top_p',
-			'frequency_penalty',
-			'presence_penalty',
-			'prompt_tokens',
-			'completion_tokens',
-			'total_tokens',
-			'finish_reason',
-			'system_fingerprint',
-			'response_time',
-			'provider',
-			'api_version'
-		];
-
+		// Extract all llm-* prefixed tags
 		for (const tag of tags) {
-			if (metadataKeys.includes(tag[0]) && tag[1]) {
-				data[tag[0]] = tag[1];
+			const tagName = tag[0];
+			const tagValue = tag[1];
+
+			if (!tagValue) continue;
+
+			// Extract all llm-* tags
+			if (tagName.startsWith('llm-')) {
+				const key = tagName.slice(4); // Remove 'llm-' prefix
+				data[key] = tagValue;
 			}
 		}
 
@@ -52,8 +42,8 @@
 				items: [
 					{ key: 'model', label: 'Model', value: metadata.model },
 					{ key: 'provider', label: 'Provider', value: metadata.provider },
-					{ key: 'api_version', label: 'API Version', value: metadata.api_version },
-					{ key: 'system_fingerprint', label: 'System Fingerprint', value: metadata.system_fingerprint }
+					{ key: 'api-version', label: 'API Version', value: metadata['api-version'] },
+					{ key: 'system-fingerprint', label: 'System Fingerprint', value: metadata['system-fingerprint'] }
 				].filter((item) => item.value)
 			},
 			parameters: {
@@ -61,27 +51,30 @@
 				title: 'Generation Parameters',
 				items: [
 					{ key: 'temperature', label: 'Temperature', value: metadata.temperature },
-					{ key: 'max_tokens', label: 'Max Tokens', value: metadata.max_tokens },
-					{ key: 'top_p', label: 'Top P', value: metadata.top_p },
-					{ key: 'frequency_penalty', label: 'Frequency Penalty', value: metadata.frequency_penalty },
-					{ key: 'presence_penalty', label: 'Presence Penalty', value: metadata.presence_penalty }
+					{ key: 'max-tokens', label: 'Max Tokens', value: metadata['max-tokens'] },
+					{ key: 'top-p', label: 'Top P', value: metadata['top-p'] },
+					{ key: 'frequency-penalty', label: 'Frequency Penalty', value: metadata['frequency-penalty'] },
+					{ key: 'presence-penalty', label: 'Presence Penalty', value: metadata['presence-penalty'] }
 				].filter((item) => item.value)
 			},
 			usage: {
 				icon: Activity,
 				title: 'Token Usage',
 				items: [
-					{ key: 'prompt_tokens', label: 'Prompt Tokens', value: metadata.prompt_tokens },
-					{ key: 'completion_tokens', label: 'Completion Tokens', value: metadata.completion_tokens },
-					{ key: 'total_tokens', label: 'Total Tokens', value: metadata.total_tokens }
+					{ key: 'prompt-tokens', label: 'Prompt Tokens', value: metadata['prompt-tokens'] },
+					{ key: 'completion-tokens', label: 'Completion Tokens', value: metadata['completion-tokens'] },
+					{ key: 'total-tokens', label: 'Total Tokens', value: metadata['total-tokens'] },
+					{ key: 'reasoning-tokens', label: 'Reasoning Tokens', value: metadata['reasoning-tokens'] },
+					{ key: 'cached-input-tokens', label: 'Cached Input Tokens', value: metadata['cached-input-tokens'] }
 				].filter((item) => item.value)
 			},
 			performance: {
 				icon: Zap,
 				title: 'Performance',
 				items: [
-					{ key: 'response_time', label: 'Response Time', value: metadata.response_time ? `${metadata.response_time}ms` : undefined },
-					{ key: 'finish_reason', label: 'Finish Reason', value: metadata.finish_reason }
+					{ key: 'response-time', label: 'Response Time', value: metadata['response-time'] ? `${metadata['response-time']}ms` : undefined },
+					{ key: 'finish-reason', label: 'Finish Reason', value: metadata['finish-reason'] },
+					{ key: 'cost-usd', label: 'Cost (USD)', value: metadata['cost-usd'] ? `$${metadata['cost-usd']}` : undefined }
 				].filter((item) => item.value)
 			}
 		};

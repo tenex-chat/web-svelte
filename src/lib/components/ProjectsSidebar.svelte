@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { ndk } from '$lib/ndk.svelte';
+	import { goto } from '$app/navigation';
 	import { Avatar, Name } from '@nostr-dev-kit/svelte';
 	import { openProjects } from '$lib/stores/openProjects.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
@@ -10,7 +11,6 @@
 	import { cn } from '$lib/utils/cn';
 	import { registerShortcut } from '$lib/utils/keyboardShortcuts';
 	import * as DropdownMenu from './ui/dropdown-menu';
-	import * as Tooltip from './ui/tooltip';
 	import CreateProjectDialog from './dialogs/CreateProjectDialog.svelte';
 	import GlobalSearchDialog from './dialogs/GlobalSearchDialog.svelte';
 	import InboxPopover from './inbox/InboxPopover.svelte';
@@ -146,18 +146,16 @@
 					<span class="font-bold">TENEX</span>
 				</a>
 			{:else}
-				<Tooltip.Root><Tooltip.Trigger asChild>
-					<a href="/projects" class="flex items-center justify-center w-10 h-10 hover:opacity-80 transition-opacity text-gray-900 dark:text-gray-100" aria-label="TENEX home">
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-							/>
-						</svg>
-					</a>
-				</Tooltip.Trigger><Tooltip.Content side="right">TENEX</Tooltip.Content></Tooltip.Root>
+				<a href="/projects" class="flex items-center justify-center w-10 h-10 hover:opacity-80 transition-opacity text-gray-900 dark:text-gray-100" aria-label="TENEX home" title="TENEX">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+						/>
+					</svg>
+				</a>
 			{/if}
 
 			<button
@@ -185,26 +183,26 @@
 				<div class="flex items-center justify-between px-2 py-1 mb-1">
 					<span class="text-xs font-medium text-gray-500 dark:text-gray-400">Projects</span>
 					<div class="flex items-center gap-0.5">
-						<Tooltip.Root><Tooltip.Trigger asChild>
-							<button
-								onclick={() => (searchDialogOpen = true)}
-								class="h-5 w-5 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 rounded text-gray-700 dark:text-gray-300"
-								aria-label="Global Search"
-							>
-								<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-									/>
-								</svg>
-							</button>
-						</Tooltip.Trigger><Tooltip.Content side="bottom">Global Search (⌘K)</Tooltip.Content></Tooltip.Root>
+						<button
+							onclick={() => (searchDialogOpen = true)}
+							class="h-5 w-5 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 rounded text-gray-700 dark:text-gray-300"
+							aria-label="Global Search (⌘K)"
+							title="Global Search (⌘K)"
+						>
+							<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+								/>
+							</svg>
+						</button>
 						<button
 							onclick={() => (createDialogOpen = true)}
 							class="h-5 w-5 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 rounded -mr-1 text-gray-700 dark:text-gray-300"
 							aria-label="Create new project"
+							title="Create new project"
 						>
 							<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path
@@ -232,40 +230,37 @@
 						{@const projectColor = getProjectColor(project)}
 
 						{#if collapsed}
-							<Tooltip.Root>
-								<Tooltip.Trigger asChild>
-									<button
-										onmousedown={(e) =>
-											handleProjectMouseDown(project.dTag || project.id || '', e)}
-										onmouseup={() => handleProjectMouseUp(project)}
-										onmouseleave={handleProjectMouseLeave}
+							<button
+								onmousedown={(e) =>
+									handleProjectMouseDown(project.dTag || project.id || '', e)}
+								onmouseup={() => handleProjectMouseUp(project)}
+								onmouseleave={handleProjectMouseLeave}
+								class={cn(
+									'w-full text-left px-3 py-2 rounded-lg transition-all flex items-center gap-2',
+									isOpen ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-blue-900 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300',
+									!isOnline && 'opacity-75'
+								)}
+								aria-label={project.title || 'Untitled'}
+								title={project.title || 'Untitled'}
+							>
+								<!-- Project Avatar -->
+								<div class="relative flex-shrink-0">
+									<div
 										class={cn(
-											'w-full text-left px-3 py-2 rounded-lg transition-all flex items-center gap-2',
-											isOpen ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-blue-900 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300',
-											!isOnline && 'opacity-75'
+											'rounded-lg flex items-center justify-center text-white font-semibold',
+											collapsed ? 'w-8 h-8 text-sm' : 'w-8 h-8 text-sm'
 										)}
+										style="background: {projectColor}"
 									>
-										<!-- Project Avatar -->
-										<div class="relative flex-shrink-0">
-											<div
-												class={cn(
-													'rounded-lg flex items-center justify-center text-white font-semibold',
-													collapsed ? 'w-8 h-8 text-sm' : 'w-8 h-8 text-sm'
-												)}
-												style="background: {projectColor}"
-											>
-												{project.title?.charAt(0).toUpperCase() || 'P'}
-											</div>
-											{#if isOnline}
-												<div
-													class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-white dark:border-zinc-900"
-												></div>
-											{/if}
-										</div>
-									</button>
-								</Tooltip.Trigger>
-								<Tooltip.Content side="right">{project.title || 'Untitled'}</Tooltip.Content>
-							</Tooltip.Root>
+										{project.title?.charAt(0).toUpperCase() || 'P'}
+									</div>
+									{#if isOnline}
+										<div
+											class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-white dark:border-zinc-900"
+										></div>
+									{/if}
+								</div>
+							</button>
 						{:else}
 							<button
 								onmousedown={(e) =>
@@ -392,15 +387,15 @@
 					<span>New project</span>
 				</DropdownMenu.Item>
 				<DropdownMenu.Separator />
-				<DropdownMenu.Item href="/agents">
+				<DropdownMenu.Item onclick={() => goto('/agents')}>
 					<Bot class="mr-2 h-4 w-4" />
 					<span>Agents</span>
 				</DropdownMenu.Item>
-				<DropdownMenu.Item href="/tools">
+				<DropdownMenu.Item onclick={() => goto('/tools')}>
 					<Wrench class="mr-2 h-4 w-4" />
 					<span>MCP Tools</span>
 				</DropdownMenu.Item>
-				<DropdownMenu.Item href="/settings">
+				<DropdownMenu.Item onclick={() => goto('/settings')}>
 					<Settings class="mr-2 h-4 w-4" />
 					<span>Settings</span>
 				</DropdownMenu.Item>

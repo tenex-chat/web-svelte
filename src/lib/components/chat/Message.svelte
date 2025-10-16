@@ -127,7 +127,7 @@
 </script>
 
 <div
-	class="group px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors"
+	class="group px-4 py-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors"
 >
 	<div class="flex gap-3">
 		<!-- Avatar -->
