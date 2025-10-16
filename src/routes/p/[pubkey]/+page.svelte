@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKKind } from '@nostr-dev-kit/ndk';
-	import { Avatar } from '@nostr-dev-kit/svelte';
+	import { Avatar, Name } from '@nostr-dev-kit/svelte';
 	import { ArrowLeft, Bot, Copy, CheckCircle2, Sparkles } from 'lucide-svelte';
 	import { cn } from '$lib/utils/cn';
 	import AgentProfileTabs from '$lib/components/agents/AgentProfileTabs.svelte';
@@ -116,7 +116,7 @@
 
 				<div class="flex-1">
 					<h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-						{profile?.name || profile?.displayName || 'Agent'}
+						<Name {ndk} {pubkey} />
 					</h1>
 					<div class="flex items-center gap-2 mt-1">
 						{#if role}

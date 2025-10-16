@@ -41,11 +41,30 @@
 	let localRootEvent = $state<NDKEvent | null>(initialRootEvent);
 	let selectedAgentPubkey: string | null = $state(null);
 
+	// Compute default agent based on recent messages (same logic as ChatInput)
+	const defaultAgent = $derived.by(() => {
+		if (onlineAgents.length === 0) return null;
+
+		// If there are recent messages, find the most recent agent message
+		if (messages.length > 0) {
+			const recentAgent = [...messages].reverse().find((msg) => {
+				return onlineAgents.find((a) => a.pubkey === msg.event.pubkey);
+			});
+
+			if (recentAgent) {
+				return recentAgent.event.pubkey;
+			}
+		}
+
+		// Otherwise, default to the PM (first agent)
+		return onlineAgents[0].pubkey;
+	});
+
 	// Derive active agent for display
 	const activeProjectAgent = $derived(
 		selectedAgentPubkey
 			? onlineAgents.find((a) => a.pubkey === selectedAgentPubkey) || onlineAgents[0]
-			: onlineAgents[0]
+			: onlineAgents.find((a) => a.pubkey === defaultAgent) || onlineAgents[0]
 	);
 
 	// Convert to AgentInstance format for MessagingController
@@ -335,6 +354,7 @@
 				<AgentSelector
 					agents={onlineAgents}
 					selectedAgent={selectedAgentPubkey}
+					defaultAgent={defaultAgent}
 					currentModel={activeProjectAgent?.model}
 					onSelect={handleAgentSelect}
 					onConfigure={handleAgentConfigure}

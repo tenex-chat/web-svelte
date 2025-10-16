@@ -7,21 +7,21 @@
 
 	interface Props {
 		agents: ProjectAgent[];
-		selectedAgent: string | null;
+		selectedAgent: string | null;      // User's explicit choice
+		defaultAgent: string | null;       // Computed upstream in ChatInput
 		currentModel?: string | null;
 		onSelect: (pubkey: string | null) => void;
 		onConfigure: () => void;
 	}
 
-	let { agents, selectedAgent, currentModel, onSelect, onConfigure }: Props = $props();
+	let { agents, selectedAgent, defaultAgent, currentModel, onSelect, onConfigure }: Props = $props();
 
 	let isOpen = $state(false);
 
+	// Pure UI component - just displays what it's given
 	const displayAgent = $derived.by(() => {
-		if (selectedAgent) {
-			return agents.find((a) => a.pubkey === selectedAgent);
-		}
-		return agents[0]; // Default to first agent (Project Manager)
+		const activePubkey = selectedAgent || defaultAgent;
+		return agents.find((a) => a.pubkey === activePubkey) || agents[0];
 	});
 
 	function handleSelect(pubkey: string | null) {
@@ -70,7 +70,7 @@
 					<button
 						type="button"
 						onclick={() => handleSelect(null)}
-						class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-left {!selectedAgent
+						class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-left {!selectedAgent && defaultAgent === agents[0]?.pubkey
 							? 'bg-blue-50 dark:bg-blue-900/50'
 							: ''}"
 					>
@@ -81,7 +81,7 @@
 								<div class="text-xs text-gray-500 dark:text-gray-400">{agents[0].name}</div>
 							</div>
 						{/if}
-						{#if !selectedAgent}
+						{#if !selectedAgent && defaultAgent === agents[0]?.pubkey}
 							<svg class="w-4 h-4 text-blue-600 dark:text-blue-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
 								<path
 									fill-rule="evenodd"
@@ -99,11 +99,11 @@
 
 					<!-- Other Agents -->
 					{#each agents.slice(1) as agent (agent.pubkey)}
+						{@const isActive = selectedAgent === agent.pubkey || (!selectedAgent && defaultAgent === agent.pubkey)}
 						<button
 							type="button"
 							onclick={() => handleSelect(agent.pubkey)}
-							class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-left {selectedAgent ===
-							agent.pubkey
+							class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-left {isActive
 								? 'bg-blue-50 dark:bg-blue-900/50'
 								: ''}"
 						>
@@ -114,7 +114,7 @@
 									<div class="text-xs text-gray-500 dark:text-gray-400 truncate">{agent.model}</div>
 								{/if}
 							</div>
-							{#if selectedAgent === agent.pubkey}
+							{#if isActive}
 								<svg class="w-4 h-4 text-blue-600 dark:text-blue-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
 									<path
 										fill-rule="evenodd"

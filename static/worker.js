@@ -22580,19 +22580,62 @@ var SCHEMA = {
             PRIMARY KEY (event_id, relay_url)
         );
         CREATE INDEX IF NOT EXISTS idx_event_relays_event_id ON event_relays(event_id);
+    `,
+  nip05: `
+        CREATE TABLE IF NOT EXISTS nip05 (
+            nip05 TEXT PRIMARY KEY,
+            profile TEXT,
+            fetched_at INTEGER NOT NULL
+        );
     `
 };
 
 // src/db/migrations.ts
+var CURRENT_VERSION = 2;
+function getCurrentVersion(db) {
+  try {
+    const result = db.exec("SELECT version FROM schema_version LIMIT 1");
+    if (result && result.length > 0 && result[0].values && result[0].values.length > 0) {
+      return result[0].values[0][0];
+    }
+  } catch {}
+  return 0;
+}
+function setVersion(db, version) {
+  db.run("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)");
+  db.run("DELETE FROM schema_version");
+  db.run("INSERT INTO schema_version (version) VALUES (?)", [version]);
+}
 async function runMigrations(db) {
-  db.exec?.(SCHEMA.events);
-  db.exec?.(SCHEMA.profiles);
-  db.exec?.(SCHEMA.nutzap_monitor_state);
-  db.exec?.(SCHEMA.decrypted_events);
-  db.exec?.(SCHEMA.unpublished_events);
-  db.exec?.(SCHEMA.event_tags);
-  db.exec?.(SCHEMA.cache_data);
-  db.exec?.(SCHEMA.event_relays);
+  const currentVersion = getCurrentVersion(db);
+  try {
+    db.exec(SCHEMA.events);
+    db.exec(SCHEMA.profiles);
+    db.exec(SCHEMA.nutzap_monitor_state);
+    db.exec(SCHEMA.decrypted_events);
+    db.exec(SCHEMA.unpublished_events);
+    db.exec(SCHEMA.event_tags);
+    db.exec(SCHEMA.cache_data);
+    db.exec(SCHEMA.event_relays);
+    if (currentVersion < 1) {
+      db.exec(SCHEMA.nip05);
+    }
+    if (currentVersion < 2) {
+      db.exec(SCHEMA.nip05);
+    }
+    setVersion(db, CURRENT_VERSION);
+    try {
+      const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='nip05'");
+      if (!tables || tables.length === 0 || !tables[0].values || tables[0].values.length === 0) {
+        console.error("[NDK Cache] ERROR: nip05 table was not created!");
+      }
+    } catch (verifyError) {
+      console.error("[NDK Cache] Failed to verify nip05 table:", verifyError);
+    }
+  } catch (error) {
+    console.error("[NDK Cache] Migration failed:", error);
+    throw error;
+  }
 }
 
 // src/functions/getCacheStats.ts
@@ -31945,6 +31988,7 @@ var NDKRelayConnectivity = class {
   openSubs = /* @__PURE__ */ new Map;
   openCountRequests = /* @__PURE__ */ new Map;
   openEventPublishes = /* @__PURE__ */ new Map;
+  pendingAuthPublishes = /* @__PURE__ */ new Map;
   serial = 0;
   baseEoseTimeout = 4400;
   keepalive;
@@ -32135,6 +32179,7 @@ var NDKRelayConnectivity = class {
     this.netDebug?.("disconnected", this.ndkRelay);
     this.updateConnectionStats.disconnected();
     this.keepalive?.stop();
+    this.clearPendingPublishes(new Error(`Relay ${this.ndkRelay.url} disconnected`));
     if (this._status === 5) {
       this.handleReconnection();
     }
@@ -32188,13 +32233,28 @@ var NDKRelayConnectivity = class {
             this.debug("Received OK for unknown event publish", id);
             return;
           }
-          if (ok)
+          if (ok) {
             firstEp.resolve(reason);
-          else
-            firstEp.reject(new Error(reason));
+            this.pendingAuthPublishes.delete(id);
+          } else {
+            const isAuthRequired = reason && (reason.toLowerCase().includes("auth-required") || reason.toLowerCase().includes("not authorized") || reason.toLowerCase().includes("blocked: not authorized"));
+            if (isAuthRequired) {
+              const event2 = this.pendingAuthPublishes.get(id);
+              if (event2) {
+                this.debug("Publish failed due to auth-required, will retry after auth", id);
+                ep.push(firstEp);
+                this.openEventPublishes.set(id, ep);
+              } else {
+                firstEp.reject(new Error(reason));
+              }
+            } else {
+              firstEp.reject(new Error(reason));
+              this.pendingAuthPublishes.delete(id);
+            }
+          }
           if (ep.length === 0) {
             this.openEventPublishes.delete(id);
-          } else {
+          } else if (!ok && !(reason?.toLowerCase().includes("auth-required") || reason?.toLowerCase().includes("not authorized") || reason?.toLowerCase().includes("blocked: not authorized"))) {
             this.openEventPublishes.set(id, ep);
           }
           return;
@@ -32257,10 +32317,12 @@ var NDKRelayConnectivity = class {
                 this._status = 8;
                 this.ndkRelay.emit("authed");
                 this.debug("Authentication successful");
+                this.retryPendingAuthPublishes();
               }).catch((e) => {
                 this._status = 6;
                 this.ndkRelay.emit("auth:failed", e);
                 this.debug("Authentication failed", e);
+                this.rejectPendingAuthPublishes(e);
               });
             } else {
               this.debug("Authentication failed, it changed status, status is %d", this._status);
@@ -32368,6 +32430,46 @@ var NDKRelayConnectivity = class {
     this.send(`["AUTH",${JSON.stringify(event.rawEvent())}]`);
     return ret;
   }
+  clearPendingPublishes(error) {
+    this.rejectPendingAuthPublishes(error);
+    for (const [eventId, resolvers] of this.openEventPublishes.entries()) {
+      while (resolvers.length > 0) {
+        const resolver = resolvers.shift();
+        if (resolver) {
+          resolver.reject(error);
+        }
+      }
+      this.openEventPublishes.delete(eventId);
+    }
+  }
+  retryPendingAuthPublishes() {
+    if (this.pendingAuthPublishes.size === 0)
+      return;
+    this.debug(`Retrying ${this.pendingAuthPublishes.size} pending publishes after auth`);
+    for (const [eventId, event] of this.pendingAuthPublishes.entries()) {
+      this.debug(`Retrying publish for event ${eventId}`);
+      this.send(`["EVENT",${JSON.stringify(event)}]`);
+    }
+    this.pendingAuthPublishes.clear();
+  }
+  rejectPendingAuthPublishes(error) {
+    if (this.pendingAuthPublishes.size === 0)
+      return;
+    this.debug(`Rejecting ${this.pendingAuthPublishes.size} pending publishes due to auth failure`);
+    for (const [eventId] of this.pendingAuthPublishes.entries()) {
+      const ep = this.openEventPublishes.get(eventId);
+      if (ep && ep.length > 0) {
+        const resolver = ep.pop();
+        if (resolver) {
+          resolver.reject(new Error(`Authentication failed: ${error.message}`));
+        }
+        if (ep.length === 0) {
+          this.openEventPublishes.delete(eventId);
+        }
+      }
+    }
+    this.pendingAuthPublishes.clear();
+  }
   async publish(event) {
     const ret = new Promise((resolve2, reject) => {
       const val = this.openEventPublishes.get(event.id) ?? [];
@@ -32377,6 +32479,7 @@ var NDKRelayConnectivity = class {
       val.push({ resolve: resolve2, reject });
       this.openEventPublishes.set(event.id, val);
     });
+    this.pendingAuthPublishes.set(event.id, event);
     this.send(`["EVENT",${JSON.stringify(event)}]`);
     return ret;
   }
@@ -32623,12 +32726,13 @@ var NDKRelaySubscription = class {
       id: this.subId,
       itemsSize: this.items.size
     });
-    if (this.items.has(subscription.internalId))
+    if (this.items.has(subscription.internalId)) {
       return;
+    }
     subscription.on("close", this.removeItem.bind(this, subscription));
     this.items.set(subscription.internalId, { subscription, filters });
     if (this.status !== 3) {
-      if (subscription.subId && (!this._subId || this._subId.length < 48)) {
+      if (subscription.subId && (!this._subId || this._subId.length < 25)) {
         if (this.status === 0 || this.status === 1) {
           this.addSubIdPart(subscription.subId);
         }
@@ -32775,7 +32879,12 @@ var NDKRelaySubscription = class {
   };
   finalizeSubId() {
     if (this.subIdParts.size > 0) {
-      this._subId = Array.from(this.subIdParts).join("-");
+      const parts = Array.from(this.subIdParts).map((part) => part.substring(0, 10));
+      let joined = parts.join("-");
+      if (joined.length > 20) {
+        joined = joined.substring(0, 20);
+      }
+      this._subId = joined;
     } else {
       this._subId = this.fingerprint.slice(0, 15);
     }
@@ -32862,16 +32971,13 @@ var NDKRelaySubscription = class {
     const filters = Array.from(this.items.values()).map((item) => item.filters);
     if (!filters[0]) {
       this.debug("\uD83D\uDC40 No filters to merge", { itemsSize: this.items.size });
-      console.error("BUG: No filters to merge!", {
-        itemsSize: this.items.size,
-        subId: this.subId
-      });
       return [];
     }
     const filterCount = filters[0].length;
     for (let i3 = 0;i3 < filterCount; i3++) {
       const allFiltersAtIndex = filters.map((filter) => filter[i3]);
-      mergedFilters.push(...mergeFilters(allFiltersAtIndex));
+      const merged = mergeFilters(allFiltersAtIndex);
+      mergedFilters.push(...merged);
     }
     return mergedFilters;
   }
@@ -33285,6 +33391,32 @@ function calculateRelaySetsFromFilters(ndk, filters, pool, relayGoalPerAuthor) {
   const a = calculateRelaySetsFromFilter(ndk, filters, pool, relayGoalPerAuthor);
   return a;
 }
+function isValidHex64(value) {
+  if (typeof value !== "string" || value.length !== 64) {
+    return false;
+  }
+  for (let i3 = 0;i3 < 64; i3++) {
+    const c = value.charCodeAt(i3);
+    if (!(c >= 48 && c <= 57 || c >= 97 && c <= 102 || c >= 65 && c <= 70)) {
+      return false;
+    }
+  }
+  return true;
+}
+function isValidPubkey(pubkey) {
+  return isValidHex64(pubkey);
+}
+function isValidNip05(input) {
+  if (typeof input !== "string") {
+    return false;
+  }
+  for (let i3 = 0;i3 < input.length; i3++) {
+    if (input.charCodeAt(i3) === 46) {
+      return true;
+    }
+  }
+  return false;
+}
 function mergeTags(tags1, tags2) {
   const tagMap = /* @__PURE__ */ new Map;
   const generateKey = (tag) => tag.join(",");
@@ -33405,6 +33537,8 @@ async function generateContentTags(content, tags = [], opts, ctx) {
   if (opts?.pTags !== false && opts?.copyPTagsFromTarget && ctx) {
     const pTags = ctx.getMatchingTags("p");
     for (const pTag of pTags) {
+      if (!pTag[1] || !isValidPubkey(pTag[1]))
+        continue;
       if (!tags.find((t) => t[0] === "p" && t[1] === pTag[1])) {
         tags.push(pTag);
       }
@@ -33475,7 +33609,7 @@ async function decrypt4(sender, signer, scheme) {
     throw new Error("Failed to decrypt event.");
   this.content = decrypted;
   if (this.ndk?.cacheAdapter?.addDecryptedEvent) {
-    this.ndk.cacheAdapter.addDecryptedEvent(this);
+    this.ndk.cacheAdapter.addDecryptedEvent(this.id, this);
   }
 }
 async function isEncryptionEnabled(signer, scheme) {
@@ -33637,7 +33771,36 @@ function getKind(event) {
   }
   return 16;
 }
+function validateForSerialization(event) {
+  if (typeof event.kind !== "number") {
+    throw new Error(`Can't serialize event with invalid properties: kind (must be number, got ${typeof event.kind}). Event: ${JSON.stringify(event)}`);
+  }
+  if (typeof event.content !== "string") {
+    throw new Error(`Can't serialize event with invalid properties: content (must be string, got ${typeof event.content}). Event: ${JSON.stringify(event)}`);
+  }
+  if (typeof event.created_at !== "number") {
+    throw new Error(`Can't serialize event with invalid properties: created_at (must be number, got ${typeof event.created_at}). Event: ${JSON.stringify(event)}`);
+  }
+  if (typeof event.pubkey !== "string") {
+    throw new Error(`Can't serialize event with invalid properties: pubkey (must be string, got ${typeof event.pubkey}). Event: ${JSON.stringify(event)}`);
+  }
+  if (!Array.isArray(event.tags)) {
+    throw new Error(`Can't serialize event with invalid properties: tags (must be array, got ${typeof event.tags}). Event: ${JSON.stringify(event)}`);
+  }
+  for (let i3 = 0;i3 < event.tags.length; i3++) {
+    const tag = event.tags[i3];
+    if (!Array.isArray(tag)) {
+      throw new Error(`Can't serialize event with invalid properties: tags[${i3}] (must be array, got ${typeof tag}). Event: ${JSON.stringify(event)}`);
+    }
+    for (let j = 0;j < tag.length; j++) {
+      if (typeof tag[j] !== "string") {
+        throw new Error(`Can't serialize event with invalid properties: tags[${i3}][${j}] (must be string, got ${typeof tag[j]}). Event: ${JSON.stringify(event)}`);
+      }
+    }
+  }
+}
 function serialize(includeSig = false, includeId = false) {
+  validateForSerialization(this);
   const payload = [0, this.pubkey, this.created_at, this.kind, this.tags, this.content];
   if (includeSig)
     payload.push(this.sig);
@@ -33676,6 +33839,25 @@ var processingQueue = {};
 function signatureVerificationInit(w) {
   worker = w;
   worker.onmessage = (msg) => {
+    if (!Array.isArray(msg.data) || msg.data.length !== 2) {
+      console.error("[NDK] ❌ Signature verification worker received incompatible message format.", `
+
+\uD83D\uDCCB Expected format: [eventId, boolean]`, `
+\uD83D\uDCE6 Received:`, msg.data, `
+
+\uD83D\uDD0D This likely means:`, `
+  1. You have a STALE worker.js file that needs updating`, `
+  2. Version mismatch between @nostr-dev-kit/ndk and deployed worker`, `
+  3. Wrong worker is being used for signature verification`, `
+
+✅ Solution: Update your worker files:`, `
+  cp node_modules/@nostr-dev-kit/ndk/dist/workers/sig-verification.js public/`, `
+  cp node_modules/@nostr-dev-kit/cache-sqlite-wasm/dist/worker.js public/`, `
+
+\uD83D\uDCA1 Or use Vite/bundler imports instead of static files:`, `
+  import SigWorker from "@nostr-dev-kit/ndk/workers/sig-verification?worker"`);
+      return;
+    }
     const [eventId, result] = msg.data;
     const record = processingQueue[eventId];
     if (!record) {
@@ -33949,6 +34131,8 @@ var NDKEvent = class _NDKEvent extends import_tseep.EventEmitter {
       tags = event.referenceTags(marker, skipAuthorTag, forceTag, opts);
       if (opts?.pTags !== false) {
         for (const pTag of event.getMatchingTags("p")) {
+          if (!pTag[1] || !isValidPubkey(pTag[1]))
+            continue;
           if (pTag[1] === this.pubkey)
             continue;
           if (this.tags.find((t) => t[0] === "p" && t[1] === pTag[1]))
@@ -34034,39 +34218,7 @@ var NDKEvent = class _NDKEvent extends import_tseep.EventEmitter {
     this.tags.push(tag);
   }
   async sign(signer, opts) {
-    if (this.ndk && this.ndk.aiGuardrails.isEnabled()) {
-      const guardrails = this.ndk.aiGuardrails;
-      if (this.kind === undefined || this.kind === null) {
-        guardrails.error("event-missing-kind", "Cannot sign event without 'kind'. Set event.kind before signing.", "Example: event.kind = 1; // for text note", false);
-      }
-      if (typeof this.content === "object") {
-        guardrails.error("event-content-is-object", "Event content is an object. Content must be a string.", "Use JSON.stringify() for structured data: event.content = JSON.stringify(data)", false);
-      }
-      if (this.isParamReplaceable() && !this.dTag) {
-        guardrails.warn("event-param-replaceable-no-dtag", `Parameterized replaceable event (kind ${this.kind}) without d-tag. Event will use empty string "".`, 'Set event.dTag = "your-identifier" before signing.');
-      }
-      if (this.created_at && this.created_at > 10000000000) {
-        guardrails.error("event-created-at-milliseconds", `Event created_at (${this.created_at}) looks like milliseconds.`, "Use SECONDS, not milliseconds: Math.floor(Date.now() / 1000), not Date.now()", false);
-      }
-      const pTags = this.getMatchingTags("p");
-      pTags.forEach((tag, idx) => {
-        if (tag[1] && !/^[0-9a-f]{64}$/i.test(tag[1])) {
-          guardrails.error("tag-invalid-p-tag", `p-tag[${idx}] has invalid pubkey: "${tag[1]}". Must be 64-char hex.`, tag[1].startsWith("npub") ? "Use ndkUser.pubkey instead of npub. Example: event.tags.push(['p', ndkUser.pubkey])" : "p-tags must contain valid hex pubkeys (64 characters, 0-9a-f)", false);
-        }
-      });
-      const eTags = this.getMatchingTags("e");
-      eTags.forEach((tag, idx) => {
-        if (tag[1] && !/^[0-9a-f]{64}$/i.test(tag[1])) {
-          guardrails.error("tag-invalid-e-tag", `e-tag[${idx}] has invalid event ID: "${tag[1]}". Must be 64-char hex.`, tag[1].startsWith("note") || tag[1].startsWith("nevent") ? "Use event.id instead of bech32. Example: event.tags.push(['e', referencedEvent.id])" : "e-tags must contain valid hex event IDs (64 characters, 0-9a-f)", false);
-        }
-      });
-      if (this.kind === 1) {
-        const eTagsWithMarkers = this.tags.filter((tag) => tag[0] === "e" && (tag[3] === "reply" || tag[3] === "root"));
-        if (eTagsWithMarkers.length > 0) {
-          guardrails.warn("event-manual-reply-markers", `Event has ${eTagsWithMarkers.length} e-tag(s) with manual reply/root markers.`, "Use event.reply(parentEvent) instead of manually adding e-tags with markers. NDK handles reply threading automatically.");
-        }
-      }
-    }
+    this.ndk?.aiGuardrails?.event?.signing(this);
     if (!signer) {
       this.ndk?.assertSigner();
       signer = this.ndk?.signer;
@@ -34314,6 +34466,7 @@ var NDKEvent = class _NDKEvent extends import_tseep.EventEmitter {
   }
   reply(forceNip22, opts) {
     const reply = new _NDKEvent(this.ndk);
+    this.ndk?.aiGuardrails?.event?.creatingReply(reply);
     if (this.kind === 1 && !forceNip22) {
       reply.kind = 1;
       const opHasETag = this.hasTag("e");
@@ -35244,11 +35397,7 @@ var NDKDraft = class _NDKDraft extends NDKEvent {
       this.tags.push(["k", this._event.kind.toString()]);
     this.content = JSON.stringify(this._event.rawEvent());
   }
-  async save({
-    signer,
-    publish,
-    relaySet
-  }) {
+  async save({ signer, publish, relaySet }) {
     signer ??= this.ndk?.signer;
     if (!signer)
       throw new Error("No signer available");
@@ -35350,7 +35499,7 @@ var NDKFollowPack = class _NDKFollowPack extends NDKEvent {
     }
   }
   get pubkeys() {
-    return Array.from(new Set(this.tags.filter((tag) => tag[0] === "p" && tag[1]).map((tag) => tag[1])));
+    return Array.from(new Set(this.tags.filter((tag) => tag[0] === "p" && tag[1] && isValidPubkey(tag[1])).map((tag) => tag[1])));
   }
   set pubkeys(pubkeys) {
     this.tags = this.tags.filter((tag) => tag[0] !== "p");
@@ -36380,13 +36529,7 @@ var NDKStorySticker = class _NDKStorySticker {
       default:
         value = this.value;
     }
-    const tag = [
-      "sticker",
-      this.type,
-      value,
-      coordinates(this.position),
-      dimension(this.dimension)
-    ];
+    const tag = ["sticker", this.type, value, coordinates(this.position), dimension(this.dimension)];
     if (this.properties) {
       for (const [key, propValue] of Object.entries(this.properties)) {
         tag.push(`${key} ${propValue}`);
@@ -36825,12 +36968,7 @@ var NDKThread = class _NDKThread extends NDKEvent {
 };
 var NDKVideo = class _NDKVideo extends NDKEvent {
   static kind = 21;
-  static kinds = [
-    34235,
-    34236,
-    22,
-    21
-  ];
+  static kinds = [34235, 34236, 22, 21];
   _imetas;
   static from(event) {
     return new _NDKVideo(event.ndk, event.rawEvent());
@@ -36991,14 +37129,270 @@ function wrapEvent(event) {
     return klass.from(event);
   return event;
 }
+function checkMissingKind(event, error) {
+  if (event.kind === undefined || event.kind === null) {
+    error("event-missing-kind", `Cannot sign event without 'kind'.
+
+\uD83D\uDCE6 Event data:
+   • content: ${event.content ? `"${event.content.substring(0, 50)}${event.content.length > 50 ? "..." : ""}"` : "(empty)"}
+   • tags: ${event.tags.length} tag${event.tags.length !== 1 ? "s" : ""}
+   • kind: ${event.kind} ❌
+
+Set event.kind before signing.`, "Example: event.kind = 1; // for text note", false);
+  }
+}
+function checkContentIsObject(event, error) {
+  if (typeof event.content === "object") {
+    const contentPreview = JSON.stringify(event.content, null, 2).substring(0, 200);
+    error("event-content-is-object", `Event content is an object. Content must be a string.
+
+\uD83D\uDCE6 Your content (${typeof event.content}):
+${contentPreview}${JSON.stringify(event.content).length > 200 ? "..." : ""}
+
+❌ event.content = { ... }  // WRONG
+✅ event.content = JSON.stringify({ ... })  // CORRECT`, "Use JSON.stringify() for structured data: event.content = JSON.stringify(data)", false);
+  }
+}
+function checkCreatedAtMilliseconds(event, error) {
+  if (event.created_at && event.created_at > 10000000000) {
+    const correctValue = Math.floor(event.created_at / 1000);
+    const dateString = new Date(event.created_at).toISOString();
+    error("event-created-at-milliseconds", `Event created_at is in milliseconds, not seconds.
+
+\uD83D\uDCE6 Your value:
+   • created_at: ${event.created_at} ❌
+   • Interpreted as: ${dateString}
+   • Should be: ${correctValue} ✅
+
+Nostr timestamps MUST be in seconds since Unix epoch.`, "Use Math.floor(Date.now() / 1000) instead of Date.now()", false);
+  }
+}
+function checkInvalidPTags(event, error) {
+  const pTags = event.getMatchingTags("p");
+  pTags.forEach((tag, idx) => {
+    if (tag[1] && !/^[0-9a-f]{64}$/i.test(tag[1])) {
+      const tagPreview = JSON.stringify(tag);
+      error("tag-invalid-p-tag", `p-tag[${idx}] has invalid pubkey.
+
+\uD83D\uDCE6 Your tag:
+   ${tagPreview}
+
+❌ Invalid value: "${tag[1]}"
+   • Length: ${tag[1].length} (expected 64)
+   • Format: ${tag[1].startsWith("npub") ? "bech32 (npub)" : "unknown"}
+
+p-tags MUST contain 64-character hex pubkeys.`, tag[1].startsWith("npub") ? `Use ndkUser.pubkey instead of npub:
+   ✅ event.tags.push(['p', ndkUser.pubkey])
+   ❌ event.tags.push(['p', 'npub1...'])` : "p-tags must contain valid hex pubkeys (64 characters, 0-9a-f)", false);
+    }
+  });
+}
+function checkInvalidETags(event, error) {
+  const eTags = event.getMatchingTags("e");
+  eTags.forEach((tag, idx) => {
+    if (tag[1] && !/^[0-9a-f]{64}$/i.test(tag[1])) {
+      const tagPreview = JSON.stringify(tag);
+      const isBech32 = tag[1].startsWith("note") || tag[1].startsWith("nevent");
+      error("tag-invalid-e-tag", `e-tag[${idx}] has invalid event ID.
+
+\uD83D\uDCE6 Your tag:
+   ${tagPreview}
+
+❌ Invalid value: "${tag[1]}"
+   • Length: ${tag[1].length} (expected 64)
+   • Format: ${isBech32 ? "bech32 (note/nevent)" : "unknown"}
+
+e-tags MUST contain 64-character hex event IDs.`, isBech32 ? `Use event.id instead of bech32:
+   ✅ event.tags.push(['e', referencedEvent.id])
+   ❌ event.tags.push(['e', 'note1...'])` : "e-tags must contain valid hex event IDs (64 characters, 0-9a-f)", false);
+    }
+  });
+}
+function checkManualReplyMarkers(event, warn, replyEvents) {
+  if (event.kind !== 1)
+    return;
+  if (replyEvents.has(event))
+    return;
+  const eTagsWithMarkers = event.tags.filter((tag) => tag[0] === "e" && (tag[3] === "reply" || tag[3] === "root"));
+  if (eTagsWithMarkers.length > 0) {
+    const tagList = eTagsWithMarkers.map((tag, idx) => `   ${idx + 1}. ${JSON.stringify(tag)}`).join(`
+`);
+    warn("event-manual-reply-markers", `Event has ${eTagsWithMarkers.length} e-tag(s) with manual reply/root markers.
+
+\uD83D\uDCE6 Your tags with markers:
+${tagList}
+
+⚠️  Manual reply markers detected! This will cause incorrect threading.`, `Reply events MUST be created using .reply():
+
+   ✅ CORRECT:
+   const replyEvent = originalEvent.reply();
+   replyEvent.content = 'good point!';
+   await replyEvent.publish();
+
+   ❌ WRONG:
+   event.tags.push(['e', eventId, '', 'reply']);
+
+NDK handles all reply threading automatically - never add reply/root markers manually.`);
+  }
+}
+function checkHashtagsWithPrefix(event, error) {
+  const tTags = event.getMatchingTags("t");
+  tTags.forEach((tag, idx) => {
+    if (tag[1] && tag[1].startsWith("#")) {
+      const tagPreview = JSON.stringify(tag);
+      error("tag-hashtag-with-prefix", `t-tag[${idx}] contains hashtag with # prefix.
+
+\uD83D\uDCE6 Your tag:
+   ${tagPreview}
+
+❌ Invalid value: "${tag[1]}"
+
+Hashtag tags should NOT include the # symbol.`, `Remove the # prefix from hashtag tags:
+   ✅ event.tags.push(['t', 'nostr'])
+   ❌ event.tags.push(['t', '#nostr'])`, false);
+    }
+  });
+}
+function signing(event, error, warn, replyEvents) {
+  checkMissingKind(event, error);
+  checkContentIsObject(event, error);
+  checkCreatedAtMilliseconds(event, error);
+  checkInvalidPTags(event, error);
+  checkInvalidETags(event, error);
+  checkHashtagsWithPrefix(event, error);
+  checkManualReplyMarkers(event, warn, replyEvents);
+}
+function isNip33Pattern(filters) {
+  const filterArray = Array.isArray(filters) ? filters : [filters];
+  if (filterArray.length !== 1)
+    return false;
+  const filter = filterArray[0];
+  return filter.kinds && Array.isArray(filter.kinds) && filter.kinds.length === 1 && filter.authors && Array.isArray(filter.authors) && filter.authors.length === 1 && filter["#d"] && Array.isArray(filter["#d"]) && filter["#d"].length === 1;
+}
+function isSingleIdLookup(filters) {
+  const filterArray = Array.isArray(filters) ? filters : [filters];
+  if (filterArray.length !== 1)
+    return false;
+  const filter = filterArray[0];
+  return filter.ids && Array.isArray(filter.ids) && filter.ids.length === 1;
+}
+function isReplaceableEventFilter(filters) {
+  const filterArray = Array.isArray(filters) ? filters : [filters];
+  if (filterArray.length === 0) {
+    return false;
+  }
+  return filterArray.every((filter) => {
+    if (!filter.kinds || !Array.isArray(filter.kinds) || filter.kinds.length === 0) {
+      return false;
+    }
+    if (!filter.authors || !Array.isArray(filter.authors) || filter.authors.length === 0) {
+      return false;
+    }
+    const allKindsReplaceable = filter.kinds.every((kind) => {
+      return kind === 0 || kind === 3 || kind >= 1e4 && kind <= 19999;
+    });
+    return allKindsReplaceable;
+  });
+}
+function formatFilter(filter) {
+  const formatted = JSON.stringify(filter, null, 2);
+  return formatted.split(`
+`).map((line, idx) => idx === 0 ? line : `   ${line}`).join(`
+`);
+}
+function fetchingEvents(filters, opts, warn, shouldWarnRatio, incrementCount) {
+  incrementCount();
+  if (opts?.cacheUsage === "ONLY_CACHE") {
+    return;
+  }
+  const filterArray = Array.isArray(filters) ? filters : [filters];
+  const formattedFilters = filterArray.map(formatFilter).join(`
+
+   ---
+
+   `);
+  if (isNip33Pattern(filters)) {
+    const filter = filterArray[0];
+    warn("fetch-events-usage", `For fetching a NIP-33 addressable event, use fetchEvent() with the naddr directly.
+
+\uD83D\uDCE6 Your filter:
+   ` + formattedFilters + `
+
+  ❌ BAD:  const decoded = nip19.decode(naddr);
+           const events = await ndk.fetchEvents({
+             kinds: [decoded.data.kind],
+             authors: [decoded.data.pubkey],
+             "#d": [decoded.data.identifier]
+           });
+           const event = Array.from(events)[0];
+
+  ✅ GOOD: const event = await ndk.fetchEvent(naddr);
+  ✅ GOOD: const event = await ndk.fetchEvent('naddr1...');
+
+fetchEvent() handles naddr decoding automatically and returns the event directly.`);
+  } else if (isSingleIdLookup(filters)) {
+    const filter = filterArray[0];
+    const eventId = filter.ids?.[0];
+    warn("fetch-events-usage", `For fetching a single event, use fetchEvent() instead.
+
+\uD83D\uDCE6 Your filter:
+   ` + formattedFilters + `
+
+\uD83D\uDCA1 Looking for event: ` + eventId + `
+
+  ❌ BAD:  const events = await ndk.fetchEvents({ ids: [eventId] });
+  ✅ GOOD: const event = await ndk.fetchEvent(eventId);
+  ✅ GOOD: const event = await ndk.fetchEvent('note1...');
+  ✅ GOOD: const event = await ndk.fetchEvent('nevent1...');
+
+fetchEvent() is optimized for single event lookups and returns the event directly.`);
+  } else if (isReplaceableEventFilter(filters)) {
+    return;
+  } else {
+    if (!shouldWarnRatio()) {
+      return;
+    }
+    let filterAnalysis = "";
+    const hasLimit = filterArray.some((f) => f.limit !== undefined);
+    const totalKinds = new Set(filterArray.flatMap((f) => f.kinds || [])).size;
+    const totalAuthors = new Set(filterArray.flatMap((f) => f.authors || [])).size;
+    if (hasLimit) {
+      const maxLimit = Math.max(...filterArray.map((f) => f.limit || 0));
+      filterAnalysis += `
+   • Limit: ${maxLimit} event${maxLimit !== 1 ? "s" : ""}`;
+    }
+    if (totalKinds > 0) {
+      filterAnalysis += `
+   • Kinds: ${totalKinds} type${totalKinds !== 1 ? "s" : ""}`;
+    }
+    if (totalAuthors > 0) {
+      filterAnalysis += `
+   • Authors: ${totalAuthors} author${totalAuthors !== 1 ? "s" : ""}`;
+    }
+    warn("fetch-events-usage", `fetchEvents() is a BLOCKING operation that waits for EOSE.
+In most cases, you should use subscribe() instead.
+
+\uD83D\uDCE6 Your filter` + (filterArray.length > 1 ? "s" : "") + `:
+   ` + formattedFilters + (filterAnalysis ? `
+
+\uD83D\uDCCA Filter analysis:` + filterAnalysis : "") + `
+
+  ❌ BAD:  const events = await ndk.fetchEvents(filter);
+  ✅ GOOD: ndk.subscribe(filter, { onEvent: (e) => ... });
+
+Only use fetchEvents() when you MUST block until data arrives.`, "For one-time queries, use fetchEvent() instead of fetchEvents() when expecting a single result.");
+  }
+}
 var GuardrailCheckId = {
   NDK_NO_CACHE: "ndk-no-cache",
   FILTER_BECH32_IN_ARRAY: "filter-bech32-in-array",
+  FILTER_INVALID_HEX: "filter-invalid-hex",
   FILTER_ONLY_LIMIT: "filter-only-limit",
   FILTER_LARGE_LIMIT: "filter-large-limit",
   FILTER_EMPTY: "filter-empty",
   FILTER_SINCE_AFTER_UNTIL: "filter-since-after-until",
   FILTER_INVALID_A_TAG: "filter-invalid-a-tag",
+  FILTER_HASHTAG_WITH_PREFIX: "filter-hashtag-with-prefix",
   FETCH_EVENTS_USAGE: "fetch-events-usage",
   EVENT_MISSING_KIND: "event-missing-kind",
   EVENT_PARAM_REPLACEABLE_NO_DTAG: "event-param-replaceable-no-dtag",
@@ -37012,6 +37406,7 @@ var GuardrailCheckId = {
   TAG_DUPLICATE: "tag-duplicate",
   TAG_INVALID_P_TAG: "tag-invalid-p-tag",
   TAG_INVALID_E_TAG: "tag-invalid-e-tag",
+  TAG_HASHTAG_WITH_PREFIX: "tag-hashtag-with-prefix",
   SUBSCRIBE_NOT_STARTED: "subscribe-not-started",
   SUBSCRIBE_CLOSE_ON_EOSE_NO_HANDLER: "subscribe-close-on-eose-no-handler",
   SUBSCRIBE_PASSED_EVENT_NOT_FILTER: "subscribe-passed-event-not-filter",
@@ -37046,8 +37441,30 @@ function checkCachePresence(ndk, shouldCheck) {
 var AIGuardrails = class {
   enabled = false;
   skipSet = /* @__PURE__ */ new Set;
+  extensions = /* @__PURE__ */ new Map;
+  _nextCallDisabled = null;
+  _replyEvents = /* @__PURE__ */ new WeakSet;
+  _fetchEventsCount = 0;
+  _subscribeCount = 0;
   constructor(mode = false) {
     this.setMode(mode);
+  }
+  register(namespace, hooks) {
+    if (this.extensions.has(namespace)) {
+      console.warn(`AIGuardrails: Extension '${namespace}' already registered, overwriting`);
+    }
+    const wrappedHooks = {};
+    for (const [key, fn] of Object.entries(hooks)) {
+      if (typeof fn === "function") {
+        wrappedHooks[key] = (...args) => {
+          if (!this.enabled)
+            return;
+          fn(...args, this.shouldCheck.bind(this), this.error.bind(this), this.warn.bind(this));
+        };
+      }
+    }
+    this.extensions.set(namespace, wrappedHooks);
+    this[namespace] = wrappedHooks;
   }
   setMode(mode) {
     if (typeof mode === "boolean") {
@@ -37062,7 +37479,15 @@ var AIGuardrails = class {
     return this.enabled;
   }
   shouldCheck(id) {
-    return this.enabled && !this.skipSet.has(id);
+    if (!this.enabled)
+      return false;
+    if (this.skipSet.has(id))
+      return false;
+    if (this._nextCallDisabled === "all")
+      return false;
+    if (this._nextCallDisabled && this._nextCallDisabled.has(id))
+      return false;
+    return true;
   }
   skip(id) {
     this.skipSet.add(id);
@@ -37072,6 +37497,25 @@ var AIGuardrails = class {
   }
   getSkipped() {
     return Array.from(this.skipSet);
+  }
+  captureAndClearNextCallDisabled() {
+    const captured = this._nextCallDisabled;
+    this._nextCallDisabled = null;
+    return captured;
+  }
+  incrementFetchEventsCount() {
+    this._fetchEventsCount++;
+  }
+  incrementSubscribeCount() {
+    this._subscribeCount++;
+  }
+  shouldWarnAboutFetchEventsRatio() {
+    const totalCalls = this._fetchEventsCount + this._subscribeCount;
+    if (totalCalls <= 6) {
+      return false;
+    }
+    const ratio = this._fetchEventsCount / totalCalls;
+    return ratio > 0.5;
   }
   error(id, message, hint, canDisable = true) {
     if (!this.shouldCheck(id))
@@ -37099,7 +37543,9 @@ var AIGuardrails = class {
       output4 += `
 
 \uD83D\uDD07 To disable this check:
-   ndk.aiGuardrails.skip('${id}')`;
+   ndk.guardrailOff('${id}').yourMethod()  // For one call`;
+      output4 += `
+   ndk.aiGuardrails.skip('${id}')  // Permanently`;
       output4 += `
    or set: ndk.aiGuardrails = { skip: new Set(['${id}']) }`;
     }
@@ -37110,22 +37556,46 @@ var AIGuardrails = class {
       return;
     checkCachePresence(ndk, this.shouldCheck.bind(this));
   }
-  eventReceived(_event, _relay) {
-    if (!this.enabled)
-      return;
-  }
-  eventPublishing(_event) {
-    if (!this.enabled)
-      return;
-  }
-  subscriptionCreated(_filters, _opts) {
-    if (!this.enabled)
-      return;
-  }
-  relayConnected(_relay) {
-    if (!this.enabled)
-      return;
-  }
+  ndk = {
+    fetchingEvents: (filters, opts) => {
+      if (!this.enabled)
+        return;
+      fetchingEvents(filters, opts, this.warn.bind(this), this.shouldWarnAboutFetchEventsRatio.bind(this), this.incrementFetchEventsCount.bind(this));
+    }
+  };
+  event = {
+    signing: (event) => {
+      if (!this.enabled)
+        return;
+      signing(event, this.error.bind(this), this.warn.bind(this), this._replyEvents);
+    },
+    publishing: (_event) => {
+      if (!this.enabled)
+        return;
+    },
+    received: (_event, _relay) => {
+      if (!this.enabled)
+        return;
+    },
+    creatingReply: (event) => {
+      if (!this.enabled)
+        return;
+      this._replyEvents.add(event);
+    }
+  };
+  subscription = {
+    created: (_filters, _opts) => {
+      if (!this.enabled)
+        return;
+      this.incrementSubscribeCount();
+    }
+  };
+  relay = {
+    connected: (_relay) => {
+      if (!this.enabled)
+        return;
+    }
+  };
 };
 function processFilters(filters, mode = "validate", debug9, ndk) {
   if (mode === "ignore") {
@@ -37164,7 +37634,7 @@ function processFilter(filter, mode, filterIndex, issues, debug9) {
         } else {
           debug9?.(`Fixed: Removed non-string value at ids[${idx}] (was ${typeof id})`);
         }
-      } else if (!/^[0-9a-f]{64}$/i.test(id)) {
+      } else if (!isValidHex64(id)) {
         if (isValidating) {
           issues.push(`Filter[${filterIndex}].ids[${idx}] is not a valid 64-char hex string: "${id}"`);
         } else {
@@ -37193,7 +37663,7 @@ function processFilter(filter, mode, filterIndex, issues, debug9) {
         } else {
           debug9?.(`Fixed: Removed non-string value at authors[${idx}] (was ${typeof author})`);
         }
-      } else if (!/^[0-9a-f]{64}$/i.test(author)) {
+      } else if (!isValidHex64(author)) {
         if (isValidating) {
           issues.push(`Filter[${filterIndex}].authors[${idx}] is not a valid 64-char hex pubkey: "${author}"`);
         } else {
@@ -37261,7 +37731,7 @@ function processFilter(filter, mode, filterIndex, issues, debug9) {
               debug9?.(`Fixed: Removed non-string value at ${key}[${idx}] (was ${typeof value})`);
             }
           } else {
-            if ((key === "#e" || key === "#p") && !/^[0-9a-f]{64}$/i.test(value)) {
+            if ((key === "#e" || key === "#p") && !isValidHex64(value)) {
               if (isValidating) {
                 issues.push(`Filter[${filterIndex}].${key}[${idx}] is not a valid 64-char hex string: "${value}"`);
               } else {
@@ -37289,30 +37759,65 @@ function processFilter(filter, mode, filterIndex, issues, debug9) {
 }
 function runAIGuardrailsForFilter(filter, filterIndex, ndk) {
   const guards = ndk.aiGuardrails;
+  const filterPreview = JSON.stringify(filter, null, 2);
   if (Object.keys(filter).length === 1 && filter.limit !== undefined) {
-    guards.error(GuardrailCheckId.FILTER_ONLY_LIMIT, `Filter[${filterIndex}] contains only 'limit' without any filtering criteria. This will fetch random events.`, `Add filtering criteria like 'kinds', 'authors', or '#e' tags. Example: { kinds: [1], limit: 10 }`);
+    guards.error(GuardrailCheckId.FILTER_ONLY_LIMIT, `Filter[${filterIndex}] contains only 'limit' without any filtering criteria.
+
+\uD83D\uDCE6 Your filter:
+${filterPreview}
+
+⚠️  This will fetch random events from relays without any criteria.`, `Add filtering criteria:
+   ✅ { kinds: [1], limit: 10 }
+   ✅ { authors: [pubkey], limit: 10 }
+   ❌ { limit: 10 }`);
   }
   if (Object.keys(filter).length === 0) {
-    guards.error(GuardrailCheckId.FILTER_EMPTY, `Filter[${filterIndex}] is empty. This will request all events from relays.`, `Add filtering criteria like 'kinds', 'authors', or tags.`, false);
-  }
-  if (filter.limit !== undefined && filter.limit > 1000) {
-    guards.warn(GuardrailCheckId.FILTER_LARGE_LIMIT, `Filter[${filterIndex}] has a very large limit: ${filter.limit}. This can cause performance issues.`, `Consider using a smaller limit and pagination, or using a subscription instead.`);
+    guards.error(GuardrailCheckId.FILTER_EMPTY, `Filter[${filterIndex}] is empty.
+
+\uD83D\uDCE6 Your filter:
+${filterPreview}
+
+⚠️  This will request ALL events from relays, which is never what you want.`, `Add filtering criteria like 'kinds', 'authors', or tags.`, false);
   }
   if (filter.since !== undefined && filter.until !== undefined && filter.since > filter.until) {
-    guards.error(GuardrailCheckId.FILTER_SINCE_AFTER_UNTIL, `Filter[${filterIndex}] has 'since' (${filter.since}) > 'until' (${filter.until}). No events will match.`, `Make sure 'since' is before 'until'. Both are Unix timestamps in seconds.`, false);
+    const sinceDate = new Date(filter.since * 1000).toISOString();
+    const untilDate = new Date(filter.until * 1000).toISOString();
+    guards.error(GuardrailCheckId.FILTER_SINCE_AFTER_UNTIL, `Filter[${filterIndex}] has 'since' AFTER 'until'.
+
+\uD83D\uDCE6 Your filter:
+${filterPreview}
+
+❌ since: ${filter.since} (${sinceDate})
+❌ until: ${filter.until} (${untilDate})
+
+No events can match this time range!`, `'since' must be BEFORE 'until'. Both are Unix timestamps in seconds.`, false);
   }
   const bech32Regex = /^n(addr|event|ote|pub|profile)1/;
   if (filter.ids) {
     filter.ids.forEach((id, idx) => {
-      if (typeof id === "string" && bech32Regex.test(id)) {
-        guards.error(GuardrailCheckId.FILTER_BECH32_IN_ARRAY, `Filter[${filterIndex}].ids[${idx}] contains bech32: "${id}". IDs must be hex, not bech32.`, `Use filterFromId() to decode bech32 first: import { filterFromId } from "@nostr-dev-kit/ndk"`, false);
+      if (typeof id === "string") {
+        if (bech32Regex.test(id)) {
+          guards.error(GuardrailCheckId.FILTER_BECH32_IN_ARRAY, `Filter[${filterIndex}].ids[${idx}] contains bech32: "${id}". IDs must be hex, not bech32.`, `Use filterFromId() to decode bech32 first: import { filterFromId } from "@nostr-dev-kit/ndk"`, false);
+        } else if (!isValidHex64(id)) {
+          guards.error(GuardrailCheckId.FILTER_INVALID_HEX, `Filter[${filterIndex}].ids[${idx}] is not a valid 64-char hex string: "${id}"`, `Event IDs must be 64-character hexadecimal strings. Invalid IDs often come from corrupted data in user-generated lists. Always validate hex strings before using them in filters:
+
+   const validIds = ids.filter(id => /^[0-9a-f]{64}$/i.test(id));`, false);
+        }
       }
     });
   }
   if (filter.authors) {
     filter.authors.forEach((author, idx) => {
-      if (typeof author === "string" && bech32Regex.test(author)) {
-        guards.error(GuardrailCheckId.FILTER_BECH32_IN_ARRAY, `Filter[${filterIndex}].authors[${idx}] contains bech32: "${author}". Authors must be hex pubkeys, not npub.`, `Use ndkUser.pubkey instead. Example: { authors: [ndkUser.pubkey] }`, false);
+      if (typeof author === "string") {
+        if (bech32Regex.test(author)) {
+          guards.error(GuardrailCheckId.FILTER_BECH32_IN_ARRAY, `Filter[${filterIndex}].authors[${idx}] contains bech32: "${author}". Authors must be hex pubkeys, not npub.`, `Use ndkUser.pubkey instead. Example: { authors: [ndkUser.pubkey] }`, false);
+        } else if (!isValidHex64(author)) {
+          guards.error(GuardrailCheckId.FILTER_INVALID_HEX, `Filter[${filterIndex}].authors[${idx}] is not a valid 64-char hex pubkey: "${author}"`, `Kind:3 follow lists can contain invalid entries like labels ("Follow List"), partial strings ("highlig"), or other corrupted data. You MUST validate all pubkeys before using them in filters.
+
+   Example:
+   const validPubkeys = pubkeys.filter(p => /^[0-9a-f]{64}$/i.test(p));
+   ndk.subscribe({ authors: validPubkeys, kinds: [1] });`, false);
+        }
       }
     });
   }
@@ -37321,8 +37826,16 @@ function runAIGuardrailsForFilter(filter, filterIndex, ndk) {
       const tagValues = filter[key];
       if (Array.isArray(tagValues)) {
         tagValues.forEach((value, idx) => {
-          if (typeof value === "string" && bech32Regex.test(value)) {
-            guards.error(GuardrailCheckId.FILTER_BECH32_IN_ARRAY, `Filter[${filterIndex}].${key}[${idx}] contains bech32: "${value}". Tag values must be decoded.`, `Use filterFromId() or nip19.decode() to get the hex value first.`, false);
+          if (typeof value === "string") {
+            if (key === "#e" || key === "#p") {
+              if (bech32Regex.test(value)) {
+                guards.error(GuardrailCheckId.FILTER_BECH32_IN_ARRAY, `Filter[${filterIndex}].${key}[${idx}] contains bech32: "${value}". Tag values must be decoded.`, `Use filterFromId() or nip19.decode() to get the hex value first.`, false);
+              } else if (!isValidHex64(value)) {
+                guards.error(GuardrailCheckId.FILTER_INVALID_HEX, `Filter[${filterIndex}].${key}[${idx}] is not a valid 64-char hex string: "${value}"`, `${key === "#e" ? "Event IDs" : "Public keys"} in tag filters must be 64-character hexadecimal strings. Kind:3 follow lists and other user-generated content can contain invalid data. Always filter before using:
+
+   const validValues = values.filter(v => /^[0-9a-f]{64}$/i.test(v));`, false);
+              }
+            }
           }
         });
       }
@@ -37331,8 +37844,31 @@ function runAIGuardrailsForFilter(filter, filterIndex, ndk) {
   if (filter["#a"]) {
     const aTags = filter["#a"];
     aTags?.forEach((aTag, idx) => {
-      if (typeof aTag === "string" && !/^\d+:[0-9a-f]{64}:.*$/.test(aTag)) {
-        guards.error(GuardrailCheckId.FILTER_INVALID_A_TAG, `Filter[${filterIndex}].#a[${idx}] has invalid format: "${aTag}". Must be "kind:pubkey:d-tag".`, `Example: "30023:fa984bd7dbb282f07e16e7ae87b26a2a7b9b90b7246a44771f0cf5ae58018f52:my-article"`, false);
+      if (typeof aTag === "string") {
+        if (!/^\d+:[0-9a-f]{64}:.*$/.test(aTag)) {
+          guards.error(GuardrailCheckId.FILTER_INVALID_A_TAG, `Filter[${filterIndex}].#a[${idx}] has invalid format: "${aTag}". Must be "kind:pubkey:d-tag".`, `Example: "30023:fa984bd7dbb282f07e16e7ae87b26a2a7b9b90b7246a44771f0cf5ae58018f52:my-article"`, false);
+        } else {
+          const kind = Number.parseInt(aTag.split(":")[0], 10);
+          if (kind < 30000 || kind > 39999) {
+            guards.error(GuardrailCheckId.FILTER_INVALID_A_TAG, `Filter[${filterIndex}].#a[${idx}] uses non-addressable kind ${kind}: "${aTag}". #a filters are only for addressable events (kinds 30000-39999).`, `Addressable events include:
+   • 30000-30039: Parameterized Replaceable Events (profiles, settings, etc.)
+   • 30040-39999: Other addressable events
+
+For regular events (kind ${kind}), use:
+   • #e filter for specific event IDs
+   • kinds + authors filters for event queries`, false);
+          }
+        }
+      }
+    });
+  }
+  if (filter["#t"]) {
+    const tTags = filter["#t"];
+    tTags?.forEach((tag, idx) => {
+      if (typeof tag === "string" && tag.startsWith("#")) {
+        guards.error(GuardrailCheckId.FILTER_HASHTAG_WITH_PREFIX, `Filter[${filterIndex}].#t[${idx}] contains hashtag with # prefix: "${tag}". Hashtag values should NOT include the # symbol.`, `Remove the # prefix from hashtag filters:
+   ✅ { "#t": ["nostr"] }
+   ❌ { "#t": ["#nostr"] }`, false);
       }
     });
   }
@@ -37429,6 +37965,7 @@ var NDKSubscription = class extends import_tseep4.EventEmitter {
   pool;
   skipVerification = false;
   skipValidation = false;
+  exclusiveRelay = false;
   relayFilters;
   relaySet;
   ndk;
@@ -37466,6 +38003,7 @@ var NDKSubscription = class extends import_tseep4.EventEmitter {
     this.closeOnEose = this.opts.closeOnEose || false;
     this.skipOptimisticPublishEvent = this.opts.skipOptimisticPublishEvent || false;
     this.cacheUnconstrainFilter = this.opts.cacheUnconstrainFilter;
+    this.exclusiveRelay = this.opts.exclusiveRelay || false;
     if (this.opts.onEvent) {
       this.on("event", this.opts.onEvent);
     }
@@ -37687,6 +38225,10 @@ var NDKSubscription = class extends import_tseep4.EventEmitter {
       if (this.opts?.onEventDup) {
         this.opts.onEventDup(event, relay, timeSinceFirstSeen, this, fromCache, optimisticPublish);
       }
+      if (!fromCache && !optimisticPublish && relay && this.ndk.cacheAdapter?.setEventDup && !this.opts.dontSaveToCache) {
+        ndkEvent ??= event instanceof NDKEvent ? event : new NDKEvent(this.ndk, event);
+        this.ndk.cacheAdapter.setEventDup(ndkEvent, relay);
+      }
       if (relay) {
         const signature = verifiedSignatures.get(eventId);
         if (signature && typeof signature === "string") {
@@ -37777,8 +38319,9 @@ async function follows(opts, outbox, kind = 3) {
   if (contactListEvent) {
     const pubkeys = /* @__PURE__ */ new Set;
     contactListEvent.tags.forEach((tag) => {
-      if (tag[0] === "p")
+      if (tag[0] === "p" && tag[1] && isValidPubkey(tag[1])) {
         pubkeys.add(tag[1]);
+      }
     });
     if (outbox) {
       this.ndk?.outboxTracker?.trackUsers(Array.from(pubkeys));
@@ -38562,7 +39105,9 @@ var NDKSubscriptionManager = class {
   }
   seenEvent(eventId, relay) {
     const current = this.seenEvents.get(eventId) || [];
-    current.push(relay);
+    if (!current.some((r) => r.url === relay.url)) {
+      current.push(relay);
+    }
     this.seenEvents.set(eventId, current);
   }
   dispatchEvent(event, relay, optimisticPublish = false) {
@@ -38576,6 +39121,21 @@ var NDKSubscriptionManager = class {
       }
     }
     for (const sub of matchingSubs) {
+      if (sub.exclusiveRelay && sub.relaySet) {
+        let shouldAccept = false;
+        if (optimisticPublish) {
+          shouldAccept = !sub.skipOptimisticPublishEvent;
+        } else if (!relay) {
+          const eventOnRelays = this.seenEvents.get(event.id) || [];
+          shouldAccept = eventOnRelays.some((r) => sub.relaySet.relays.has(r));
+        } else {
+          shouldAccept = sub.relaySet.relays.has(relay);
+        }
+        if (!shouldAccept) {
+          sub.debug.extend("exclusive-relay")("Rejected event %s from %s (relay not in exclusive set)", event.id, relay?.url || (optimisticPublish ? "optimistic" : "cache"));
+          continue;
+        }
+      }
       sub.eventReceived(event, relay, false, optimisticPublish);
     }
   }
@@ -38893,6 +39453,9 @@ var NDK = class extends import_tseep5.EventEmitter {
   set activeUser(user) {
     const differentUser = this._activeUser?.pubkey !== user?.pubkey;
     this._activeUser = user;
+    if (differentUser) {
+      this.emit("activeUser:change", user);
+    }
     if (user && differentUser) {
       setActiveUser.call(this, user);
     }
@@ -38920,6 +39483,9 @@ var NDK = class extends import_tseep5.EventEmitter {
     const connections = [this.pool.connect(timeoutMs)];
     if (this.outboxPool) {
       connections.push(this.outboxPool.connect(timeoutMs));
+    }
+    if (this.cacheAdapter?.initializeAsync) {
+      connections.push(this.cacheAdapter.initializeAsync(this));
     }
     return Promise.allSettled(connections).then(() => {});
   }
@@ -38961,10 +39527,9 @@ var NDK = class extends import_tseep5.EventEmitter {
     return NDKUser.fromNip05(nip05, this, skipCache);
   }
   async fetchUser(input, skipCache = false) {
-    if (input.includes("@") || input.includes(".") && !input.startsWith("n")) {
+    if (isValidNip05(input)) {
       return NDKUser.fromNip05(input, this, skipCache);
-    }
-    if (input.startsWith("npub1")) {
+    } else if (input.startsWith("npub1")) {
       const { type, data } = nip19_exports.decode(input);
       if (type !== "npub")
         throw new Error(`Invalid npub: ${input}`);
@@ -39011,6 +39576,7 @@ var NDK = class extends import_tseep5.EventEmitter {
     }
     const subscription = new NDKSubscription(this, filters, finalOpts);
     this.subManager.add(subscription);
+    this.aiGuardrails?.subscription?.created(Array.isArray(filters) ? filters : [filters], finalOpts);
     const pool = subscription.pool;
     if (subscription.relaySet) {
       for (const relay of subscription.relaySet.relays) {
@@ -39022,7 +39588,10 @@ var NDK = class extends import_tseep5.EventEmitter {
       this.outboxTracker?.trackUsers(authors);
     }
     if (autoStart) {
-      setTimeout(() => {
+      setTimeout(async () => {
+        if (this.cacheAdapter?.initializeAsync && !this.cacheAdapter.ready) {
+          await this.cacheAdapter.initializeAsync(this);
+        }
         const cachedEvents = subscription.start(!eventsHandler);
         if (cachedEvents && cachedEvents.length > 0 && !!eventsHandler)
           eventsHandler(cachedEvents);
@@ -39072,10 +39641,13 @@ var NDK = class extends import_tseep5.EventEmitter {
     } else {
       filters = [idOrFilter];
     }
+    if (typeof idOrFilter !== "string") {
+      this.aiGuardrails?.ndk?.fetchingEvents(filters);
+    }
     if (filters.length === 0) {
       throw new Error(`Invalid filter: ${JSON.stringify(idOrFilter)}`);
     }
-    return new Promise((resolve2) => {
+    return new Promise((resolve2, reject) => {
       let fetchedEvent = null;
       const subscribeOpts = {
         ...opts || {},
@@ -39085,6 +39657,7 @@ var NDK = class extends import_tseep5.EventEmitter {
         subscribeOpts.relaySet = relaySet;
       const t2 = setTimeout(() => {
         s.stop();
+        this.aiGuardrails["_nextCallDisabled"] = null;
         resolve2(fetchedEvent);
       }, 1e4);
       const s = this.subscribe(filters, subscribeOpts, {
@@ -39092,6 +39665,7 @@ var NDK = class extends import_tseep5.EventEmitter {
           event.ndk = this;
           if (!event.isReplaceable()) {
             clearTimeout(t2);
+            this.aiGuardrails["_nextCallDisabled"] = null;
             resolve2(event);
           } else if (!fetchedEvent || fetchedEvent.created_at < event.created_at) {
             fetchedEvent = event;
@@ -39099,19 +39673,14 @@ var NDK = class extends import_tseep5.EventEmitter {
         },
         onEose: () => {
           clearTimeout(t2);
+          this.aiGuardrails["_nextCallDisabled"] = null;
           resolve2(fetchedEvent);
         }
       });
     });
   }
   async fetchEvents(filters, opts, relaySet) {
-    this.aiGuardrails.warn("fetch-events-usage", `fetchEvents() is a BLOCKING operation that waits for EOSE.
-In most cases, you should use subscribe() instead:
-
-  ❌ BAD:  const events = await ndk.fetchEvents(filter);
-  ✅ GOOD: ndk.subscribe(filter, { onEvent: (e) => ... });
-
-Only use fetchEvents() when you MUST block until data arrives.`, "For one-time queries, use fetchEvent() instead of fetchEvents() when expecting a single result.");
+    this.aiGuardrails?.ndk?.fetchingEvents(filters, opts);
     return new Promise((resolve2) => {
       const events = /* @__PURE__ */ new Map;
       const subscribeOpts = {
@@ -39138,6 +39707,7 @@ Only use fetchEvents() when you MUST block until data arrives.`, "For one-time q
         ...subscribeOpts,
         onEvent,
         onEose: () => {
+          this.aiGuardrails["_nextCallDisabled"] = null;
           resolve2(new Set(events.values()));
         }
       });
@@ -39150,6 +39720,16 @@ Only use fetchEvents() when you MUST block until data arrives.`, "For one-time q
     }
   }
   getEntity = getEntity.bind(this);
+  guardrailOff(ids) {
+    if (!ids) {
+      this.aiGuardrails["_nextCallDisabled"] = "all";
+    } else if (typeof ids === "string") {
+      this.aiGuardrails["_nextCallDisabled"] = /* @__PURE__ */ new Set([ids]);
+    } else {
+      this.aiGuardrails["_nextCallDisabled"] = new Set(ids);
+    }
+    return this;
+  }
   set wallet(wallet) {
     if (!wallet) {
       this.walletConfig = undefined;
@@ -40046,63 +40626,6 @@ registerSigner("nip46", NDKNip46Signer);
 var d2 = import_debug12.default("ndk:zapper:ln");
 var d3 = import_debug11.default("ndk:zapper");
 
-// src/functions/setEvent.ts
-function setEventSync(db, event, relay) {
-  const stmt = `
-        INSERT OR REPLACE INTO events (
-            id, pubkey, created_at, kind, tags, content, sig, raw, deleted
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-  const tags = JSON.stringify(event.tags ?? []);
-  const raw = JSON.stringify([
-    event.id,
-    event.pubkey,
-    event.created_at,
-    event.kind,
-    event.tags ?? [],
-    event.content,
-    event.sig
-  ]);
-  const values = [
-    event.id ?? "",
-    event.pubkey ?? "",
-    event.created_at ?? 0,
-    event.kind ?? 0,
-    tags,
-    event.content ?? "",
-    event.sig ?? "",
-    raw,
-    0
-  ];
-  db.run(stmt, values);
-  if (relay?.url) {
-    db.run("INSERT OR IGNORE INTO event_relays (event_id, relay_url, seen_at) VALUES (?, ?, ?)", [
-      event.id,
-      relay.url,
-      Date.now()
-    ]);
-  }
-  if (event.tags && event.tags.length > 0) {
-    for (const tag of event.tags) {
-      if (tag.length >= 2 && tag[0].length === 1) {
-        db.run("INSERT OR IGNORE INTO event_tags (event_id, tag, value) VALUES (?, ?, ?)", [
-          event.id,
-          tag[0],
-          tag[1] || null
-        ]);
-      }
-    }
-  }
-  if (event.kind === NDKKind.Metadata || event.kind === 0) {
-    try {
-      const profile = typeof event.content === "string" ? JSON.parse(event.content) : event.content;
-      if (profile && event.pubkey) {
-        db.run("INSERT OR REPLACE INTO profiles (pubkey, profile, updated_at) VALUES (?, ?, ?)", [event.pubkey, JSON.stringify(profile), event.created_at ?? Date.now()]);
-      }
-    } catch (e) {}
-  }
-}
-
 // src/functions/query.ts
 function normalizeDbRows(queryResults) {
   if (!queryResults || queryResults.length === 0) {
@@ -40193,7 +40716,81 @@ function querySync(db, filters) {
   return allRecords;
 }
 
+// src/functions/setEvent.ts
+function setEventSync(db, event, relay) {
+  const stmt = `
+        INSERT OR REPLACE INTO events (
+            id, pubkey, created_at, kind, tags, content, sig, raw, deleted
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+  const tags = JSON.stringify(event.tags ?? []);
+  const raw = JSON.stringify([
+    event.id,
+    event.pubkey,
+    event.created_at,
+    event.kind,
+    event.tags ?? [],
+    event.content,
+    event.sig
+  ]);
+  const values = [
+    event.id ?? "",
+    event.pubkey ?? "",
+    event.created_at ?? 0,
+    event.kind ?? 0,
+    tags,
+    event.content ?? "",
+    event.sig ?? "",
+    raw,
+    0
+  ];
+  db.run(stmt, values);
+  if (relay?.url) {
+    db.run("INSERT OR IGNORE INTO event_relays (event_id, relay_url, seen_at) VALUES (?, ?, ?)", [
+      event.id,
+      relay.url,
+      Date.now()
+    ]);
+  }
+  if (event.tags && event.tags.length > 0) {
+    for (const tag of event.tags) {
+      if (tag.length >= 2 && tag[0].length === 1) {
+        db.run("INSERT OR IGNORE INTO event_tags (event_id, tag, value) VALUES (?, ?, ?)", [
+          event.id,
+          tag[0],
+          tag[1] || null
+        ]);
+      }
+    }
+  }
+  if (event.kind === NDKKind.Metadata || event.kind === 0) {
+    try {
+      const profile = typeof event.content === "string" ? JSON.parse(event.content) : event.content;
+      if (profile && event.pubkey) {
+        db.run("INSERT OR REPLACE INTO profiles (pubkey, profile, updated_at) VALUES (?, ?, ?)", [
+          event.pubkey,
+          JSON.stringify(profile),
+          event.created_at ?? Date.now()
+        ]);
+      }
+    } catch (e) {}
+  }
+}
+
+// src/functions/setEventDup.ts
+function setEventDupSync(db, event, relay) {
+  if (relay?.url) {
+    db.run("INSERT OR IGNORE INTO event_relays (event_id, relay_url, seen_at) VALUES (?, ?, ?)", [
+      event.id,
+      relay.url,
+      Date.now()
+    ]);
+  }
+}
+
 // src/worker.ts
+var PROTOCOL_VERSION = "0.8.1";
+var PROTOCOL_NAME = "ndk-cache-sqlite";
 var db = null;
 var SQL = null;
 var dbName = "ndk-cache";
@@ -40282,14 +40879,20 @@ self.onmessage = async (event) => {
         break;
       }
       case "getProfiles": {
-        const { field, contains } = payload;
+        const { field, fields, contains } = payload;
+        const searchFields = fields || (field ? [field] : []);
+        if (searchFields.length === 0) {
+          throw new Error("Either 'field' or 'fields' must be provided");
+        }
+        const conditions = searchFields.map((f) => `json_extract(profile, '$.${f}') LIKE ?`).join(" OR ");
         const sql = `
                     SELECT pubkey, profile
                     FROM profiles
-                    WHERE json_extract(profile, '$.${field}') LIKE ?
+                    WHERE ${conditions}
                 `;
         const param = `%${contains}%`;
-        const stmt = db.prepare(sql, [param]);
+        const params = searchFields.map(() => param);
+        const stmt = db.prepare(sql, params);
         result = [];
         while (stmt.step()) {
           const row = stmt.getAsObject();
@@ -40316,6 +40919,14 @@ self.onmessage = async (event) => {
         result = undefined;
         break;
       }
+      case "setEventDup": {
+        const { eventId, relayUrl } = payload;
+        const event2 = { id: eventId };
+        const relay = relayUrl ? { url: relayUrl } : undefined;
+        setEventDupSync(db, event2, relay);
+        result = undefined;
+        break;
+      }
       case "query": {
         const { filters } = payload;
         result = querySync(db, filters);
@@ -40324,10 +40935,20 @@ self.onmessage = async (event) => {
       default:
         throw new Error(`Unknown command type: ${type}`);
     }
-    self.postMessage({ id, result });
+    self.postMessage({
+      _protocol: PROTOCOL_NAME,
+      _version: PROTOCOL_VERSION,
+      id,
+      result
+    });
   } catch (error) {
     console.error(`Worker: Error processing command ${id} (${type}):`, error);
-    self.postMessage({ id, error: { message: error.message, stack: error.stack } });
+    self.postMessage({
+      _protocol: PROTOCOL_NAME,
+      _version: PROTOCOL_VERSION,
+      id,
+      error: { message: error.message, stack: error.stack }
+    });
   }
 };
 self.addEventListener("error", (event) => {

@@ -11,6 +11,7 @@
 	import ToolCallContent from './ToolCallContent.svelte';
 	import SuggestionButtons from './SuggestionButtons.svelte';
 	import LLMMetadataDialog from './LLMMetadataDialog.svelte';
+	import TypingIndicator from './TypingIndicator.svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Copy, Reply, Quote, FileJson, MoreVertical, Info, Eye } from 'lucide-svelte';
 
@@ -168,7 +169,7 @@
 					</span>
 				{/if}
 				{#if isTyping}
-					<span class="text-xs text-gray-600 dark:text-gray-300 italic">typing...</span>
+					<TypingIndicator pubkey={message.event.pubkey} />
 				{/if}
 
 				<!-- Message Actions Dropdown -->
@@ -215,7 +216,9 @@
 			</div>
 
 			<!-- Render content based on type -->
-			{#if isToolCallEvent}
+			{#if isTyping}
+				<!-- Typing indicator is shown in the header, no content needed -->
+			{:else if isToolCallEvent}
 				<ToolCallContent event={message.event} />
 			{:else if isReasoningEvent}
 				<AIReasoningBlock

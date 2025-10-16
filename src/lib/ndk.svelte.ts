@@ -65,8 +65,8 @@ export const ndkReady = (async () => {
 	if (!browser) return;
 
 	try {
-		// Initialize worker
-		const SigVerifyWorker = (await import('./sig-verify.worker?worker')).default;
+		// Initialize signature verification worker using official NDK worker
+		const SigVerifyWorker = (await import('@nostr-dev-kit/ndk/workers/sig-verification?worker')).default;
 		sigVerifyWorker = new SigVerifyWorker();
 		ndk.signatureVerificationWorker = sigVerifyWorker;
 

@@ -11,6 +11,7 @@
 		project?: NDKProject;
 		rootEvent?: NDKEvent | null;
 		onlineAgents?: ProjectAgent[];
+		recentMessages?: NDKEvent[];
 		onThreadCreated?: (thread: NDKEvent) => void;
 		replyToEvent?: NDKEvent | null;
 		onCancelReply?: () => void;
@@ -21,6 +22,7 @@
 		project,
 		rootEvent,
 		onlineAgents = [],
+		recentMessages = [],
 		onThreadCreated,
 		replyToEvent = null,
 		onCancelReply,
@@ -45,10 +47,34 @@
 		}
 	});
 
-	// Derive the current agent (selected or default to first agent)
-	const currentAgent = $derived(
-		selectedAgent || (onlineAgents.length > 0 ? onlineAgents[0].pubkey : null)
-	);
+	// Compute default agent based on recent messages (SINGLE SOURCE OF TRUTH)
+	const defaultAgent = $derived.by(() => {
+		if (onlineAgents.length === 0) return null;
+
+		// If there are recent messages, find the most recent agent message
+		if (recentMessages.length > 0) {
+			const recentAgent = [...recentMessages].reverse().find((msg) => {
+				return onlineAgents.find((a) => a.pubkey === msg.pubkey);
+			});
+
+			if (recentAgent) {
+				return recentAgent.pubkey;
+			}
+		}
+
+		// Otherwise, default to the PM (first agent)
+		return onlineAgents[0].pubkey;
+	});
+
+	// Derive the current agent (mentioned agent takes precedence, then selected, then default)
+	const currentAgent = $derived.by(() => {
+		// If there's exactly one mentioned agent, use that
+		if (mentionedAgents.length === 1) {
+			return mentionedAgents[0];
+		}
+		// Otherwise use selected agent or computed default
+		return selectedAgent || defaultAgent;
+	});
 
 	// Fetch profile for reply-to user
 	const replyToProfile = $derived.by(() => {
@@ -129,6 +155,12 @@
 		// Add to mentioned agents for p-tagging
 		if (!mentionedAgents.includes(agent.pubkey)) {
 			mentionedAgents = [...mentionedAgents, agent.pubkey];
+
+			// Update selected agent to the mentioned agent (for UI display)
+			// If there's exactly one mention, show that agent in the selector
+			if (mentionedAgents.length === 1) {
+				selectedAgent = agent.pubkey;
+			}
 		}
 
 		// Hide autocomplete
@@ -412,6 +444,7 @@
 				<AgentSelector
 					agents={onlineAgents}
 					selectedAgent={selectedAgent}
+					defaultAgent={defaultAgent}
 					currentModel={currentAgentModel}
 					onSelect={(pubkey) => (selectedAgent = pubkey)}
 					onConfigure={() => (configDialogOpen = true)}
@@ -437,8 +470,8 @@
 		</div>
 	</div>
 
-	<!-- Mentioned Agents Indicator -->
-	{#if mentionedAgents.length > 0}
+	<!-- Mentioned Agents Indicator (only show when multiple agents mentioned) -->
+	{#if mentionedAgents.length > 1}
 		<div class="mt-3 flex items-center gap-2 flex-wrap">
 			<span class="text-xs text-gray-500 dark:text-gray-400">Mentioning:</span>
 			{#each mentionedAgents as pubkey (pubkey)}

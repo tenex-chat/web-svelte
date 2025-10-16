@@ -1,12 +1,9 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
 
-	const currentUser = $derived(ndk.$sessions.currentUser);
-
-	onMount(() => {
-		if (currentUser) {
+	$effect(() => {
+		if (ndk.$currentUser) {
 			goto('/projects');
 		} else {
 			goto('/login');

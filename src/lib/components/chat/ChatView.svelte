@@ -91,6 +91,7 @@
 			{project}
 			rootEvent={localRootEvent}
 			{onlineAgents}
+			recentMessages={messages.map(m => m.event)}
 			onThreadCreated={handleThreadCreated}
 			{replyToEvent}
 			{initialContent}

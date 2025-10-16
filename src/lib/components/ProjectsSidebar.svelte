@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { ndk } from '$lib/ndk.svelte';
-	import { Avatar } from '@nostr-dev-kit/svelte';
+	import { Avatar, Name } from '@nostr-dev-kit/svelte';
 	import { openProjects } from '$lib/stores/openProjects.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { sidebarCollapsedStore } from '$lib/stores/sidebarCollapsed.svelte';
@@ -44,11 +44,6 @@
 
 	// Derived state
 	const collapsed = $derived(sidebarCollapsedStore.collapsed);
-	const currentUser = $derived(ndk.$sessions?.[0]);
-	const userProfile = $derived(
-		currentUser ? ndk.$subscribe({ kinds: [0], authors: [currentUser.pubkey] }, { wrap: true }) : null
-	);
-	const profile = $derived(userProfile?.events?.[0] ? JSON.parse(userProfile.events[0].content) : null);
 
 	// Initialize inbox store
 	$effect(() => {
@@ -75,8 +70,8 @@
 
 	// User menu handlers
 	function handleLogout() {
-		if (currentUser) {
-			ndk.logout(currentUser.pubkey);
+		if (ndk.$ndk.$currentUser) {
+			ndk.logout(ndk.$ndk.$currentUser.pubkey);
 		}
 		window.location.href = '/';
 	}
@@ -379,20 +374,13 @@
 						collapsed ? 'w-10 h-10 justify-center' : 'w-full gap-2 px-2 py-2'
 					)}
 				>
-					{#if currentUser?.pubkey}
-						<Avatar {ndk} pubkey={currentUser.pubkey} size={32} />
-					{:else}
-						<div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-zinc-700 flex items-center justify-center text-white font-semibold text-sm">
-							U
-						</div>
+					{#if ndk.$currentUser?.pubkey}
+						<Avatar {ndk} pubkey={ndk.$currentUser.pubkey} size={32} />
 					{/if}
 					{#if !collapsed}
 						<div class="flex-1 text-left min-w-0">
 							<div class="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
-								{profile?.name || profile?.displayName || 'User'}
-							</div>
-							<div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-								{profile?.nip05 || currentUser?.npub?.slice(0, 12) + '...' || ''}
+								<Name {ndk} pubkey={ndk.$currentUser.pubkey} />
 							</div>
 						</div>
 					{/if}
