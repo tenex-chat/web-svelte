@@ -9,6 +9,7 @@
 	import OwnedAgentsSettings from '$lib/components/settings/OwnedAgentsSettings.svelte';
 	import RelaySettings from '$lib/components/settings/RelaySettings.svelte';
 	import { cn } from '$lib/utils/cn';
+	import { ArrowLeft } from 'lucide-svelte';
 
 	type Tab = 'account' | 'ai' | 'appearance' | 'notifications' | 'blossom' | 'agents' | 'relays';
 
@@ -18,6 +19,10 @@
 
 	function setTab(tab: Tab) {
 		goto(`/settings?tab=${tab}`, { replaceState: true });
+	}
+
+	function goBack() {
+		goto('/');
 	}
 
 	const tabs: Array<{ value: Tab; label: string }> = [
@@ -39,6 +44,13 @@
 	<div class="max-w-5xl mx-auto">
 		<!-- Page Header -->
 		<div class="mb-8">
+			<button
+				onclick={goBack}
+				class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors mb-4"
+			>
+				<ArrowLeft class="w-4 h-4" />
+				Back to Projects
+			</button>
 			<h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
 			<p class="text-gray-600 dark:text-gray-400 mt-2">Manage your account, AI providers, appearance, and more</p>
 		</div>
