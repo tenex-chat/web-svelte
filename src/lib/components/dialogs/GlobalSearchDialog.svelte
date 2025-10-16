@@ -83,9 +83,9 @@
 			aria-modal="true"
 		>
 			<!-- Search Input -->
-			<div class="border-b border-gray-200 p-4">
+			<div class="border-b border-border p-4">
 				<div class="flex items-center gap-3">
-					<svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"
 							stroke-linejoin="round"
@@ -102,7 +102,7 @@
 						autofocus
 					/>
 					<kbd
-						class="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 border border-gray-200 rounded"
+						class="px-2 py-1 text-xs font-medium text-muted-foreground bg-muted border border-border rounded"
 					>
 						ESC
 					</kbd>
@@ -115,37 +115,37 @@
 					{#each searchResults as result, index (result.href)}
 						<button
 							onclick={() => handleSelect(result.href)}
-							class="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 {selectedIndex ===
+							class="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border {selectedIndex ===
 							index
-								? 'bg-blue-50'
+								? 'bg-primary/10'
 								: ''}"
 						>
 							<div class="flex items-center gap-3">
-								<span class="text-xs font-medium text-gray-500 w-16">{result.type}</span>
-								<span class="text-sm font-medium text-gray-900">{result.title}</span>
+								<span class="text-xs font-medium text-muted-foreground w-16">{result.type}</span>
+								<span class="text-sm font-medium text-foreground">{result.title}</span>
 							</div>
 						</button>
 					{/each}
 				</div>
 			{:else if query.trim()}
-				<div class="p-8 text-center text-gray-500">
+				<div class="p-8 text-center text-muted-foreground">
 					<p>No results found for "{query}"</p>
 				</div>
 			{:else}
-				<div class="p-8 text-center text-gray-500">
+				<div class="p-8 text-center text-muted-foreground">
 					<p>Start typing to search...</p>
 				</div>
 			{/if}
 
 			<!-- Footer -->
-			<div class="border-t border-gray-200 px-4 py-3 bg-gray-50 flex items-center gap-4 text-xs text-gray-500">
+			<div class="border-t border-border px-4 py-3 bg-muted flex items-center gap-4 text-xs text-muted-foreground">
 				<div class="flex items-center gap-1">
-					<kbd class="px-1.5 py-0.5 bg-white border border-gray-200 rounded">↑</kbd>
-					<kbd class="px-1.5 py-0.5 bg-white border border-gray-200 rounded">↓</kbd>
+					<kbd class="px-1.5 py-0.5 bg-white border border-border rounded">↑</kbd>
+					<kbd class="px-1.5 py-0.5 bg-white border border-border rounded">↓</kbd>
 					<span>Navigate</span>
 				</div>
 				<div class="flex items-center gap-1">
-					<kbd class="px-1.5 py-0.5 bg-white border border-gray-200 rounded">Enter</kbd>
+					<kbd class="px-1.5 py-0.5 bg-white border border-border rounded">Enter</kbd>
 					<span>Select</span>
 				</div>
 			</div>

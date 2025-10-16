@@ -31,44 +31,44 @@
 
 <div class="space-y-6">
 	<!-- Owned Agents Section -->
-	<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
-		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Your Agents</h3>
-		<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+	<div class="bg-card rounded-lg border border-border p-6">
+		<h3 class="text-lg font-semibold text-foreground mb-4">Your Agents</h3>
+		<p class="text-sm text-muted-foreground mb-4">
 			Agents you've created and published to the Nostr network
 		</p>
 
 		{#if !currentUser}
-			<div class="text-center py-8 text-gray-500 dark:text-gray-400">
+			<div class="text-center py-8 text-muted-foreground">
 				<p class="text-sm">Please login to view your agents</p>
 			</div>
 		{:else if loading}
 			<div class="text-center py-8">
 				<div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-				<p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Loading agents...</p>
+				<p class="text-sm text-muted-foreground mt-2">Loading agents...</p>
 			</div>
 		{:else if agents.length === 0}
-			<div class="text-center py-8 text-gray-500 dark:text-gray-400">
+			<div class="text-center py-8 text-muted-foreground">
 				<p class="text-sm">No agents found</p>
 				<p class="text-xs mt-1">Create an agent to get started</p>
 			</div>
 		{:else}
 			<div class="space-y-3">
 				{#each agents as agent (agent.id)}
-					<div class="p-4 border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800">
+					<div class="p-4 border border-border rounded-lg hover:bg-muted dark:hover:bg-zinc-800">
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
-								<h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">
+								<h4 class="text-sm font-medium text-foreground">
 									{agent.name || 'Unnamed Agent'}
 								</h4>
 								{#if agent.description}
-									<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{agent.description}</p>
+									<p class="text-xs text-muted-foreground mt-1">{agent.description}</p>
 								{/if}
 								<div class="flex gap-2 mt-2">
 									<span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
 										Kind {agent.kind}
 									</span>
 									{#if agent.created_at}
-										<span class="text-xs px-2 py-1 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 rounded">
+										<span class="text-xs px-2 py-1 bg-muted text-muted-foreground rounded">
 											{new Date(agent.created_at * 1000).toLocaleDateString()}
 										</span>
 									{/if}

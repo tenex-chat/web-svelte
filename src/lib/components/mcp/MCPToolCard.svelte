@@ -52,7 +52,7 @@
 </script>
 
 <div
-	class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
+	class="bg-card border border-border rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
 	onclick={handleCardClick}
 	role="button"
 	tabindex="0"
@@ -63,11 +63,11 @@
 		<div class="flex items-center gap-2 flex-1 min-w-0">
 			<span class="text-2xl flex-shrink-0">{getToolIcon(tool.command)}</span>
 			<div class="min-w-0 flex-1">
-				<h3 class="font-semibold text-gray-900 dark:text-gray-100 truncate">
+				<h3 class="font-semibold text-foreground truncate">
 					{tool.name || 'Unnamed Tool'}
 				</h3>
 				{#if isOwner}
-					<span class="text-xs text-blue-600 dark:text-blue-400 font-medium">You</span>
+					<span class="text-xs text-primary dark:text-blue-400 font-medium">You</span>
 				{/if}
 			</div>
 		</div>
@@ -77,7 +77,7 @@
 			<div class="flex gap-1">
 				<button
 					onclick={handleEdit}
-					class="p-1.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+					class="p-1.5 text-muted-foreground hover:text-primary dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
 					aria-label="Edit tool"
 				>
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,7 +91,7 @@
 				</button>
 				<button
 					onclick={handleDelete}
-					class="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+					class="p-1.5 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
 					aria-label="Delete tool"
 				>
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -108,14 +108,14 @@
 	</div>
 
 	<!-- Description -->
-	<p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+	<p class="text-sm text-muted-foreground mb-3 line-clamp-2">
 		{tool.description || 'No description available'}
 	</p>
 
 	<!-- Command -->
 	{#if tool.command}
 		<div class="mb-3">
-			<code class="text-xs bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded font-mono text-gray-700 dark:text-gray-300 break-all">
+			<code class="text-xs bg-muted px-2 py-1 rounded font-mono text-foreground break-all">
 				{tool.command}
 			</code>
 		</div>
@@ -130,7 +130,7 @@
 				</span>
 			{/each}
 			{#if tool.capabilities.length > 3}
-				<span class="text-xs px-2 py-1 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 rounded">
+				<span class="text-xs px-2 py-1 bg-muted text-muted-foreground rounded">
 					+{tool.capabilities.length - 3} more
 				</span>
 			{/if}

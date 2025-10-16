@@ -301,7 +301,7 @@
 		tabindex="0"
 	>
 		<div
-			class="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-zinc-900 rounded-lg shadow-xl flex flex-col"
+			class="relative w-full max-w-2xl max-h-[90vh] bg-card rounded-lg shadow-xl flex flex-col"
 			onclick={(e) => e.stopPropagation()}
 			role="dialog"
 			aria-modal="true"
@@ -309,7 +309,7 @@
 			<!-- Close Button -->
 			<button
 				onclick={handleClose}
-				class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 z-10"
+				class="absolute top-4 right-4 text-muted-foreground hover:text-muted-foreground dark:hover:text-muted-foreground z-10"
 				aria-label="Close dialog"
 			>
 				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -323,9 +323,9 @@
 			</button>
 
 			<!-- Header -->
-			<div class="flex-shrink-0 px-6 pt-6 pb-4 border-b border-gray-200 dark:border-zinc-700">
-				<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Create New Project</h2>
-				<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+			<div class="flex-shrink-0 px-6 pt-6 pb-4 border-b border-border">
+				<h2 class="text-xl font-semibold text-foreground">Create New Project</h2>
+				<p class="text-sm text-muted-foreground mt-1">
 					Step {currentStepIndex + 1} of {steps.length}: {getStepTitle(currentStep)}
 				</p>
 			</div>
@@ -336,15 +336,15 @@
 					<div
 						class={cn(
 							'flex items-center gap-2',
-							index <= currentStepIndex ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'
+							index <= currentStepIndex ? 'text-primary dark:text-blue-400' : 'text-muted-foreground'
 						)}
 					>
 						<div
 							class={cn(
 								'flex h-8 w-8 items-center justify-center rounded-full border-2',
 								index <= currentStepIndex
-									? 'border-blue-600 dark:border-blue-400 bg-blue-600 dark:bg-blue-400 text-white'
-									: 'border-gray-300 dark:border-zinc-600'
+									? 'border-blue-600 dark:border-blue-400 bg-primary dark:bg-blue-400 text-white'
+									: 'border-border'
 							)}
 						>
 							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -360,7 +360,7 @@
 							<div
 								class={cn(
 									'h-0.5 w-8',
-									index < currentStepIndex ? 'bg-blue-600 dark:bg-blue-400' : 'bg-gray-300 dark:bg-zinc-600'
+									index < currentStepIndex ? 'bg-primary dark:bg-blue-400' : 'bg-gray-300 dark:bg-zinc-600'
 								)}
 							/>
 						{/if}
@@ -373,33 +373,33 @@
 				{#if currentStep === 'details'}
 					<div class="space-y-4">
 						<div>
-							<label for="project-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+							<label for="project-name" class="block text-sm font-medium text-foreground mb-1">
 								Project Name *
 							</label>
 							<input
 								id="project-name"
 								type="text"
 								bind:value={projectData.name}
-								class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100"
+								class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-foreground"
 								placeholder="My Awesome Project"
 							/>
 						</div>
 
 						<div>
-							<label for="project-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+							<label for="project-description" class="block text-sm font-medium text-foreground mb-1">
 								Description *
 							</label>
 							<textarea
 								id="project-description"
 								bind:value={projectData.description}
 								rows="4"
-								class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100"
+								class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-foreground"
 								placeholder="Describe your project..."
 							></textarea>
 						</div>
 
 						<div>
-							<label for="project-tags" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+							<label for="project-tags" class="block text-sm font-medium text-foreground mb-1">
 								Tags (press Enter to add)
 							</label>
 							<input
@@ -407,17 +407,17 @@
 								type="text"
 								bind:value={tagInput}
 								onkeydown={handleAddTag}
-								class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100"
+								class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-foreground"
 								placeholder="Type a tag and press Enter"
 							/>
 							{#if projectData.tags.length > 0}
 								<div class="flex flex-wrap gap-2 mt-2">
 									{#each projectData.tags as tag, index}
-										<span class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded text-sm">
+										<span class="inline-flex items-center gap-1 px-2 py-1 bg-muted text-foreground rounded text-sm">
 											{tag}
 											<button
 												onclick={() => removeTag(index)}
-												class="text-gray-500 hover:text-red-600 dark:hover:text-red-400"
+												class="text-muted-foreground hover:text-red-600 dark:hover:text-red-400"
 											>
 												<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path
@@ -435,44 +435,44 @@
 						</div>
 
 						<div>
-							<label for="project-image" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+							<label for="project-image" class="block text-sm font-medium text-foreground mb-1">
 								Image URL
 							</label>
 							<input
 								id="project-image"
 								type="text"
 								bind:value={projectData.imageUrl}
-								class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100"
+								class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-foreground"
 								placeholder="https://example.com/image.png"
 							/>
 						</div>
 
 						<div>
-							<label for="project-repo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+							<label for="project-repo" class="block text-sm font-medium text-foreground mb-1">
 								Repository URL
 							</label>
 							<input
 								id="project-repo"
 								type="text"
 								bind:value={projectData.repoUrl}
-								class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100"
+								class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-foreground"
 								placeholder="https://github.com/user/repo"
 							/>
 						</div>
 					</div>
 				{:else if currentStep === 'agents'}
 					<div class="space-y-4">
-						<p class="text-sm text-gray-600 dark:text-gray-400">
+						<p class="text-sm text-muted-foreground">
 							Select individual agents to work on this project (optional)
 						</p>
 
-						<div class="border border-gray-200 dark:border-zinc-700 rounded-lg p-4">
+						<div class="border border-border rounded-lg p-4">
 							{#if isLoadingAgents}
 								<div class="flex items-center justify-center py-8">
 									<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
 								</div>
 							{:else if availableAgents.length === 0}
-								<p class="text-center text-gray-500 dark:text-gray-400 py-8">
+								<p class="text-center text-muted-foreground py-8">
 									No agents available
 								</p>
 							{:else}
@@ -486,7 +486,7 @@
 										>
 											<AgentDefinitionCard {agent} onclick={() => toggleAgent(agent.id)} />
 											{#if selectedAgents.has(agent.id)}
-												<div class="absolute top-2 right-2 w-6 h-6 bg-blue-600 dark:bg-blue-400 rounded-full flex items-center justify-center">
+												<div class="absolute top-2 right-2 w-6 h-6 bg-primary dark:bg-blue-400 rounded-full flex items-center justify-center">
 													<svg
 														class="w-4 h-4 text-white"
 														fill="none"
@@ -510,17 +510,17 @@
 					</div>
 				{:else if currentStep === 'tools'}
 					<div class="space-y-4">
-						<p class="text-sm text-gray-600 dark:text-gray-400">
+						<p class="text-sm text-muted-foreground">
 							Select MCP tools to enable for this project (optional)
 						</p>
 
-						<div class="border border-gray-200 dark:border-zinc-700 rounded-lg p-4">
+						<div class="border border-border rounded-lg p-4">
 							{#if isLoadingTools}
 								<div class="flex items-center justify-center py-8">
 									<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
 								</div>
 							{:else if availableTools.length === 0}
-								<p class="text-center text-gray-500 dark:text-gray-400 py-8">
+								<p class="text-center text-muted-foreground py-8">
 									No MCP tools available
 								</p>
 							{:else}
@@ -532,11 +532,11 @@
 												'w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left',
 												selectedTools.has(tool.id)
 													? 'bg-blue-50 dark:bg-blue-900/20 border-blue-600 dark:border-blue-400'
-													: 'border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800'
+													: 'border-border hover:bg-muted dark:hover:bg-zinc-800'
 											)}
 										>
-											<div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
-												<svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<div class="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+												<svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path
 														stroke-linecap="round"
 														stroke-linejoin="round"
@@ -547,19 +547,19 @@
 											</div>
 
 											<div class="flex-1 min-w-0">
-												<p class="font-medium text-gray-900 dark:text-gray-100">
+												<p class="font-medium text-foreground">
 													{tool.name || 'Unnamed Tool'}
 												</p>
-												<p class="text-sm text-gray-600 dark:text-gray-400 truncate">
+												<p class="text-sm text-muted-foreground truncate">
 													{tool.description || 'No description'}
 												</p>
-												<code class="text-xs bg-gray-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-gray-700 dark:text-gray-300">
+												<code class="text-xs bg-muted px-1 py-0.5 rounded text-foreground">
 													{tool.command}
 												</code>
 											</div>
 
 											{#if selectedTools.has(tool.id)}
-												<svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<svg class="w-5 h-5 text-primary dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path
 														stroke-linecap="round"
 														stroke-linejoin="round"
@@ -577,31 +577,31 @@
 				{:else if currentStep === 'review'}
 					<div class="space-y-4">
 						<div>
-							<h4 class="font-medium text-gray-900 dark:text-gray-100 mb-2">Project Details</h4>
+							<h4 class="font-medium text-foreground mb-2">Project Details</h4>
 							<div class="space-y-1 text-sm">
-								<p class="text-gray-700 dark:text-gray-300">
-									<span class="text-gray-500 dark:text-gray-400">Name:</span>
+								<p class="text-foreground">
+									<span class="text-muted-foreground">Name:</span>
 									{projectData.name}
 								</p>
-								<p class="text-gray-700 dark:text-gray-300">
-									<span class="text-gray-500 dark:text-gray-400">Description:</span>
+								<p class="text-foreground">
+									<span class="text-muted-foreground">Description:</span>
 									{projectData.description}
 								</p>
 								{#if projectData.tags.length > 0}
-									<p class="text-gray-700 dark:text-gray-300">
-										<span class="text-gray-500 dark:text-gray-400">Tags:</span>
+									<p class="text-foreground">
+										<span class="text-muted-foreground">Tags:</span>
 										{projectData.tags.join(', ')}
 									</p>
 								{/if}
 								{#if projectData.imageUrl}
-									<p class="text-gray-700 dark:text-gray-300">
-										<span class="text-gray-500 dark:text-gray-400">Image:</span>
+									<p class="text-foreground">
+										<span class="text-muted-foreground">Image:</span>
 										{projectData.imageUrl}
 									</p>
 								{/if}
 								{#if projectData.repoUrl}
-									<p class="text-gray-700 dark:text-gray-300">
-										<span class="text-gray-500 dark:text-gray-400">Repository:</span>
+									<p class="text-foreground">
+										<span class="text-muted-foreground">Repository:</span>
 										{projectData.repoUrl}
 									</p>
 								{/if}
@@ -610,14 +610,14 @@
 
 						{#if selectedAgents.size > 0}
 							<div>
-								<h4 class="font-medium text-gray-900 dark:text-gray-100 mb-2">
+								<h4 class="font-medium text-foreground mb-2">
 									Selected Agents ({selectedAgents.size})
 								</h4>
 								<div class="flex flex-wrap gap-2">
 									{#each Array.from(selectedAgents) as agentId}
 										{@const agent = availableAgents.find((a) => a.id === agentId)}
 										{#if agent}
-											<span class="inline-block px-2 py-1 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded text-sm">
+											<span class="inline-block px-2 py-1 bg-muted text-foreground rounded text-sm">
 												{agent.name}
 											</span>
 										{/if}
@@ -628,14 +628,14 @@
 
 						{#if selectedTools.size > 0}
 							<div>
-								<h4 class="font-medium text-gray-900 dark:text-gray-100 mb-2">
+								<h4 class="font-medium text-foreground mb-2">
 									Selected Tools ({selectedTools.size})
 								</h4>
 								<div class="flex flex-wrap gap-2">
 									{#each Array.from(selectedTools) as toolId}
 										{@const tool = availableTools.find((t) => t.id === toolId)}
 										{#if tool}
-											<span class="inline-block px-2 py-1 border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-gray-300 rounded text-sm">
+											<span class="inline-block px-2 py-1 border border-border text-foreground rounded text-sm">
 												{tool.name}
 											</span>
 										{/if}
@@ -648,12 +648,12 @@
 			</div>
 
 			<!-- Footer -->
-			<div class="flex-shrink-0 flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-zinc-700">
+			<div class="flex-shrink-0 flex gap-3 px-6 py-4 border-t border-border">
 				{#if currentStepIndex > 0}
 					<button
 						onclick={handleBack}
 						disabled={creating}
-						class="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+						class="flex items-center gap-2 px-4 py-2 border border-border rounded-md hover:bg-muted dark:hover:bg-zinc-800 transition-colors text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
@@ -674,7 +674,7 @@
 						onclick={handleCreate}
 						disabled={creating}
 						class={cn(
-							'flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors',
+							'flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors',
 							creating && 'opacity-50 cursor-not-allowed'
 						)}
 					>
@@ -698,7 +698,7 @@
 						onclick={handleNext}
 						disabled={!canProceed()}
 						class={cn(
-							'flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors',
+							'flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors',
 							!canProceed() && 'opacity-50 cursor-not-allowed'
 						)}
 					>

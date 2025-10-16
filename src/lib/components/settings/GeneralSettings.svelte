@@ -72,7 +72,7 @@
 	<div class="space-y-4">
 		<!-- Project Title -->
 		<div>
-			<label for="project-title" class="block text-sm font-medium text-gray-700 mb-1">
+			<label for="project-title" class="block text-sm font-medium text-foreground mb-1">
 				Project Title
 			</label>
 			<input
@@ -80,14 +80,14 @@
 				type="text"
 				bind:value={title}
 				placeholder="My Awesome Project"
-				class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 			/>
-			<p class="text-xs text-gray-500 mt-1">The name of your project.</p>
+			<p class="text-xs text-muted-foreground mt-1">The name of your project.</p>
 		</div>
 
 		<!-- Project Description -->
 		<div>
-			<label for="project-description" class="block text-sm font-medium text-gray-700 mb-1">
+			<label for="project-description" class="block text-sm font-medium text-foreground mb-1">
 				Description
 			</label>
 			<textarea
@@ -95,35 +95,35 @@
 				bind:value={description}
 				placeholder="Describe your project..."
 				rows="4"
-				class="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="w-full px-3 py-2 border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
 			></textarea>
-			<p class="text-xs text-gray-500 mt-1">A brief description of what this project is about.</p>
+			<p class="text-xs text-muted-foreground mt-1">A brief description of what this project is about.</p>
 		</div>
 
 		<!-- Project ID (Read-only) -->
 		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-1"> Project ID (d-tag) </label>
+			<label class="block text-sm font-medium text-foreground mb-1"> Project ID (d-tag) </label>
 			<input
 				type="text"
 				value={project.dTag || 'Not set'}
 				readonly
-				class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+				class="w-full px-3 py-2 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
 			/>
-			<p class="text-xs text-gray-500 mt-1">
+			<p class="text-xs text-muted-foreground mt-1">
 				This is the unique identifier for your project. It cannot be changed.
 			</p>
 		</div>
 
 		<!-- Created Date (Read-only) -->
 		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-1"> Created </label>
+			<label class="block text-sm font-medium text-foreground mb-1"> Created </label>
 			<input
 				type="text"
 				value={project.created_at
 					? new Date(project.created_at * 1000).toLocaleString()
 					: 'Unknown'}
 				readonly
-				class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+				class="w-full px-3 py-2 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
 			/>
 		</div>
 
@@ -132,7 +132,7 @@
 			<button
 				onclick={handleSave}
 				disabled={!hasChanges || isSaving}
-				class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
+				class="px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-secondary disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
 			>
 				{#if isSaving}
 					<span class="flex items-center gap-2">
@@ -154,7 +154,7 @@
 			{#if hasChanges}
 				<button
 					onclick={handleReset}
-					class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-colors"
+					class="px-4 py-2 border border-border hover:bg-muted text-foreground rounded-lg transition-colors"
 				>
 					Reset
 				</button>

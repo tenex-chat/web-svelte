@@ -98,25 +98,25 @@
 		tabindex="-1"
 	>
 		<div
-			class="bg-white dark:bg-zinc-900 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
+			class="bg-card rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
 			onclick={(e) => e.stopPropagation()}
 			role="document"
 		>
 			<!-- Header -->
-			<div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-zinc-700">
+			<div class="flex items-center justify-between px-4 py-3 border-b border-border">
 				<div class="flex items-center gap-2">
-					<Info class="w-5 h-5 text-blue-600" />
-					<h3 id="llm-metadata-title" class="font-semibold text-gray-900 dark:text-gray-100">
+					<Info class="w-5 h-5 text-primary" />
+					<h3 id="llm-metadata-title" class="font-semibold text-foreground">
 						LLM Metadata
 					</h3>
 				</div>
 				<button
 					type="button"
 					onclick={onClose}
-					class="p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+					class="p-1 rounded hover:bg-muted transition-colors"
 					aria-label="Close"
 				>
-					<X class="w-5 h-5 text-gray-500" />
+					<X class="w-5 h-5 text-muted-foreground" />
 				</button>
 			</div>
 
@@ -124,11 +124,11 @@
 			<div class="flex-1 overflow-y-auto p-4">
 				{#if !hasMetadata}
 					<div class="flex flex-col items-center justify-center py-12 text-center">
-						<Info class="w-12 h-12 text-gray-400 mb-3" />
-						<p class="text-gray-600 dark:text-gray-400 text-sm">
+						<Info class="w-12 h-12 text-muted-foreground mb-3" />
+						<p class="text-muted-foreground text-sm">
 							No LLM metadata found for this message
 						</p>
-						<p class="text-gray-500 dark:text-gray-500 text-xs mt-1">
+						<p class="text-muted-foreground text-xs mt-1">
 							Metadata is typically attached by AI agents when generating responses
 						</p>
 					</div>
@@ -136,23 +136,23 @@
 					<div class="space-y-4">
 						{#each Object.entries(groupedMetadata) as [, category]}
 							{#if category.items.length > 0}
-								<div class="border border-gray-200 dark:border-zinc-700 rounded-lg p-4">
+								<div class="border border-border rounded-lg p-4">
 									<div class="flex items-center gap-2 mb-3">
 										<svelte:component
 											this={category.icon}
-											class="w-4 h-4 text-blue-600 dark:text-blue-400"
+											class="w-4 h-4 text-primary dark:text-blue-400"
 										/>
-										<h4 class="font-medium text-sm text-gray-900 dark:text-gray-100">
+										<h4 class="font-medium text-sm text-foreground">
 											{category.title}
 										</h4>
 									</div>
 									<dl class="space-y-2">
 										{#each category.items as item (item.key)}
 											<div class="flex items-start justify-between gap-4 text-sm">
-												<dt class="text-gray-600 dark:text-gray-400 font-medium min-w-[140px]">
+												<dt class="text-muted-foreground font-medium min-w-[140px]">
 													{item.label}:
 												</dt>
-												<dd class="text-gray-900 dark:text-gray-100 font-mono text-xs break-all">
+												<dd class="text-foreground font-mono text-xs break-all">
 													{item.value}
 												</dd>
 											</div>
@@ -167,11 +167,11 @@
 
 			<!-- Footer -->
 			{#if hasMetadata}
-				<div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-zinc-700">
+				<div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-border">
 					<button
 						type="button"
 						onclick={copyMetadata}
-						class="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+						class="px-3 py-2 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors"
 					>
 						Copy JSON
 					</button>

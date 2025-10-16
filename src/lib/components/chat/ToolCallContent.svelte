@@ -24,7 +24,7 @@
 		<div class="flex items-center gap-2 text-sm">
 			<!-- Tool Icon -->
 			<svg
-				class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0"
+				class="w-4 h-4 text-primary dark:text-blue-400 flex-shrink-0"
 				fill="none"
 				stroke="currentColor"
 				viewBox="0 0 24 24"
@@ -44,10 +44,10 @@
 			</svg>
 
 			<!-- Tool Content -->
-			<span class="text-blue-600 dark:text-blue-400">{toolData.name}</span>
+			<span class="text-primary dark:text-blue-400">{toolData.name}</span>
 		</div>
 	{:else}
-		<span class="text-xs text-gray-500 dark:text-gray-400">
+		<span class="text-xs text-muted-foreground">
 			{event.content}
 		</span>
 	{/if}

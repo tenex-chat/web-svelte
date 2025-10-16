@@ -52,7 +52,7 @@
 		disabled={isProcessing}
 		class="relative h-16 w-16 overflow-hidden rounded-full flex items-center justify-center active:scale-95 transition-all {isRecording
 			? 'bg-white text-black'
-			: 'bg-gray-700 text-white hover:bg-gray-600'} disabled:opacity-50 disabled:cursor-not-allowed"
+			: 'bg-muted text-foreground hover:bg-muted/80'} disabled:opacity-50 disabled:cursor-not-allowed"
 		aria-label={isRecording ? 'Stop recording' : 'Start recording'}
 	>
 		<!-- Recording indicator ring -->
@@ -84,7 +84,7 @@
 		class="h-16 w-16 rounded-full flex items-center justify-center active:scale-95 transition-all {hasTranscript &&
 		!isProcessing
 			? 'bg-green-500 hover:bg-green-600 text-white'
-			: 'bg-gray-700 text-gray-400 cursor-not-allowed'}"
+			: 'bg-muted text-muted-foreground cursor-not-allowed'}"
 		aria-label="Send message"
 	>
 		<Send class="h-7 w-7" />

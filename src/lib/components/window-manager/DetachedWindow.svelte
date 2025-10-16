@@ -100,7 +100,7 @@
 </script>
 
 <div
-	class="detached-window fixed bg-white dark:bg-zinc-900 rounded-lg shadow-2xl border border-gray-300 dark:border-zinc-700 flex flex-col overflow-hidden"
+	class="detached-window fixed bg-card rounded-lg shadow-2xl border border-border dark:border-zinc-700 flex flex-col overflow-hidden"
 	style="
 		left: {window.position?.x ?? 0}px;
 		top: {window.position?.y ?? 0}px;
@@ -116,16 +116,16 @@
 >
 	<!-- Window Header -->
 	<div
-		class="window-header flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800"
+		class="window-header flex items-center justify-between px-4 py-2 border-b border-border bg-muted dark:bg-zinc-800"
 		onmousedown={handleMouseDownDrag}
 		style="cursor: {isDragging ? 'grabbing' : 'grab'}"
 	>
 		<div class="flex items-center gap-3 flex-1 min-w-0 pointer-events-none">
 			<!-- Title -->
 			<div class="flex-1 min-w-0">
-				<h2 class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{window.title}</h2>
+				<h2 class="text-sm font-semibold text-foreground truncate">{window.title}</h2>
 				{#if window.project}
-					<p class="text-xs text-gray-500 dark:text-gray-400 truncate">{window.project.title}</p>
+					<p class="text-xs text-muted-foreground truncate">{window.project.title}</p>
 				{/if}
 			</div>
 		</div>
@@ -139,11 +139,11 @@
 				<!-- View Mode Toggle -->
 				<button
 					onclick={toggleViewMode}
-					class="p-2 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors"
+					class="p-2 hover:bg-secondary dark:hover:bg-zinc-700 rounded transition-colors"
 					title={viewMode === 'threaded' ? 'Switch to flat view' : 'Switch to threaded view'}
 				>
 					{#if viewMode === 'threaded'}
-						<svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
 								stroke-linecap="round"
 								stroke-linejoin="round"
@@ -152,7 +152,7 @@
 							/>
 						</svg>
 					{:else}
-						<svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
 								stroke-linecap="round"
 								stroke-linejoin="round"
@@ -167,7 +167,7 @@
 			<!-- Re-attach button -->
 			<button
 				onclick={handleAttach}
-				class="p-2 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors"
+				class="p-2 hover:bg-secondary dark:hover:bg-zinc-700 rounded transition-colors"
 				title="Dock to sidebar"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,7 +183,7 @@
 			<!-- Close button -->
 			<button
 				onclick={handleClose}
-				class="p-2 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors"
+				class="p-2 hover:bg-secondary dark:hover:bg-zinc-700 rounded transition-colors"
 				title="Close"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,12 +219,12 @@
 			/>
 		{:else if window.type === 'agent'}
 			<div class="p-4">
-				<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Agent: {window.data?.agentName}</h3>
-				<p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Agent details coming soon...</p>
+				<h3 class="text-lg font-semibold text-foreground">Agent: {window.data?.agentName}</h3>
+				<p class="text-sm text-muted-foreground mt-2">Agent details coming soon...</p>
 			</div>
 		{:else}
 			<div class="p-4">
-				<p class="text-sm text-gray-500 dark:text-gray-400">Unknown window type: {window.type}</p>
+				<p class="text-sm text-muted-foreground">Unknown window type: {window.type}</p>
 			</div>
 		{/if}
 	</div>
@@ -237,7 +237,7 @@
 		tabindex="-1"
 		aria-label="Resize window"
 	>
-		<svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
 		</svg>
 	</div>

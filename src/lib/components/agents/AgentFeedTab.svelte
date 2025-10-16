@@ -90,9 +90,9 @@
 <div class="space-y-3">
 	{#if sortedEvents.length === 0}
 		<div class="flex flex-col items-center justify-center h-64 text-center">
-			<Activity class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-2" />
-			<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">No events yet</h3>
-			<p class="text-sm text-gray-500 dark:text-gray-400">This agent hasn't published any events.</p>
+			<Activity class="w-12 h-12 text-muted-foreground mb-2" />
+			<h3 class="text-lg font-medium text-foreground">No events yet</h3>
+			<p class="text-sm text-muted-foreground">This agent hasn't published any events.</p>
 		</div>
 	{:else}
 		{#each sortedEvents as event (event.id)}
@@ -104,9 +104,9 @@
 			{:else}
 				<!-- Default card rendering for other events -->
 				<div
-					class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+					class="bg-card border border-border rounded-lg hover:bg-muted dark:hover:bg-zinc-800 transition-colors cursor-pointer"
 				>
-					<div class="px-4 py-3 border-b border-gray-200 dark:border-zinc-700">
+					<div class="px-4 py-3 border-b border-border">
 						<div class="flex items-start justify-between">
 							<div class="flex items-center gap-2">
 								<span
@@ -114,30 +114,30 @@
 								>
 									{getEventKindName(event.kind)}
 								</span>
-								<span class="text-xs text-gray-500 dark:text-gray-400">
+								<span class="text-xs text-muted-foreground">
 									{formatRelativeTime(event.created_at || 0)}
 								</span>
 							</div>
-							<span class="text-xs font-mono text-gray-500 dark:text-gray-400">
+							<span class="text-xs font-mono text-muted-foreground">
 								{event.id?.slice(0, 8)}...
 							</span>
 						</div>
 					</div>
 					<div class="px-4 py-3">
-						<p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
+						<p class="text-sm text-muted-foreground line-clamp-3">
 							{getEventPreview(event)}
 						</p>
 						{#if event.tags.length > 0}
 							<div class="mt-2 flex flex-wrap gap-1">
 								{#each event.tags.slice(0, 5) as tag, idx (idx)}
 									<span
-										class="text-xs bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded"
+										class="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded"
 									>
 										{tag[0]}{tag[1] ? `: ${tag[1].slice(0, 20)}${tag[1].length > 20 ? '...' : ''}` : ''}
 									</span>
 								{/each}
 								{#if event.tags.length > 5}
-									<span class="text-xs text-gray-500 dark:text-gray-400">
+									<span class="text-xs text-muted-foreground">
 										+{event.tags.length - 5} more
 									</span>
 								{/if}

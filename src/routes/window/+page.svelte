@@ -48,23 +48,23 @@
 	});
 </script>
 
-<div class="h-screen w-screen bg-white dark:bg-zinc-900">
+<div class="h-screen w-screen bg-card">
 	{#if windowType === 'chat'}
 		<ChatView {project} rootEvent={thread} {onlineAgents} />
 	{:else if windowType === 'settings' && project}
 		<SettingsTab {project} {onlineAgents} />
 	{:else if windowType === 'document'}
 		<div class="p-4">
-			<p class="text-sm text-gray-500 dark:text-gray-400">Document view</p>
+			<p class="text-sm text-muted-foreground">Document view</p>
 		</div>
 	{:else if windowType === 'agent'}
 		<div class="p-4">
-			<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Agent Details</h3>
-			<p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Agent details coming soon...</p>
+			<h3 class="text-lg font-semibold text-foreground">Agent Details</h3>
+			<p class="text-sm text-muted-foreground mt-2">Agent details coming soon...</p>
 		</div>
 	{:else}
 		<div class="p-4">
-			<p class="text-sm text-gray-500 dark:text-gray-400">Unknown window type: {windowType}</p>
+			<p class="text-sm text-muted-foreground">Unknown window type: {windowType}</p>
 		</div>
 	{/if}
 </div>

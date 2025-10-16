@@ -38,7 +38,7 @@
 
 <button
 	type="button"
-	class="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors border-b text-left"
+	class="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-muted dark:hover:bg-zinc-800 cursor-pointer transition-colors border-b text-left"
 	onclick={onclick}
 >
 	<!-- Author Avatar -->
@@ -53,7 +53,7 @@
 
 		<!-- Summary -->
 		{#if summary}
-			<div class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+			<div class="text-xs text-muted-foreground truncate mt-0.5">
 				{summary}
 			</div>
 		{/if}
@@ -63,7 +63,7 @@
 			<div class="flex items-center gap-1 mt-1 flex-wrap">
 				{#each hashtags as tag (tag)}
 					<div
-						class="inline-flex items-center gap-0.5 px-1.5 h-5 text-[10px] bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 rounded"
+						class="inline-flex items-center gap-0.5 px-1.5 h-5 text-[10px] bg-muted text-muted-foreground rounded"
 					>
 						<Hash class="h-2.5 w-2.5" />
 						<span>{tag}</span>
@@ -74,8 +74,8 @@
 
 		<!-- Metadata: Author, Time, Reading Time -->
 		<div class="flex items-center gap-2 mt-1">
-			<Clock class="h-3 w-3 text-gray-400" />
-			<span class="text-xs text-gray-500 dark:text-gray-400">
+			<Clock class="h-3 w-3 text-muted-foreground" />
+			<span class="text-xs text-muted-foreground">
 				{formatRelativeTime(document.created_at || 0)} · {readingTime}
 			</span>
 		</div>

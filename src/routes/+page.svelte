@@ -30,7 +30,7 @@
 </script>
 
 {#if ndk.$currentUser}
-	<div class="flex h-screen bg-gray-50 dark:bg-zinc-950">
+	<div class="flex h-screen bg-background">
 		<!-- Sidebar -->
 		<ProjectsSidebar {projects} />
 
@@ -42,7 +42,7 @@
 				<div class="flex-1 flex items-center justify-center">
 					<div class="text-center">
 						<svg
-							class="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4"
+							class="w-16 h-16 text-muted-foreground mx-auto mb-4"
 							fill="none"
 							stroke="currentColor"
 							viewBox="0 0 24 24"
@@ -54,8 +54,8 @@
 								d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
 							/>
 						</svg>
-						<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Select projects to view</h2>
-						<p class="text-gray-600 dark:text-gray-400">Click projects in the sidebar to open them in columns</p>
+						<h2 class="text-xl font-semibold text-foreground mb-2">Select projects to view</h2>
+						<p class="text-muted-foreground">Click projects in the sidebar to open them in columns</p>
 					</div>
 				</div>
 			{/if}
@@ -64,11 +64,11 @@
 {:else}
 	<div class="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-zinc-900 dark:to-zinc-950 p-4">
 		<div class="text-center max-w-md">
-			<h1 class="text-6xl font-bold text-gray-900 dark:text-white mb-4">TENEX</h1>
-			<p class="text-xl text-gray-600 dark:text-gray-300 mb-8">Orchestrate AI Agents on Nostr</p>
+			<h1 class="text-6xl font-bold text-foreground mb-4">TENEX</h1>
+			<p class="text-xl text-muted-foreground mb-8">Orchestrate AI Agents on Nostr</p>
 			<button
 				onclick={() => loginModal.open()}
-				class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+				class="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors"
 			>
 				Get Started
 			</button>

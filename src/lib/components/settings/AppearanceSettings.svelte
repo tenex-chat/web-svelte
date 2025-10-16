@@ -15,18 +15,18 @@
 
 <div class="space-y-6">
 	<!-- Theme Section -->
-	<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
-		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Theme</h3>
-		<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Choose your preferred color theme</p>
+	<div class="bg-card rounded-lg border border-border p-6">
+		<h3 class="text-lg font-semibold text-foreground mb-4">Theme</h3>
+		<p class="text-sm text-muted-foreground mb-4">Choose your preferred color theme</p>
 
 		<div class="grid grid-cols-3 gap-3">
 			<button
 				onclick={() => uiSettingsStore.setTheme('light')}
 				class={cn(
-					'p-4 border-2 rounded-lg transition-all text-gray-900 dark:text-gray-100',
+					'p-4 border-2 rounded-lg transition-all text-foreground',
 					settings.theme === 'light'
-						? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-						: 'border-gray-200 dark:border-zinc-600 hover:border-gray-300 dark:hover:border-gray-500'
+						? 'border-primary bg-primary/10'
+						: 'border-border hover:border-muted-foreground'
 				)}
 			>
 				<div class="flex flex-col items-center gap-2">
@@ -45,10 +45,10 @@
 			<button
 				onclick={() => uiSettingsStore.setTheme('dark')}
 				class={cn(
-					'p-4 border-2 rounded-lg transition-all text-gray-900 dark:text-gray-100',
+					'p-4 border-2 rounded-lg transition-all text-foreground',
 					settings.theme === 'dark'
-						? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-						: 'border-gray-200 dark:border-zinc-600 hover:border-gray-300 dark:hover:border-gray-500'
+						? 'border-primary bg-primary/10'
+						: 'border-border hover:border-muted-foreground'
 				)}
 			>
 				<div class="flex flex-col items-center gap-2">
@@ -67,10 +67,10 @@
 			<button
 				onclick={() => uiSettingsStore.setTheme('system')}
 				class={cn(
-					'p-4 border-2 rounded-lg transition-all text-gray-900 dark:text-gray-100',
+					'p-4 border-2 rounded-lg transition-all text-foreground',
 					settings.theme === 'system'
-						? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-						: 'border-gray-200 dark:border-zinc-600 hover:border-gray-300 dark:hover:border-gray-500'
+						? 'border-primary bg-primary/10'
+						: 'border-border hover:border-muted-foreground'
 				)}
 			>
 				<div class="flex flex-col items-center gap-2">
@@ -89,18 +89,18 @@
 	</div>
 
 	<!-- Font Size Section -->
-	<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
-		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Font Size</h3>
-		<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Adjust the base font size for better readability</p>
+	<div class="bg-card rounded-lg border border-border p-6">
+		<h3 class="text-lg font-semibold text-foreground mb-4">Font Size</h3>
+		<p class="text-sm text-muted-foreground mb-4">Adjust the base font size for better readability</p>
 
 		<div class="grid grid-cols-3 gap-3">
 			<button
 				onclick={() => uiSettingsStore.setFontSize('small')}
 				class={cn(
-					'p-4 border-2 rounded-lg transition-all text-gray-900 dark:text-gray-100',
+					'p-4 border-2 rounded-lg transition-all text-foreground',
 					settings.fontSize === 'small'
-						? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-						: 'border-gray-200 dark:border-zinc-600 hover:border-gray-300 dark:hover:border-gray-500'
+						? 'border-primary bg-primary/10'
+						: 'border-border hover:border-muted-foreground'
 				)}
 			>
 				<div class="flex flex-col items-center gap-2">
@@ -112,10 +112,10 @@
 			<button
 				onclick={() => uiSettingsStore.setFontSize('medium')}
 				class={cn(
-					'p-4 border-2 rounded-lg transition-all text-gray-900 dark:text-gray-100',
+					'p-4 border-2 rounded-lg transition-all text-foreground',
 					settings.fontSize === 'medium'
-						? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-						: 'border-gray-200 dark:border-zinc-600 hover:border-gray-300 dark:hover:border-gray-500'
+						? 'border-primary bg-primary/10'
+						: 'border-border hover:border-muted-foreground'
 				)}
 			>
 				<div class="flex flex-col items-center gap-2">
@@ -127,10 +127,10 @@
 			<button
 				onclick={() => uiSettingsStore.setFontSize('large')}
 				class={cn(
-					'p-4 border-2 rounded-lg transition-all text-gray-900 dark:text-gray-100',
+					'p-4 border-2 rounded-lg transition-all text-foreground',
 					settings.fontSize === 'large'
-						? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-						: 'border-gray-200 dark:border-zinc-600 hover:border-gray-300 dark:hover:border-gray-500'
+						? 'border-primary bg-primary/10'
+						: 'border-border hover:border-muted-foreground'
 				)}
 			>
 				<div class="flex flex-col items-center gap-2">
@@ -142,23 +142,23 @@
 	</div>
 
 	<!-- Display Options Section -->
-	<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
-		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Display Options</h3>
+	<div class="bg-card rounded-lg border border-border p-6">
+		<h3 class="text-lg font-semibold text-foreground mb-4">Display Options</h3>
 		<div class="space-y-4">
 			<!-- Compact Mode -->
 			<div class="flex items-center justify-between">
 				<div>
-					<label for="compact-mode" class="text-sm font-medium text-gray-900 dark:text-gray-100">
+					<label for="compact-mode" class="text-sm font-medium text-foreground">
 						Compact Mode
 					</label>
-					<p class="text-xs text-gray-500 dark:text-gray-400">Reduce spacing for a denser layout</p>
+					<p class="text-xs text-muted-foreground">Reduce spacing for a denser layout</p>
 				</div>
 				<button
 					id="compact-mode"
 					onclick={() => uiSettingsStore.setCompactMode(!settings.compactMode)}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						settings.compactMode ? 'bg-blue-600' : 'bg-gray-200 dark:bg-zinc-800'
+						settings.compactMode ? 'bg-primary' : 'bg-secondary'
 					)}
 					role="switch"
 					aria-checked={settings.compactMode}
@@ -175,17 +175,17 @@
 			<!-- Animations -->
 			<div class="flex items-center justify-between">
 				<div>
-					<label for="animations" class="text-sm font-medium text-gray-900 dark:text-gray-100">
+					<label for="animations" class="text-sm font-medium text-foreground">
 						Enable Animations
 					</label>
-					<p class="text-xs text-gray-500 dark:text-gray-400">Show smooth transitions and effects</p>
+					<p class="text-xs text-muted-foreground">Show smooth transitions and effects</p>
 				</div>
 				<button
 					id="animations"
 					onclick={() => uiSettingsStore.setAnimationsEnabled(!settings.animationsEnabled)}
 					class={cn(
 						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-						settings.animationsEnabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-zinc-800'
+						settings.animationsEnabled ? 'bg-primary' : 'bg-secondary'
 					)}
 					role="switch"
 					aria-checked={settings.animationsEnabled}
@@ -202,19 +202,19 @@
 	</div>
 
 	<!-- Color Scheme Section -->
-	<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
-		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Color Scheme</h3>
-		<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Choose an accent color for the interface</p>
+	<div class="bg-card rounded-lg border border-border p-6">
+		<h3 class="text-lg font-semibold text-foreground mb-4">Color Scheme</h3>
+		<p class="text-sm text-muted-foreground mb-4">Choose an accent color for the interface</p>
 
 		<div class="grid grid-cols-5 gap-3">
 			{#each colorSchemes as scheme (scheme.value)}
 				<button
 					onclick={() => uiSettingsStore.setColorScheme(scheme.value)}
 					class={cn(
-						'p-4 border-2 rounded-lg transition-all text-gray-900 dark:text-gray-100',
+						'p-4 border-2 rounded-lg transition-all text-foreground',
 						settings.colorScheme === scheme.value
-							? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-							: 'border-gray-200 dark:border-zinc-600 hover:border-gray-300 dark:hover:border-gray-500'
+							? 'border-primary bg-primary/10'
+							: 'border-border hover:border-muted-foreground'
 					)}
 				>
 					<div class="flex flex-col items-center gap-2">

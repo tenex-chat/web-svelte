@@ -91,7 +91,7 @@
 		<h2 class="text-lg font-semibold">MCP Tools</h2>
 		<button
 			onclick={() => (showAddTool = !showAddTool)}
-			class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors"
+			class="px-3 py-1.5 bg-primary hover:bg-primary/90 text-white rounded text-sm font-medium transition-colors"
 		>
 			{showAddTool ? 'Cancel' : 'Add Tool'}
 		</button>
@@ -99,11 +99,11 @@
 
 	<!-- Add Tool Form -->
 	{#if showAddTool}
-		<div class="mb-4 p-4 border border-gray-200 rounded-lg bg-white">
+		<div class="mb-4 p-4 border border-border rounded-lg bg-white">
 			<h3 class="text-sm font-medium mb-3">Add MCP Tool</h3>
 			<div class="space-y-3">
 				<div>
-					<label for="tool-name" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="tool-name" class="block text-sm font-medium text-foreground mb-1">
 						Tool Name
 					</label>
 					<input
@@ -111,12 +111,12 @@
 						type="text"
 						bind:value={newToolName}
 						placeholder="e.g., file_read"
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 					/>
 				</div>
 
 				<div>
-					<label for="tool-description" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="tool-description" class="block text-sm font-medium text-foreground mb-1">
 						Description
 					</label>
 					<textarea
@@ -124,12 +124,12 @@
 						bind:value={newToolDescription}
 						placeholder="What does this tool do?"
 						rows="2"
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
 					></textarea>
 				</div>
 
 				<div>
-					<label for="tool-schema" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="tool-schema" class="block text-sm font-medium text-foreground mb-1">
 						JSON Schema
 					</label>
 					<textarea
@@ -137,14 +137,14 @@
 						bind:value={newToolSchema}
 						placeholder="{JSON.stringify({ type: 'object', properties: {} }, null, 2)}"
 						rows="4"
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+						class="w-full px-3 py-2 border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
 					></textarea>
 				</div>
 
 				<button
 					onclick={handleAddTool}
 					disabled={!newToolName.trim() || isAddingTool}
-					class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
+					class="w-full px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-secondary disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
 				>
 					{isAddingTool ? 'Adding...' : 'Add Tool'}
 				</button>
@@ -156,22 +156,22 @@
 	<div class="space-y-4">
 		<!-- Project Tools (from tags) -->
 		<div>
-			<h3 class="text-sm font-medium text-gray-700 mb-2">Project Tools</h3>
+			<h3 class="text-sm font-medium text-foreground mb-2">Project Tools</h3>
 			{#if projectTools.length === 0}
-				<div class="text-sm text-gray-500 p-4 border border-gray-200 rounded-lg bg-white text-center">
+				<div class="text-sm text-muted-foreground p-4 border border-border rounded-lg bg-white text-center">
 					No MCP tools configured for this project yet.
 				</div>
 			{:else}
 				<div class="space-y-2">
 					{#each projectTools as toolName (toolName)}
-						<div class="p-3 border border-gray-200 rounded-lg bg-white">
+						<div class="p-3 border border-border rounded-lg bg-white">
 							<div class="flex items-center justify-between">
 								<div class="flex-1">
 									<div class="font-medium text-sm font-mono">{toolName}</div>
 								</div>
 								<button
 									onclick={() => handleRemoveTool(toolName)}
-									class="ml-2 p-1 text-gray-400 hover:text-red-600 rounded transition-colors"
+									class="ml-2 p-1 text-muted-foreground hover:text-red-600 rounded transition-colors"
 									title="Remove tool"
 									aria-label="Remove tool"
 								>
@@ -194,23 +194,23 @@
 		<!-- Tool Definitions (kind:4200) -->
 		{#if mcpTools.length > 0}
 			<div>
-				<h3 class="text-sm font-medium text-gray-700 mb-2">Tool Definitions (kind:4200)</h3>
+				<h3 class="text-sm font-medium text-foreground mb-2">Tool Definitions (kind:4200)</h3>
 				<div class="space-y-2">
 					{#each mcpTools as tool (tool.id)}
 						{@const name = tool.tagValue('name')}
 						{@const description = tool.tagValue('description')}
-						<div class="p-3 border border-gray-200 rounded-lg bg-white">
+						<div class="p-3 border border-border rounded-lg bg-white">
 							<div class="font-medium text-sm font-mono">{name || 'Unnamed'}</div>
 							{#if description}
-								<div class="text-xs text-gray-600 mt-1">{description}</div>
+								<div class="text-xs text-muted-foreground mt-1">{description}</div>
 							{/if}
 							{#if tool.content}
 								<details class="mt-2">
-									<summary class="text-xs text-blue-600 cursor-pointer hover:text-blue-700">
+									<summary class="text-xs text-primary cursor-pointer hover:text-blue-700">
 										View Schema
 									</summary>
 									<pre
-										class="mt-2 p-2 bg-gray-50 rounded text-xs overflow-x-auto">{tool.content}</pre>
+										class="mt-2 p-2 bg-muted rounded text-xs overflow-x-auto">{tool.content}</pre>
 								</details>
 							{/if}
 						</div>

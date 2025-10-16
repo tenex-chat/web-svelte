@@ -399,11 +399,11 @@
 	}
 </script>
 
-<div class="border-t border-gray-200/50 dark:border-white/5 p-4">
+<div class="border-t border-border/50 dark:border-white/5 p-4">
 	<!-- Reply Context -->
 	{#if replyToEvent}
 		<div class="mb-3 px-3 py-2 bg-blue-50/50 dark:bg-blue-500/10 backdrop-blur-sm border-l-4 border-blue-500 dark:border-blue-400 rounded-lg flex items-center gap-2">
-			<svg class="w-4 h-4 text-blue-600 dark:text-blue-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<svg class="w-4 h-4 text-primary dark:text-blue-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path
 					stroke-linecap="round"
 					stroke-linejoin="round"
@@ -412,7 +412,7 @@
 				/>
 			</svg>
 			<div class="flex-1 min-w-0">
-				<div class="text-xs text-blue-600 dark:text-blue-300 font-medium">Replying to {replyToAuthorName}</div>
+				<div class="text-xs text-primary dark:text-blue-300 font-medium">Replying to {replyToAuthorName}</div>
 				<div class="text-xs text-blue-800 dark:text-blue-200 truncate">
 					{replyToEvent.content.slice(0, 100)}{replyToEvent.content.length > 100 ? '...' : ''}
 				</div>
@@ -420,7 +420,7 @@
 			<button
 				type="button"
 				onclick={onCancelReply}
-				class="p-1 rounded hover:bg-blue-100/50 dark:hover:bg-blue-500/20 transition-colors text-blue-600 dark:text-blue-300"
+				class="p-1 rounded hover:bg-blue-100/50 dark:hover:bg-blue-500/20 transition-colors text-primary dark:text-blue-300"
 				aria-label="Cancel reply"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -436,7 +436,7 @@
 	{/if}
 
 	<!-- Glassy Input Container -->
-	<div class="relative rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-gray-200/50 dark:border-white/10 shadow-sm hover:shadow-md transition-all duration-200">
+	<div class="relative rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-border/50 dark:border-white/10 shadow-sm hover:shadow-md transition-all duration-200">
 		<div class="flex flex-col p-3 gap-3">
 			<!-- Textarea -->
 			<div class="flex-1 relative">
@@ -449,15 +449,15 @@
 						? (rootEvent ? 'Type a message... (Cmd+Enter to send)' : 'Start a new conversation... (Cmd+Enter to send)')
 						: (rootEvent ? 'Type a message...' : 'Start a new conversation...')}
 					disabled={isSubmitting || !currentUser}
-					class="w-full px-1 py-1 bg-transparent text-gray-900 dark:text-gray-100 rounded-lg resize-none focus:outline-none disabled:cursor-not-allowed placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-200"
+					class="w-full px-1 py-1 bg-transparent text-foreground rounded-lg resize-none focus:outline-none disabled:cursor-not-allowed placeholder:text-muted-foreground dark:placeholder:text-muted-foreground transition-all duration-200"
 					rows={isExpanded ? 30 : 2}
-					style={isExpanded ? 'font-family: monospace; font-size: 1.1em; line-height: 1.5; max-height: 80vh;' : ''}
+					style={isExpanded ? 'font-family: monospace; max-height: 60vh;' : ''}
 				></textarea>
 
 				<!-- @mention Autocomplete Dropdown -->
 				{#if showMentionAutocomplete && filteredAgents.length > 0}
 					<div
-						class="absolute bottom-full left-0 mb-2 w-full max-w-xs bg-white/90 dark:bg-zinc-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-white/10 rounded-xl shadow-lg overflow-hidden z-50"
+						class="absolute bottom-full left-0 mb-2 w-full max-w-xs bg-white/90 dark:bg-zinc-800/90 backdrop-blur-xl border border-border/50 dark:border-white/10 rounded-xl shadow-lg overflow-hidden z-50"
 					>
 						<div class="max-h-48 overflow-y-auto">
 							{#each filteredAgents as agent, index (agent.pubkey)}
@@ -470,14 +470,14 @@
 										? 'bg-blue-100/50 dark:bg-blue-500/30'
 										: ''}"
 								>
-									<div class="font-medium text-sm text-gray-900 dark:text-gray-100">{agent.name}</div>
+									<div class="font-medium text-sm text-foreground">{agent.name}</div>
 									{#if agent.model}
-										<div class="text-xs text-gray-500 dark:text-gray-400">{agent.model}</div>
+										<div class="text-xs text-muted-foreground">{agent.model}</div>
 									{/if}
 								</button>
 							{/each}
 						</div>
-						<div class="px-3 py-1 bg-gray-50/50 dark:bg-zinc-900/50 backdrop-blur-sm border-t border-gray-200/50 dark:border-white/10 text-xs text-gray-500 dark:text-gray-400">
+						<div class="px-3 py-1 bg-muted/50 dark:bg-zinc-900/50 backdrop-blur-sm border-t border-border/50 dark:border-white/10 text-xs text-muted-foreground">
 							↑↓ navigate • ↵ select • esc dismiss
 						</div>
 					</div>
@@ -485,7 +485,7 @@
 			</div>
 
 			<!-- Controls Row: Agent Selector, Attachment -->
-			<div class="flex items-center gap-2 border-t border-gray-200/30 dark:border-white/5 pt-2">
+			<div class="flex items-center gap-2 border-t border-border/30 dark:border-white/5 pt-2">
 				<!-- Agent Selector -->
 				{#if onlineAgents.length > 0}
 					<AgentSelector
@@ -500,7 +500,7 @@
 
 				<!-- Attachment Button -->
 				<button
-					class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-gray-600 dark:text-gray-400"
+					class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-muted-foreground"
 					type="button"
 					title="Attach file"
 					aria-label="Attach file"
@@ -518,7 +518,7 @@
 				<!-- Expand/Collapse Toggle Button -->
 				<button
 					onclick={handleToggleExpand}
-					class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-gray-600 dark:text-gray-400"
+					class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-muted-foreground"
 					type="button"
 					title={isExpanded ? 'Shrink input (Cmd+Enter to send)' : 'Expand input (Enter for new lines)'}
 					aria-label={isExpanded ? 'Shrink input' : 'Expand input'}
@@ -537,7 +537,7 @@
 	<!-- Mentioned Agents Indicator (only show when multiple agents mentioned) -->
 	{#if mentionedAgents.length > 1}
 		<div class="mt-3 flex items-center gap-2 flex-wrap">
-			<span class="text-xs text-gray-500 dark:text-gray-400">Mentioning:</span>
+			<span class="text-xs text-muted-foreground">Mentioning:</span>
 			{#each mentionedAgents as pubkey (pubkey)}
 				{@const agent = onlineAgents.find((a) => a.pubkey === pubkey)}
 				{#if agent}

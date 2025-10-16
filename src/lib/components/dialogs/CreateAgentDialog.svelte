@@ -297,7 +297,7 @@
 			<!-- Close Button -->
 			<button
 				onclick={handleClose}
-				class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
+				class="absolute top-4 right-4 text-muted-foreground hover:text-muted-foreground z-10"
 				aria-label="Close dialog"
 			>
 				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -312,10 +312,10 @@
 
 			<!-- Header -->
 			<div class="px-6 pt-6 pb-4">
-				<h2 class="text-xl font-semibold text-gray-900">
+				<h2 class="text-xl font-semibold text-foreground">
 					{forkAgent ? (cloneMode ? 'Clone Agent Definition' : 'Fork Agent Definition') : 'Create Agent Definition'}
 				</h2>
-				<p class="text-sm text-gray-500 mt-1">
+				<p class="text-sm text-muted-foreground mt-1">
 					{getStepTitle()} - {getStepDescription()}
 				</p>
 			</div>
@@ -325,18 +325,18 @@
 				{#if currentStep === 'basics'}
 					<div class="space-y-4">
 						<div>
-							<label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+							<label for="name" class="block text-sm font-medium text-foreground mb-1">Name *</label>
 							<input
 								id="name"
 								type="text"
 								bind:value={name}
 								placeholder="My AI Assistant"
-								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							/>
 						</div>
 
 						<div>
-							<label for="description" class="block text-sm font-medium text-gray-700 mb-1"
+							<label for="description" class="block text-sm font-medium text-foreground mb-1"
 								>Description *</label
 							>
 							<textarea
@@ -344,12 +344,12 @@
 								bind:value={description}
 								placeholder="Describe what this agent does..."
 								rows="3"
-								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							></textarea>
 						</div>
 
 						<div>
-							<label for="role" class="block text-sm font-medium text-gray-700 mb-1"
+							<label for="role" class="block text-sm font-medium text-foreground mb-1"
 								>Role (optional)</label
 							>
 							<input
@@ -357,15 +357,15 @@
 								type="text"
 								bind:value={role}
 								placeholder="e.g., assistant, developer, researcher"
-								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							/>
 						</div>
 
 						<div>
-							<label for="slug" class="block text-sm font-medium text-gray-700 mb-1"
+							<label for="slug" class="block text-sm font-medium text-foreground mb-1"
 								>Slug (optional)</label
 							>
-							<p class="text-sm text-gray-500 mb-2">
+							<p class="text-sm text-muted-foreground mb-2">
 								A unique identifier for this agent definition (e.g., "code-assistant", "research-helper")
 							</p>
 							<input
@@ -374,7 +374,7 @@
 								bind:value={slug}
 								placeholder="e.g., my-assistant"
 								pattern="^[a-z0-9-]+$"
-								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							/>
 						</div>
 					</div>
@@ -382,13 +382,13 @@
 					<div class="space-y-4">
 						<div>
 							<div class="flex items-center justify-between mb-1">
-								<label for="instructions" class="block text-sm font-medium text-gray-700"
+								<label for="instructions" class="block text-sm font-medium text-foreground"
 									>System Prompt *</label
 								>
 								<button
 									type="button"
 									onclick={() => (showAIEditor = true)}
-									class="inline-flex items-center gap-1 px-3 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+									class="inline-flex items-center gap-1 px-3 py-1 text-xs border border-border rounded-md hover:bg-muted transition-colors"
 								>
 									<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path
@@ -401,14 +401,14 @@
 									AI Edit
 								</button>
 							</div>
-							<p class="text-sm text-gray-500 mb-2">
+							<p class="text-sm text-muted-foreground mb-2">
 								Define the agent's behavior, capabilities, and constraints. Use Markdown for formatting.
 							</p>
 							<textarea
 								id="instructions"
 								bind:value={instructions}
 								rows="20"
-								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+								class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
 								placeholder="You are a helpful AI assistant specialized in...
 
 ## Core Responsibilities
@@ -427,19 +427,19 @@
 					</div>
 				{:else if currentStep === 'preview'}
 					<div class="space-y-4">
-						<div class="border border-gray-200 rounded-lg p-6 bg-gray-50">
+						<div class="border border-border rounded-lg p-6 bg-muted">
 							<div class="prose prose-sm max-w-none">
 								{#if instructions}
 									{@html renderMarkdown(instructions)}
 								{:else}
-									<p class="text-gray-500 italic">No system prompt provided</p>
+									<p class="text-muted-foreground italic">No system prompt provided</p>
 								{/if}
 							</div>
 						</div>
 						<div class="flex justify-center">
 							<button
 								onclick={() => (currentStep = 'prompt')}
-								class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+								class="px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors"
 							>
 								Edit System Prompt
 							</button>
@@ -448,8 +448,8 @@
 				{:else if currentStep === 'tools'}
 					<div class="space-y-6">
 						<div>
-							<label class="block text-sm font-medium text-gray-700 mb-1">Required Tools</label>
-							<p class="text-sm text-gray-500 mb-2">
+							<label class="block text-sm font-medium text-foreground mb-1">Required Tools</label>
+							<p class="text-sm text-muted-foreground mb-2">
 								Specify which tools this agent needs access to. Users will be notified when adding this
 								agent.
 							</p>
@@ -459,11 +459,11 @@
 									bind:value={newTool}
 									onkeydown={(e) => e.key === 'Enter' && addTool()}
 									placeholder="Add a tool name..."
-									class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+									class="flex-1 px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 								/>
 								<button
 									onclick={addTool}
-									class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+									class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
 								>
 									Add
 								</button>
@@ -492,32 +492,32 @@
 				{:else if currentStep === 'phases'}
 					<div class="space-y-4">
 						<div>
-							<label class="block text-sm font-medium text-gray-700 mb-1">Phase Definitions</label>
-							<p class="text-sm text-gray-500 mb-2">
+							<label class="block text-sm font-medium text-foreground mb-1">Phase Definitions</label>
+							<p class="text-sm text-muted-foreground mb-2">
 								Define project phases for PM agents. Each phase has a name and instructions.
 							</p>
 
 							<div class="space-y-3">
 								{#each phases as phase, index}
-									<div class="border border-gray-200 rounded-lg p-4 space-y-3">
+									<div class="border border-border rounded-lg p-4 space-y-3">
 										<div class="flex items-start gap-2">
 											<div class="flex-1 space-y-3">
 												<input
 													type="text"
 													bind:value={phase.name}
 													placeholder="Phase name (e.g., Discovery, Development, Testing)"
-													class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+													class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
 												/>
 												<textarea
 													bind:value={phase.instructions}
 													placeholder="Instructions for this phase..."
 													rows="3"
-													class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+													class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 												></textarea>
 											</div>
 											<button
 												onclick={() => removePhase(index)}
-												class="p-2 hover:bg-gray-100 rounded-md transition-colors"
+												class="p-2 hover:bg-muted rounded-md transition-colors"
 											>
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path
@@ -534,7 +534,7 @@
 
 								<button
 									onclick={addPhase}
-									class="w-full px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+									class="w-full px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors flex items-center justify-center gap-2"
 								>
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path
@@ -548,9 +548,9 @@
 								</button>
 
 								{#if phases.length === 0}
-									<div class="text-center py-6 border border-dashed border-gray-300 rounded-lg">
+									<div class="text-center py-6 border border-dashed border-border rounded-lg">
 										<svg
-											class="w-8 h-8 mx-auto text-gray-400 mb-2"
+											class="w-8 h-8 mx-auto text-muted-foreground mb-2"
 											fill="none"
 											stroke="currentColor"
 											viewBox="0 0 24 24"
@@ -562,7 +562,7 @@
 												d="M4 6h16M4 12h16M4 18h16"
 											/>
 										</svg>
-										<p class="text-sm text-gray-500">
+										<p class="text-sm text-muted-foreground">
 											No phases defined. Phases are optional and typically used for PM agents.
 										</p>
 									</div>
@@ -573,17 +573,17 @@
 				{:else if currentStep === 'criteria'}
 					<div class="space-y-4">
 						<div>
-							<label for="use-criteria" class="block text-sm font-medium text-gray-700 mb-1"
+							<label for="use-criteria" class="block text-sm font-medium text-foreground mb-1"
 								>Use Criteria (optional)</label
 							>
-							<p class="text-sm text-gray-500 mb-2">
+							<p class="text-sm text-muted-foreground mb-2">
 								Define conditions when this agent should be used. Enter one criterion per line.
 							</p>
 							<textarea
 								id="use-criteria"
 								bind:value={useCriteria}
 								rows="6"
-								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 								placeholder="User asks for help with coding
 User needs research assistance
 Task requires creative writing
@@ -592,8 +592,8 @@ Complex problem solving is needed"
 						</div>
 
 						<div>
-							<label for="version" class="block text-sm font-medium text-gray-700 mb-1">Version</label>
-							<p class="text-sm text-gray-500 mb-2">
+							<label for="version" class="block text-sm font-medium text-foreground mb-1">Version</label>
+							<p class="text-sm text-muted-foreground mb-2">
 								Version number for this agent definition (use integers: 1, 2, 3, etc.)
 							</p>
 							<input
@@ -602,7 +602,7 @@ Complex problem solving is needed"
 								bind:value={version}
 								min="1"
 								placeholder="1"
-								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							/>
 						</div>
 					</div>
@@ -610,13 +610,13 @@ Complex problem solving is needed"
 			</div>
 
 			<!-- Footer -->
-			<div class="px-6 py-4 border-t border-gray-200 flex justify-between">
+			<div class="px-6 py-4 border-t border-border flex justify-between">
 				<div>
 					{#if currentStep !== 'basics'}
 						<button
 							onclick={goBack}
 							disabled={creating}
-							class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+							class="px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
 						>
 							<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -630,7 +630,7 @@ Complex problem solving is needed"
 					<button
 						onclick={handleClose}
 						disabled={creating}
-						class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+						class="px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
 					>
 						Cancel
 					</button>
@@ -639,7 +639,7 @@ Complex problem solving is needed"
 						onclick={goNext}
 						disabled={creating || !canGoNext()}
 						class={cn(
-							'px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors',
+							'px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors',
 							(creating || !canGoNext()) && 'opacity-50 cursor-not-allowed'
 						)}
 					>

@@ -95,7 +95,7 @@
 	{#if sortedDocuments.length > 0}
 		<div class="border-b bg-white/50">
 			<div class="relative">
-				<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+				<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 				<input
 					type="text"
 					placeholder="Search documents by title, summary, or content..."
@@ -106,7 +106,7 @@
 					<button
 						type="button"
 						onclick={() => (searchQuery = '')}
-						class="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 rounded transition-colors flex items-center justify-center"
+						class="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-muted rounded transition-colors flex items-center justify-center"
 					>
 						<X class="h-3.5 w-3.5" />
 					</button>
@@ -118,21 +118,21 @@
 	<!-- Document list or empty states -->
 	{#if sortedDocuments.length === 0}
 		<div class="flex flex-col items-center justify-center h-full p-6 text-center">
-			<FileText class="h-12 w-12 text-gray-300 mb-3" />
+			<FileText class="h-12 w-12 text-muted-foreground mb-3" />
 			<h3 class="font-semibold text-sm mb-1">No documents yet</h3>
-			<p class="text-xs text-gray-500 max-w-[200px]">
+			<p class="text-xs text-muted-foreground max-w-[200px]">
 				Documentation for this project will appear here
 			</p>
 		</div>
 	{:else if showNoResults}
 		<div class="flex flex-col items-center justify-center h-full p-6 text-center">
-			<Search class="h-12 w-12 text-gray-300 mb-3" />
+			<Search class="h-12 w-12 text-muted-foreground mb-3" />
 			<h3 class="font-semibold text-sm mb-1">No results found</h3>
-			<p class="text-xs text-gray-500 max-w-[200px]">Try adjusting your search terms</p>
+			<p class="text-xs text-muted-foreground max-w-[200px]">Try adjusting your search terms</p>
 			<button
 				type="button"
 				onclick={() => (searchQuery = '')}
-				class="mt-3 px-3 py-1.5 text-sm hover:bg-gray-100 rounded transition-colors"
+				class="mt-3 px-3 py-1.5 text-sm hover:bg-muted rounded transition-colors"
 			>
 				Clear search
 			</button>

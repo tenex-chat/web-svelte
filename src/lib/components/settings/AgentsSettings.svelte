@@ -88,7 +88,7 @@
 		<h2 class="text-lg font-semibold">Agents</h2>
 		<button
 			onclick={() => (showAddAgent = !showAddAgent)}
-			class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors"
+			class="px-3 py-1.5 bg-primary hover:bg-primary/90 text-white rounded text-sm font-medium transition-colors"
 		>
 			{showAddAgent ? 'Cancel' : 'Add Agent'}
 		</button>
@@ -96,11 +96,11 @@
 
 	<!-- Add Agent Form -->
 	{#if showAddAgent}
-		<div class="mb-4 p-4 border border-gray-200 rounded-lg bg-white">
+		<div class="mb-4 p-4 border border-border rounded-lg bg-white">
 			<h3 class="text-sm font-medium mb-3">Add New Agent</h3>
 			<div class="space-y-3">
 				<div>
-					<label for="agent-name" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="agent-name" class="block text-sm font-medium text-foreground mb-1">
 						Agent Name
 					</label>
 					<input
@@ -108,12 +108,12 @@
 						type="text"
 						bind:value={newAgentName}
 						placeholder="e.g., Project Manager"
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 					/>
 				</div>
 
 				<div>
-					<label for="agent-pubkey" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="agent-pubkey" class="block text-sm font-medium text-foreground mb-1">
 						Agent Public Key (npub or hex)
 					</label>
 					<input
@@ -121,14 +121,14 @@
 						type="text"
 						bind:value={newAgentPubkey}
 						placeholder="npub1... or hex pubkey"
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 					/>
 				</div>
 
 				<button
 					onclick={handleAddAgent}
 					disabled={!newAgentName.trim() || !newAgentPubkey.trim() || isAddingAgent}
-					class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
+					class="w-full px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-secondary disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
 				>
 					{isAddingAgent ? 'Adding...' : 'Add Agent'}
 				</button>
@@ -140,15 +140,15 @@
 	<div class="space-y-4">
 		<!-- Project Agents -->
 		<div>
-			<h3 class="text-sm font-medium text-gray-700 mb-2">Project Agents</h3>
+			<h3 class="text-sm font-medium text-foreground mb-2">Project Agents</h3>
 			{#if projectAgents.length === 0}
-				<div class="text-sm text-gray-500 p-4 border border-gray-200 rounded-lg bg-white text-center">
+				<div class="text-sm text-muted-foreground p-4 border border-border rounded-lg bg-white text-center">
 					No agents configured for this project yet.
 				</div>
 			{:else}
 				<div class="space-y-2">
 					{#each projectAgents as agent (agent.pubkey)}
-						<div class="p-3 border border-gray-200 rounded-lg bg-white">
+						<div class="p-3 border border-border rounded-lg bg-white">
 							<div class="flex items-start justify-between">
 								<div class="flex-1 min-w-0">
 									<div class="flex items-center gap-2">
@@ -161,13 +161,13 @@
 											</span>
 										{/if}
 									</div>
-									<div class="text-xs text-gray-500 font-mono truncate mt-1">
+									<div class="text-xs text-muted-foreground font-mono truncate mt-1">
 										{agent.pubkey}
 									</div>
 								</div>
 								<button
 									onclick={() => handleRemoveAgent(agent.pubkey)}
-									class="ml-2 p-1 text-gray-400 hover:text-red-600 rounded transition-colors"
+									class="ml-2 p-1 text-muted-foreground hover:text-red-600 rounded transition-colors"
 									title="Remove agent"
 									aria-label="Remove agent"
 								>
@@ -189,9 +189,9 @@
 
 		<!-- Online Agents (Status) -->
 		<div>
-			<h3 class="text-sm font-medium text-gray-700 mb-2">Currently Online</h3>
+			<h3 class="text-sm font-medium text-foreground mb-2">Currently Online</h3>
 			{#if onlineAgents.length === 0}
-				<div class="text-sm text-gray-500 p-4 border border-gray-200 rounded-lg bg-white text-center">
+				<div class="text-sm text-muted-foreground p-4 border border-border rounded-lg bg-white text-center">
 					No agents currently online.
 				</div>
 			{:else}
@@ -205,10 +205,10 @@
 								<div class="flex-1 min-w-0">
 									<div class="font-medium text-sm">{agent.name}</div>
 									{#if agent.model}
-										<div class="text-xs text-gray-600 mt-0.5">{agent.model}</div>
+										<div class="text-xs text-muted-foreground mt-0.5">{agent.model}</div>
 									{/if}
 									{#if agent.tools && agent.tools.length > 0}
-										<div class="text-xs text-gray-600 mt-1">
+										<div class="text-xs text-muted-foreground mt-1">
 											Tools: {agent.tools.join(', ')}
 										</div>
 									{/if}
@@ -223,12 +223,12 @@
 		<!-- Agent Definitions -->
 		{#if agentDefinitions.length > 0}
 			<div>
-				<h3 class="text-sm font-medium text-gray-700 mb-2">Agent Definitions (kind:4199)</h3>
+				<h3 class="text-sm font-medium text-foreground mb-2">Agent Definitions (kind:4199)</h3>
 				<div class="space-y-2">
 					{#each agentDefinitions as agentDef (agentDef.id)}
-						<div class="p-3 border border-gray-200 rounded-lg bg-white">
+						<div class="p-3 border border-border rounded-lg bg-white">
 							<div class="font-medium text-sm">{agentDef.tagValue('name') || 'Unnamed'}</div>
-							<div class="text-xs text-gray-500 mt-1">
+							<div class="text-xs text-muted-foreground mt-1">
 								{agentDef.content || 'No description'}
 							</div>
 						</div>

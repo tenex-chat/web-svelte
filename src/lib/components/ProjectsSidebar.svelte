@@ -126,7 +126,7 @@
 
 <div
 	class={cn(
-		'bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-700 flex flex-col transition-all duration-300 relative',
+		'bg-card border-r border-border flex flex-col transition-all duration-300 relative',
 		collapsed ? 'w-16' : 'w-64',
 		browser && window.electron ? 'pt-10' : ''
 	)}
@@ -138,10 +138,10 @@
 	{/if}
 
 	<!-- Header -->
-	<div class="border-b border-gray-200 dark:border-zinc-700 px-3 py-3">
+	<div class="border-b border-border px-3 py-3">
 		<div class="flex items-center justify-between">
 			{#if !collapsed}
-				<a href="/projects" class="flex items-center gap-2 flex-1 hover:opacity-80 transition-opacity text-gray-900 dark:text-gray-100">
+				<a href="/projects" class="flex items-center gap-2 flex-1 hover:opacity-80 transition-opacity text-foreground">
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"
@@ -153,7 +153,7 @@
 					<span class="font-bold">TENEX</span>
 				</a>
 			{:else}
-				<a href="/projects" class="flex items-center justify-center w-10 h-10 hover:opacity-80 transition-opacity text-gray-900 dark:text-gray-100" aria-label="TENEX home" title="TENEX">
+				<a href="/projects" class="flex items-center justify-center w-10 h-10 hover:opacity-80 transition-opacity text-foreground" aria-label="TENEX home" title="TENEX">
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"
@@ -167,7 +167,7 @@
 
 			<button
 				onclick={() => sidebarCollapsedStore.toggle()}
-				class="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-gray-900 dark:text-gray-100"
+				class="w-8 h-8 flex items-center justify-center rounded hover:bg-muted transition-colors text-foreground"
 				aria-label="Toggle sidebar"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,11 +188,11 @@
 		<div class="p-2">
 			{#if !collapsed}
 				<div class="flex items-center justify-between px-2 py-1 mb-1">
-					<span class="text-xs font-medium text-gray-500 dark:text-gray-400">Projects</span>
+					<span class="text-xs font-medium text-muted-foreground">Projects</span>
 					<div class="flex items-center gap-0.5">
 						<button
 							onclick={() => (searchDialogOpen = true)}
-							class="h-5 w-5 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 rounded text-gray-700 dark:text-gray-300"
+							class="h-5 w-5 flex items-center justify-center hover:bg-muted rounded text-foreground"
 							aria-label="Global Search (⌘K)"
 							title="Global Search (⌘K)"
 						>
@@ -207,7 +207,7 @@
 						</button>
 						<button
 							onclick={() => (createDialogOpen = true)}
-							class="h-5 w-5 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 rounded -mr-1 text-gray-700 dark:text-gray-300"
+							class="h-5 w-5 flex items-center justify-center hover:bg-muted rounded -mr-1 text-foreground"
 							aria-label="Create new project"
 							title="Create new project"
 						>
@@ -227,7 +227,7 @@
 			<div class="flex flex-col gap-1">
 				{#if projects.length === 0}
 					{#if !collapsed}
-						<div class="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">No projects yet</div>
+						<div class="text-center py-8 text-muted-foreground text-sm">No projects yet</div>
 					{/if}
 				{:else}
 					{#each projects as project (project.dTag || project.id)}
@@ -244,7 +244,7 @@
 								onmouseleave={handleProjectMouseLeave}
 								class={cn(
 									'w-full text-left px-3 py-2 rounded-lg transition-all flex items-center gap-2',
-									isOpen ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-blue-900 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300',
+									isOpen ? 'bg-primary/10 border border-primary/20 text-primary' : 'hover:bg-muted text-foreground',
 									!isOnline && 'opacity-75'
 								)}
 								aria-label={project.title || 'Untitled'}
@@ -263,7 +263,7 @@
 									</div>
 									{#if isOnline}
 										<div
-											class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-white dark:border-zinc-900"
+											class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-card"
 										></div>
 									{/if}
 								</div>
@@ -276,7 +276,7 @@
 								onmouseleave={handleProjectMouseLeave}
 								class={cn(
 									'w-full text-left px-3 py-2 rounded-lg transition-all flex items-center gap-2',
-									isOpen ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-blue-900 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300',
+									isOpen ? 'bg-primary/10 border border-primary/20 text-primary' : 'hover:bg-muted text-foreground',
 									!isOnline && 'opacity-75'
 								)}
 							>
@@ -293,20 +293,20 @@
 									</div>
 									{#if isOnline}
 										<div
-											class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-white dark:border-zinc-900"
+											class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-card"
 										></div>
 									{/if}
 								</div>
 
 								<div class="flex-1 min-w-0">
 									<div class="font-medium text-sm truncate">{project.title || 'Untitled'}</div>
-									<div class="text-xs text-gray-500 dark:text-gray-400">
+									<div class="text-xs text-muted-foreground">
 										{project.agents.length} agents
 									</div>
 								</div>
 
 								{#if isOpen}
-									<svg class="w-3.5 h-3.5 flex-shrink-0 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+									<svg class="w-3.5 h-3.5 flex-shrink-0 text-primary" fill="currentColor" viewBox="0 0 20 20">
 										<path
 											fill-rule="evenodd"
 											d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -323,11 +323,11 @@
 	</div>
 
 	<!-- Inbox Section -->
-	<div class="border-t border-gray-200 dark:border-zinc-700 px-3 py-2">
+	<div class="border-t border-border px-3 py-2">
 		<InboxPopover bind:open={inboxPopoverOpen}>
 			<button
 				class={cn(
-					'flex items-center rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-gray-900 dark:text-gray-100',
+					'flex items-center rounded hover:bg-muted transition-colors text-foreground',
 					collapsed ? 'w-10 h-10 justify-center' : 'w-full gap-2 px-3 py-2'
 				)}
 				aria-label="Inbox"
@@ -352,12 +352,12 @@
 				{#if !collapsed}
 					<span class="flex-1 text-left text-sm">Inbox</span>
 					{#if inboxStore.unreadCount > 0}
-						<span class="px-1.5 py-0.5 text-xs font-medium bg-gray-200 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded">
+						<span class="px-1.5 py-0.5 text-xs font-medium bg-muted text-foreground rounded">
 							{inboxStore.unreadCount}
 						</span>
 					{/if}
 					<kbd
-						class="px-1.5 py-0.5 text-[9px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded"
+						class="px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground bg-muted border border-border rounded"
 					>
 						⌘I
 					</kbd>
@@ -367,12 +367,12 @@
 	</div>
 
 	<!-- Footer - User Profile -->
-	<div class="border-t border-gray-200 dark:border-zinc-700 p-3">
+	<div class="border-t border-border p-3">
 		<DropdownMenu.Root bind:open={userMenuOpen}>
 			<DropdownMenu.Trigger asChild>
 				<button
 					class={cn(
-						'flex items-center rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors',
+						'flex items-center rounded hover:bg-muted transition-colors',
 						collapsed ? 'w-10 h-10 justify-center' : 'w-full gap-2 px-2 py-2'
 					)}
 				>
@@ -381,7 +381,7 @@
 					{/if}
 					{#if !collapsed}
 						<div class="flex-1 text-left min-w-0">
-							<div class="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
+							<div class="text-sm font-medium truncate text-foreground">
 								<Name {ndk} pubkey={ndk.$currentUser.pubkey} />
 							</div>
 						</div>

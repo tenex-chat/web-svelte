@@ -222,8 +222,8 @@
 	<div class="flex-1 overflow-y-auto">
 		{#if sortedThreads.length === 0}
 			<div class="flex flex-col items-center justify-center h-32 text-center px-4">
-				<MessageSquare class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-2" />
-				<p class="text-sm text-gray-600 dark:text-gray-300">
+				<MessageSquare class="w-12 h-12 text-muted-foreground mb-2" />
+				<p class="text-sm text-foreground">
 					{#if timeFilter}
 						{#if timeFilter.startsWith('needs-response-')}
 							No conversations need your response
@@ -234,7 +234,7 @@
 						No conversations yet
 					{/if}
 				</p>
-				<p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+				<p class="text-xs text-muted-foreground mt-1">
 					{#if !timeFilter}
 						Click "New" to start
 					{:else if timeFilter.startsWith('needs-response-')}
@@ -265,19 +265,19 @@
 
 				<button
 					onclick={() => onThreadSelect?.(thread)}
-					class="w-full text-left px-3 py-3 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors border-b border-gray-200 dark:border-zinc-700 {isSelected
-						? 'bg-blue-50 dark:bg-blue-900/20'
+					class="w-full text-left px-3 py-3 hover:bg-muted transition-colors border-b border-border {isSelected
+						? 'bg-primary/10'
 						: ''}"
 				>
-					<div class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate mb-1">
+					<div class="font-medium text-sm text-foreground truncate mb-1">
 						{title}
 					</div>
 					{#if latestReply}
-						<div class="text-xs text-gray-600 dark:text-gray-300 truncate mb-2">
+						<div class="text-xs text-muted-foreground truncate mb-2">
 							{latestReply.content.slice(0, 80)}{latestReply.content.length > 80 ? '...' : ''}
 						</div>
 					{/if}
-					<div class="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-300">
+					<div class="flex items-center gap-3 text-xs text-muted-foreground">
 						<div class="flex items-center gap-1">
 							<MessageSquare class="w-3 h-3" />
 							<span>{replyCount}</span>

@@ -68,26 +68,26 @@
 
 <div class="space-y-6">
 	<!-- Nostr Relays Section -->
-	<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
+	<div class="bg-card rounded-lg border border-border p-6">
 		<div class="flex items-center justify-between mb-4">
-			<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Nostr Relays</h3>
+			<h3 class="text-lg font-semibold text-foreground">Nostr Relays</h3>
 			<button
 				onclick={() => (showAddRelay = !showAddRelay)}
-				class="px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-md transition-colors"
+				class="px-3 py-1 text-sm bg-primary text-white hover:bg-primary/90 rounded-md transition-colors"
 			>
 				{showAddRelay ? 'Cancel' : 'Add Relay'}
 			</button>
 		</div>
 
-		<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+		<p class="text-sm text-muted-foreground mb-4">
 			Manage the Nostr relays your client connects to for publishing and fetching events
 		</p>
 
 		<!-- Add Relay Form -->
 		{#if showAddRelay}
-			<div class="mb-4 p-4 bg-gray-50 dark:bg-zinc-950 rounded-lg space-y-3">
+			<div class="mb-4 p-4 bg-background rounded-lg space-y-3">
 				<div>
-					<label for="relay-url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+					<label for="relay-url" class="block text-sm font-medium text-foreground mb-1">
 						Relay URL
 					</label>
 					<input
@@ -95,16 +95,16 @@
 						type="text"
 						bind:value={relayUrl}
 						placeholder="wss://relay.example.com"
-						class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
+						class="w-full px-3 py-2 border border-border dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
 						onkeydown={(e) => e.key === 'Enter' && addRelay()}
 					/>
-					<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Must start with wss:// or ws://</p>
+					<p class="text-xs text-muted-foreground mt-1">Must start with wss:// or ws://</p>
 				</div>
 				<button
 					onclick={addRelay}
 					disabled={!relayUrl.trim()}
 					class={cn(
-						'w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors',
+						'w-full px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors',
 						!relayUrl.trim() && 'opacity-50 cursor-not-allowed'
 					)}
 				>
@@ -115,19 +115,19 @@
 
 		<!-- Relay List -->
 		{#if relays.length === 0}
-			<div class="text-center py-8 text-gray-500 dark:text-gray-400">
+			<div class="text-center py-8 text-muted-foreground">
 				<p class="text-sm">No relays configured</p>
 				<p class="text-xs mt-1">Add a relay to start connecting to the Nostr network</p>
 			</div>
 		{:else}
 			<div class="space-y-2">
 				{#each relays as relay (relay)}
-					<div class="flex items-center justify-between p-3 border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800">
+					<div class="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted dark:hover:bg-zinc-800">
 						<div class="flex items-center gap-3 flex-1 min-w-0">
 							<div class={cn('w-3 h-3 rounded-full', getStatusColor(relayStatuses[relay]))}></div>
 							<div class="flex-1 min-w-0">
-								<p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{relay}</p>
-								<p class="text-xs text-gray-500 dark:text-gray-400">{getStatusText(relayStatuses[relay])}</p>
+								<p class="text-sm font-medium text-foreground truncate">{relay}</p>
+								<p class="text-xs text-muted-foreground">{getStatusText(relayStatuses[relay])}</p>
 							</div>
 						</div>
 						<button
@@ -152,9 +152,9 @@
 	</div>
 
 	<!-- Popular Relays Section -->
-	<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
-		<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Popular Relays</h3>
-		<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Quick add popular public relays</p>
+	<div class="bg-card rounded-lg border border-border p-6">
+		<h3 class="text-lg font-semibold text-foreground mb-4">Popular Relays</h3>
+		<p class="text-sm text-muted-foreground mb-4">Quick add popular public relays</p>
 
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
 			{#each ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.nostr.band', 'wss://relay.primal.net'] as popularRelay}
@@ -174,8 +174,8 @@
 					class={cn(
 						'px-3 py-2 text-sm border rounded-md transition-colors text-left',
 						relays.includes(popularRelay)
-							? 'bg-gray-100 dark:bg-zinc-800 text-gray-400 cursor-not-allowed border-gray-300 dark:border-zinc-700'
-							: 'bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800 border-gray-300 dark:border-zinc-700'
+							? 'bg-muted text-muted-foreground cursor-not-allowed border-border dark:border-zinc-700'
+							: 'bg-card hover:bg-muted dark:hover:bg-zinc-800 border-border dark:border-zinc-700'
 					)}
 				>
 					{popularRelay}

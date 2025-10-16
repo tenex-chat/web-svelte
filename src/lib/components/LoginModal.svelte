@@ -102,10 +102,10 @@
 			<!-- Header -->
 			<div class="px-6 pt-6 pb-4">
 				<div class="flex items-center justify-between mb-2">
-					<h2 class="text-2xl font-bold text-gray-900">Welcome to TENEX</h2>
+					<h2 class="text-2xl font-bold text-foreground">Welcome to TENEX</h2>
 					<button
 						onclick={() => loginModal.close()}
-						class="text-gray-400 hover:text-gray-600 transition-colors"
+						class="text-muted-foreground hover:text-muted-foreground transition-colors"
 						aria-label="Close login modal"
 					>
 						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -118,17 +118,17 @@
 						</svg>
 					</button>
 				</div>
-				<p class="text-gray-600">Login with your Nostr account to continue</p>
+				<p class="text-muted-foreground">Login with your Nostr account to continue</p>
 			</div>
 
 			<!-- Tabs -->
 			<div class="px-6">
-				<div class="flex gap-2 border-b border-gray-200">
+				<div class="flex gap-2 border-b border-border">
 					<button
 						onclick={() => (activeTab = 'extension')}
 						class="px-4 py-2 text-sm font-medium transition-colors {activeTab === 'extension'
-							? 'text-blue-600 border-b-2 border-blue-600'
-							: 'text-gray-600 hover:text-gray-900'}"
+							? 'text-primary border-b-2 border-blue-600'
+							: 'text-muted-foreground hover:text-foreground'}"
 						disabled={!hasNip07}
 					>
 						<div class="flex items-center gap-2">
@@ -146,8 +146,8 @@
 					<button
 						onclick={() => (activeTab = 'nsec')}
 						class="px-4 py-2 text-sm font-medium transition-colors {activeTab === 'nsec'
-							? 'text-blue-600 border-b-2 border-blue-600'
-							: 'text-gray-600 hover:text-gray-900'}"
+							? 'text-primary border-b-2 border-blue-600'
+							: 'text-muted-foreground hover:text-foreground'}"
 					>
 						<div class="flex items-center gap-2">
 							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,19 +183,19 @@
 				{#if activeTab === 'extension'}
 					<div class="space-y-4">
 						<div class="text-center space-y-2">
-							<p class="text-sm text-gray-600">
+							<p class="text-sm text-muted-foreground">
 								{hasNip07
 									? 'Login securely with your browser extension'
 									: 'No Nostr extension detected'}
 							</p>
 							{#if !hasNip07}
-								<p class="text-xs text-gray-500">
+								<p class="text-xs text-muted-foreground">
 									Install
 									<a
 										href="https://getalby.com"
 										target="_blank"
 										rel="noopener noreferrer"
-										class="text-blue-600 underline"
+										class="text-primary underline"
 									>
 										Alby
 									</a>
@@ -204,7 +204,7 @@
 										href="https://github.com/fiatjaf/nos2x"
 										target="_blank"
 										rel="noopener noreferrer"
-										class="text-blue-600 underline"
+										class="text-primary underline"
 									>
 										nos2x
 									</a>
@@ -216,7 +216,7 @@
 						<button
 							onclick={loginWithNip07}
 							disabled={isLoggingIn || !hasNip07}
-							class="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
+							class="w-full py-3 bg-primary hover:bg-primary/90 disabled:bg-secondary disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
 						>
 							{#if isLoggingIn}
 								<svg
@@ -246,19 +246,19 @@
 							{/if}
 						</button>
 
-						<p class="text-xs text-center text-gray-500">
+						<p class="text-xs text-center text-muted-foreground">
 							Your keys stay in your browser extension
 						</p>
 					</div>
 				{:else if activeTab === 'nsec'}
 					<div class="space-y-4">
 						<div>
-							<label for="nsec" class="block text-sm font-medium text-gray-700 mb-2">
+							<label for="nsec" class="block text-sm font-medium text-foreground mb-2">
 								Private Key (nsec)
 							</label>
 							<div class="relative">
 								<svg
-									class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+									class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
 									fill="none"
 									stroke="currentColor"
 									viewBox="0 0 24 24"
@@ -278,10 +278,10 @@
 									placeholder="nsec1..."
 									disabled={isLoggingIn}
 									autocomplete="off"
-									class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+									class="w-full pl-10 pr-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-muted disabled:cursor-not-allowed"
 								/>
 							</div>
-							<p class="mt-1 text-xs text-gray-500">
+							<p class="mt-1 text-xs text-muted-foreground">
 								Your private key is stored locally and never sent to any server
 							</p>
 						</div>
@@ -289,7 +289,7 @@
 						<button
 							onclick={loginWithNsec}
 							disabled={isLoggingIn || !nsecInput.trim()}
-							class="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
+							class="w-full py-3 bg-primary hover:bg-primary/90 disabled:bg-secondary disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
 						>
 							{#if isLoggingIn}
 								<svg
@@ -323,14 +323,14 @@
 			</div>
 
 			<!-- Footer -->
-			<div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
-				<p class="text-xs text-center text-gray-500">
+			<div class="px-6 py-4 bg-muted border-t border-border">
+				<p class="text-xs text-center text-muted-foreground">
 					Don't have a Nostr key?
 					<a
 						href="https://nostr.com"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="text-blue-600 hover:underline"
+						class="text-primary hover:underline"
 					>
 						Learn more about Nostr
 					</a>

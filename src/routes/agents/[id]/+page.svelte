@@ -83,10 +83,10 @@
 
 <div class="flex-1 flex flex-col">
 	{#if !agent}
-		<div class="flex-1 flex items-center justify-center bg-white dark:bg-zinc-950">
+		<div class="flex-1 flex items-center justify-center bg-background">
 			<div class="text-center">
 				<svg
-					class="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4"
+					class="w-12 h-12 text-muted-foreground mx-auto mb-4"
 					fill="none"
 					stroke="currentColor"
 					viewBox="0 0 24 24"
@@ -98,11 +98,11 @@
 						d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
 					/>
 				</svg>
-				<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">Agent definition not found</h3>
-				<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">This agent definition could not be found.</p>
+				<h3 class="text-lg font-medium text-foreground mb-1">Agent definition not found</h3>
+				<p class="text-sm text-muted-foreground mb-4">This agent definition could not be found.</p>
 				<button
 					onclick={() => goto('/agents')}
-					class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+					class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
 				>
 					Back to Agent Definitions
 				</button>
@@ -110,14 +110,14 @@
 		</div>
 	{:else}
 		<!-- Header -->
-		<div class="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-700">
+		<div class="bg-card border-b border-border">
 			<div class="max-w-4xl mx-auto px-4 py-4">
 				<div class="flex items-center gap-4 mb-4">
 					<button
 						onclick={() => goto('/agents')}
-						class="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+						class="p-2 hover:bg-muted rounded-md transition-colors"
 					>
-						<svg class="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
 								stroke-linecap="round"
 								stroke-linejoin="round"
@@ -137,16 +137,16 @@
 						{/if}
 					</div>
 					<div class="flex-1">
-						<h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+						<h1 class="text-2xl font-semibold text-foreground">
 							{agent.name || 'Unnamed Agent Definition'}
 						</h1>
 						<div class="flex items-center gap-2 mt-1">
 							{#if agent.role}
-								<span class="px-2 py-1 text-xs bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded">{agent.role}</span>
+								<span class="px-2 py-1 text-xs bg-muted text-foreground rounded">{agent.role}</span>
 							{/if}
 							<button
 								onclick={handleCopyId}
-								class="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 font-mono flex items-center gap-1"
+								class="text-xs text-muted-foreground hover:text-foreground dark:hover:text-muted-foreground font-mono flex items-center gap-1"
 							>
 								{agent.id.slice(0, 8)}...{agent.id.slice(-8)}
 								{#if copiedId}
@@ -169,7 +169,7 @@
 					<div class="relative">
 						<button
 							onclick={() => (actionsOpen = !actionsOpen)}
-							class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+							class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2"
 						>
 							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -178,11 +178,11 @@
 						</button>
 						{#if actionsOpen}
 							<div
-								class="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-gray-200 dark:border-zinc-700 z-10"
+								class="absolute right-0 mt-2 w-48 bg-card rounded-md shadow-lg border border-border z-10"
 							>
 								<button
 									onclick={handleFork}
-									class="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-2"
+									class="w-full text-left px-4 py-2 text-foreground hover:bg-muted flex items-center gap-2"
 								>
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path
@@ -196,7 +196,7 @@
 								</button>
 								<button
 									onclick={handleClone}
-									class="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-2"
+									class="w-full text-left px-4 py-2 text-foreground hover:bg-muted flex items-center gap-2"
 								>
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path
@@ -216,14 +216,14 @@
 		</div>
 
 		<!-- Tabs -->
-		<div class="border-b border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900">
+		<div class="border-b border-border bg-card">
 			<div class="max-w-4xl mx-auto px-4">
 				<div class="flex gap-4">
 					<button
 						onclick={() => (activeTab = 'details')}
 						class="px-4 py-3 border-b-2 {activeTab === 'details'
-							? 'border-blue-600 text-blue-600'
-							: 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'} transition-colors"
+							? 'border-blue-600 text-primary'
+							: 'border-transparent text-muted-foreground hover:text-foreground dark:hover:text-muted-foreground'} transition-colors"
 					>
 						Details
 					</button>
@@ -231,8 +231,8 @@
 						<button
 							onclick={() => (activeTab = 'phases')}
 							class="px-4 py-3 border-b-2 {activeTab === 'phases'
-								? 'border-blue-600 text-blue-600'
-								: 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'} transition-colors"
+								? 'border-blue-600 text-primary'
+								: 'border-transparent text-muted-foreground hover:text-foreground dark:hover:text-muted-foreground'} transition-colors"
 						>
 							Phases ({agent.phases.length})
 						</button>
@@ -242,20 +242,20 @@
 		</div>
 
 		<!-- Content -->
-		<div class="flex-1 overflow-y-auto bg-gray-50 dark:bg-zinc-950">
+		<div class="flex-1 overflow-y-auto bg-background">
 			<div class="max-w-4xl mx-auto p-4 space-y-4">
 				{#if activeTab === 'details'}
 					<!-- Description -->
-					<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
-						<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Description</h3>
-						<p class="text-gray-700 dark:text-gray-300">{agent.description || 'No description provided'}</p>
+					<div class="bg-card rounded-lg border border-border p-6">
+						<h3 class="font-semibold text-foreground mb-2">Description</h3>
+						<p class="text-foreground">{agent.description || 'No description provided'}</p>
 					</div>
 
 					<!-- Instructions -->
 					{#if agent.instructions}
-						<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
-							<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Instructions</h3>
-							<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">The prompt that defines this agent's behavior</p>
+						<div class="bg-card rounded-lg border border-border p-6">
+							<h3 class="font-semibold text-foreground mb-2">Instructions</h3>
+							<p class="text-sm text-muted-foreground mb-4">The prompt that defines this agent's behavior</p>
 							<div class="prose prose-sm max-w-none dark:prose-invert">
 								{@html renderMarkdown(agent.instructions)}
 							</div>
@@ -264,14 +264,14 @@
 
 					<!-- Use Criteria -->
 					{#if agent.useCriteria && agent.useCriteria.length > 0}
-						<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
-							<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Use Criteria</h3>
-							<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">When this agent should be used</p>
+						<div class="bg-card rounded-lg border border-border p-6">
+							<h3 class="font-semibold text-foreground mb-2">Use Criteria</h3>
+							<p class="text-sm text-muted-foreground mb-4">When this agent should be used</p>
 							<ul class="space-y-2">
 								{#each agent.useCriteria as criteria}
 									<li class="flex items-start gap-2">
-										<span class="text-gray-400 dark:text-gray-500">•</span>
-										<span class="text-gray-700 dark:text-gray-300">{criteria}</span>
+										<span class="text-muted-foreground">•</span>
+										<span class="text-foreground">{criteria}</span>
 									</li>
 								{/each}
 							</ul>
@@ -279,13 +279,13 @@
 					{/if}
 
 					<!-- Tools & MCP Servers -->
-					<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
-						<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-4">Tools & Capabilities</h3>
+					<div class="bg-card rounded-lg border border-border p-6">
+						<h3 class="font-semibold text-foreground mb-4">Tools & Capabilities</h3>
 
 						<!-- Direct Tools -->
 						<div class="mb-4">
 							<div class="flex items-center gap-2 mb-2">
-								<svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path
 										stroke-linecap="round"
 										stroke-linejoin="round"
@@ -299,25 +299,25 @@
 										d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
 									/>
 								</svg>
-								<span class="text-sm font-medium text-gray-700 dark:text-gray-300">Direct Tools</span>
+								<span class="text-sm font-medium text-foreground">Direct Tools</span>
 							</div>
 							{#if agent.tools.length > 0}
 								<div class="flex flex-wrap gap-2">
 									{#each agent.tools as tool}
-										<span class="px-2 py-1 text-xs bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded border border-gray-200 dark:border-zinc-600">
+										<span class="px-2 py-1 text-xs bg-muted text-foreground rounded border border-border dark:border-zinc-600">
 											{tool}
 										</span>
 									{/each}
 								</div>
 							{:else}
-								<p class="text-sm text-gray-500 dark:text-gray-400">No direct tools configured</p>
+								<p class="text-sm text-muted-foreground">No direct tools configured</p>
 							{/if}
 						</div>
 
 						<!-- MCP Servers -->
 						<div>
 							<div class="flex items-center gap-2 mb-2">
-								<svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path
 										stroke-linecap="round"
 										stroke-linejoin="round"
@@ -325,20 +325,20 @@
 										d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
 									/>
 								</svg>
-								<span class="text-sm font-medium text-gray-700 dark:text-gray-300">MCP Servers</span>
+								<span class="text-sm font-medium text-foreground">MCP Servers</span>
 							</div>
 							{#if mcpTools.length > 0}
 								<div class="space-y-2">
 									{#each mcpTools as mcp}
-										<div class="border border-gray-200 dark:border-zinc-600 rounded-lg p-3 bg-gray-50 dark:bg-zinc-800/50">
-											<h4 class="font-medium text-sm text-gray-900 dark:text-gray-100">
+										<div class="border border-border dark:border-zinc-600 rounded-lg p-3 bg-muted dark:bg-zinc-800/50">
+											<h4 class="font-medium text-sm text-foreground">
 												{mcp.name || 'Unnamed MCP Server'}
 											</h4>
 											{#if mcp.description}
-												<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{mcp.description}</p>
+												<p class="text-xs text-muted-foreground mt-1">{mcp.description}</p>
 											{/if}
 											{#if mcp.command}
-												<code class="text-xs bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded mt-2 inline-block"
+												<code class="text-xs bg-muted dark:bg-gray-600 text-foreground px-2 py-0.5 rounded mt-2 inline-block"
 													>{mcp.command}</code
 												>
 											{/if}
@@ -346,33 +346,33 @@
 									{/each}
 								</div>
 							{:else}
-								<p class="text-sm text-gray-500 dark:text-gray-400">No MCP servers configured</p>
+								<p class="text-sm text-muted-foreground">No MCP servers configured</p>
 							{/if}
 						</div>
 					</div>
 
 					<!-- Metadata -->
-					<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
-						<h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-4">Metadata</h3>
+					<div class="bg-card rounded-lg border border-border p-6">
+						<h3 class="font-semibold text-foreground mb-4">Metadata</h3>
 						<div class="space-y-2 text-sm">
 							<div class="flex justify-between">
-								<span class="text-gray-500 dark:text-gray-400">Author:</span>
-								<span class="font-mono text-gray-700 dark:text-gray-300">{agent.pubkey.slice(0, 16)}...</span>
+								<span class="text-muted-foreground">Author:</span>
+								<span class="font-mono text-foreground">{agent.pubkey.slice(0, 16)}...</span>
 							</div>
 							<div class="flex justify-between">
-								<span class="text-gray-500 dark:text-gray-400">Created:</span>
-								<span class="text-gray-700 dark:text-gray-300">
+								<span class="text-muted-foreground">Created:</span>
+								<span class="text-foreground">
 									{agent.created_at ? new Date(agent.created_at * 1000).toLocaleString() : 'Unknown'}
 								</span>
 							</div>
 							<div class="flex justify-between">
-								<span class="text-gray-500 dark:text-gray-400">Event Kind:</span>
-								<span class="text-gray-700 dark:text-gray-300">{agent.kind}</span>
+								<span class="text-muted-foreground">Event Kind:</span>
+								<span class="text-foreground">{agent.kind}</span>
 							</div>
 							{#if agent.version}
 								<div class="flex justify-between">
-									<span class="text-gray-500 dark:text-gray-400">Version:</span>
-									<span class="text-gray-700 dark:text-gray-300">{agent.version}</span>
+									<span class="text-muted-foreground">Version:</span>
+									<span class="text-foreground">{agent.version}</span>
 								</div>
 							{/if}
 						</div>
@@ -381,10 +381,10 @@
 					<!-- Phases Tab -->
 					<div class="space-y-4">
 						{#each agent.phases as phase, index}
-							<div class="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-6">
+							<div class="bg-card rounded-lg border border-border p-6">
 								<div class="flex items-center gap-2 mb-2">
 									<span class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">Phase {index + 1}</span>
-									<h3 class="font-semibold text-gray-900 dark:text-gray-100">{phase.name}</h3>
+									<h3 class="font-semibold text-foreground">{phase.name}</h3>
 								</div>
 								<div class="prose prose-sm max-w-none dark:prose-invert">
 									{@html renderMarkdown(phase.instructions)}

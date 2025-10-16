@@ -23,12 +23,12 @@
 {#if suggestions.length > 0}
 	<div
 		class={cn(
-			'flex flex-wrap gap-2 mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200',
+			'flex flex-wrap gap-2 mt-3 p-3 bg-muted rounded-lg border border-border',
 			isMobile && 'gap-1.5 p-2',
 			className
 		)}
 	>
-		<div class="flex items-center gap-1.5 text-xs text-gray-600 mb-1 w-full">
+		<div class="flex items-center gap-1.5 text-xs text-muted-foreground mb-1 w-full">
 			<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path
 					stroke-linecap="round"
@@ -45,7 +45,7 @@
 				onclick={() => onSuggestionClick(suggestion, index)}
 				class={cn(
 					'group relative transition-all hover:bg-blue-50 hover:border-blue-500',
-					'flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md',
+					'flex items-center gap-2 px-3 py-2 border border-border rounded-md',
 					isMobile && 'text-xs px-2.5 py-1.5'
 				)}
 			>

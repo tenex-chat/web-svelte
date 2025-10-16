@@ -99,23 +99,23 @@
 	}
 </script>
 
-<div class="flex flex-col h-screen bg-gray-50 dark:bg-zinc-950">
+<div class="flex flex-col h-screen bg-background">
 	<!-- Header -->
-	<div class="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-700">
+	<div class="bg-card border-b border-border">
 		<div class="max-w-4xl mx-auto px-4 py-4">
 			<div class="flex items-center gap-4 mb-4">
 				<button
 					onclick={handleBack}
-					class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+					class="p-2 rounded-lg hover:bg-muted transition-colors"
 					aria-label="Go back"
 				>
-					<ArrowLeft class="w-5 h-5 text-gray-700 dark:text-gray-300" />
+					<ArrowLeft class="w-5 h-5 text-foreground" />
 				</button>
 
 				<Avatar {ndk} {pubkey} size={64} />
 
 				<div class="flex-1">
-					<h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+					<h1 class="text-2xl font-semibold text-foreground">
 						<Name {ndk} {pubkey} />
 					</h1>
 					<div class="flex items-center gap-2 mt-1">
@@ -128,7 +128,7 @@
 						{/if}
 						<button
 							onclick={handleCopyPubkey}
-							class="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 font-mono flex items-center gap-1 transition-colors"
+							class="text-xs text-muted-foreground hover:text-foreground dark:hover:text-foreground font-mono flex items-center gap-1 transition-colors"
 						>
 							{pubkey.slice(0, 8)}...{pubkey.slice(-8)}
 							{#if copiedPubkey}
@@ -143,7 +143,7 @@
 				{#if showConversionButton}
 					<button
 						onclick={handleConvertToDefinition}
-						class="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors text-sm font-medium text-gray-700 dark:text-gray-300"
+						class="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-muted dark:hover:bg-zinc-800 transition-colors text-sm font-medium text-foreground"
 					>
 						<Sparkles class="w-4 h-4" />
 						Convert to Agent Definition
@@ -163,26 +163,26 @@
 {#if convertDialogOpen}
 	<div class="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
 		<div
-			class="bg-white dark:bg-zinc-900 rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
+			class="bg-card rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
 			onclick={(e) => e.stopPropagation()}
 		>
-			<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+			<h3 class="text-lg font-semibold text-foreground mb-4">
 				Convert to Agent Definition
 			</h3>
-			<p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+			<p class="text-sm text-muted-foreground mb-4">
 				This feature will convert the agent's kind:0 metadata to a proper Agent Definition
 				(kind 4128) event.
 			</p>
 			<div class="flex gap-2 justify-end">
 				<button
 					onclick={() => (convertDialogOpen = false)}
-					class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+					class="px-4 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg transition-colors"
 				>
 					Cancel
 				</button>
 				<button
 					onclick={() => (convertDialogOpen = false)}
-					class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors"
+					class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 dark:bg-blue-500 dark:hover:bg-primary rounded-lg transition-colors"
 				>
 					Convert
 				</button>

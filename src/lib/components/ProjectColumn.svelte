@@ -19,6 +19,7 @@
 	let activeTab = $state<TabType>('conversations');
 	let timeFilter = $state<string | null>(null);
 	let filterDropdownOpen = $state(false);
+	let showCreateDocDialog = $state(false);
 
 	// Get project status from centralized store
 	const projectId = $derived(project.tagId());
@@ -47,7 +48,7 @@
 	] as const;
 </script>
 
-<div class={cn('w-96 flex-shrink-0 flex flex-col bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-700 relative', className)}>
+<div class={cn('w-96 flex-shrink-0 flex flex-col bg-card border-r border-border relative', className)}>
 	<!-- Glow effect at top -->
 	<div
 		class="absolute top-0 left-0 right-0 h-96 pointer-events-none z-0"
@@ -55,7 +56,7 @@
 	></div>
 
 	<!-- Column Header -->
-	<div class="border-b border-gray-200 dark:border-zinc-700 relative z-10">
+	<div class="border-b border-border relative z-10">
 		<div class="px-3 py-2">
 			<div class="flex items-center gap-2">
 				<!-- Project Avatar -->
@@ -67,7 +68,7 @@
 				</div>
 
 				<!-- Project Title -->
-				<h3 class="font-medium text-sm truncate flex-1 text-gray-900 dark:text-gray-100">{project.title || 'Untitled Project'}</h3>
+				<h3 class="font-medium text-sm truncate flex-1 text-foreground">{project.title || 'Untitled Project'}</h3>
 
 				<!-- Activity Filter Button (only for conversations tab) -->
 				{#if activeTab === 'conversations'}
@@ -75,8 +76,8 @@
 						<DropdownMenu.Trigger asChild>
 							<button
 								class={cn(
-									'h-6 w-6 p-0 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors',
-									timeFilter && 'text-blue-600 dark:text-blue-400'
+									'h-6 w-6 p-0 flex items-center justify-center text-muted-foreground hover:text-foreground dark:hover:text-foreground rounded hover:bg-muted transition-colors',
+									timeFilter && 'text-primary dark:text-blue-400'
 								)}
 								title="Activity filters"
 								aria-label="Activity filters"
@@ -149,7 +150,7 @@
 						onclick={() => (activeTab = tab.id)}
 						class={cn(
 							'px-3 py-1.5 relative transition-all rounded-sm group text-xs',
-							activeTab === tab.id ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+							activeTab === tab.id ? 'text-foreground' : 'text-muted-foreground hover:text-foreground dark:hover:text-foreground'
 						)}
 						style={activeTab === tab.id
 							? `background-color: ${projectColor.replace(')', ', 0.12)')}`
@@ -167,13 +168,29 @@
 				{/each}
 			</div>
 
-			<!-- Add button - shown for conversations tab -->
+			<!-- Add button - shown for conversations and docs tabs -->
 			{#if activeTab === 'conversations'}
 				<button
 					onclick={() => windowManager.openChat(project)}
-					class="h-6 w-6 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+					class="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground dark:hover:text-foreground rounded hover:bg-muted transition-colors"
 					title="New conversation"
 					aria-label="New conversation"
+				>
+					<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M12 4v16m8-8H4"
+						/>
+					</svg>
+				</button>
+			{:else if activeTab === 'docs'}
+				<button
+					onclick={() => showCreateDocDialog = true}
+					class="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground dark:hover:text-foreground rounded hover:bg-muted transition-colors"
+					title="New document"
+					aria-label="New document"
 				>
 					<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
@@ -202,8 +219,8 @@
 			<div class="h-full">
 				{#if onlineAgents.length === 0}
 					<div class="flex flex-col items-center justify-center h-32 text-center">
-						<Bot class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-2" />
-						<p class="text-sm text-gray-500 dark:text-gray-400">No agents online</p>
+						<Bot class="w-12 h-12 text-muted-foreground mb-2" />
+						<p class="text-sm text-muted-foreground">No agents online</p>
 					</div>
 				{:else}
 					<div>
@@ -211,14 +228,14 @@
 							{#await import('@nostr-dev-kit/svelte') then { Avatar }}
 								<button
 									onclick={() => windowManager.openAgent(project, agent.pubkey, agent.name)}
-									class="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors border-b border-gray-200 dark:border-zinc-700 flex items-center gap-3"
+									class="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border flex items-center gap-3"
 								>
 									<!-- Avatar -->
 									<Avatar.Avatar {ndk} pubkey={agent.pubkey} size={40} />
 
 									<!-- Agent Info -->
 									<div class="flex-1 min-w-0">
-										<div class="font-medium text-sm text-gray-900 dark:text-gray-100">{agent.name}</div>
+										<div class="font-medium text-sm text-foreground">{agent.name}</div>
 										<div class="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
 											<span class="w-1.5 h-1.5 rounded-full bg-green-600 dark:bg-green-400"></span>
 											<span>Online</span>
@@ -226,7 +243,7 @@
 									</div>
 
 									<!-- Chevron -->
-									<svg class="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<svg class="w-5 h-5 text-muted-foreground flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
 									</svg>
 								</button>
@@ -236,7 +253,7 @@
 				{/if}
 			</div>
 		{:else if activeTab === 'hashtags'}
-			<div class="h-full flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm">
+			<div class="h-full flex items-center justify-center text-muted-foreground text-sm">
 				Hashtags (TODO)
 			</div>
 		{:else if activeTab === 'feed'}
@@ -266,15 +283,24 @@
 			{/await}
 		{:else if activeTab === 'settings'}
 			<div class="h-full flex flex-col items-center justify-center gap-3 text-center p-4">
-				<SettingsIcon class="w-16 h-16 text-gray-400 dark:text-gray-500" />
+				<SettingsIcon class="w-16 h-16 text-muted-foreground" />
 				<button
 					onclick={() => windowManager.openSettings(project)}
-					class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+					class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors font-medium"
 				>
 					Open Settings
 				</button>
-				<p class="text-xs text-gray-500 dark:text-gray-400">Settings will open in a drawer</p>
+				<p class="text-xs text-muted-foreground">Settings will open in a drawer</p>
 			</div>
 		{/if}
 	</div>
 </div>
+
+<!-- Document Creation Dialog -->
+{#await import('./docs/DocumentCreateDialog.svelte') then { default: DocumentCreateDialog }}
+	<DocumentCreateDialog
+		bind:open={showCreateDocDialog}
+		{project}
+		onClose={() => showCreateDocDialog = false}
+	/>
+{/await}

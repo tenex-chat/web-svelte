@@ -80,12 +80,12 @@
 
 <div class="flex-1 flex flex-col">
 	<!-- Header -->
-	<div class="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-700">
+	<div class="bg-card border-b border-border">
 		<div class="max-w-6xl mx-auto px-4 py-4">
 			<div class="flex items-center justify-between mb-4">
 				<div>
-					<h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Agent Definitions</h1>
-					<p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+					<h1 class="text-2xl font-semibold text-foreground">Agent Definitions</h1>
+					<p class="text-sm text-muted-foreground mt-1">
 						AI assistant templates that can be instantiated for your projects
 					</p>
 				</div>
@@ -93,7 +93,7 @@
 					{#if currentUser}
 						<button
 							onclick={() => (createDialogOpen = true)}
-							class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+							class="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
 						>
 							<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path
@@ -116,13 +116,13 @@
 						type="text"
 						bind:value={searchQuery}
 						placeholder="Search agents by name, description, or role..."
-						class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-4 py-2 border border-border rounded-md bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
 					/>
 				</div>
 				{#if currentUser}
 					<select
 						bind:value={activeFilter}
-						class="px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="px-4 py-2 border border-border rounded-md bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
 					>
 						<option value="all">All Definitions</option>
 						<option value="owned">My Definitions</option>
@@ -134,12 +134,12 @@
 	</div>
 
 	<!-- Content -->
-	<div class="flex-1 overflow-y-auto bg-gray-50 dark:bg-zinc-950">
+	<div class="flex-1 overflow-y-auto bg-background">
 		<div class="max-w-6xl mx-auto p-4">
 			{#if filteredAgents.length === 0}
 				<div class="flex flex-col items-center justify-center py-12">
 					<svg
-						class="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4"
+						class="w-12 h-12 text-muted-foreground mb-4"
 						fill="none"
 						stroke="currentColor"
 						viewBox="0 0 24 24"
@@ -151,10 +151,10 @@
 							d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
 						/>
 					</svg>
-					<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">
+					<h3 class="text-lg font-medium text-foreground mb-1">
 						{searchQuery ? 'No agent definitions found' : 'No agent definitions yet'}
 					</h3>
-					<p class="text-sm text-gray-500 dark:text-gray-400">
+					<p class="text-sm text-muted-foreground">
 						{searchQuery
 							? 'Try adjusting your search query'
 							: currentUser

@@ -150,7 +150,7 @@
 				</div>
 				<button
 					onclick={() => (showProjectSidebar = !showProjectSidebar)}
-					class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors flex items-center gap-2"
+					class="px-3 py-1.5 text-sm border border-border rounded hover:bg-muted transition-colors flex items-center gap-2"
 				>
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
@@ -170,24 +170,24 @@
 					onclick={() => (activeTab = 'comparison')}
 					class="px-4 py-2 text-sm font-medium transition-colors border-b-2 {activeTab ===
 					'comparison'
-						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-gray-600 hover:text-gray-900'}"
+						? 'border-blue-600 text-primary'
+						: 'border-transparent text-muted-foreground hover:text-foreground'}"
 				>
 					Side-by-Side Comparison
 				</button>
 				<button
 					onclick={() => (activeTab = 'store')}
 					class="px-4 py-2 text-sm font-medium transition-colors border-b-2 {activeTab === 'store'
-						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-gray-600 hover:text-gray-900'}"
+						? 'border-blue-600 text-primary'
+						: 'border-transparent text-muted-foreground hover:text-foreground'}"
 				>
 					Centralized Store Only
 				</button>
 				<button
 					onclick={() => (activeTab = 'wire')}
 					class="px-4 py-2 text-sm font-medium transition-colors border-b-2 {activeTab === 'wire'
-						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-gray-600 hover:text-gray-900'}"
+						? 'border-blue-600 text-primary'
+						: 'border-transparent text-muted-foreground hover:text-foreground'}"
 				>
 					Wire Feed Only
 				</button>
@@ -201,7 +201,7 @@
 						<!-- Project Sidebar -->
 						{#if showProjectSidebar}
 							<div class="w-64 border-r flex flex-col flex-shrink-0">
-								<div class="px-4 py-2 border-b bg-gray-50">
+								<div class="px-4 py-2 border-b bg-muted">
 									<h3 class="text-sm font-medium">Projects</h3>
 								</div>
 								<div class="flex-1 overflow-y-auto p-2 space-y-1">
@@ -209,25 +209,25 @@
 										{@const status = projectStatusMap.get(project.dTag || '')}
 										<button
 											onclick={() => (selectedProjectDTag = project.dTag || null)}
-											class="w-full text-left px-3 py-2 rounded text-sm transition-colors hover:bg-gray-100 {selectedProjectDTag ===
+											class="w-full text-left px-3 py-2 rounded text-sm transition-colors hover:bg-muted {selectedProjectDTag ===
 											project.dTag
-												? 'bg-gray-100'
+												? 'bg-muted'
 												: ''}"
 										>
 											<div class="flex items-center gap-2">
 												<div
 													class="w-2 h-2 rounded-full {status?.isOnline
 														? 'bg-green-500'
-														: 'bg-gray-300'}"
+														: 'bg-muted-foreground'}"
 												></div>
 												<span class="truncate">{project.title || project.dTag}</span>
 											</div>
 											{#if status}
 												<div class="flex gap-1 mt-1">
-													<span class="text-xs px-1 py-0.5 bg-gray-200 rounded"
+													<span class="text-xs px-1 py-0.5 bg-secondary rounded"
 														>{status.agents.length} agents</span
 													>
-													<span class="text-xs px-1 py-0.5 bg-gray-200 rounded"
+													<span class="text-xs px-1 py-0.5 bg-secondary rounded"
 														>{status.models.length} models</span
 													>
 												</div>
@@ -247,7 +247,7 @@
 								</div>
 								<div class="flex-1 overflow-y-auto p-4 space-y-4">
 									{#if selectedProjectStatus}
-										<div class="border border-gray-200 rounded p-4 space-y-3">
+										<div class="border border-border rounded p-4 space-y-3">
 											<div>
 												<h4 class="text-sm font-medium mb-2 flex items-center gap-2">
 													Status
@@ -276,19 +276,19 @@
 														<div class="border rounded text-sm">
 															<div
 																class="p-2 {hasTools
-																	? 'cursor-pointer hover:bg-gray-50'
+																	? 'cursor-pointer hover:bg-muted'
 																	: ''}"
 																onclick={() => hasTools && toggleAgentExpanded(agentKey)}
 																role={hasTools ? 'button' : undefined}
 																tabindex={hasTools ? 0 : undefined}
 															>
-																<div class="font-mono text-xs text-gray-500 mb-1">
+																<div class="font-mono text-xs text-muted-foreground mb-1">
 																	{agent.pubkey.slice(0, 8)}...
 																</div>
 																<div class="flex items-center gap-2 flex-wrap">
 																	<span class="font-medium">{agent.name}</span>
 																	{#if agent.isGlobal}
-																		<span class="text-xs px-1.5 py-0.5 bg-gray-200 rounded"
+																		<span class="text-xs px-1.5 py-0.5 bg-secondary rounded"
 																			>Global</span
 																		>
 																	{/if}
@@ -305,10 +305,10 @@
 																</div>
 															</div>
 															{#if hasTools && isExpanded}
-																<div class="border-t p-2 bg-gray-50">
+																<div class="border-t p-2 bg-muted">
 																	<div class="flex flex-wrap gap-1">
 																		{#each agent.tools as tool}
-																			<span class="text-xs px-1.5 py-0.5 bg-gray-200 rounded"
+																			<span class="text-xs px-1.5 py-0.5 bg-secondary rounded"
 																				>{tool}</span
 																			>
 																		{/each}
@@ -332,7 +332,7 @@
 											</div>
 										</div>
 									{:else}
-										<div class="text-center text-gray-500 py-8">
+										<div class="text-center text-muted-foreground py-8">
 											No status data in centralized store
 										</div>
 									{/if}
@@ -347,12 +347,12 @@
 								<div class="flex-1 overflow-y-auto p-4 space-y-4">
 									{#if selectedProjectWireEvents.length > 0}
 										{#each selectedProjectWireEvents as event (event.id)}
-											<div class="border border-gray-200 rounded p-4">
+											<div class="border border-border rounded p-4">
 												<div class="flex items-center justify-between mb-2">
 													<span class="text-sm font-medium">
 														{formatTimeAgo(event.timestamp)} ago
 													</span>
-													<span class="text-xs font-mono text-gray-500">
+													<span class="text-xs font-mono text-muted-foreground">
 														{event.id.slice(0, 8)}...
 													</span>
 												</div>
@@ -375,7 +375,7 @@
 																<div class="ml-2 {hasTools ? 'border rounded' : ''}">
 																	<div
 																		class="flex items-center gap-2 flex-wrap {hasTools
-																			? 'p-1 cursor-pointer hover:bg-gray-50'
+																			? 'p-1 cursor-pointer hover:bg-muted'
 																			: ''}"
 																		onclick={() => hasTools && toggleAgentExpanded(agentKey)}
 																		role={hasTools ? 'button' : undefined}
@@ -384,7 +384,7 @@
 																		<span class="font-mono text-xs">{agent.pubkey.slice(0, 6)}...</span>
 																		<span>{agent.name}</span>
 																		{#if agent.isGlobal}
-																			<span class="text-xs px-1 py-0.5 bg-gray-200 rounded"
+																			<span class="text-xs px-1 py-0.5 bg-secondary rounded"
 																				>Global</span
 																			>
 																		{/if}
@@ -400,10 +400,10 @@
 																		{/if}
 																	</div>
 																	{#if hasTools && isExpanded}
-																		<div class="border-t p-1 bg-gray-50">
+																		<div class="border-t p-1 bg-muted">
 																			<div class="flex flex-wrap gap-1">
 																				{#each agent.tools as tool}
-																					<span class="text-xs px-1 py-0.5 bg-gray-200 rounded"
+																					<span class="text-xs px-1 py-0.5 bg-secondary rounded"
 																						>{tool}</span
 																					>
 																				{/each}
@@ -429,7 +429,7 @@
 											</div>
 										{/each}
 									{:else}
-										<div class="text-center text-gray-500 py-8">
+										<div class="text-center text-muted-foreground py-8">
 											No wire feed events for this project yet
 										</div>
 									{/if}
@@ -443,7 +443,7 @@
 						<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
 							{#each projects as project (project.dTag)}
 								{@const status = projectStatusMap.get(project.dTag || '')}
-								<div class="border border-gray-200 rounded p-4">
+								<div class="border border-border rounded p-4">
 									<h3 class="font-medium mb-2">{project.title || project.dTag}</h3>
 									{#if status}
 										<div class="space-y-2 text-sm">
@@ -461,7 +461,7 @@
 											</div>
 										</div>
 									{:else}
-										<div class="text-gray-500 text-sm">No status data</div>
+										<div class="text-muted-foreground text-sm">No status data</div>
 									{/if}
 								</div>
 							{/each}
@@ -472,15 +472,15 @@
 					<div class="h-full overflow-y-auto p-6">
 						<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
 							{#each wireFeedEvents as event (event.id)}
-								<div class="border border-gray-200 rounded p-4">
+								<div class="border border-border rounded p-4">
 									<div class="flex items-center justify-between mb-2">
 										<div>
 											<span class="font-medium">Event {event.id.slice(0, 8)}...</span>
-											<div class="text-sm text-gray-500 mt-0.5">
+											<div class="text-sm text-muted-foreground mt-0.5">
 												{event.projectTitle || event.projectId || 'Unknown Project'}
 											</div>
 										</div>
-										<span class="text-sm text-gray-500">
+										<span class="text-sm text-muted-foreground">
 											{formatTimeAgo(event.timestamp)} ago
 										</span>
 									</div>
@@ -489,7 +489,7 @@
 										<div>Agents: {event.agents?.length || 0}</div>
 										<div>Models: {event.models?.length || 0}</div>
 										<details class="mt-2">
-											<summary class="cursor-pointer text-gray-500">Raw Event Tags</summary>
+											<summary class="cursor-pointer text-muted-foreground">Raw Event Tags</summary>
 											<pre
 												class="mt-2 p-2 bg-gray-900 text-green-400 rounded text-xs overflow-x-auto">{JSON.stringify(
 													event.rawEvent.tags,

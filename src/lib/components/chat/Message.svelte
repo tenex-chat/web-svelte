@@ -120,7 +120,7 @@
 </script>
 
 <div
-	class="group px-4 py-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors"
+	class="group px-4 py-2 hover:bg-muted dark:hover:bg-zinc-800/50 transition-colors"
 >
 	<div class="flex gap-3">
 		<!-- Avatar -->
@@ -129,8 +129,8 @@
 		<!-- Message Content -->
 		<div class="flex-1 min-w-0">
 			<div class="flex items-center gap-2 mb-1">
-				<span class="font-semibold text-sm text-gray-900 dark:text-gray-100">{authorName}</span>
-				<span class="text-xs text-gray-600 dark:text-gray-300">{timestamp}</span>
+				<span class="font-semibold text-sm text-foreground">{authorName}</span>
+				<span class="text-xs text-muted-foreground">{timestamp}</span>
 
 				<!-- P-tagged user avatars -->
 				{#if replyingTo.length > 0}
@@ -146,7 +146,7 @@
 				<!-- Phase indicator -->
 				{#if phaseInfo}
 					<div class="flex items-center gap-1.5 text-xs">
-						<svg class="w-3 h-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-3 h-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
 						</svg>
 						<span class="px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium uppercase text-[10px] tracking-wide">
@@ -156,8 +156,8 @@
 				{/if}
 
 				{#if isStreaming}
-					<span class="text-xs text-blue-600 dark:text-blue-300 flex items-center gap-1">
-						<span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-300 animate-pulse"></span>
+					<span class="text-xs text-primary dark:text-blue-300 flex items-center gap-1">
+						<span class="inline-block w-1.5 h-1.5 rounded-full bg-primary dark:bg-blue-300 animate-pulse"></span>
 						streaming...
 					</span>
 				{/if}
@@ -171,10 +171,10 @@
 						<DropdownMenu.Trigger asChild>
 							<button
 								type="button"
-								class="p-1 rounded hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+								class="p-1 rounded hover:bg-secondary dark:hover:bg-zinc-700 transition-colors"
 								aria-label="Message actions"
 							>
-								<MoreVertical class="w-4 h-4 text-gray-500 dark:text-gray-400" />
+								<MoreVertical class="w-4 h-4 text-muted-foreground" />
 							</button>
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Content align="end" class="w-48">
@@ -220,10 +220,10 @@
 					{isLastMessage}
 				/>
 			{:else}
-				<div class="prose prose-sm max-w-none dark:prose-invert text-gray-900 dark:text-gray-100">
+				<div class="prose prose-sm max-w-none dark:prose-invert text-foreground">
 					{@html renderedContent}
 					{#if isStreaming}
-						<span class="inline-block w-1.5 h-4 ml-0.5 bg-blue-600 dark:bg-blue-400 animate-pulse"></span>
+						<span class="inline-block w-1.5 h-4 ml-0.5 bg-primary dark:bg-blue-400 animate-pulse"></span>
 					{/if}
 				</div>
 
@@ -252,16 +252,16 @@
 		tabindex="-1"
 	>
 		<div
-			class="bg-white dark:bg-zinc-900 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
+			class="bg-card rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
 			onclick={(e) => e.stopPropagation()}
 			role="document"
 		>
-			<div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-zinc-700">
-				<h3 class="font-semibold text-gray-900 dark:text-gray-100">Raw Event</h3>
+			<div class="flex items-center justify-between px-4 py-3 border-b border-border">
+				<h3 class="font-semibold text-foreground">Raw Event</h3>
 				<button
 					type="button"
 					onclick={closeRawEventDialog}
-					class="p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+					class="p-1 rounded hover:bg-muted transition-colors"
 					aria-label="Close"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,15 +276,15 @@
 			</div>
 			<div class="flex-1 overflow-y-auto p-4">
 				<pre
-					class="text-xs bg-gray-50 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 rounded p-4 overflow-x-auto">{JSON.stringify(message.event.rawEvent(), null, 2)}</pre>
+					class="text-xs bg-muted dark:bg-zinc-800 text-foreground rounded p-4 overflow-x-auto">{JSON.stringify(message.event.rawEvent(), null, 2)}</pre>
 			</div>
-			<div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-zinc-700">
+			<div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-border">
 				<button
 					type="button"
 					onclick={() => {
 						navigator.clipboard.writeText(JSON.stringify(message.event.rawEvent(), null, 2));
 					}}
-					class="px-3 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+					class="px-3 py-2 text-sm bg-primary dark:bg-blue-500 text-white rounded hover:bg-primary/90 dark:hover:bg-primary transition-colors"
 				>
 					Copy JSON
 				</button>

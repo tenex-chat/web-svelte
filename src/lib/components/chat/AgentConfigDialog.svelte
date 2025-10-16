@@ -159,23 +159,23 @@
 		tabindex="-1"
 	>
 		<div
-			class="bg-white dark:bg-zinc-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col"
+			class="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col"
 			onclick={(e) => e.stopPropagation()}
 			role="document"
 		>
 			<!-- Header -->
-			<div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-zinc-700">
+			<div class="flex items-center justify-between px-6 py-4 border-b border-border">
 				<div>
-					<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Configure Agent</h2>
-					<p class="text-sm text-gray-500 dark:text-gray-400">{agent.name}</p>
+					<h2 class="text-lg font-semibold text-foreground">Configure Agent</h2>
+					<p class="text-sm text-muted-foreground">{agent.name}</p>
 				</div>
 				<button
 					type="button"
 					onclick={onClose}
-					class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+					class="p-2 rounded-lg hover:bg-muted transition-colors"
 					aria-label="Close"
 				>
-					<X class="w-5 h-5 text-gray-700 dark:text-gray-300" />
+					<X class="w-5 h-5 text-foreground" />
 				</button>
 			</div>
 
@@ -183,10 +183,10 @@
 			<div class="flex-1 overflow-y-auto px-6 py-4 space-y-6">
 				<!-- Model Selection -->
 				<div>
-					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">LLM Model</label>
+					<label class="block text-sm font-medium text-foreground mb-2">LLM Model</label>
 					<select
 						bind:value={selectedModel}
-						class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+						class="w-full px-3 py-2 border border-border bg-white dark:bg-zinc-800 text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
 					>
 						<option value="">Select a model...</option>
 						{#each availableModels as model}
@@ -197,8 +197,8 @@
 
 				<!-- Tools Selection -->
 				<div>
-					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Available Tools</label>
-					<div class="border border-gray-300 dark:border-zinc-600 rounded-lg overflow-hidden">
+					<label class="block text-sm font-medium text-foreground mb-2">Available Tools</label>
+					<div class="border border-border rounded-lg overflow-hidden">
 						<div class="max-h-96 overflow-y-auto">
 							{#each toolGroups as group (group.name)}
 								{@const isExpanded = expandedGroups.has(group.name)}
@@ -206,23 +206,23 @@
 								{@const isPartiallySelected = isGroupPartiallySelected(group)}
 								{@const isMultiTool = group.tools.length > 1}
 
-								<div class="border-b border-gray-200 dark:border-zinc-700 last:border-b-0">
+								<div class="border-b border-border last:border-b-0">
 									<!-- Group Header -->
 									<div
-										class="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+										class="flex items-center gap-2 px-4 py-2 hover:bg-muted dark:hover:bg-zinc-800 transition-colors"
 									>
 										<!-- Expand/Collapse button (only for multi-tool groups) -->
 										{#if isMultiTool}
 											<button
 												type="button"
 												onclick={() => toggleGroup(group.name)}
-												class="p-1 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors"
+												class="p-1 hover:bg-secondary dark:hover:bg-zinc-700 rounded transition-colors"
 												aria-label="Toggle group"
 											>
 												{#if isExpanded}
-													<ChevronDown class="w-4 h-4 text-gray-600 dark:text-gray-400" />
+													<ChevronDown class="w-4 h-4 text-muted-foreground" />
 												{:else}
-													<ChevronRight class="w-4 h-4 text-gray-600 dark:text-gray-400" />
+													<ChevronRight class="w-4 h-4 text-muted-foreground" />
 												{/if}
 											</button>
 										{:else}
@@ -236,14 +236,14 @@
 											indeterminate={isPartiallySelected}
 											onchange={(e) =>
 												toggleGroupAll(group, (e.target as HTMLInputElement).checked)}
-											class="w-4 h-4 text-blue-600 dark:text-blue-500 rounded border-gray-300 dark:border-zinc-600 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-zinc-800"
+											class="w-4 h-4 text-primary dark:text-blue-500 rounded border-border focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-zinc-800"
 										/>
 
 										<!-- Group Name -->
 										<div class="flex-1">
-											<div class="font-medium text-sm text-gray-900 dark:text-gray-100">{group.name}</div>
+											<div class="font-medium text-sm text-foreground">{group.name}</div>
 											{#if isMultiTool}
-												<div class="text-xs text-gray-500 dark:text-gray-400">
+												<div class="text-xs text-muted-foreground">
 													{group.tools.filter((t) => selectedTools.has(t)).length}/{group.tools
 														.length} selected
 												</div>
@@ -253,7 +253,7 @@
 										<!-- Tool count badge -->
 										{#if isMultiTool}
 											<span
-												class="px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-full"
+												class="px-2 py-0.5 bg-muted text-muted-foreground text-xs font-medium rounded-full"
 											>
 												{group.tools.length}
 											</span>
@@ -262,16 +262,16 @@
 
 									<!-- Expanded tools list -->
 									{#if isMultiTool && isExpanded}
-										<div class="bg-gray-50 dark:bg-zinc-800/50 px-4 py-2 space-y-1">
+										<div class="bg-muted dark:bg-zinc-800/50 px-4 py-2 space-y-1">
 											{#each group.tools as tool (tool)}
-												<label class="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded cursor-pointer">
+												<label class="flex items-center gap-2 p-2 hover:bg-muted dark:hover:bg-zinc-700 rounded cursor-pointer">
 													<input
 														type="checkbox"
 														checked={selectedTools.has(tool)}
 														onchange={() => toggleTool(tool)}
-														class="w-4 h-4 text-blue-600 dark:text-blue-500 rounded border-gray-300 dark:border-zinc-600 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-zinc-800"
+														class="w-4 h-4 text-primary dark:text-blue-500 rounded border-border focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-zinc-800"
 													/>
-													<span class="text-sm font-mono text-gray-700 dark:text-gray-300">{tool}</span>
+													<span class="text-sm font-mono text-foreground">{tool}</span>
 												</label>
 											{/each}
 										</div>
@@ -284,18 +284,18 @@
 			</div>
 
 			<!-- Footer -->
-			<div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800">
+			<div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-muted dark:bg-zinc-800">
 				<button
 					type="button"
 					onclick={onClose}
-					class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+					class="px-4 py-2 text-sm font-medium text-foreground hover:bg-muted dark:hover:bg-zinc-700 rounded-lg transition-colors"
 				>
 					Cancel
 				</button>
 				<button
 					type="button"
 					onclick={handleSave}
-					class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors"
+					class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 dark:bg-blue-500 dark:hover:bg-primary rounded-lg transition-colors"
 				>
 					Save Changes
 				</button>

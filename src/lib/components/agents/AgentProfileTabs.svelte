@@ -29,7 +29,7 @@
 
 <div class="flex flex-col h-full">
 	<!-- Tabs Header -->
-	<div class="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-700">
+	<div class="bg-card border-b border-border">
 		<div class="max-w-4xl mx-auto px-4">
 			<div class="flex gap-1">
 				{#each tabs as tab (tab.id)}
@@ -38,14 +38,14 @@
 						class={cn(
 							'px-4 py-3 text-sm font-medium transition-colors relative',
 							activeTab === tab.id
-								? 'text-blue-600 dark:text-blue-400'
-								: 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+								? 'text-primary dark:text-blue-400'
+								: 'text-muted-foreground hover:text-foreground dark:hover:text-foreground'
 						)}
 					>
 						{tab.label}
 						{#if activeTab === tab.id}
 							<div
-								class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"
+								class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary dark:bg-blue-400"
 							></div>
 						{/if}
 					</button>

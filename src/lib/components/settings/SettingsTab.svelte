@@ -52,19 +52,19 @@
 
 <div class="h-full flex">
 	<!-- Settings Navigation -->
-	<div class="w-48 border-r border-gray-200 bg-white p-2 space-y-1">
+	<div class="w-48 border-r border-border bg-white p-2 space-y-1">
 		{#each sections as section (section.id)}
 			<button
 				onclick={() => (activeSection = section.id)}
 				class="w-full text-left px-3 py-2 rounded transition-colors {activeSection === section.id
 					? 'bg-blue-50 text-blue-900'
-					: 'hover:bg-gray-100 text-gray-700'}"
+					: 'hover:bg-muted text-foreground'}"
 			>
 				<div class="flex items-start gap-2">
 					<span class="text-lg leading-none">{section.icon}</span>
 					<div class="flex-1 min-w-0">
 						<div class="text-sm font-medium truncate">{section.title}</div>
-						<div class="text-xs text-gray-500 truncate">{section.description}</div>
+						<div class="text-xs text-muted-foreground truncate">{section.description}</div>
 					</div>
 				</div>
 			</button>
@@ -72,7 +72,7 @@
 	</div>
 
 	<!-- Settings Content -->
-	<div class="flex-1 overflow-y-auto bg-gray-50">
+	<div class="flex-1 overflow-y-auto bg-muted">
 		{#if activeSection === 'general'}
 			<GeneralSettings {project} />
 		{:else if activeSection === 'agents'}
@@ -82,7 +82,7 @@
 		{:else if activeSection === 'advanced'}
 			<div class="p-4">
 				<h2 class="text-lg font-semibold mb-4">Advanced Settings</h2>
-				<p class="text-sm text-gray-500">Coming soon...</p>
+				<p class="text-sm text-muted-foreground">Coming soon...</p>
 			</div>
 		{:else if activeSection === 'danger'}
 			<div class="p-4">

@@ -107,7 +107,7 @@
 		tabindex="0"
 	>
 		<div
-			class="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-zinc-900 rounded-lg shadow-xl flex flex-col"
+			class="relative w-full max-w-2xl max-h-[90vh] bg-card rounded-lg shadow-xl flex flex-col"
 			onclick={(e) => e.stopPropagation()}
 			role="dialog"
 			aria-modal="true"
@@ -115,7 +115,7 @@
 			<!-- Close Button -->
 			<button
 				onclick={handleClose}
-				class="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 z-10"
+				class="absolute top-4 right-4 text-muted-foreground hover:text-muted-foreground dark:hover:text-muted-foreground z-10"
 				aria-label="Close dialog"
 			>
 				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,8 +130,8 @@
 
 			<!-- Header -->
 			<div class="px-6 pt-6 pb-4">
-				<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-					<svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<h2 class="text-xl font-semibold text-foreground flex items-center gap-2">
+					<svg class="w-5 h-5 text-primary dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"
 							stroke-linejoin="round"
@@ -147,7 +147,7 @@
 					</svg>
 					{isEditing ? 'Edit MCP Tool' : 'Create MCP Tool'}
 				</h2>
-				<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+				<p class="text-sm text-muted-foreground mt-1">
 					{isEditing ? 'Update your MCP tool details' : 'Add a new Model Context Protocol tool'}
 				</p>
 			</div>
@@ -156,58 +156,58 @@
 			<div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
 				<!-- Name -->
 				<div>
-					<label for="tool-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+					<label for="tool-name" class="block text-sm font-medium text-foreground mb-1">
 						Name <span class="text-red-500">*</span>
 					</label>
 					<input
 						id="tool-name"
 						type="text"
 						bind:value={name}
-						class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
 						placeholder="My MCP Tool"
 					/>
 				</div>
 
 				<!-- Description -->
 				<div>
-					<label for="tool-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+					<label for="tool-description" class="block text-sm font-medium text-foreground mb-1">
 						Description
 					</label>
 					<textarea
 						id="tool-description"
 						bind:value={description}
 						rows="3"
-						class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+						class="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
 						placeholder="Describe what this tool does..."
 					></textarea>
 				</div>
 
 				<!-- Command -->
 				<div>
-					<label for="tool-command" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+					<label for="tool-command" class="block text-sm font-medium text-foreground mb-1">
 						Command <span class="text-red-500">*</span>
 					</label>
 					<input
 						id="tool-command"
 						type="text"
 						bind:value={command}
-						class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+						class="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
 						placeholder="mcp-server-tool"
 					/>
-					<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+					<p class="text-xs text-muted-foreground mt-1">
 						The command to execute this MCP tool (e.g., mcp-server-filesystem)
 					</p>
 				</div>
 
 				<!-- Capabilities -->
 				<div>
-					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Capabilities</label>
+					<label class="block text-sm font-medium text-foreground mb-1">Capabilities</label>
 					<div class="flex gap-2 mb-2">
 						<input
 							type="text"
 							bind:value={newCapability}
 							onkeydown={(e) => e.key === 'Enter' && addCapability()}
-							class="flex-1 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+							class="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
 							placeholder="Add capability (e.g., read_files)"
 						/>
 						<button
@@ -215,7 +215,7 @@
 							onclick={addCapability}
 							disabled={!newCapability.trim()}
 							class={cn(
-								'px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 transition-colors',
+								'px-4 py-2 border border-border rounded-md hover:bg-muted dark:hover:bg-zinc-800 text-foreground transition-colors',
 								!newCapability.trim() && 'opacity-50 cursor-not-allowed'
 							)}
 						>
@@ -241,16 +241,16 @@
 							{/each}
 						</div>
 					{:else}
-						<p class="text-sm text-gray-500 dark:text-gray-400">No capabilities added</p>
+						<p class="text-sm text-muted-foreground">No capabilities added</p>
 					{/if}
 				</div>
 			</div>
 
 			<!-- Footer -->
-			<div class="px-6 py-4 border-t border-gray-200 dark:border-zinc-700 flex justify-end gap-2">
+			<div class="px-6 py-4 border-t border-border flex justify-end gap-2">
 				<button
 					onclick={handleClose}
-					class="px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 transition-colors"
+					class="px-4 py-2 border border-border rounded-md hover:bg-muted dark:hover:bg-zinc-800 text-foreground transition-colors"
 				>
 					Cancel
 				</button>
@@ -258,7 +258,7 @@
 					onclick={handleSave}
 					disabled={!name.trim() || !command.trim() || saving}
 					class={cn(
-						'px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2',
+						'px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2',
 						(!name.trim() || !command.trim() || saving) && 'opacity-50 cursor-not-allowed'
 					)}
 				>

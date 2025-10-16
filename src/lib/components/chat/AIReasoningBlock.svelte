@@ -22,18 +22,18 @@
 				'border rounded-lg transition-all',
 				isStreaming
 					? 'border-blue-400 dark:border-blue-500 bg-blue-50/50 dark:bg-blue-900/20'
-					: 'border-gray-300 dark:border-zinc-600 bg-gray-50 dark:bg-zinc-800/50',
+					: 'border-border bg-muted dark:bg-zinc-800/50',
 				isOpen ? 'shadow-sm' : ''
 			)}
 		>
 			<!-- Trigger Button -->
 			<button
 				onclick={() => (isOpen = !isOpen)}
-				class="w-full px-4 py-2 flex items-center gap-2 text-left hover:bg-gray-100/50 dark:hover:bg-zinc-700/50 transition-colors rounded-lg"
+				class="w-full px-4 py-2 flex items-center gap-2 text-left hover:bg-muted/50 dark:hover:bg-zinc-700/50 transition-colors rounded-lg"
 			>
 				<svg
 					class={cn(
-						'w-4 h-4 transition-transform text-gray-600 dark:text-gray-400',
+						'w-4 h-4 transition-transform text-muted-foreground',
 						isOpen ? 'rotate-90' : ''
 					)}
 					fill="none"
@@ -57,11 +57,11 @@
 					/>
 				</svg>
 
-				<span class="text-sm font-medium text-gray-700 dark:text-gray-300">AI Reasoning</span>
+				<span class="text-sm font-medium text-foreground">AI Reasoning</span>
 
 				{#if isStreaming}
-					<span class="ml-auto flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400">
-						<span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse"></span>
+					<span class="ml-auto flex items-center gap-1.5 text-xs text-primary dark:text-blue-400">
+						<span class="inline-block w-1.5 h-1.5 rounded-full bg-primary dark:bg-blue-400 animate-pulse"></span>
 						thinking...
 					</span>
 				{/if}
@@ -69,11 +69,11 @@
 
 			<!-- Reasoning Content -->
 			{#if isOpen}
-				<div class="px-4 py-3 border-t border-gray-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-900/50">
-					<div class="prose prose-sm max-w-none dark:prose-invert text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+				<div class="px-4 py-3 border-t border-border bg-white/50 dark:bg-zinc-900/50">
+					<div class="prose prose-sm max-w-none dark:prose-invert text-foreground whitespace-pre-wrap">
 						{reasoningContent}
 						{#if isStreaming}
-							<span class="inline-block w-1.5 h-4 ml-0.5 bg-blue-600 dark:bg-blue-400 animate-pulse"></span>
+							<span class="inline-block w-1.5 h-4 ml-0.5 bg-primary dark:bg-blue-400 animate-pulse"></span>
 						{/if}
 					</div>
 				</div>

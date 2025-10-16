@@ -135,7 +135,7 @@
 			<!-- Close Button -->
 			<button
 				onclick={handleClose}
-				class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+				class="absolute top-4 right-4 text-muted-foreground hover:text-muted-foreground"
 				aria-label="Close dialog"
 			>
 				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,32 +149,32 @@
 			</button>
 
 			<!-- Header -->
-			<h2 class="text-xl font-semibold text-gray-900 mb-4">Add LLM Configuration</h2>
+			<h2 class="text-xl font-semibold text-foreground mb-4">Add LLM Configuration</h2>
 
 			<!-- Form -->
 			<div class="space-y-4">
 				<div>
-					<label for="config-name" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="config-name" class="block text-sm font-medium text-foreground mb-1">
 						Configuration Name
 					</label>
 					<input
 						id="config-name"
 						type="text"
 						bind:value={name}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 						placeholder="My OpenAI Key"
 					/>
 				</div>
 
 				<div>
-					<label for="provider" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="provider" class="block text-sm font-medium text-foreground mb-1">
 						Provider
 					</label>
 					<select
 						id="provider"
 						bind:value={provider}
 						onchange={(e) => handleProviderChange(e.currentTarget.value as AIProvider)}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 					>
 						{#each providerOptions as option (option.value)}
 							<option value={option.value}>{option.label}</option>
@@ -184,13 +184,13 @@
 
 				<div>
 					<div class="flex items-center justify-between mb-1">
-						<label for="model" class="block text-sm font-medium text-gray-700"> Model </label>
+						<label for="model" class="block text-sm font-medium text-foreground"> Model </label>
 						<button
 							type="button"
 							onclick={handleFetchModels}
 							disabled={!apiKey.trim() || fetchingModels}
 							class={cn(
-								'text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-50 transition-colors',
+								'text-xs px-2 py-1 border border-border rounded hover:bg-muted transition-colors',
 								(!apiKey.trim() || fetchingModels) && 'opacity-50 cursor-not-allowed'
 							)}
 						>
@@ -202,7 +202,7 @@
 						<select
 							id="model"
 							bind:value={model}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 						>
 							<option value="">Select a model</option>
 							{#each availableModels as modelInfo (modelInfo.id)}
@@ -214,13 +214,13 @@
 								</option>
 							{/each}
 						</select>
-						<p class="text-xs text-gray-500 mt-1">
+						<p class="text-xs text-muted-foreground mt-1">
 							Found {availableModels.length} models. You can also enter a model name manually below.
 						</p>
 						<input
 							type="text"
 							bind:value={model}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-2"
+							class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-2"
 							placeholder="Or enter model name manually"
 						/>
 					{:else}
@@ -228,10 +228,10 @@
 							id="model"
 							type="text"
 							bind:value={model}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							placeholder="gpt-4"
 						/>
-						<p class="text-xs text-gray-500 mt-1">
+						<p class="text-xs text-muted-foreground mt-1">
 							{#if provider === 'openai'}
 								Examples: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo
 							{:else if provider === 'anthropic'}
@@ -252,28 +252,28 @@
 				</div>
 
 				<div>
-					<label for="api-key" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="api-key" class="block text-sm font-medium text-foreground mb-1">
 						API Key
 					</label>
 					<input
 						id="api-key"
 						type="password"
 						bind:value={apiKey}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 						placeholder="sk-..."
 					/>
 				</div>
 
 				{#if provider === 'custom'}
 					<div>
-						<label for="base-url" class="block text-sm font-medium text-gray-700 mb-1">
+						<label for="base-url" class="block text-sm font-medium text-foreground mb-1">
 							Base URL
 						</label>
 						<input
 							id="base-url"
 							type="text"
 							bind:value={baseUrl}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							placeholder="https://api.your-llm-provider.com"
 						/>
 					</div>
@@ -284,7 +284,7 @@
 			<div class="flex gap-3 mt-6">
 				<button
 					onclick={handleClose}
-					class="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+					class="flex-1 px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors"
 				>
 					Cancel
 				</button>
@@ -292,7 +292,7 @@
 					onclick={handleSave}
 					disabled={!name.trim() || !model.trim() || !apiKey.trim() || saving}
 					class={cn(
-						'flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors',
+						'flex-1 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors',
 						(!name.trim() || !model.trim() || !apiKey.trim() || saving) &&
 							'opacity-50 cursor-not-allowed'
 					)}

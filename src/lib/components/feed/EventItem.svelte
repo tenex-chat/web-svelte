@@ -81,7 +81,7 @@
 
 <button
 	type="button"
-	class="w-full px-3 py-3 hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors border-b border-gray-200 dark:border-zinc-700 text-left"
+	class="w-full px-3 py-3 hover:bg-muted cursor-pointer transition-colors border-b border-border text-left"
 	onclick={onclick}
 >
 	<div class="flex gap-3">
@@ -92,8 +92,8 @@
 		<div class="flex-1 min-w-0">
 			<!-- Header -->
 			<div class="flex items-center gap-2 mb-1">
-				<span class="font-medium text-sm text-gray-900 dark:text-gray-100">{authorName}</span>
-				<div class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+				<span class="font-medium text-sm text-foreground">{authorName}</span>
+				<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
 					<svelte:component this={eventDetails.icon} class="h-3.5 w-3.5" />
 					<span>{eventDetails.label}</span>
 					<span>·</span>
@@ -102,7 +102,7 @@
 			</div>
 
 			<!-- Title/Preview - Shows actual event content -->
-			<div class="text-sm text-gray-900 dark:text-gray-100 break-words line-clamp-2">
+			<div class="text-sm text-foreground break-words line-clamp-2">
 				{eventDetails.title}
 			</div>
 
@@ -110,7 +110,7 @@
 			{#if hashtags.length > 0}
 				<div class="flex items-center gap-2 mt-1.5 flex-wrap">
 					{#each hashtags as tag (tag)}
-						<div class="inline-flex items-center gap-0.5 text-[11px] text-gray-600 dark:text-gray-400">
+						<div class="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground">
 							<Hash class="h-2.5 w-2.5" />
 							<span>{tag}</span>
 						</div>

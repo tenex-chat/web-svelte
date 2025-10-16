@@ -36,11 +36,11 @@
 		>
 			<div class="flex items-center gap-2 mb-2">
 				<Sparkles class="w-5 h-5 text-orange-500 dark:text-orange-400" />
-				<h3 class="font-semibold text-gray-900 dark:text-gray-100">
+				<h3 class="font-semibold text-foreground">
 					Agent Metadata from Profile
 				</h3>
 			</div>
-			<p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+			<p class="text-sm text-muted-foreground mb-4">
 				This agent has metadata stored in their Nostr profile (kind:0 event). Convert it to an
 				Agent Definition for better structure and compatibility.
 			</p>
@@ -48,12 +48,12 @@
 	{/if}
 
 	<!-- Description Card -->
-	<div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg">
-		<div class="px-4 py-3 border-b border-gray-200 dark:border-zinc-700">
-			<h3 class="font-semibold text-gray-900 dark:text-gray-100">Description</h3>
+	<div class="bg-card border border-border rounded-lg">
+		<div class="px-4 py-3 border-b border-border">
+			<h3 class="font-semibold text-foreground">Description</h3>
 		</div>
 		<div class="px-4 py-3">
-			<p class="text-gray-600 dark:text-gray-400 text-sm">
+			<p class="text-muted-foreground text-sm">
 				{description}
 			</p>
 		</div>
@@ -61,31 +61,31 @@
 
 	<!-- Instructions Card -->
 	{#if instructions}
-		<div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg">
-			<div class="px-4 py-3 border-b border-gray-200 dark:border-zinc-700">
-				<h3 class="font-semibold text-gray-900 dark:text-gray-100">
+		<div class="bg-card border border-border rounded-lg">
+			<div class="px-4 py-3 border-b border-border">
+				<h3 class="font-semibold text-foreground">
 					Instructions / System Prompt
 				</h3>
 			</div>
 			<div class="px-4 py-3">
 				<pre
-					class="whitespace-pre-wrap text-sm text-gray-600 dark:text-gray-400 font-mono">{instructions}</pre>
+					class="whitespace-pre-wrap text-sm text-muted-foreground font-mono">{instructions}</pre>
 			</div>
 		</div>
 	{/if}
 
 	<!-- Use Criteria Card -->
 	{#if useCriteria.length > 0}
-		<div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg">
-			<div class="px-4 py-3 border-b border-gray-200 dark:border-zinc-700">
-				<h3 class="font-semibold text-gray-900 dark:text-gray-100">Use Criteria</h3>
-				<p class="text-sm text-gray-500 dark:text-gray-400">When this agent should be used</p>
+		<div class="bg-card border border-border rounded-lg">
+			<div class="px-4 py-3 border-b border-border">
+				<h3 class="font-semibold text-foreground">Use Criteria</h3>
+				<p class="text-sm text-muted-foreground">When this agent should be used</p>
 			</div>
 			<div class="px-4 py-3">
 				<ul class="space-y-2">
 					{#each useCriteria as criteria (criteria)}
-						<li class="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-							<span class="text-gray-400 dark:text-gray-500">•</span>
+						<li class="flex items-start gap-2 text-sm text-muted-foreground">
+							<span class="text-muted-foreground">•</span>
 							<span>{criteria}</span>
 						</li>
 					{/each}

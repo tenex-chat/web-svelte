@@ -132,7 +132,7 @@
 				<button
 					type="button"
 					onclick={handleToggle}
-					class="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors font-medium hover:bg-blue-50 dark:hover:bg-blue-950/30 px-2 py-1 rounded"
+					class="flex items-center gap-1.5 text-xs text-primary dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors font-medium hover:bg-blue-50 dark:hover:bg-blue-950/30 px-2 py-1 rounded"
 				>
 					<!-- Avatar stack showing unique authors -->
 					<div class="flex -space-x-1.5">
@@ -147,7 +147,7 @@
 							</div>
 						{/each}
 						{#if uniquePubkeys.length > 20}
-							<span class="ml-1 text-[10px] text-gray-500 dark:text-gray-400">
+							<span class="ml-1 text-[10px] text-muted-foreground">
 								+{uniquePubkeys.length - 20}
 							</span>
 						{/if}

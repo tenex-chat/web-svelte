@@ -63,9 +63,9 @@
 	{#if localRootEvent}
 		{#if !hideHeader}
 			<!-- Chat Header -->
-			<div class="border-b border-gray-200 dark:border-zinc-700 px-4 py-3 bg-white dark:bg-zinc-900">
+			<div class="border-b border-border px-4 py-3 bg-card">
 				<div class="flex items-center justify-between">
-					<span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+					<span class="text-sm font-medium text-foreground">
 						{localRootEvent.tagValue('title') || 'Conversation'}
 					</span>
 
@@ -99,7 +99,7 @@
 		/>
 	{:else}
 		<!-- New Conversation -->
-		<div class="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
+		<div class="flex-1 flex items-center justify-center text-muted-foreground">
 			Start a new conversation
 		</div>
 

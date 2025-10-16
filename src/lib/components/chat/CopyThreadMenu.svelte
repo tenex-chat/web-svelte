@@ -62,11 +62,11 @@
 	<button
 		type="button"
 		onclick={() => (isOpen = !isOpen)}
-		class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+		class="p-2 rounded-lg hover:bg-muted transition-colors"
 		title="Copy thread"
 		aria-label="Copy thread"
 	>
-		<svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 			<path
 				stroke-linecap="round"
 				stroke-linejoin="round"
@@ -79,15 +79,15 @@
 	{#if isOpen}
 		<div
 			use:clickOutside={handleClickOutside}
-			class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-600 rounded-lg shadow-lg overflow-hidden z-50"
+			class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-zinc-800 border border-border dark:border-zinc-600 rounded-lg shadow-lg overflow-hidden z-50"
 		>
 			<!-- Markdown Option -->
 			<button
 				type="button"
 				onclick={() => handleCopy('markdown')}
-				class="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-left text-sm"
+				class="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted dark:hover:bg-zinc-700 transition-colors text-left text-sm"
 			>
-				<svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
@@ -95,7 +95,7 @@
 						d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
 					/>
 				</svg>
-				<span class="flex-1 text-gray-900 dark:text-gray-100">Copy as Markdown</span>
+				<span class="flex-1 text-foreground">Copy as Markdown</span>
 				{#if copiedFormat === 'markdown'}
 					<svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -107,9 +107,9 @@
 			<button
 				type="button"
 				onclick={() => handleCopy('json')}
-				class="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-left text-sm"
+				class="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted dark:hover:bg-zinc-700 transition-colors text-left text-sm"
 			>
-				<svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
@@ -117,7 +117,7 @@
 						d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
 					/>
 				</svg>
-				<span class="flex-1 text-gray-900 dark:text-gray-100">Copy as JSON</span>
+				<span class="flex-1 text-foreground">Copy as JSON</span>
 				{#if copiedFormat === 'json'}
 					<svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -129,9 +129,9 @@
 			<button
 				type="button"
 				onclick={() => handleCopy('jsonl')}
-				class="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-left text-sm"
+				class="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted dark:hover:bg-zinc-700 transition-colors text-left text-sm"
 			>
-				<svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
@@ -139,7 +139,7 @@
 						d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
 					/>
 				</svg>
-				<span class="flex-1 text-gray-900 dark:text-gray-100">Copy as JSONL</span>
+				<span class="flex-1 text-foreground">Copy as JSONL</span>
 				{#if copiedFormat === 'jsonl'}
 					<svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />

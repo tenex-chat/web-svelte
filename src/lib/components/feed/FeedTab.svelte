@@ -199,7 +199,7 @@
 		<div class="border-b bg-white/50">
 			<div class="flex gap-2">
 				<div class="relative flex-1">
-					<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+					<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<input
 						type="text"
 						placeholder="Search events, titles, subjects, hashtags..."
@@ -210,7 +210,7 @@
 						<button
 							type="button"
 							onclick={() => (searchQuery = '')}
-							class="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 rounded transition-colors flex items-center justify-center"
+							class="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-muted rounded transition-colors flex items-center justify-center"
 						>
 							<X class="h-3.5 w-3.5" />
 						</button>
@@ -223,9 +223,9 @@
 						<DropdownMenu.Trigger asChild>
 							<button
 								type="button"
-								class="h-9 w-9 p-0 flex items-center justify-center border border-gray-300 dark:border-zinc-600 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
-								class:bg-blue-600={selectedAuthor}
-								class:dark:bg-blue-600={selectedAuthor}
+								class="h-9 w-9 p-0 flex items-center justify-center border border-border rounded-lg hover:bg-muted dark:hover:bg-zinc-800 transition-colors"
+								class:bg-primary={selectedAuthor}
+								class:dark:bg-primary={selectedAuthor}
 								class:text-white={selectedAuthor}
 							>
 								{#if selectedAuthor}
@@ -288,19 +288,19 @@
 	<!-- Event list or empty states -->
 	{#if sortedEvents.length === 0}
 		<div class="flex flex-col items-center justify-center h-full p-6 text-center">
-			<Users class="h-12 w-12 text-gray-300 mb-3" />
+			<Users class="h-12 w-12 text-muted-foreground mb-3" />
 			<h3 class="font-semibold text-sm mb-1">No events yet</h3>
-			<p class="text-xs text-gray-500 max-w-[200px]">Events from this project will appear here</p>
+			<p class="text-xs text-muted-foreground max-w-[200px]">Events from this project will appear here</p>
 		</div>
 	{:else if showNoResults}
 		<div class="flex flex-col items-center justify-center h-full p-6 text-center">
-			<Search class="h-12 w-12 text-gray-300 mb-3" />
+			<Search class="h-12 w-12 text-muted-foreground mb-3" />
 			<h3 class="font-semibold text-sm mb-1">No results found</h3>
-			<p class="text-xs text-gray-500 max-w-[200px]">Try adjusting your search terms</p>
+			<p class="text-xs text-muted-foreground max-w-[200px]">Try adjusting your search terms</p>
 			<button
 				type="button"
 				onclick={() => (searchQuery = '')}
-				class="mt-3 px-3 py-1.5 text-sm hover:bg-gray-100 rounded transition-colors"
+				class="mt-3 px-3 py-1.5 text-sm hover:bg-muted rounded transition-colors"
 			>
 				Clear search
 			</button>
@@ -319,7 +319,7 @@
 					<button
 						type="button"
 						onclick={loadMore}
-						class="px-6 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+						class="px-6 py-2 text-sm font-medium text-primary hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
 					>
 						Load More ({filteredEvents.length - visibleCount} remaining)
 					</button>

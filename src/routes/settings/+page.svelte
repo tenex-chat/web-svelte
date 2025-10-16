@@ -40,23 +40,23 @@
 	<title>Settings - TENEX</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50 dark:bg-zinc-950 p-8">
+<div class="min-h-screen bg-background p-8">
 	<div class="max-w-5xl mx-auto">
 		<!-- Page Header -->
 		<div class="mb-8">
 			<button
 				onclick={goBack}
-				class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors mb-4"
+				class="inline-flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground dark:hover:text-foreground hover:bg-muted rounded-lg transition-colors mb-4"
 			>
 				<ArrowLeft class="w-4 h-4" />
 				Back to Projects
 			</button>
-			<h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
-			<p class="text-gray-600 dark:text-gray-400 mt-2">Manage your account, AI providers, appearance, and more</p>
+			<h1 class="text-3xl font-bold text-foreground">Settings</h1>
+			<p class="text-muted-foreground mt-2">Manage your account, AI providers, appearance, and more</p>
 		</div>
 
 		<!-- Tab Navigation -->
-		<div class="mb-6 border-b border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-t-lg">
+		<div class="mb-6 border-b border-border bg-card rounded-t-lg">
 			<div class="flex overflow-x-auto">
 				{#each tabs as tab (tab.value)}
 					<button
@@ -64,8 +64,8 @@
 						class={cn(
 							'px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2',
 							activeTab === tab.value
-								? 'border-blue-600 text-blue-600'
-								: 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:border-gray-300 dark:hover:border-gray-500'
+								? 'border-blue-600 text-primary'
+								: 'border-transparent text-muted-foreground hover:text-foreground dark:hover:text-foreground hover:border-border dark:hover:border-gray-500'
 						)}
 					>
 						{tab.label}
@@ -75,7 +75,7 @@
 		</div>
 
 		<!-- Tab Content -->
-		<div class="bg-white dark:bg-zinc-900 rounded-b-lg shadow-sm p-6">
+		<div class="bg-card rounded-b-lg shadow-sm p-6">
 			{#if activeTab === 'account'}
 				<AccountSettings />
 			{:else if activeTab === 'ai'}

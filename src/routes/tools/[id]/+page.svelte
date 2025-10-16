@@ -68,7 +68,7 @@
 	{#if !tool()}
 		<div class="text-center py-16">
 			<div class="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-			<p class="text-gray-600">Loading tool...</p>
+			<p class="text-muted-foreground">Loading tool...</p>
 		</div>
 	{:else}
 		<!-- Header -->
@@ -76,7 +76,7 @@
 			<div class="flex items-start gap-4">
 				<button
 					onclick={handleBack}
-					class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+					class="p-2 hover:bg-muted rounded-lg transition-colors"
 					aria-label="Back to tools"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,15 +92,15 @@
 					<div class="flex items-center gap-3 mb-2">
 						<span class="text-3xl">{getToolIcon(tool()?.command)}</span>
 						<div>
-							<h1 class="text-2xl font-bold text-gray-900">
+							<h1 class="text-2xl font-bold text-foreground">
 								{tool()?.name || 'Unnamed Tool'}
 							</h1>
 							{#if isOwner}
-								<span class="text-sm text-blue-600 font-medium">Your Tool</span>
+								<span class="text-sm text-primary font-medium">Your Tool</span>
 							{/if}
 						</div>
 					</div>
-					<p class="text-gray-600">{tool()?.description || 'No description available'}</p>
+					<p class="text-muted-foreground">{tool()?.description || 'No description available'}</p>
 				</div>
 			</div>
 
@@ -109,7 +109,7 @@
 				<div class="relative">
 					<button
 						onclick={() => (showActionsDropdown = !showActionsDropdown)}
-						class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+						class="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"
 					>
 						Actions
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,11 +124,11 @@
 
 					{#if showActionsDropdown}
 						<div
-							class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10"
+							class="absolute right-0 mt-2 w-48 bg-white border border-border rounded-lg shadow-lg z-10"
 						>
 							<button
 								onclick={handleEdit}
-								class="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 rounded-t-lg"
+								class="w-full px-4 py-2 text-left hover:bg-muted flex items-center gap-2 rounded-t-lg"
 							>
 								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path
@@ -142,7 +142,7 @@
 							</button>
 							<button
 								onclick={handleDelete}
-								class="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-red-600 rounded-b-lg"
+								class="w-full px-4 py-2 text-left hover:bg-muted flex items-center gap-2 text-red-600 rounded-b-lg"
 							>
 								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path
@@ -161,12 +161,12 @@
 		</div>
 
 		<!-- Content -->
-		<div class="bg-white border border-gray-200 rounded-lg p-6 space-y-6">
+		<div class="bg-white border border-border rounded-lg p-6 space-y-6">
 			<!-- Command -->
 			{#if tool()?.command}
 				<div>
-					<h3 class="text-sm font-medium text-gray-700 mb-2">Command</h3>
-					<code class="block p-3 bg-gray-50 rounded-lg text-sm font-mono text-gray-900">
+					<h3 class="text-sm font-medium text-foreground mb-2">Command</h3>
+					<code class="block p-3 bg-muted rounded-lg text-sm font-mono text-foreground">
 						{tool()?.command}
 					</code>
 				</div>
@@ -175,7 +175,7 @@
 			<!-- Capabilities -->
 			{#if tool()?.capabilities.length}
 				<div>
-					<h3 class="text-sm font-medium text-gray-700 mb-2">
+					<h3 class="text-sm font-medium text-foreground mb-2">
 						Capabilities ({tool()?.capabilities.length})
 					</h3>
 					<div class="flex flex-wrap gap-2">
@@ -190,14 +190,14 @@
 
 			<!-- Tool ID -->
 			<div>
-				<h3 class="text-sm font-medium text-gray-700 mb-2">Tool ID</h3>
+				<h3 class="text-sm font-medium text-foreground mb-2">Tool ID</h3>
 				<div class="flex items-center gap-2">
-					<code class="flex-1 p-3 bg-gray-50 rounded-lg text-xs font-mono text-gray-700 truncate">
+					<code class="flex-1 p-3 bg-muted rounded-lg text-xs font-mono text-foreground truncate">
 						{tool()?.id}
 					</code>
 					<button
 						onclick={handleCopyId}
-						class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+						class="px-3 py-2 border border-border rounded-lg hover:bg-muted transition-colors flex items-center gap-2"
 					>
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
@@ -213,17 +213,17 @@
 			</div>
 
 			<!-- Metadata -->
-			<div class="pt-4 border-t border-gray-200">
+			<div class="pt-4 border-t border-border">
 				<div class="grid grid-cols-2 gap-4 text-sm">
 					<div>
-						<span class="text-gray-600">Created:</span>
-						<span class="ml-2 text-gray-900">
+						<span class="text-muted-foreground">Created:</span>
+						<span class="ml-2 text-foreground">
 							{new Date((tool()?.created_at || 0) * 1000).toLocaleDateString()}
 						</span>
 					</div>
 					<div>
-						<span class="text-gray-600">Author:</span>
-						<span class="ml-2 text-gray-900 font-mono text-xs">
+						<span class="text-muted-foreground">Author:</span>
+						<span class="ml-2 text-foreground font-mono text-xs">
 							{tool()?.pubkey.substring(0, 8)}...
 						</span>
 					</div>

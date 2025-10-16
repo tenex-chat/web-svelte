@@ -64,7 +64,7 @@
 
 <div class="flex-1 overflow-y-auto">
 	{#if flatMessages.length === 0}
-		<div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 text-sm">
+		<div class="flex items-center justify-center h-full text-muted-foreground text-sm">
 			No messages yet. Start the conversation!
 		</div>
 	{:else if viewMode === 'threaded'}

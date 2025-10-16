@@ -166,7 +166,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 			<!-- Close Button -->
 			<button
 				onclick={handleClose}
-				class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
+				class="absolute top-4 right-4 text-muted-foreground hover:text-muted-foreground z-10"
 				aria-label="Close dialog"
 			>
 				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,8 +181,8 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 
 			<!-- Header -->
 			<div class="px-6 pt-6 pb-4">
-				<h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
-					<svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<h2 class="text-xl font-semibold text-foreground flex items-center gap-2">
+					<svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"
 							stroke-linejoin="round"
@@ -192,7 +192,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 					</svg>
 					AI-Assisted Prompt Editor
 				</h2>
-				<p class="text-sm text-gray-500 mt-1">Use AI to refine and improve your system prompt</p>
+				<p class="text-sm text-muted-foreground mt-1">Use AI to refine and improve your system prompt</p>
 			</div>
 
 			<!-- Content -->
@@ -200,14 +200,14 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 				{#if !showPreview}
 					<!-- LLM Configuration Selection -->
 					<div>
-						<label for="llm-config" class="block text-sm font-medium text-gray-700 mb-1"
+						<label for="llm-config" class="block text-sm font-medium text-foreground mb-1"
 							>Select LLM Configuration</label
 						>
 						{#if llmConfigs.length > 0}
 							<select
 								id="llm-config"
 								bind:value={selectedConfigId}
-								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							>
 								<option value="">Choose an LLM to assist you</option>
 								{#each llmConfigs as config (config.id)}
@@ -235,14 +235,14 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 
 					<!-- Modification Instructions -->
 					<div>
-						<label for="instructions" class="block text-sm font-medium text-gray-700 mb-1"
+						<label for="instructions" class="block text-sm font-medium text-foreground mb-1"
 							>Modification Instructions</label
 						>
 						<textarea
 							id="instructions"
 							bind:value={instructions}
 							rows="8"
-							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+							class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
 							placeholder="Examples:
 • Make the prompt more formal and professional
 • Add instructions for the agent to be more concise
@@ -250,7 +250,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 • Make it friendlier and more conversational
 • Add specific expertise in Python and machine learning"
 						></textarea>
-						<p class="text-xs text-gray-500 mt-1">
+						<p class="text-xs text-muted-foreground mt-1">
 							Describe how you want to modify the system prompt
 						</p>
 					</div>
@@ -258,8 +258,8 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 					<!-- Current Prompt Preview -->
 					{#if currentPrompt}
 						<div>
-							<label class="block text-sm font-medium text-gray-700 mb-1">Current System Prompt</label>
-							<div class="p-3 bg-gray-50 rounded-lg max-h-32 overflow-y-auto">
+							<label class="block text-sm font-medium text-foreground mb-1">Current System Prompt</label>
+							<div class="p-3 bg-muted rounded-lg max-h-32 overflow-y-auto">
 								<p class="text-sm whitespace-pre-wrap">{currentPrompt}</p>
 							</div>
 						</div>
@@ -274,28 +274,28 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 				{:else}
 					<!-- Generated Prompt Preview -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-1">Generated System Prompt</label>
-						<div class="border border-gray-200 rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
+						<label class="block text-sm font-medium text-foreground mb-1">Generated System Prompt</label>
+						<div class="border border-border rounded-lg p-4 bg-muted max-h-96 overflow-y-auto">
 							<p class="whitespace-pre-wrap">{generatedPrompt}</p>
 						</div>
 					</div>
 
 					<!-- Instructions Reminder -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-1">Your Instructions</label>
-						<div class="p-3 bg-gray-50 rounded-lg">
-							<p class="text-sm italic text-gray-700">{instructions}</p>
+						<label class="block text-sm font-medium text-foreground mb-1">Your Instructions</label>
+						<div class="p-3 bg-muted rounded-lg">
+							<p class="text-sm italic text-foreground">{instructions}</p>
 						</div>
 					</div>
 				{/if}
 			</div>
 
 			<!-- Footer -->
-			<div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
+			<div class="px-6 py-4 border-t border-border flex justify-end gap-2">
 				{#if !showPreview}
 					<button
 						onclick={handleClose}
-						class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+						class="px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors"
 					>
 						Cancel
 					</button>
@@ -303,7 +303,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 						onclick={handleGenerate}
 						disabled={!selectedConfigId || !instructions.trim() || isGenerating || llmConfigs.length === 0}
 						class={cn(
-							'px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2',
+							'px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2',
 							(!selectedConfigId || !instructions.trim() || isGenerating || llmConfigs.length === 0) &&
 								'opacity-50 cursor-not-allowed'
 						)}
@@ -338,19 +338,19 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 				{:else}
 					<button
 						onclick={() => (showPreview = false)}
-						class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+						class="px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors"
 					>
 						Back to Edit
 					</button>
 					<button
 						onclick={handleClose}
-						class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+						class="px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors"
 					>
 						Cancel
 					</button>
 					<button
 						onclick={handleApply}
-						class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+						class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
 					>
 						Apply Changes
 					</button>

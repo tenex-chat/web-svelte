@@ -96,23 +96,23 @@
 
 <div class="space-y-6">
 	<!-- Voice Settings Card -->
-	<div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg">
-		<div class="px-4 py-3 border-b border-gray-200 dark:border-zinc-700">
+	<div class="bg-card border border-border rounded-lg">
+		<div class="px-4 py-3 border-b border-border">
 			<div class="flex items-center gap-2">
-				<Volume2 class="w-5 h-5 text-gray-700 dark:text-gray-300" />
-				<h3 class="font-semibold text-gray-900 dark:text-gray-100">Voice Settings</h3>
+				<Volume2 class="w-5 h-5 text-foreground" />
+				<h3 class="font-semibold text-foreground">Voice Settings</h3>
 			</div>
-			<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+			<p class="text-sm text-muted-foreground mt-1">
 				Configure the voice for this agent
 			</p>
 		</div>
 		<div class="px-4 py-4 space-y-4">
 			<!-- Voice Provider -->
 			<div class="space-y-2">
-				<label class="text-sm font-medium text-gray-700 dark:text-gray-300">Voice Provider</label>
+				<label class="text-sm font-medium text-foreground">Voice Provider</label>
 				<select
 					bind:value={voiceProvider}
-					class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+					class="w-full px-3 py-2 border border-border bg-white dark:bg-zinc-800 text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
 				>
 					<option value="openai">OpenAI</option>
 					<option value="elevenlabs">ElevenLabs</option>
@@ -121,10 +121,10 @@
 
 			<!-- Voice Selection -->
 			<div class="space-y-2">
-				<label class="text-sm font-medium text-gray-700 dark:text-gray-300">Voice</label>
+				<label class="text-sm font-medium text-foreground">Voice</label>
 				<select
 					bind:value={voiceId}
-					class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+					class="w-full px-3 py-2 border border-border bg-white dark:bg-zinc-800 text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
 				>
 					<option value="">Select a voice...</option>
 					<option value="alloy">Alloy</option>
@@ -138,7 +138,7 @@
 
 			<!-- Speed Control -->
 			<div class="space-y-2">
-				<label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+				<label class="text-sm font-medium text-foreground">
 					Speed: {voiceSpeed}x
 				</label>
 				<input
@@ -156,14 +156,14 @@
 				<button
 					onclick={handleTestVoice}
 					disabled={!voiceId}
-					class="px-4 py-2 text-sm font-medium border border-gray-300 dark:border-zinc-600 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300"
+					class="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-foreground"
 				>
 					<Volume2 class="w-4 h-4 inline-block mr-2" />
 					Test Voice
 				</button>
 				<button
 					onclick={handleResetVoice}
-					class="px-4 py-2 text-sm font-medium border border-gray-300 dark:border-zinc-600 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors text-gray-700 dark:text-gray-300"
+					class="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted dark:hover:bg-zinc-800 transition-colors text-foreground"
 				>
 					Reset to Global
 				</button>
@@ -172,18 +172,18 @@
 	</div>
 
 	<!-- Project Settings Card -->
-	<div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg">
-		<div class="px-4 py-3 border-b border-gray-200 dark:border-zinc-700">
+	<div class="bg-card border border-border rounded-lg">
+		<div class="px-4 py-3 border-b border-border">
 			<div class="flex items-center gap-2">
-				<Settings2 class="w-5 h-5 text-gray-700 dark:text-gray-300" />
-				<h3 class="font-semibold text-gray-900 dark:text-gray-100">Project Settings</h3>
+				<Settings2 class="w-5 h-5 text-foreground" />
+				<h3 class="font-semibold text-foreground">Project Settings</h3>
 			</div>
-			<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+			<p class="text-sm text-muted-foreground mt-1">
 				Configure this agent's models and tools per project
 			</p>
 		</div>
 		<div class="px-4 py-4">
-			<div class="text-center py-8 text-gray-500 dark:text-gray-400">
+			<div class="text-center py-8 text-muted-foreground">
 				<p class="text-sm">No projects found where this agent is assigned</p>
 				<p class="text-xs mt-1">Project-specific settings will appear here when the agent is added to a project</p>
 			</div>
@@ -195,7 +195,7 @@
 		<button
 			onclick={handleSaveSettings}
 			disabled={isSaving}
-			class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+			class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 dark:bg-blue-500 dark:hover:bg-primary rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 		>
 			<Save class="w-4 h-4 inline-block mr-2" />
 			{isSaving ? 'Saving...' : 'Save Settings'}
