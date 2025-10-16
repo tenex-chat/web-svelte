@@ -51,8 +51,8 @@
 <div class={cn('w-96 flex-shrink-0 flex flex-col bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-700 relative', className)}>
 	<!-- Glow effect at top -->
 	<div
-		class="absolute top-0 left-0 right-0 h-full pointer-events-none z-0"
-		style="background: linear-gradient(to bottom, {projectColor.replace('55%', '70%').replace('65%', '80%').replace(')', ', 0.35)')}, {projectColor.replace('55%', '60%').replace('65%', '70%').replace(')', ', 0.08)')} 60%, transparent)"
+		class="absolute top-0 left-0 right-0 h-96 pointer-events-none z-0"
+		style="background: linear-gradient(to bottom, {projectColor.replace('55%', '65%').replace('65%', '75%').replace(')', ', 0.25)')}, {projectColor.replace('55%', '55%').replace('65%', '65%').replace(')', ', 0.05)')} 70%, transparent)"
 	></div>
 
 	<!-- Column Header -->

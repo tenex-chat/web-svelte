@@ -172,7 +172,7 @@
 				{/if}
 
 				<!-- Message Actions Dropdown -->
-				<div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+				<div class="ml-auto transition-opacity" class:opacity-0={!dropdownOpen} class:opacity-100={dropdownOpen} class:group-hover:opacity-100={!dropdownOpen}>
 					<DropdownMenu.Root bind:open={dropdownOpen}>
 						<DropdownMenu.Trigger asChild>
 							<button

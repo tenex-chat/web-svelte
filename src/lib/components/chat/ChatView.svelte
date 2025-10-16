@@ -15,14 +15,14 @@
 		onThreadCreated?: (thread: NDKEvent) => void;
 		viewMode?: ThreadViewMode;
 		hideHeader?: boolean;
+		messages?: Message[];
 	}
 
-	let { project, rootEvent = null, onlineAgents = [], onThreadCreated, viewMode = $bindable('threaded'), hideHeader = false }: Props = $props();
+	let { project, rootEvent = null, onlineAgents = [], onThreadCreated, viewMode = $bindable('threaded'), hideHeader = false, messages = $bindable([]) }: Props = $props();
 
 	let localRootEvent = $state<NDKEvent | null>(rootEvent);
 	let replyToEvent = $state<NDKEvent | null>(null);
 	let initialContent = $state<string>('');
-	let messages = $state<Message[]>([]);
 
 	// Update local root when prop changes
 	$effect(() => {

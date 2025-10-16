@@ -5,6 +5,8 @@
 	import SettingsTab from '../settings/SettingsTab.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
+	import type { Message } from '$lib/utils/messageProcessor';
+	import CopyThreadMenu from '../chat/CopyThreadMenu.svelte';
 
 	interface Props {
 		window: WindowConfig;
@@ -13,6 +15,7 @@
 	let { window }: Props = $props();
 
 	let viewMode = $state<ThreadViewMode>('threaded');
+	let messages = $state<Message[]>([]);
 
 	const onlineAgents = $derived(
 		window.project ? projectStatusStore.getOnlineAgents(window.project.tagId()) : []
@@ -72,6 +75,9 @@
 		<!-- Actions -->
 		<div class="flex items-center gap-1">
 			{#if window.type === 'chat'}
+				<!-- Copy Thread Menu -->
+				<CopyThreadMenu {messages} rootEvent={window.data?.thread} />
+
 				<!-- View Mode Toggle -->
 				<button
 					onclick={toggleViewMode}
@@ -79,7 +85,7 @@
 					title={viewMode === 'threaded' ? 'Switch to flat view' : 'Switch to threaded view'}
 				>
 					{#if viewMode === 'threaded'}
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
 								stroke-linecap="round"
 								stroke-linejoin="round"
@@ -88,7 +94,7 @@
 							/>
 						</svg>
 					{:else}
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
 								stroke-linecap="round"
 								stroke-linejoin="round"
@@ -106,7 +112,7 @@
 				class="p-2 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors"
 				title="Open in window"
 			>
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
@@ -122,7 +128,7 @@
 				class="p-2 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors"
 				title="Close"
 			>
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
@@ -143,6 +149,7 @@
 				{onlineAgents}
 				{viewMode}
 				hideHeader={true}
+				bind:messages
 			/>
 		{:else if window.type === 'settings' && window.project}
 			<SettingsTab project={window.project} {onlineAgents} />
