@@ -206,6 +206,14 @@
 				project={window.project}
 				rootEvent={window.data?.thread}
 				{onlineAgents}
+				onThreadCreated={(thread) => {
+					// Update the window data with the new thread
+					windowManager.updateWindowData(
+						window.id,
+						{ thread },
+						thread.tagValue('title') || 'Conversation'
+					);
+				}}
 				{viewMode}
 				hideHeader={true}
 				bind:messages

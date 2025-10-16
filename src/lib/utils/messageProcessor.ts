@@ -84,35 +84,63 @@ export function processEvent(
 
 	// Handle streaming responses
 	if (event.kind === EVENT_KINDS.STREAMING_RESPONSE) {
+		console.log('[MessageProcessor] Processing streaming event (21111)', {
+			eventId: event.id,
+			pubkey: event.pubkey,
+			content: event.content?.substring(0, 100) + '...',
+			timestamp: event.created_at
+		});
+
 		let session = streamingSessions.get(event.pubkey);
 
 		if (!session) {
 			const accumulator = new DeltaContentAccumulator();
 			const reconstructedContent = accumulator.addEvent(event);
 
+			// Use pubkey only for synthetic ID since we key sessions by pubkey
+			// This ensures the ID remains stable across all deltas for the same stream
+			const syntheticId = `streaming-${event.pubkey}`;
+
+			console.log('[MessageProcessor] Creating new streaming session', {
+				pubkey: event.pubkey,
+				syntheticId,
+				reconstructedContent: reconstructedContent?.substring(0, 100) + '...'
+			});
+
 			session = {
-				syntheticId: `streaming-${event.pubkey}-${Date.now()}`,
+				syntheticId,
 				latestEvent: event,
 				accumulator,
 				reconstructedContent
 			};
 			streamingSessions.set(event.pubkey, session);
 		} else {
+			// Update existing session but keep the same synthetic ID
+			const currentId = session.syntheticId;
 			session.reconstructedContent = session.accumulator.addEvent(event);
 			session.latestEvent = event;
+
+			console.log('[MessageProcessor] Updating streaming session', {
+				pubkey: event.pubkey,
+				syntheticId: currentId,
+				reconstructedContent: session.reconstructedContent?.substring(0, 100) + '...'
+			});
 		}
 	} else if (event.kind === EVENT_KINDS.TYPING_INDICATOR) {
 		let session = streamingSessions.get(event.pubkey);
 
 		if (!session) {
+			// For typing indicators, use pubkey as part of ID since they don't have accumulated content
+			const syntheticId = `typing-${event.pubkey}`;
 			session = {
-				syntheticId: `streaming-${event.pubkey}-${Date.now()}`,
+				syntheticId,
 				latestEvent: event,
 				accumulator: new DeltaContentAccumulator(),
 				reconstructedContent: event.content
 			};
 			streamingSessions.set(event.pubkey, session);
 		} else {
+			// Keep the same synthetic ID for consistency
 			session.latestEvent = event;
 			session.reconstructedContent = event.content;
 		}
@@ -124,6 +152,11 @@ export function processEvent(
 	} else {
 		finalMessages.push({ id: event.id, event });
 		if (event.kind === NDKKind.GenericReply) {
+			console.log('[MessageProcessor] Received final message (1111), clearing streaming session', {
+				eventId: event.id,
+				pubkey: event.pubkey,
+				hadStreamingSession: streamingSessions.has(event.pubkey)
+			});
 			streamingSessions.delete(event.pubkey);
 		}
 	}
@@ -298,6 +331,17 @@ export function processEventsToMessages(
 
 	// Add streaming sessions
 	const streamingMessages = streamingSessionsToMessages(streamingSessions);
+
+	console.log('[MessageProcessor] Converting streaming sessions to messages', {
+		sessionCount: streamingSessions.size,
+		streamingMessageCount: streamingMessages.length,
+		sessions: Array.from(streamingSessions.entries()).map(([key, session]) => ({
+			pubkey: key,
+			syntheticId: session.syntheticId,
+			contentLength: session.reconstructedContent?.length
+		}))
+	});
+
 	if (isBrainstorm && !showAll) {
 		streamingMessages.forEach((msg) => {
 			if (
@@ -313,10 +357,25 @@ export function processEventsToMessages(
 			}
 		});
 	} else {
+		console.log('[MessageProcessor] Adding streaming messages to final messages', {
+			before: finalMessages.length,
+			adding: streamingMessages.length
+		});
 		finalMessages.push(...streamingMessages);
+		console.log('[MessageProcessor] After adding streaming messages', {
+			after: finalMessages.length
+		});
 	}
 
 	// Sort by timestamp with tag priority
+	const messagesWithoutTime = finalMessages.filter((msg) => msg.event.created_at === undefined);
+	if (messagesWithoutTime.length > 0) {
+		console.log('[MessageProcessor] Messages without created_at:', messagesWithoutTime.map(m => ({
+			id: m.id,
+			kind: m.event.kind
+		})));
+	}
+
 	const messagesWithTime = finalMessages
 		.filter((msg) => msg.event.created_at !== undefined)
 		.sort((a, b) => {
@@ -335,6 +394,15 @@ export function processEventsToMessages(
 			}
 			return timeDiff;
 		});
+
+	const streamingCount = messagesWithTime.filter(msg => msg.event.kind === EVENT_KINDS.STREAMING_RESPONSE).length;
+	if (streamingCount > 0) {
+		console.log('[MessageProcessor] Returning messages with streaming', {
+			totalMessages: messagesWithTime.length,
+			streamingMessages: streamingCount,
+			messageIds: messagesWithTime.map(m => ({ id: m.id, kind: m.event.kind }))
+		});
+	}
 
 	return messagesWithTime;
 }

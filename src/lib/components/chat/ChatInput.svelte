@@ -6,6 +6,7 @@
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import AgentConfigDialog from './AgentConfigDialog.svelte';
 	import AgentSelector from './AgentSelector.svelte';
+	import ActiveAgents from './ActiveAgents.svelte';
 	import { Maximize2, Minimize2 } from 'lucide-svelte';
 
 	interface Props {
@@ -484,52 +485,62 @@
 				{/if}
 			</div>
 
-			<!-- Controls Row: Agent Selector, Attachment -->
-			<div class="flex items-center gap-2 border-t border-border/30 dark:border-white/5 pt-2">
-				<!-- Agent Selector -->
-				{#if onlineAgents.length > 0}
-					<AgentSelector
-						agents={onlineAgents}
-						selectedAgent={selectedAgent}
-						defaultAgent={defaultAgent}
-						currentModel={currentAgentModel}
-						onSelect={(pubkey) => (selectedAgent = pubkey)}
-						onConfigure={() => (configDialogOpen = true)}
-					/>
-				{/if}
-
-				<!-- Attachment Button -->
-				<button
-					class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-muted-foreground"
-					type="button"
-					title="Attach file"
-					aria-label="Attach file"
-				>
-					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+			<!-- Controls Row: Agent Selector, Active Agents, Attachment -->
+			<div class="flex items-center justify-between gap-2 border-t border-border/30 dark:border-white/5 pt-2">
+				<!-- Left side controls -->
+				<div class="flex items-center gap-2">
+					<!-- Agent Selector -->
+					{#if onlineAgents.length > 0}
+						<AgentSelector
+							agents={onlineAgents}
+							selectedAgent={selectedAgent}
+							defaultAgent={defaultAgent}
+							currentModel={currentAgentModel}
+							onSelect={(pubkey) => (selectedAgent = pubkey)}
+							onConfigure={() => (configDialogOpen = true)}
 						/>
-					</svg>
-				</button>
-
-				<!-- Expand/Collapse Toggle Button -->
-				<button
-					onclick={handleToggleExpand}
-					class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-muted-foreground"
-					type="button"
-					title={isExpanded ? 'Shrink input (Cmd+Enter to send)' : 'Expand input (Enter for new lines)'}
-					aria-label={isExpanded ? 'Shrink input' : 'Expand input'}
-					disabled={isSubmitting || !currentUser}
-				>
-					{#if isExpanded}
-						<Minimize2 class="w-5 h-5" />
-					{:else}
-						<Maximize2 class="w-5 h-5" />
 					{/if}
-				</button>
+
+					<!-- Attachment Button -->
+					<button
+						class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-muted-foreground"
+						type="button"
+						title="Attach file"
+						aria-label="Attach file"
+					>
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+							/>
+						</svg>
+					</button>
+
+					<!-- Expand/Collapse Toggle Button -->
+					<button
+						onclick={handleToggleExpand}
+						class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-muted-foreground"
+						type="button"
+						title={isExpanded ? 'Shrink input (Cmd+Enter to send)' : 'Expand input (Enter for new lines)'}
+						aria-label={isExpanded ? 'Shrink input' : 'Expand input'}
+						disabled={isSubmitting || !currentUser}
+					>
+						{#if isExpanded}
+							<Minimize2 class="w-5 h-5" />
+						{:else}
+							<Maximize2 class="w-5 h-5" />
+						{/if}
+					</button>
+				</div>
+
+				<!-- Right side - Active Agents -->
+				<ActiveAgents
+					eventId={rootEvent?.id}
+					projectId={projectId}
+					onlineAgents={onlineAgents}
+				/>
 			</div>
 		</div>
 	</div>

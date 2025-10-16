@@ -5,6 +5,8 @@
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { processEventsToMessages } from '$lib/utils/messageProcessor';
+	import { streamingMessageStore } from '$lib/utils/streamingMessageStore.svelte';
+	import { EVENT_KINDS } from '$lib/constants';
 	import { CallStore, type CallStoreOptions, type CallState } from '$lib/stores/call-store.svelte';
 	import VoiceVisualizer from './VoiceVisualizer.svelte';
 	import AudioControls from './AudioControls.svelte';
@@ -78,17 +80,47 @@
 	});
 
 	// Subscribe to messages in the thread
-	// Use rootEvent.filter() and nip22Filter() directly - they include all necessary kinds (including 21111 for streaming)
+	// Need to explicitly include kind 21111 for streaming responses
 	const messagesSubscription = ndk.$subscribe(() =>
 		localRootEvent ? {
 			filters: [
-				localRootEvent.filter(),
-				localRootEvent.nip22Filter()
+				{ kinds: [11, 1111, 7, 21111, 513], ...localRootEvent.filter() },
+				{ kinds: [11, 1111, 7, 21111, 513], ...localRootEvent.nip22Filter() }
 			],
 			closeOnEose: false,
 			bufferMs: 30
 		} : false
 	);
+
+	// Track processed events to avoid reprocessing
+	let processedStreamingEvents = new Set<string>();
+	let processedFinalEvents = new Set<string>();
+
+	// Process streaming events separately for immediate updates
+	$effect(() => {
+		const streamingEvents = messagesSubscription.events.filter(e => e.kind === EVENT_KINDS.STREAMING_RESPONSE);
+
+		// Process only new streaming events
+		for (const event of streamingEvents) {
+			if (!processedStreamingEvents.has(event.id)) {
+				streamingMessageStore.processStreamingEvent(event);
+				processedStreamingEvents.add(event.id);
+			}
+		}
+
+		// Clear sessions when final messages arrive
+		const finalMessages = messagesSubscription.events.filter(e => e.kind === NDKKind.GenericReply);
+		for (const event of finalMessages) {
+			if (!processedFinalEvents.has(event.id)) {
+				streamingMessageStore.clearSession(event.pubkey);
+				processedFinalEvents.add(event.id);
+				// Also clear the streaming events for this pubkey from our tracking
+				streamingEvents
+					.filter(e => e.pubkey === event.pubkey)
+					.forEach(e => processedStreamingEvents.delete(e.id));
+			}
+		}
+	});
 
 	// Process messages for TTS queue
 	const messages = $derived.by(() => {
@@ -98,14 +130,54 @@
 			? messagesSubscription.events
 			: [localRootEvent, ...messagesSubscription.events];
 
-		return processEventsToMessages(
-			allEvents,
+		// Filter out streaming events - we handle them separately via the global store
+		// Also filter out typing indicators as they're handled by streaming store
+		const nonStreamingEvents = allEvents.filter(e =>
+			e.kind !== EVENT_KINDS.STREAMING_RESPONSE &&
+			e.kind !== EVENT_KINDS.TYPING_INDICATOR &&
+			e.kind !== EVENT_KINDS.TYPING_INDICATOR_STOP
+		);
+
+		// Get base messages - processEventsToMessages will NOT handle streaming
+		// since we filtered them out above
+		const baseMessages = processEventsToMessages(
+			nonStreamingEvents,
 			localRootEvent,
 			'flattened',
 			false, // not brainstorm
 			false, // showAll
 			currentUser?.pubkey
 		);
+
+		// Add active streaming sessions as synthetic messages from the GLOBAL store
+		const streamingSessions = streamingMessageStore.getAllSessions();
+		const streamingMessages = [];
+
+		streamingSessions.forEach(([key, session]) => {
+			// Create synthetic event for the streaming message
+			const syntheticEvent = new NDKEvent(ndk);
+			syntheticEvent.kind = EVENT_KINDS.STREAMING_RESPONSE;
+			syntheticEvent.pubkey = session.latestEvent.pubkey;
+			syntheticEvent.created_at = session.latestEvent.created_at;
+			syntheticEvent.tags = session.latestEvent.tags;
+			syntheticEvent.content = session.reconstructedContent;
+			syntheticEvent.id = session.latestEvent.id;
+			syntheticEvent.sig = session.latestEvent.sig;
+
+			streamingMessages.push({
+				id: session.syntheticId,
+				event: syntheticEvent
+			});
+		});
+
+		// Combine and sort all messages
+		const allMessages = [...baseMessages, ...streamingMessages].sort((a, b) => {
+			const timeA = a.event.created_at || 0;
+			const timeB = b.event.created_at || 0;
+			return timeA - timeB;
+		});
+
+		return allMessages;
 	});
 
 	// Thread management functions matching MessagingController interface

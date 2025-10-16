@@ -100,6 +100,7 @@
 		<Message
 			message={currentMessage}
 			isLastMessage={replies.length === 0 && !!currentEvent.tags?.some((t) => t[0] === 'reasoning')}
+			{onTimeClick}
 		/>
 
 		<!-- Render direct replies recursively -->
@@ -123,6 +124,7 @@
 		<Message
 			message={currentMessage}
 			isLastMessage={isLastReasoningMessage}
+			{onTimeClick}
 		/>
 
 		<!-- Render replies if any exist -->

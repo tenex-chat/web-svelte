@@ -20,9 +20,10 @@
 		isLastMessage?: boolean;
 		onReply?: (message: Message) => void;
 		onQuote?: (message: Message) => void;
+		onTimeClick?: (event: NDKEvent) => void;
 	}
 
-	let { message, isLastMessage = false, onReply, onQuote }: Props = $props();
+	let { message, isLastMessage = false, onReply, onQuote, onTimeClick }: Props = $props();
 
 	const currentUser = $derived(ndk.$sessions.currentUser);
 	const isStreaming = $derived(message.event.kind === EVENT_KINDS.STREAMING_RESPONSE);
@@ -32,6 +33,22 @@
 		message.event.kind === NDKKind.GenericReply && message.event.hasTag('tool')
 	);
 	const hasSuggestions = $derived(message.event.tags?.some((tag) => tag[0] === 'suggestion'));
+
+	// Debug streaming messages
+	$effect(() => {
+		if (isStreaming) {
+			console.log('[Message Component] RENDERING streaming message!!!', {
+				messageId: message.id,
+				eventId: message.event.id,
+				kind: message.event.kind,
+				content: message.event.content?.substring(0, 200),
+				contentLength: message.event.content?.length,
+				pubkey: message.event.pubkey,
+				isTyping,
+				hasContent: !!message.event.content
+			});
+		}
+	});
 
 	// Fetch profile
 	const profile = ndk.$fetchProfile(() => message.event.pubkey);
@@ -130,7 +147,18 @@
 		<div class="flex-1 min-w-0">
 			<div class="flex items-center gap-2 mb-1">
 				<span class="font-semibold text-sm text-foreground">{authorName}</span>
-				<span class="text-xs text-muted-foreground">{timestamp}</span>
+				<button
+					type="button"
+					onclick={() => {
+						console.log('Timestamp clicked!', message.event.id);
+						console.log('onTimeClick exists?', !!onTimeClick);
+						onTimeClick?.(message.event);
+					}}
+					class="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer hover:underline"
+					title="Open as root conversation"
+				>
+					{timestamp}
+				</button>
 
 				<!-- P-tagged user avatars -->
 				{#if replyingTo.length > 0}

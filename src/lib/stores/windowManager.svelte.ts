@@ -271,6 +271,28 @@ class WindowManager {
 	}
 
 	/**
+	 * Update window data (for chat threads, etc.)
+	 */
+	updateWindowData(id: string, data: any, title?: string) {
+		const index = this.windowsArray.findIndex((w) => w.id === id);
+		if (index === -1) return;
+
+		const window = this.windowsArray[index];
+		const updatedWindow = {
+			...window,
+			data,
+			...(title && { title })
+		};
+
+		this.windowsArray = [
+			...this.windowsArray.slice(0, index),
+			updatedWindow,
+			...this.windowsArray.slice(index + 1)
+		];
+		this.saveToStorage();
+	}
+
+	/**
 	 * Get a specific window
 	 */
 	get(id: string): WindowConfig | undefined {

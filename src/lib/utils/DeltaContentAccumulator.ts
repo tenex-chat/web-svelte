@@ -18,6 +18,14 @@ export class DeltaContentAccumulator {
 		const sequenceTag = event.tags.find((t) => t[0] === 'sequence');
 		const sequence = sequenceTag ? parseInt(sequenceTag[1]) : 0;
 
+		console.log('[DeltaAccumulator] Adding event', {
+			eventId: event.id,
+			sequence,
+			deltaContent: event.content?.substring(0, 50),
+			deltaLength: event.content?.length,
+			existingDeltas: this.deltas.size
+		});
+
 		// If no content, don't add
 		if (!event.content) {
 			return this.cachedContent;
@@ -28,6 +36,12 @@ export class DeltaContentAccumulator {
 		// Always reconstruct to handle out-of-order events
 		this.cachedContent = this.reconstruct();
 		this.lastReconstructedSequence = this.getHighestSequence();
+
+		console.log('[DeltaAccumulator] After adding', {
+			totalDeltas: this.deltas.size,
+			reconstructedLength: this.cachedContent.length,
+			sequences: Array.from(this.deltas.keys()).sort((a, b) => a - b)
+		});
 
 		return this.cachedContent;
 	}

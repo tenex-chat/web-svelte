@@ -23,11 +23,14 @@
 	let localRootEvent = $state<NDKEvent | null>(rootEvent);
 	let replyToEvent = $state<NDKEvent | null>(null);
 	let initialContent = $state<string>('');
+	let navigationStack = $state<NDKEvent[]>([]);
 
 	// Update local root when prop changes
 	$effect(() => {
-		if (rootEvent) {
+		if (rootEvent && rootEvent.id !== localRootEvent?.id) {
 			localRootEvent = rootEvent;
+			// Clear navigation stack when explicitly setting a new root from props
+			navigationStack = [];
 		}
 	});
 
@@ -57,6 +60,20 @@
 		replyToEvent = null;
 		initialContent = '';
 	}
+
+	function handleTimeClick(event: NDKEvent) {
+		console.log('handleTimeClick called', event.id);
+		console.log('Current root:', localRootEvent?.id);
+		console.log('Navigation stack before:', navigationStack.map(e => e.id));
+
+		if (localRootEvent && localRootEvent.id !== event.id) {
+			navigationStack = [...navigationStack, localRootEvent];
+		}
+		localRootEvent = event;
+
+		console.log('New root:', localRootEvent.id);
+		console.log('Navigation stack after:', navigationStack.map(e => e.id));
+	}
 </script>
 
 <div class="flex flex-col h-full">
@@ -83,6 +100,7 @@
 			{viewMode}
 			onReply={handleReply}
 			onQuote={handleQuote}
+			onTimeClick={handleTimeClick}
 			bind:messages
 		/>
 
