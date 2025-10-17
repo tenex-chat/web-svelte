@@ -112,7 +112,7 @@
 				<label class="text-sm font-medium text-foreground">Voice Provider</label>
 				<select
 					bind:value={voiceProvider}
-					class="w-full px-3 py-2 border border-border bg-white dark:bg-zinc-800 text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+					class="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 				>
 					<option value="openai">OpenAI</option>
 					<option value="elevenlabs">ElevenLabs</option>
@@ -124,7 +124,7 @@
 				<label class="text-sm font-medium text-foreground">Voice</label>
 				<select
 					bind:value={voiceId}
-					class="w-full px-3 py-2 border border-border bg-white dark:bg-zinc-800 text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+					class="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 				>
 					<option value="">Select a voice...</option>
 					<option value="alloy">Alloy</option>
@@ -156,14 +156,14 @@
 				<button
 					onclick={handleTestVoice}
 					disabled={!voiceId}
-					class="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-foreground"
+					class="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-foreground"
 				>
 					<Volume2 class="w-4 h-4 inline-block mr-2" />
 					Test Voice
 				</button>
 				<button
 					onclick={handleResetVoice}
-					class="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted dark:hover:bg-zinc-800 transition-colors text-foreground"
+					class="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors text-foreground"
 				>
 					Reset to Global
 				</button>
@@ -195,7 +195,7 @@
 		<button
 			onclick={handleSaveSettings}
 			disabled={isSaving}
-			class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 dark:bg-blue-500 dark:hover:bg-primary rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+			class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 		>
 			<Save class="w-4 h-4 inline-block mr-2" />
 			{isSaving ? 'Saving...' : 'Save Settings'}

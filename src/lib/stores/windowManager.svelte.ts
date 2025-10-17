@@ -45,7 +45,7 @@ class WindowManager {
 			const detachedWindows = this.windowsArray.filter((w) => w.isDetached);
 			localStorage.setItem('tenex-windows', JSON.stringify(detachedWindows));
 		} catch (e) {
-			console.error('Failed to save windows to storage:', e);
+			console.error('Failed to save windows to storage:', e.messge);
 		}
 	}
 
@@ -102,15 +102,39 @@ class WindowManager {
 	}
 
 	/**
-	 * Open a voice call
+	 * Open a voice call - always opens as detached window with phone aspect ratio
 	 */
 	openCall(project: NDKProject, thread?: NDKEvent) {
-		return this.open({
+		const id = crypto.randomUUID();
+
+		// iPhone-like dimensions (9:19.5 aspect ratio, similar to iPhone 14/15)
+		const width = 390;
+		const height = 844;
+
+		// Center the call window on screen
+		const x = Math.max(100, (globalThis.innerWidth - width) / 2);
+		const y = Math.max(100, (globalThis.innerHeight - height) / 2);
+
+		// Ensure call window is above all other windows
+		const maxZIndex = Math.max(...this.windowsArray.map(w => w.zIndex), this.nextZIndex - 1);
+		const zIndex = maxZIndex + 1;
+		this.nextZIndex = zIndex + 1;
+
+		const window: WindowConfig = {
+			id,
 			type: 'call',
 			title: `Voice Call - ${project.title}`,
 			project,
-			data: { thread }
-		});
+			data: { thread },
+			isDetached: true,
+			position: { x, y },
+			size: { width, height },
+			zIndex
+		};
+
+		this.windowsArray = [...this.windowsArray, window];
+		this.saveToStorage();
+		return id;
 	}
 
 	/**

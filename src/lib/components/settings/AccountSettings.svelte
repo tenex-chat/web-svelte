@@ -66,7 +66,7 @@
 						/>
 						<button
 							onclick={copyPublicKey}
-							class="px-4 py-2 bg-muted hover:bg-secondary dark:hover:bg-gray-600 text-foreground rounded-md transition-colors text-sm"
+							class="px-4 py-2 bg-muted hover:bg-accent text-foreground rounded-md transition-colors text-sm"
 						>
 							Copy
 						</button>

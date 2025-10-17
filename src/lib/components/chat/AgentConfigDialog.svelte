@@ -149,7 +149,7 @@
 
 {#if open}
 	<div
-		class="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4"
+		class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
 		onclick={onClose}
 		onkeydown={(e) => {
 			if (e.key === 'Escape') onClose();
@@ -186,7 +186,7 @@
 					<label class="block text-sm font-medium text-foreground mb-2">LLM Model</label>
 					<select
 						bind:value={selectedModel}
-						class="w-full px-3 py-2 border border-border bg-white dark:bg-zinc-800 text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+						class="w-full px-3 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 					>
 						<option value="">Select a model...</option>
 						{#each availableModels as model}
@@ -209,14 +209,14 @@
 								<div class="border-b border-border last:border-b-0">
 									<!-- Group Header -->
 									<div
-										class="flex items-center gap-2 px-4 py-2 hover:bg-muted dark:hover:bg-zinc-800 transition-colors"
+										class="flex items-center gap-2 px-4 py-2 hover:bg-accent transition-colors"
 									>
 										<!-- Expand/Collapse button (only for multi-tool groups) -->
 										{#if isMultiTool}
 											<button
 												type="button"
 												onclick={() => toggleGroup(group.name)}
-												class="p-1 hover:bg-secondary dark:hover:bg-zinc-700 rounded transition-colors"
+												class="p-1 hover:bg-accent rounded transition-colors"
 												aria-label="Toggle group"
 											>
 												{#if isExpanded}
@@ -236,7 +236,7 @@
 											indeterminate={isPartiallySelected}
 											onchange={(e) =>
 												toggleGroupAll(group, (e.target as HTMLInputElement).checked)}
-											class="w-4 h-4 text-primary dark:text-blue-500 rounded border-border focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-zinc-800"
+											class="w-4 h-4 text-primary rounded border-border focus:ring-blue-500 bg-input"
 										/>
 
 										<!-- Group Name -->
@@ -262,14 +262,14 @@
 
 									<!-- Expanded tools list -->
 									{#if isMultiTool && isExpanded}
-										<div class="bg-muted dark:bg-zinc-800/50 px-4 py-2 space-y-1">
+										<div class="bg-muted px-4 py-2 space-y-1">
 											{#each group.tools as tool (tool)}
-												<label class="flex items-center gap-2 p-2 hover:bg-muted dark:hover:bg-zinc-700 rounded cursor-pointer">
+												<label class="flex items-center gap-2 p-2 hover:bg-accent rounded cursor-pointer">
 													<input
 														type="checkbox"
 														checked={selectedTools.has(tool)}
 														onchange={() => toggleTool(tool)}
-														class="w-4 h-4 text-primary dark:text-blue-500 rounded border-border focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-zinc-800"
+														class="w-4 h-4 text-primary rounded border-border focus:ring-blue-500 bg-input"
 													/>
 													<span class="text-sm font-mono text-foreground">{tool}</span>
 												</label>
@@ -284,18 +284,18 @@
 			</div>
 
 			<!-- Footer -->
-			<div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-muted dark:bg-zinc-800">
+			<div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-muted">
 				<button
 					type="button"
 					onclick={onClose}
-					class="px-4 py-2 text-sm font-medium text-foreground hover:bg-muted dark:hover:bg-zinc-700 rounded-lg transition-colors"
+					class="px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-lg transition-colors"
 				>
 					Cancel
 				</button>
 				<button
 					type="button"
 					onclick={handleSave}
-					class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 dark:bg-blue-500 dark:hover:bg-primary rounded-lg transition-colors"
+					class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors"
 				>
 					Save Changes
 				</button>

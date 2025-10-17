@@ -11,6 +11,9 @@
 
 	const agentId = $derived($page.params.id);
 
+	const agentEvent = ndk.$fetchEvent(() => agentId);
+	console.log('agent definition', (agentEvent as NDKAgentDefinition)?.description);
+
 	const agentEventSub = ndk.$subscribe(
 		() => (agentId ? { ids: [agentId], kinds: [NDKAgentDefinition.kind] } : undefined),
 		{ closeOnEose: true }
@@ -338,7 +341,7 @@
 												<p class="text-xs text-muted-foreground mt-1">{mcp.description}</p>
 											{/if}
 											{#if mcp.command}
-												<code class="text-xs bg-muted dark:bg-gray-600 text-foreground px-2 py-0.5 rounded mt-2 inline-block"
+												<code class="text-xs bg-muted text-foreground px-2 py-0.5 rounded mt-2 inline-block"
 													>{mcp.command}</code
 												>
 											{/if}

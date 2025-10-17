@@ -87,7 +87,7 @@
 					<div
 						class={cn(
 							'flex items-center justify-between p-4 border rounded-lg',
-							activeConfigId === llmConfig.id ? 'border-blue-500 bg-blue-50 dark:bg-zinc-800' : 'border-border'
+							activeConfigId === llmConfig.id ? 'border-primary bg-primary/10' : 'border-border'
 						)}
 					>
 						<div class="flex items-center gap-3">
@@ -99,7 +99,7 @@
 								class="w-4 h-4"
 							/>
 							<div>
-								<div class="font-medium dark:text-gray-100">{llmConfig.name}</div>
+								<div class="font-medium text-foreground">{llmConfig.name}</div>
 								<div class="flex items-center gap-2 text-sm text-muted-foreground">
 									<span class="capitalize">{llmConfig.provider}</span>
 									<span>•</span>
@@ -111,20 +111,20 @@
 						</div>
 						<div class="flex items-center gap-2">
 							{#if activeConfigId === llmConfig.id}
-								<div class="flex items-center gap-1 px-2 py-1 bg-blue-100 rounded text-xs text-blue-700">
+								<div class="flex items-center gap-1 px-2 py-1 bg-primary/10 rounded text-xs text-primary">
 									✓ Active
 								</div>
 							{/if}
 							<button
 								onclick={() => handleTestConnection(llmConfig)}
 								disabled={testingConnection === llmConfig.id}
-								class="px-3 py-1 text-sm border border-border dark:border-zinc-700 rounded hover:bg-muted dark:hover:bg-zinc-800"
+								class="px-3 py-1 text-sm border border-border rounded hover:bg-muted"
 							>
 								{testingConnection === llmConfig.id ? 'Testing...' : 'Test'}
 							</button>
 							<button
 								onclick={() => handleDeleteConfig(llmConfig.id)}
-								class="px-3 py-1 text-sm border border-border dark:border-zinc-700 rounded hover:bg-muted dark:hover:bg-zinc-800"
+								class="px-3 py-1 text-sm border border-border rounded hover:bg-muted"
 								aria-label="Delete configuration"
 							>
 								🗑️
@@ -134,7 +134,7 @@
 				{/each}
 				<button
 					onclick={() => (showAddProvider = true)}
-					class="w-full px-4 py-2 border border-border dark:border-zinc-700 rounded hover:bg-muted dark:hover:bg-zinc-800 transition-colors"
+					class="w-full px-4 py-2 border border-border rounded hover:bg-muted transition-colors"
 				>
 					+ Add New Configuration
 				</button>
@@ -177,7 +177,7 @@
 							aiConfigStore.updateUILLMConfigs({
 								titleGeneration: e.currentTarget.value === 'default' ? undefined : e.currentTarget.value
 							})}
-						class="w-full px-3 py-2 border border-border dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
+						class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-card text-card-foreground"
 					>
 						<option value="default">Use active configuration</option>
 						{#each llmConfigs as llmConfig (llmConfig.id)}
@@ -199,7 +199,7 @@
 							aiConfigStore.updateUILLMConfigs({
 								summaries: e.currentTarget.value === 'default' ? undefined : e.currentTarget.value
 							})}
-						class="w-full px-3 py-2 border border-border dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
+						class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-card text-card-foreground"
 					>
 						<option value="default">Use active configuration</option>
 						{#each llmConfigs as llmConfig (llmConfig.id)}
@@ -275,7 +275,7 @@
 									type="password"
 									bind:value={config.openAIApiKey}
 									onchange={(e) => aiConfigStore.setOpenAIApiKey(e.currentTarget.value)}
-									class="w-full px-3 py-2 border border-border dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
+									class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-card text-card-foreground"
 									placeholder="sk-..."
 								/>
 								<p class="text-xs text-muted-foreground">Uses Whisper model: {sttSettings.model}</p>
@@ -293,7 +293,7 @@
 									bind:value={voiceSettings.apiKey}
 									onchange={(e) =>
 										aiConfigStore.updateVoiceSettings({ apiKey: e.currentTarget.value })}
-									class="w-full px-3 py-2 border border-border dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
+									class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-card text-card-foreground"
 									placeholder="Enter your ElevenLabs API key"
 								/>
 								<p class="text-xs text-muted-foreground">
@@ -364,7 +364,7 @@
 									type="password"
 									bind:value={config.openAIApiKey}
 									onchange={(e) => aiConfigStore.setOpenAIApiKey(e.currentTarget.value)}
-									class="w-full px-3 py-2 border border-border dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
+									class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-card text-card-foreground"
 									placeholder="sk-..."
 								/>
 								<p class="text-xs text-muted-foreground">Get your API key from platform.openai.com</p>
@@ -382,7 +382,7 @@
 									bind:value={voiceSettings.apiKey}
 									onchange={(e) =>
 										aiConfigStore.updateVoiceSettings({ apiKey: e.currentTarget.value })}
-									class="w-full px-3 py-2 border border-border dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
+									class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-card text-card-foreground"
 									placeholder="Enter your ElevenLabs API key"
 								/>
 								<p class="text-xs text-muted-foreground">
@@ -400,22 +400,16 @@
 							</p>
 							<div class="flex gap-2">
 								<button
-									onclick={() => (showVoiceSelection = true)}
-									class="px-4 py-2 border border-border dark:border-zinc-700 rounded hover:bg-muted dark:hover:bg-zinc-800 transition-colors"
-								>
-									Select Voice
-								</button>
-								<button
 									onclick={() => (showVoiceSelection = 'multi')}
-									class="px-4 py-2 border border-border dark:border-zinc-700 rounded hover:bg-muted dark:hover:bg-zinc-800 transition-colors"
+									class="px-4 py-2 border border-border rounded hover:bg-muted transition-colors"
 								>
-									👥 Select Multiple
+									👥 Select Voices
 								</button>
 								<button
 									onclick={handlePreviewVoice}
 									disabled={!voiceSettings.voiceIds?.length || previewingVoice}
 									class={cn(
-										'px-4 py-2 border border-border dark:border-zinc-700 rounded hover:bg-muted dark:hover:bg-zinc-800 transition-colors',
+										'px-4 py-2 border border-border rounded hover:bg-muted transition-colors',
 										(!voiceSettings.voiceIds?.length || previewingVoice) && 'opacity-50 cursor-not-allowed'
 									)}
 								>
@@ -484,7 +478,7 @@
 						alert('Settings reset successfully');
 					}
 				}}
-				class="px-4 py-2 border border-border dark:border-zinc-700 rounded hover:bg-muted dark:hover:bg-zinc-800 transition-colors"
+				class="px-4 py-2 border border-border rounded hover:bg-muted transition-colors"
 			>
 				Reset to Defaults
 			</button>

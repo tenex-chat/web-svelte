@@ -196,7 +196,7 @@
 <div class="h-full flex flex-col">
 	<!-- Search Input and Filter - Only show when there are events -->
 	{#if sortedEvents.length > 0}
-		<div class="border-b bg-white/50">
+		<div class="border-b bg-card/50">
 			<div class="flex gap-2">
 				<div class="relative flex-1">
 					<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -223,9 +223,8 @@
 						<DropdownMenu.Trigger asChild>
 							<button
 								type="button"
-								class="h-9 w-9 p-0 flex items-center justify-center border border-border rounded-lg hover:bg-muted dark:hover:bg-zinc-800 transition-colors"
+								class="h-9 w-9 p-0 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors"
 								class:bg-primary={selectedAuthor}
-								class:dark:bg-primary={selectedAuthor}
 								class:text-white={selectedAuthor}
 							>
 								{#if selectedAuthor}
@@ -319,7 +318,7 @@
 					<button
 						type="button"
 						onclick={loadMore}
-						class="px-6 py-2 text-sm font-medium text-primary hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+						class="px-6 py-2 text-sm font-medium text-primary hover:bg-muted rounded-lg transition-colors"
 					>
 						Load More ({filteredEvents.length - visibleCount} remaining)
 					</button>

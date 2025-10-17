@@ -77,7 +77,7 @@
 		tabindex="0"
 	>
 		<div
-			class="relative w-full max-w-2xl bg-white rounded-lg shadow-xl overflow-hidden"
+			class="relative w-full max-w-2xl bg-card rounded-lg shadow-xl overflow-hidden"
 			onclick={(e) => e.stopPropagation()}
 			role="dialog"
 			aria-modal="true"
@@ -140,12 +140,12 @@
 			<!-- Footer -->
 			<div class="border-t border-border px-4 py-3 bg-muted flex items-center gap-4 text-xs text-muted-foreground">
 				<div class="flex items-center gap-1">
-					<kbd class="px-1.5 py-0.5 bg-white border border-border rounded">↑</kbd>
-					<kbd class="px-1.5 py-0.5 bg-white border border-border rounded">↓</kbd>
+					<kbd class="px-1.5 py-0.5 bg-background border border-border rounded">↑</kbd>
+					<kbd class="px-1.5 py-0.5 bg-background border border-border rounded">↓</kbd>
 					<span>Navigate</span>
 				</div>
 				<div class="flex items-center gap-1">
-					<kbd class="px-1.5 py-0.5 bg-white border border-border rounded">Enter</kbd>
+					<kbd class="px-1.5 py-0.5 bg-background border border-border rounded">Enter</kbd>
 					<span>Select</span>
 				</div>
 			</div>

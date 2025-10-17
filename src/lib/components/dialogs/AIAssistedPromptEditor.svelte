@@ -158,7 +158,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 		tabindex="0"
 	>
 		<div
-			class="relative w-full max-w-2xl max-h-[80vh] bg-white rounded-lg shadow-xl flex flex-col"
+			class="relative w-full max-w-2xl max-h-[80vh] bg-card rounded-lg shadow-xl flex flex-col"
 			onclick={(e) => e.stopPropagation()}
 			role="dialog"
 			aria-modal="true"
@@ -181,7 +181,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 
 			<!-- Header -->
 			<div class="px-6 pt-6 pb-4">
-				<h2 class="text-xl font-semibold text-foreground flex items-center gap-2">
+				<h2 class="text-xl font-semibold flex items-center gap-2">
 					<svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"
@@ -200,7 +200,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 				{#if !showPreview}
 					<!-- LLM Configuration Selection -->
 					<div>
-						<label for="llm-config" class="block text-sm font-medium text-foreground mb-1"
+						<label for="llm-config" class="block text-sm font-medium mb-1"
 							>Select LLM Configuration</label
 						>
 						{#if llmConfigs.length > 0}
@@ -235,7 +235,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 
 					<!-- Modification Instructions -->
 					<div>
-						<label for="instructions" class="block text-sm font-medium text-foreground mb-1"
+						<label for="instructions" class="block text-sm font-medium mb-1"
 							>Modification Instructions</label
 						>
 						<textarea
@@ -258,7 +258,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 					<!-- Current Prompt Preview -->
 					{#if currentPrompt}
 						<div>
-							<label class="block text-sm font-medium text-foreground mb-1">Current System Prompt</label>
+							<label class="block text-sm font-medium mb-1">Current System Prompt</label>
 							<div class="p-3 bg-muted rounded-lg max-h-32 overflow-y-auto">
 								<p class="text-sm whitespace-pre-wrap">{currentPrompt}</p>
 							</div>
@@ -274,7 +274,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 				{:else}
 					<!-- Generated Prompt Preview -->
 					<div>
-						<label class="block text-sm font-medium text-foreground mb-1">Generated System Prompt</label>
+						<label class="block text-sm font-medium mb-1">Generated System Prompt</label>
 						<div class="border border-border rounded-lg p-4 bg-muted max-h-96 overflow-y-auto">
 							<p class="whitespace-pre-wrap">{generatedPrompt}</p>
 						</div>
@@ -282,9 +282,9 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 
 					<!-- Instructions Reminder -->
 					<div>
-						<label class="block text-sm font-medium text-foreground mb-1">Your Instructions</label>
+						<label class="block text-sm font-medium mb-1">Your Instructions</label>
 						<div class="p-3 bg-muted rounded-lg">
-							<p class="text-sm italic text-foreground">{instructions}</p>
+							<p class="text-sm italic">{instructions}</p>
 						</div>
 					</div>
 				{/if}
@@ -295,7 +295,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 				{#if !showPreview}
 					<button
 						onclick={handleClose}
-						class="px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors"
+						class="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
 					>
 						Cancel
 					</button>
@@ -338,13 +338,13 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 				{:else}
 					<button
 						onclick={() => (showPreview = false)}
-						class="px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors"
+						class="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
 					>
 						Back to Edit
 					</button>
 					<button
 						onclick={handleClose}
-						class="px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors"
+						class="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
 					>
 						Cancel
 					</button>

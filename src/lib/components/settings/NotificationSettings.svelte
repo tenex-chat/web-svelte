@@ -223,7 +223,7 @@
 			{#if notifications.soundEnabled}
 				<button
 					onclick={playTestSound}
-					class="px-4 py-2 bg-muted hover:bg-secondary dark:hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium"
+					class="px-4 py-2 bg-muted hover:bg-secondary rounded-md transition-colors text-sm font-medium"
 				>
 					Test Sound
 				</button>

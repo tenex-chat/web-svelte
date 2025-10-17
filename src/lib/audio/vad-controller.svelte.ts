@@ -9,6 +9,7 @@
 
 import { VADService, type VADServiceOptions } from './vad-service';
 import { AUDIO_CONFIG } from './audio-config';
+import { toastStore } from '$lib/stores/toast.svelte';
 
 export interface VADControllerOptions {
 	enabled?: boolean;
@@ -85,6 +86,11 @@ export class VADController {
 			},
 			onError: (err: Error) => {
 				this.error = err.message; // Direct state access!
+				console.error(`[${performance.now().toFixed(2)}ms] [VADController] VAD error:`, err);
+
+				// Show user-friendly error toast
+				toastStore.error(`Voice detection error: ${err.message}`, 10000);
+
 				this.options.onError?.(err);
 				this.cleanup();
 			}

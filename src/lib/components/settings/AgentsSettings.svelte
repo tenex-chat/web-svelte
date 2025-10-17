@@ -96,7 +96,7 @@
 
 	<!-- Add Agent Form -->
 	{#if showAddAgent}
-		<div class="mb-4 p-4 border border-border rounded-lg bg-white">
+		<div class="mb-4 p-4 border border-border rounded-lg bg-card">
 			<h3 class="text-sm font-medium mb-3">Add New Agent</h3>
 			<div class="space-y-3">
 				<div>
@@ -142,13 +142,13 @@
 		<div>
 			<h3 class="text-sm font-medium text-foreground mb-2">Project Agents</h3>
 			{#if projectAgents.length === 0}
-				<div class="text-sm text-muted-foreground p-4 border border-border rounded-lg bg-white text-center">
+				<div class="text-sm text-muted-foreground p-4 border border-border rounded-lg bg-card text-center">
 					No agents configured for this project yet.
 				</div>
 			{:else}
 				<div class="space-y-2">
 					{#each projectAgents as agent (agent.pubkey)}
-						<div class="p-3 border border-border rounded-lg bg-white">
+						<div class="p-3 border border-border rounded-lg bg-card">
 							<div class="flex items-start justify-between">
 								<div class="flex-1 min-w-0">
 									<div class="flex items-center gap-2">
@@ -191,7 +191,7 @@
 		<div>
 			<h3 class="text-sm font-medium text-foreground mb-2">Currently Online</h3>
 			{#if onlineAgents.length === 0}
-				<div class="text-sm text-muted-foreground p-4 border border-border rounded-lg bg-white text-center">
+				<div class="text-sm text-muted-foreground p-4 border border-border rounded-lg bg-card text-center">
 					No agents currently online.
 				</div>
 			{:else}
@@ -226,7 +226,7 @@
 				<h3 class="text-sm font-medium text-foreground mb-2">Agent Definitions (kind:4199)</h3>
 				<div class="space-y-2">
 					{#each agentDefinitions as agentDef (agentDef.id)}
-						<div class="p-3 border border-border rounded-lg bg-white">
+						<div class="p-3 border border-border rounded-lg bg-card">
 							<div class="font-medium text-sm">{agentDef.tagValue('name') || 'Unnamed'}</div>
 							<div class="text-xs text-muted-foreground mt-1">
 								{agentDef.content || 'No description'}

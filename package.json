@@ -32,6 +32,7 @@
 		"@nostr-dev-kit/sync": "0.3.5",
 		"@nostr-dev-kit/wallet": "0.8.7",
 		"@openrouter/ai-sdk-provider": "^1.2.0",
+		"@ricky0123/vad-web": "^0.0.28",
 		"ai": "^5.0.73",
 		"dompurify": "^3.3.0",
 		"lucide-svelte": "^0.546.0",
@@ -42,6 +43,7 @@
 	"devDependencies": {
 		"@internationalized/date": "^3.8.1",
 		"@lucide/svelte": "^0.546.0",
+		"@rollup/plugin-commonjs": "^28.0.8",
 		"@sveltejs/adapter-auto": "^6.1.0",
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@sveltejs/kit": "^2.47.0",

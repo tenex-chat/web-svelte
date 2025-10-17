@@ -463,6 +463,7 @@
 		<CallStatus
 			{callState}
 			transcript={callStore?.transcript || ''}
+			isVADEnabled={callStore?.vad.options.enabled || false}
 		/>
 	</div>
 
@@ -472,7 +473,9 @@
 		isProcessing={callStore?.callState === 'processing' || callStore?.messaging.isProcessing || false}
 		hasTranscript={!!callStore?.transcript?.trim()}
 		audioLevel={callStore?.audioRecorder.audioLevel || 0}
-		{onEndCall}
+		isVADEnabled={callStore?.vad.options.enabled || false}
+		isVADPaused={callStore?.vad.isPaused || false}
+		onEndCall={handleEndCall}
 		onMicToggle={handleMicToggle}
 		onSend={handleSend}
 	/>

@@ -93,7 +93,7 @@
 		role="presentation"
 	>
 		<div
-			class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
+			class="bg-card rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
 			onclick={(e) => e.stopPropagation()}
 			role="dialog"
 			aria-modal="true"

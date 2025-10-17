@@ -1,20 +1,19 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import AccountSettings from '$lib/components/settings/AccountSettings.svelte';
 	import AISettings from '$lib/components/settings/AISettings.svelte';
 	import AppearanceSettings from '$lib/components/settings/AppearanceSettings.svelte';
 	import NotificationSettings from '$lib/components/settings/NotificationSettings.svelte';
 	import BlossomSettings from '$lib/components/settings/BlossomSettings.svelte';
-	import OwnedAgentsSettings from '$lib/components/settings/OwnedAgentsSettings.svelte';
 	import RelaySettings from '$lib/components/settings/RelaySettings.svelte';
+	import CallSettings from '$lib/components/settings/CallSettings.svelte';
 	import { cn } from '$lib/utils/cn';
 	import { ArrowLeft } from 'lucide-svelte';
 
-	type Tab = 'account' | 'ai' | 'appearance' | 'notifications' | 'blossom' | 'agents' | 'relays';
+	type Tab = 'ai' | 'appearance' | 'notifications' | 'blossom' | 'relays' | 'call';
 
 	const activeTab = $derived<Tab>(
-		($page.url.searchParams.get('tab') as Tab) || 'account'
+		($page.url.searchParams.get('tab') as Tab) || 'ai'
 	);
 
 	function setTab(tab: Tab) {
@@ -26,12 +25,11 @@
 	}
 
 	const tabs: Array<{ value: Tab; label: string }> = [
-		{ value: 'account', label: 'Account' },
 		{ value: 'ai', label: 'AI' },
+		{ value: 'call', label: 'Voice Call' },
 		{ value: 'appearance', label: 'Appearance' },
 		{ value: 'notifications', label: 'Notifications' },
 		{ value: 'blossom', label: 'Upload' },
-		{ value: 'agents', label: 'Agents' },
 		{ value: 'relays', label: 'Relays' }
 	];
 </script>
@@ -76,18 +74,16 @@
 
 		<!-- Tab Content -->
 		<div class="bg-card rounded-b-lg shadow-sm p-6">
-			{#if activeTab === 'account'}
-				<AccountSettings />
-			{:else if activeTab === 'ai'}
+			{#if activeTab === 'ai'}
 				<AISettings />
+			{:else if activeTab === 'call'}
+				<CallSettings />
 			{:else if activeTab === 'appearance'}
 				<AppearanceSettings />
 			{:else if activeTab === 'notifications'}
 				<NotificationSettings />
 			{:else if activeTab === 'blossom'}
 				<BlossomSettings />
-			{:else if activeTab === 'agents'}
-				<OwnedAgentsSettings />
 			{:else if activeTab === 'relays'}
 				<RelaySettings />
 			{/if}

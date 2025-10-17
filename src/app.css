@@ -26,6 +26,14 @@
 }
 
 @layer base {
+	* {
+		@apply border-border;
+	}
+
+	body {
+		@apply bg-background text-foreground;
+	}
+
 	:root {
 		/* Light mode - clean whites and grays */
 		--background: 0 0% 100%;            /* Pure white */

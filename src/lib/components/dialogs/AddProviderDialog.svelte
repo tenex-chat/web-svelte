@@ -127,7 +127,7 @@
 		tabindex="0"
 	>
 		<div
-			class="relative w-full max-w-lg bg-white rounded-lg shadow-xl p-6"
+			class="relative w-full max-w-lg bg-card rounded-lg shadow-xl p-6"
 			onclick={(e) => e.stopPropagation()}
 			role="dialog"
 			aria-modal="true"
@@ -149,12 +149,12 @@
 			</button>
 
 			<!-- Header -->
-			<h2 class="text-xl font-semibold text-foreground mb-4">Add LLM Configuration</h2>
+			<h2 class="text-xl font-semibold mb-4">Add LLM Configuration</h2>
 
 			<!-- Form -->
 			<div class="space-y-4">
 				<div>
-					<label for="config-name" class="block text-sm font-medium text-foreground mb-1">
+					<label for="config-name" class="block text-sm font-medium mb-1">
 						Configuration Name
 					</label>
 					<input
@@ -167,7 +167,7 @@
 				</div>
 
 				<div>
-					<label for="provider" class="block text-sm font-medium text-foreground mb-1">
+					<label for="provider" class="block text-sm font-medium mb-1">
 						Provider
 					</label>
 					<select
@@ -184,13 +184,13 @@
 
 				<div>
 					<div class="flex items-center justify-between mb-1">
-						<label for="model" class="block text-sm font-medium text-foreground"> Model </label>
+						<label for="model" class="block text-sm font-medium"> Model </label>
 						<button
 							type="button"
 							onclick={handleFetchModels}
 							disabled={!apiKey.trim() || fetchingModels}
 							class={cn(
-								'text-xs px-2 py-1 border border-border rounded hover:bg-muted transition-colors',
+								'text-xs px-2 py-1 border border-border rounded hover:bg-accent transition-colors',
 								(!apiKey.trim() || fetchingModels) && 'opacity-50 cursor-not-allowed'
 							)}
 						>
@@ -252,7 +252,7 @@
 				</div>
 
 				<div>
-					<label for="api-key" class="block text-sm font-medium text-foreground mb-1">
+					<label for="api-key" class="block text-sm font-medium mb-1">
 						API Key
 					</label>
 					<input
@@ -266,7 +266,7 @@
 
 				{#if provider === 'custom'}
 					<div>
-						<label for="base-url" class="block text-sm font-medium text-foreground mb-1">
+						<label for="base-url" class="block text-sm font-medium mb-1">
 							Base URL
 						</label>
 						<input
@@ -284,7 +284,7 @@
 			<div class="flex gap-3 mt-6">
 				<button
 					onclick={handleClose}
-					class="flex-1 px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors"
+					class="flex-1 px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
 				>
 					Cancel
 				</button>

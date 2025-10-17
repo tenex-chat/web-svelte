@@ -37,7 +37,7 @@ const DEFAULT_SETTINGS: AudioSettings = {
 	echoCancellation: true,
 	voiceActivityDetection: true,
 	vadSensitivity: 50,
-	vadMode: 'push-to-talk',
+	vadMode: 'auto',
 	interruptionMode: 'disabled',
 	interruptionSensitivity: 'medium'
 };
@@ -88,19 +88,30 @@ class CallSettingsStore {
 
 	// Track initialization to skip auto-save on first run
 	#initialized = false;
+	#cleanup: (() => void) | null = null;
 
 	// Auto-save on changes (no useEffect needed!)
 	constructor() {
-		$effect(() => {
-			// Skip the initial run (when settings are first loaded)
-			if (!this.#initialized) {
-				this.#initialized = true;
-				return;
-			}
+		// Use $effect.root() for effects outside of component context
+		this.#cleanup = $effect.root(() => {
+			$effect(() => {
+				// Skip the initial run (when settings are first loaded)
+				if (!this.#initialized) {
+					this.#initialized = true;
+					return;
+				}
 
-			// This runs whenever this.settings changes (after initialization)
-			saveSettings(this.settings);
+				// This runs whenever this.settings changes (after initialization)
+				saveSettings(this.settings);
+			});
 		});
+	}
+
+	/**
+	 * Cleanup effect (call when destroying the store)
+	 */
+	destroy(): void {
+		this.#cleanup?.();
 	}
 
 	/**

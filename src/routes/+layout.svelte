@@ -5,6 +5,7 @@
 	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import LoginModal from '$lib/components/LoginModal.svelte';
 	import WindowManagerOverlay from '$lib/components/window-manager/WindowManagerOverlay.svelte';
+	import ToastContainer from '$lib/components/ui/ToastContainer.svelte';
 	import '../app.css';
 
 	// Initialize UI settings (including theme)
@@ -37,6 +38,7 @@
 </svelte:head>
 
 <LoginModal />
+<ToastContainer />
 
 {#if ready}
 	{@render children?.()}

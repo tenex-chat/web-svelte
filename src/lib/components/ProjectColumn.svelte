@@ -134,7 +134,7 @@
 				<button
 					class={cn(
 						'w-2 h-2 rounded-full transition-all',
-						isOnline ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-300 dark:bg-gray-600'
+						isOnline ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-muted-foreground'
 					)}
 					title={isOnline ? 'Project is online' : 'Project is offline'}
 					aria-label={isOnline ? 'Project is online' : 'Project is offline'}

@@ -52,12 +52,12 @@
 
 <div class="h-full flex">
 	<!-- Settings Navigation -->
-	<div class="w-48 border-r border-border bg-white p-2 space-y-1">
+	<div class="w-48 border-r border-border bg-card p-2 space-y-1">
 		{#each sections as section (section.id)}
 			<button
 				onclick={() => (activeSection = section.id)}
 				class="w-full text-left px-3 py-2 rounded transition-colors {activeSection === section.id
-					? 'bg-blue-50 text-blue-900'
+					? 'bg-muted text-foreground'
 					: 'hover:bg-muted text-foreground'}"
 			>
 				<div class="flex items-start gap-2">

@@ -17,6 +17,8 @@
 	let { agents, selectedAgent, defaultAgent, currentModel, onSelect, onConfigure }: Props = $props();
 
 	let isOpen = $state(false);
+	let buttonElement: HTMLButtonElement | null = $state(null);
+	let dropdownPosition = $state({ top: 0, left: 0 });
 
 	// Pure UI component - just displays what it's given
 	const displayAgent = $derived.by(() => {
@@ -32,15 +34,28 @@
 	function handleClickOutside() {
 		isOpen = false;
 	}
+
+	function handleToggle() {
+		if (!isOpen && buttonElement) {
+			// Calculate position when opening
+			const rect = buttonElement.getBoundingClientRect();
+			dropdownPosition = {
+				top: rect.top - 8, // 8px above button
+				left: rect.left
+			};
+		}
+		isOpen = !isOpen;
+	}
 </script>
 
 <div class="flex items-center gap-1">
 	<!-- Agent Selector Dropdown -->
 	<div class="relative">
 		<button
+			bind:this={buttonElement}
 			type="button"
-			onclick={() => (isOpen = !isOpen)}
-			class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-sm min-w-0"
+			onclick={handleToggle}
+			class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm min-w-0"
 		>
 			{#if displayAgent}
 				<!-- Avatar -->
@@ -54,19 +69,20 @@
 			<ChevronDown class="w-4 h-4 text-muted-foreground flex-shrink-0" />
 		</button>
 
-		<!-- Dropdown Menu -->
+		<!-- Dropdown Menu (with fixed positioning to escape overflow) -->
 		{#if isOpen}
 			<div
 				use:clickOutside={handleClickOutside}
-				class="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-zinc-800 border border-border dark:border-zinc-600 rounded-lg shadow-lg overflow-hidden z-50"
+				class="fixed w-64 bg-card border border-border rounded-lg shadow-lg overflow-hidden"
+				style="top: {dropdownPosition.top}px; left: {dropdownPosition.left}px; z-index: 9999; transform: translateY(-100%);"
 			>
 				<div class="max-h-80 overflow-y-auto">
 					<!-- Default Option -->
 					<button
 						type="button"
 						onclick={() => handleSelect(null)}
-						class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted dark:hover:bg-zinc-700 transition-colors text-left {!selectedAgent && defaultAgent === agents[0]?.pubkey
-							? 'bg-blue-50 dark:bg-blue-900/50'
+						class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent transition-colors text-left {!selectedAgent && defaultAgent === agents[0]?.pubkey
+							? 'bg-primary/10'
 							: ''}"
 					>
 						{#if agents[0]}
@@ -77,7 +93,7 @@
 							</div>
 						{/if}
 						{#if !selectedAgent && defaultAgent === agents[0]?.pubkey}
-							<svg class="w-4 h-4 text-primary dark:text-blue-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+							<svg class="w-4 h-4 text-primary flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
 								<path
 									fill-rule="evenodd"
 									d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -98,8 +114,8 @@
 						<button
 							type="button"
 							onclick={() => handleSelect(agent.pubkey)}
-							class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted dark:hover:bg-zinc-700 transition-colors text-left {isActive
-								? 'bg-blue-50 dark:bg-blue-900/50'
+							class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent transition-colors text-left {isActive
+								? 'bg-primary/10'
 								: ''}"
 						>
 							<Avatar {ndk} pubkey={agent.pubkey} size={32} />
@@ -110,7 +126,7 @@
 								{/if}
 							</div>
 							{#if isActive}
-								<svg class="w-4 h-4 text-primary dark:text-blue-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+								<svg class="w-4 h-4 text-primary flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
 									<path
 										fill-rule="evenodd"
 										d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -129,7 +145,7 @@
 	<button
 		type="button"
 		onclick={onConfigure}
-		class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+		class="p-2 rounded-lg hover:bg-accent transition-colors"
 		title="Configure agent"
 		aria-label="Configure agent"
 	>

@@ -132,7 +132,7 @@
 		aria-modal="true"
 	>
 		<div
-			class="bg-white rounded-lg shadow-2xl w-[95vw] h-[90vh] flex flex-col"
+			class="bg-card rounded-lg shadow-2xl w-[95vw] h-[90vh] flex flex-col"
 			onclick={(e) => e.stopPropagation()}
 		>
 			<!-- Header -->
@@ -242,7 +242,7 @@
 						<div class="flex-1 flex min-w-0">
 							<!-- Centralized Store -->
 							<div class="flex-1 border-r flex flex-col min-w-0">
-								<div class="px-4 py-3 border-b bg-blue-50 flex-shrink-0">
+								<div class="px-4 py-3 border-b bg-muted flex-shrink-0">
 									<h3 class="font-medium">Centralized Store</h3>
 								</div>
 								<div class="flex-1 overflow-y-auto p-4 space-y-4">
@@ -341,7 +341,7 @@
 
 							<!-- Wire Feed -->
 							<div class="flex-1 flex flex-col min-w-0">
-								<div class="px-4 py-3 border-b bg-green-50 flex-shrink-0">
+								<div class="px-4 py-3 border-b bg-muted flex-shrink-0">
 									<h3 class="font-medium">Wire Feed (Live)</h3>
 								</div>
 								<div class="flex-1 overflow-y-auto p-4 space-y-4">
@@ -491,7 +491,7 @@
 										<details class="mt-2">
 											<summary class="cursor-pointer text-muted-foreground">Raw Event Tags</summary>
 											<pre
-												class="mt-2 p-2 bg-gray-900 text-green-400 rounded text-xs overflow-x-auto">{JSON.stringify(
+												class="mt-2 p-2 bg-muted rounded text-xs overflow-x-auto">{JSON.stringify(
 													event.rawEvent.tags,
 													null,
 													2

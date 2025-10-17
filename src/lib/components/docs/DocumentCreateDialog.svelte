@@ -152,30 +152,30 @@
 		onclick={handleClose}
 	>
 		<div
-			class="w-full h-full bg-white dark:bg-zinc-900 flex flex-col"
+			class="w-full h-full bg-card flex flex-col"
 			onclick={(e) => e.stopPropagation()}
 		>
 			<!-- Header -->
 			<div
-				class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-zinc-700"
+				class="flex items-center justify-between px-6 py-4 border-b border-border"
 			>
 				<button
 					type="button"
 					onclick={handleClose}
-					class="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-colors"
+					class="p-2 hover:bg-accent rounded transition-colors"
 				>
 					<X class="h-4 w-4" />
 				</button>
 
 				<div class="flex items-center gap-3">
 					{#if title || content || hashtags.length > 0}
-						<span class="text-xs text-gray-500 dark:text-gray-400">Draft saved</span>
+						<span class="text-xs text-muted-foreground">Draft saved</span>
 					{/if}
 					<button
 						type="button"
 						onclick={handlePublish}
 						disabled={!title || !content || isPublishing}
-						class="px-4 py-2 text-sm font-medium bg-green-600 hover:bg-green-700 disabled:bg-muted disabled:text-muted-foreground text-white rounded transition-colors disabled:cursor-not-allowed flex items-center gap-2"
+						class="px-4 py-2 text-sm font-medium bg-green-600 hover:bg-green-700 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground rounded transition-colors disabled:cursor-not-allowed flex items-center gap-2"
 					>
 						{#if isPublishing}
 							<Loader2 class="h-3 w-3 animate-spin" />
@@ -190,16 +190,16 @@
 			<!-- Draft notification -->
 			{#if draftLoaded}
 				<div
-					class="bg-blue-50 dark:bg-blue-950/30 border-b border-blue-200 dark:border-blue-900/50 px-6 py-2 flex items-center justify-between"
+					class="bg-accent border-b border-border px-6 py-2 flex items-center justify-between"
 				>
-					<div class="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+					<div class="flex items-center gap-2 text-sm">
 						<FileText class="h-4 w-4" />
 						<span>Restored from draft</span>
 					</div>
 					<button
 						type="button"
 						onclick={clearDraft}
-						class="text-xs hover:bg-blue-100 dark:hover:bg-blue-900/50 px-2 py-1 rounded transition-colors flex items-center gap-1"
+						class="text-xs hover:bg-accent px-2 py-1 rounded transition-colors flex items-center gap-1"
 					>
 						<Trash2 class="h-3 w-3" />
 						<span>Start fresh</span>
@@ -215,17 +215,17 @@
 						bind:this={titleTextarea}
 						bind:value={title}
 						placeholder="Title"
-						class="w-full resize-none border-0 outline-none bg-transparent text-3xl font-bold placeholder:text-gray-400 dark:placeholder:text-gray-600 overflow-hidden"
+						class="w-full resize-none border-0 outline-none bg-transparent text-3xl font-bold placeholder:text-muted-foreground overflow-hidden"
 						style="min-height: 50px"
 						rows="1"
 					></textarea>
 
 					<!-- Hashtags -->
-					<div class="mt-4 mb-6 pb-4 border-b border-gray-200 dark:border-zinc-700">
+					<div class="mt-4 mb-6 pb-4 border-b border-border">
 						<div class="flex items-center gap-2 flex-wrap">
 							{#each hashtags as tag (tag)}
 								<div
-									class="inline-flex items-center gap-1 px-2 py-1 text-sm bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded"
+									class="inline-flex items-center gap-1 px-2 py-1 text-sm bg-muted rounded"
 								>
 									<HashIcon class="h-3 w-3" />
 									<span>{tag}</span>
@@ -244,7 +244,7 @@
 									bind:value={hashtagInput}
 									onkeydown={handleHashtagKeydown}
 									placeholder="Add up to 5 tags..."
-									class="flex-1 min-w-[150px] px-2 py-1 text-sm border-0 outline-none bg-transparent placeholder:text-gray-400 dark:placeholder:text-gray-600"
+									class="flex-1 min-w-[150px] px-2 py-1 text-sm border-0 outline-none bg-transparent placeholder:text-muted-foreground"
 								/>
 							{/if}
 						</div>
@@ -264,7 +264,7 @@ Use markdown syntax:
 > Quotes
 [links](url)
 `code`"
-						class="w-full min-h-[400px] resize-none border-0 outline-none bg-transparent text-lg leading-relaxed placeholder:text-gray-400 dark:placeholder:text-gray-600 font-serif"
+						class="w-full min-h-[400px] resize-none border-0 outline-none bg-transparent text-lg leading-relaxed placeholder:text-muted-foreground font-serif"
 					></textarea>
 				</div>
 			</div>

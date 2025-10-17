@@ -289,7 +289,7 @@
 		tabindex="0"
 	>
 		<div
-			class="relative w-full max-w-3xl max-h-[90vh] bg-white rounded-lg shadow-xl flex flex-col"
+			class="relative w-full max-w-3xl max-h-[90vh] bg-card rounded-lg shadow-xl flex flex-col"
 			onclick={(e) => e.stopPropagation()}
 			role="dialog"
 			aria-modal="true"
@@ -312,7 +312,7 @@
 
 			<!-- Header -->
 			<div class="px-6 pt-6 pb-4">
-				<h2 class="text-xl font-semibold text-foreground">
+				<h2 class="text-xl font-semibold">
 					{forkAgent ? (cloneMode ? 'Clone Agent Definition' : 'Fork Agent Definition') : 'Create Agent Definition'}
 				</h2>
 				<p class="text-sm text-muted-foreground mt-1">
@@ -325,7 +325,7 @@
 				{#if currentStep === 'basics'}
 					<div class="space-y-4">
 						<div>
-							<label for="name" class="block text-sm font-medium text-foreground mb-1">Name *</label>
+							<label for="name" class="block text-sm font-medium mb-1">Name *</label>
 							<input
 								id="name"
 								type="text"
@@ -336,7 +336,7 @@
 						</div>
 
 						<div>
-							<label for="description" class="block text-sm font-medium text-foreground mb-1"
+							<label for="description" class="block text-sm font-medium mb-1"
 								>Description *</label
 							>
 							<textarea
@@ -349,7 +349,7 @@
 						</div>
 
 						<div>
-							<label for="role" class="block text-sm font-medium text-foreground mb-1"
+							<label for="role" class="block text-sm font-medium mb-1"
 								>Role (optional)</label
 							>
 							<input
@@ -362,7 +362,7 @@
 						</div>
 
 						<div>
-							<label for="slug" class="block text-sm font-medium text-foreground mb-1"
+							<label for="slug" class="block text-sm font-medium mb-1"
 								>Slug (optional)</label
 							>
 							<p class="text-sm text-muted-foreground mb-2">
@@ -382,13 +382,13 @@
 					<div class="space-y-4">
 						<div>
 							<div class="flex items-center justify-between mb-1">
-								<label for="instructions" class="block text-sm font-medium text-foreground"
+								<label for="instructions" class="block text-sm font-medium"
 									>System Prompt *</label
 								>
 								<button
 									type="button"
 									onclick={() => (showAIEditor = true)}
-									class="inline-flex items-center gap-1 px-3 py-1 text-xs border border-border rounded-md hover:bg-muted transition-colors"
+									class="inline-flex items-center gap-1 px-3 py-1 text-xs border border-border rounded-md hover:bg-accent transition-colors"
 								>
 									<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path
@@ -439,7 +439,7 @@
 						<div class="flex justify-center">
 							<button
 								onclick={() => (currentStep = 'prompt')}
-								class="px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors"
+								class="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
 							>
 								Edit System Prompt
 							</button>
@@ -448,7 +448,7 @@
 				{:else if currentStep === 'tools'}
 					<div class="space-y-6">
 						<div>
-							<label class="block text-sm font-medium text-foreground mb-1">Required Tools</label>
+							<label class="block text-sm font-medium mb-1">Required Tools</label>
 							<p class="text-sm text-muted-foreground mb-2">
 								Specify which tools this agent needs access to. Users will be notified when adding this
 								agent.
@@ -463,7 +463,7 @@
 								/>
 								<button
 									onclick={addTool}
-									class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+									class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
 								>
 									Add
 								</button>
@@ -492,7 +492,7 @@
 				{:else if currentStep === 'phases'}
 					<div class="space-y-4">
 						<div>
-							<label class="block text-sm font-medium text-foreground mb-1">Phase Definitions</label>
+							<label class="block text-sm font-medium mb-1">Phase Definitions</label>
 							<p class="text-sm text-muted-foreground mb-2">
 								Define project phases for PM agents. Each phase has a name and instructions.
 							</p>
@@ -517,7 +517,7 @@
 											</div>
 											<button
 												onclick={() => removePhase(index)}
-												class="p-2 hover:bg-muted rounded-md transition-colors"
+												class="p-2 hover:bg-accent rounded-md transition-colors"
 											>
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path
@@ -534,7 +534,7 @@
 
 								<button
 									onclick={addPhase}
-									class="w-full px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors flex items-center justify-center gap-2"
+									class="w-full px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors flex items-center justify-center gap-2"
 								>
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path
@@ -573,7 +573,7 @@
 				{:else if currentStep === 'criteria'}
 					<div class="space-y-4">
 						<div>
-							<label for="use-criteria" class="block text-sm font-medium text-foreground mb-1"
+							<label for="use-criteria" class="block text-sm font-medium mb-1"
 								>Use Criteria (optional)</label
 							>
 							<p class="text-sm text-muted-foreground mb-2">
@@ -592,7 +592,7 @@ Complex problem solving is needed"
 						</div>
 
 						<div>
-							<label for="version" class="block text-sm font-medium text-foreground mb-1">Version</label>
+							<label for="version" class="block text-sm font-medium mb-1">Version</label>
 							<p class="text-sm text-muted-foreground mb-2">
 								Version number for this agent definition (use integers: 1, 2, 3, etc.)
 							</p>
@@ -616,7 +616,7 @@ Complex problem solving is needed"
 						<button
 							onclick={goBack}
 							disabled={creating}
-							class="px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
+							class="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
 						>
 							<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -630,7 +630,7 @@ Complex problem solving is needed"
 					<button
 						onclick={handleClose}
 						disabled={creating}
-						class="px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
+						class="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
 					>
 						Cancel
 					</button>
@@ -639,7 +639,7 @@ Complex problem solving is needed"
 						onclick={goNext}
 						disabled={creating || !canGoNext()}
 						class={cn(
-							'px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors',
+							'px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors',
 							(creating || !canGoNext()) && 'opacity-50 cursor-not-allowed'
 						)}
 					>

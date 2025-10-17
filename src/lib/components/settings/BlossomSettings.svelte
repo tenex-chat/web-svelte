@@ -84,7 +84,7 @@
 						blossomSettingsStore.updateUploadConfig({
 							maxSizeMB: parseInt(e.currentTarget.value)
 						})}
-					class="w-full px-3 py-2 border border-border dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
+					class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
 				/>
 				<p class="text-xs text-muted-foreground mt-1">Maximum file size for uploads (1-100 MB)</p>
 			</div>
@@ -156,7 +156,7 @@
 			<div class="flex gap-2">
 				<button
 					onclick={checkAllServers}
-					class="px-3 py-1 text-sm bg-muted hover:bg-secondary dark:hover:bg-zinc-800 rounded-md transition-colors"
+					class="px-3 py-1 text-sm bg-muted hover:bg-secondary rounded-md transition-colors"
 					disabled={servers.length === 0}
 				>
 					Check All
@@ -182,7 +182,7 @@
 						type="url"
 						bind:value={serverUrl}
 						placeholder="https://blossom.example.com"
-						class="w-full px-3 py-2 border border-border dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
+						class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
 					/>
 				</div>
 				<div>
@@ -194,7 +194,7 @@
 						type="text"
 						bind:value={serverName}
 						placeholder="My Blossom Server"
-						class="w-full px-3 py-2 border border-border dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-gray-100"
+						class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
 					/>
 				</div>
 				<button
@@ -219,7 +219,7 @@
 		{:else}
 			<div class="space-y-2">
 				{#each servers as server (server.url)}
-					<div class="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted dark:hover:bg-zinc-800">
+					<div class="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted">
 						<div class="flex items-center gap-3 flex-1">
 							<div class={cn('w-3 h-3 rounded-full', getStatusColor(server.status))}></div>
 							<div class="flex-1 min-w-0">
@@ -240,14 +240,14 @@
 						<div class="flex items-center gap-2 ml-4">
 							<button
 								onclick={() => checkServer(server.url)}
-								class="px-3 py-1 text-xs bg-muted hover:bg-secondary dark:hover:bg-zinc-800 rounded transition-colors"
+								class="px-3 py-1 text-xs bg-muted hover:bg-secondary rounded transition-colors"
 								disabled={server.status === 'checking'}
 							>
 								Test
 							</button>
 							<button
 								onclick={() => removeServer(server.url)}
-								class="px-3 py-1 text-xs bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800 text-red-700 dark:text-red-300 rounded transition-colors"
+								class="px-3 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded transition-colors"
 							>
 								Remove
 							</button>

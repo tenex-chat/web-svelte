@@ -99,7 +99,7 @@
 
 	<!-- Add Tool Form -->
 	{#if showAddTool}
-		<div class="mb-4 p-4 border border-border rounded-lg bg-white">
+		<div class="mb-4 p-4 border border-border rounded-lg bg-card">
 			<h3 class="text-sm font-medium mb-3">Add MCP Tool</h3>
 			<div class="space-y-3">
 				<div>
@@ -158,13 +158,13 @@
 		<div>
 			<h3 class="text-sm font-medium text-foreground mb-2">Project Tools</h3>
 			{#if projectTools.length === 0}
-				<div class="text-sm text-muted-foreground p-4 border border-border rounded-lg bg-white text-center">
+				<div class="text-sm text-muted-foreground p-4 border border-border rounded-lg bg-card text-center">
 					No MCP tools configured for this project yet.
 				</div>
 			{:else}
 				<div class="space-y-2">
 					{#each projectTools as toolName (toolName)}
-						<div class="p-3 border border-border rounded-lg bg-white">
+						<div class="p-3 border border-border rounded-lg bg-card">
 							<div class="flex items-center justify-between">
 								<div class="flex-1">
 									<div class="font-medium text-sm font-mono">{toolName}</div>
@@ -199,7 +199,7 @@
 					{#each mcpTools as tool (tool.id)}
 						{@const name = tool.tagValue('name')}
 						{@const description = tool.tagValue('description')}
-						<div class="p-3 border border-border rounded-lg bg-white">
+						<div class="p-3 border border-border rounded-lg bg-card">
 							<div class="font-medium text-sm font-mono">{name || 'Unnamed'}</div>
 							{#if description}
 								<div class="text-xs text-muted-foreground mt-1">{description}</div>

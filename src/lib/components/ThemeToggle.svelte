@@ -6,7 +6,7 @@
 
 <button
 	onclick={() => themeStore.toggle()}
-	class="p-2 rounded-lg hover:bg-muted dark:hover:bg-gray-800 transition-colors"
+	class="p-2 rounded-lg hover:bg-accent transition-colors"
 	aria-label="Toggle theme"
 	title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
 >

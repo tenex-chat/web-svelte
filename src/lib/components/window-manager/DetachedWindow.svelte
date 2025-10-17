@@ -4,6 +4,7 @@
 	import ChatView from '../chat/ChatView.svelte';
 	import SettingsTab from '../settings/SettingsTab.svelte';
 	import DocumentView from '../docs/DocumentView.svelte';
+	import CallView from '../call/CallView.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
 	import type { Message } from '$lib/utils/messageProcessor';
@@ -114,7 +115,8 @@
 	role="dialog"
 	aria-label={window.title}
 >
-	<!-- Window Header -->
+	<!-- Window Header (hidden for call windows) -->
+	{#if window.type !== 'call'}
 	<div
 		class="window-header flex items-center justify-between px-4 py-2 border-b border-border bg-muted dark:bg-zinc-800"
 		onmousedown={handleMouseDownDrag}
@@ -197,6 +199,7 @@
 			</button>
 		</div>
 	</div>
+	{/if}
 
 	<!-- Window Content -->
 	<div class="window-content flex-1 overflow-hidden">
@@ -225,6 +228,23 @@
 				project={window.project}
 				onBack={handleClose}
 			/>
+		{:else if window.type === 'call' && window.project}
+			<CallView
+				project={window.project}
+				rootEvent={window.data?.thread}
+				onClose={(rootEvent) => {
+					// Update the window data with the thread if created during call
+					if (rootEvent && !window.data?.thread) {
+						windowManager.updateWindowData(
+							window.id,
+							{ thread: rootEvent },
+							`Voice Call - ${window.project?.title}`
+						);
+					}
+					handleClose();
+				}}
+				isEmbedded={true}
+			/>
 		{:else if window.type === 'agent'}
 			<div class="p-4">
 				<h3 class="text-lg font-semibold text-foreground">Agent: {window.data?.agentName}</h3>
@@ -237,7 +257,8 @@
 		{/if}
 	</div>
 
-	<!-- Resize Handle -->
+	<!-- Resize Handle (hidden for call windows) -->
+	{#if window.type !== 'call'}
 	<div
 		class="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-0 hover:opacity-100 transition-opacity"
 		onmousedown={handleMouseDownResize}
@@ -249,6 +270,7 @@
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
 		</svg>
 	</div>
+	{/if}
 </div>
 
 <style>

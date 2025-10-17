@@ -124,7 +124,7 @@
 
 					{#if showActionsDropdown}
 						<div
-							class="absolute right-0 mt-2 w-48 bg-white border border-border rounded-lg shadow-lg z-10"
+							class="absolute right-0 mt-2 w-48 bg-popover border border-border rounded-lg shadow-lg z-10"
 						>
 							<button
 								onclick={handleEdit}
@@ -161,7 +161,7 @@
 		</div>
 
 		<!-- Content -->
-		<div class="bg-white border border-border rounded-lg p-6 space-y-6">
+		<div class="bg-card border border-border rounded-lg p-6 space-y-6">
 			<!-- Command -->
 			{#if tool()?.command}
 				<div>

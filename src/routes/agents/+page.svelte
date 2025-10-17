@@ -10,9 +10,7 @@
 	let activeFilter = $state<'all' | 'owned' | 'subscribed'>('all');
 	let createDialogOpen = $state(false);
 
-	const currentUser = $derived(ndk.$sessions.currentUser);
-
-	const agentSubscription = ndk.$subscribe({ kinds: [NDKAgentDefinition.kind] });
+	const agentSubscription = ndk.$subscribe(() => ({ filters: [{ kinds: [NDKAgentDefinition.kind] } ], subId: 'agent-definitions' }));
 
 	const agents = $derived.by(() => {
 		const events = agentSubscription.events || [];
@@ -54,10 +52,10 @@
 	const filteredAgents = $derived.by(() => {
 		let filtered = agents;
 
-		if (activeFilter === 'owned' && currentUser) {
-			filtered = filtered.filter((agent) => agent.pubkey === currentUser.pubkey);
-		} else if (activeFilter === 'subscribed' && currentUser) {
-			filtered = filtered.filter((agent) => agent.pubkey !== currentUser.pubkey);
+		if (activeFilter === 'owned' && ndk.$currentUser) {
+			filtered = filtered.filter((agent) => agent.pubkey === ndk.$currentUser?.pubkey);
+		} else if (activeFilter === 'subscribed' && ndk.$currentUser) {
+			filtered = filtered.filter((agent) => agent.pubkey !== ndk.$currentUser?.pubkey);
 		}
 
 		if (searchQuery) {
@@ -74,7 +72,7 @@
 	});
 
 	function handleAgentClick(agent: NDKAgentDefinition) {
-		goto(`/agents/${agent.id}`);
+		goto(`/agents/${agent.encode()}`);
 	}
 </script>
 
@@ -90,7 +88,7 @@
 					</p>
 				</div>
 				<div class="flex gap-2">
-					{#if currentUser}
+					{#if ndk.$currentUser}
 						<button
 							onclick={() => (createDialogOpen = true)}
 							class="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
@@ -119,7 +117,7 @@
 						class="w-full px-4 py-2 border border-border rounded-md bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
 					/>
 				</div>
-				{#if currentUser}
+				{#if ndk.$currentUser}
 					<select
 						bind:value={activeFilter}
 						class="px-4 py-2 border border-border rounded-md bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
@@ -157,7 +155,7 @@
 					<p class="text-sm text-muted-foreground">
 						{searchQuery
 							? 'Try adjusting your search query'
-							: currentUser
+							: ndk.$currentUser
 								? 'Create your first agent definition to get started'
 								: 'Sign in to create and manage agent definitions'}
 					</p>

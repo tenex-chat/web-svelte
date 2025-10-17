@@ -123,9 +123,14 @@ export class VADService {
 				}
 			);
 
-			// Initialize MicVAD
+			// Initialize MicVAD with custom paths for WASM files
 			const { MicVAD: MicVADClass } = await import('@ricky0123/vad-web');
-			this.vad = await MicVADClass.new(vadOptions);
+			this.vad = await MicVADClass.new({
+				...vadOptions,
+				// Configure paths to WASM files - model at root, others in /vad/
+				workletURL: '/vad/vad.worklet.bundle.min.js',
+				onnxWASMBasePath: '/vad/'
+			});
 
 			// If we didn't provide a stream, MicVAD created its own
 			// We need to track it for cleanup
