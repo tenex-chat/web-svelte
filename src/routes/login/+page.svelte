@@ -4,10 +4,8 @@
 	import { onMount } from 'svelte';
 	import { loginModal } from '$lib/stores/loginModal.svelte';
 
-	const currentUser = $derived(ndk.$sessions.currentUser);
-
 	onMount(() => {
-		if (currentUser) {
+		if (ndk.$currentUser) {
 			goto('/projects');
 		} else {
 			loginModal.open();
@@ -20,7 +18,7 @@
 		<h1 class="text-6xl font-bold text-foreground mb-4">TENEX</h1>
 		<p class="text-xl text-muted-foreground mb-8">Orchestrate AI Agents on Nostr</p>
 
-		{#if !currentUser}
+		{#if !ndk.$currentUser}
 			<button
 				onclick={() => loginModal.open()}
 				class="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors"

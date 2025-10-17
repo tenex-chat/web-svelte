@@ -12,7 +12,6 @@
 
 	let { open = true }: Props = $props();
 
-	const currentUser = $derived(ndk.$sessions.currentUser);
 	const projects = $derived(openProjects.projects);
 	const projectStatusMap = $derived(projectStatusStore.allStatus);
 
@@ -39,14 +38,14 @@
 
 	// Subscribe to wire feed
 	$effect(() => {
-		if (!currentUser?.pubkey) return;
+		if (!ndk.$currentUser?.pubkey) return;
 
 		const subscription = ndk.$subscribe(
 			() => ({
 				filters: [
 					{
 						kinds: [24010],
-						'#p': [currentUser.pubkey],
+						'#p': [ndk.$currentUser.pubkey],
 						since: oneMinuteAgo
 					}
 				],

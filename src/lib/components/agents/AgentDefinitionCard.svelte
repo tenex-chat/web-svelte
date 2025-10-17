@@ -10,7 +10,7 @@
 	let { agent, onclick }: Props = $props();
 
 	const agentColor = $derived(generateAgentColor(agent.name || agent.id));
-	const initials = $derived(agent.name ? agent.name.slice(0, 2).toUpperCase() : 'AG');
+	const initials = $derived(agent.name ? agent.name?.slice(0, 2).toUpperCase() : 'AG');
 </script>
 
 <button
@@ -72,7 +72,7 @@
 
 	<!-- Author -->
 	<div class="pt-3 border-t border-gray-100 dark:border-zinc-700 flex items-center justify-between text-xs text-muted-foreground">
-		<span class="truncate">{agent.pubkey.slice(0, 16)}...</span>
+		<span class="truncate">{agent.pubkey?.slice(0, 16)}...</span>
 		{#if agent.created_at}
 			<span>{new Date(agent.created_at * 1000).toLocaleDateString()}</span>
 		{/if}

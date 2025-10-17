@@ -30,8 +30,6 @@
 		isEmbedded = false
 	}: Props = $props();
 
-	// Get current user from NDK session
-	const currentUser = $derived(ndk.$sessions.currentUser);
 
 	// Get project ID for status lookups
 	const projectId = $derived(project?.tagId());
@@ -146,11 +144,12 @@
 			'flattened',
 			false, // not brainstorm
 			false, // showAll
-			currentUser?.pubkey
+			ndk.$currentUser?.pubkey
 		);
 
 		// Add active streaming sessions as synthetic messages from the GLOBAL store
-		const streamingSessions = streamingMessageStore.getAllSessions();
+		// Access sessions directly as a reactive property, not via getAllSessions()
+		const streamingSessions = Object.entries(streamingMessageStore.sessions);
 		const streamingMessages = [];
 
 		streamingSessions.forEach(([key, session]) => {
@@ -291,7 +290,7 @@
 			const options: CallStoreOptions = {
 				threadManagement,
 				messages,
-				userPubkey: currentUser?.pubkey,
+				userPubkey: ndk.$currentUser?.pubkey,
 				activeAgent,
 				onStateChange: (state) => {
 					callState = state;
@@ -372,7 +371,7 @@
 
 	// Handle agent configuration
 	async function handleAgentConfigure(config?: { model: string; tools: string[] }) {
-		if (!ndk || !currentUser || !project || !activeAgent) {
+		if (!ndk || !ndk.$currentUser || !project || !activeAgent) {
 			console.error('[CallView] Missing required data for agent configuration');
 			return;
 		}

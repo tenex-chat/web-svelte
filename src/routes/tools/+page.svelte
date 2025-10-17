@@ -9,7 +9,6 @@
 	let showCreateDialog = $state(false);
 	let editingTool = $state<NDKMCPTool | null>(null);
 
-	const currentUser = $derived(ndk.$sessions.currentUser);
 	const toolSubscription = ndk.$subscribe({ kinds: [NDKMCPTool.kind] });
 	const allTools = $derived(
 		toolSubscription?.events?.map((event) => NDKMCPTool.from(event)) || []
@@ -20,7 +19,7 @@
 
 		// Filter by ownership
 		if (filterMode === 'mine') {
-			tools = tools.filter((tool) => tool.pubkey === currentUser?.pubkey);
+			tools = tools.filter((tool) => tool.pubkey === ndk.$currentUser?.pubkey);
 		}
 
 		// Filter by search query
@@ -55,7 +54,7 @@
 	}
 
 	const myToolsCount = $derived(
-		allTools.filter((tool) => tool.pubkey === currentUser?.pubkey).length
+		allTools.filter((tool) => tool.pubkey === ndk.$currentUser?.pubkey).length
 	);
 </script>
 
@@ -103,7 +102,7 @@
 		</div>
 
 		<!-- Create Button -->
-		{#if currentUser}
+		{#if ndk.$currentUser}
 			<button
 				onclick={handleCreateNew}
 				class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
@@ -147,7 +146,7 @@
 			<p class="text-muted-foreground mb-4">
 				{#if searchQuery}
 					Try adjusting your search criteria
-				{:else if filterMode === 'mine' && !currentUser}
+				{:else if filterMode === 'mine' && !ndk.$currentUser}
 					Please log in to see your tools
 				{:else if filterMode === 'mine'}
 					You haven't created any tools yet
@@ -155,7 +154,7 @@
 					No MCP tools have been published yet
 				{/if}
 			</p>
-			{#if currentUser && filterMode === 'mine'}
+			{#if ndk.$currentUser && filterMode === 'mine'}
 				<button
 					onclick={handleCreateNew}
 					class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"

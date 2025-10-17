@@ -21,7 +21,6 @@
 	let visibleCount = $state(20); // Start with 20 events
 	let filterDropdownOpen = $state(false);
 
-	const currentUser = $derived(ndk.$sessions.currentUser);
 
 	// Subscribe to project events
 	const subscription = ndk.$subscribe(
@@ -142,13 +141,13 @@
 		const result: string[] = [];
 
 		// Add current user first if they have events
-		if (currentUser?.pubkey && limitedAuthors.includes(currentUser.pubkey)) {
-			result.push(currentUser.pubkey);
+		if (ndk.$currentUser?.pubkey && limitedAuthors.includes(ndk.$currentUser.pubkey)) {
+			result.push(ndk.$currentUser.pubkey);
 		}
 
 		// Add other authors
 		limitedAuthors.forEach((pubkey) => {
-			if (pubkey !== currentUser?.pubkey) {
+			if (pubkey !== ndk.$currentUser?.pubkey) {
 				result.push(pubkey);
 			}
 		});
@@ -256,7 +255,7 @@
 
 								<!-- List all authors -->
 								{#each uniqueAuthors as pubkey (pubkey)}
-									{@const isCurrentUser = currentUser?.pubkey === pubkey}
+									{@const isCurrentUser = ndk.$currentUser?.pubkey === pubkey}
 									{@const profile = ndk.$fetchProfile(() => pubkey)}
 									<DropdownMenu.Item onclick={() => (selectedAuthor = pubkey)}>
 										<div class="flex items-center justify-between w-full">

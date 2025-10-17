@@ -25,7 +25,6 @@
 
 	let { message, isLastMessage = false, onReply, onQuote, onTimeClick }: Props = $props();
 
-	const currentUser = $derived(ndk.$sessions.currentUser);
 	const isStreaming = $derived(message.event.kind === EVENT_KINDS.STREAMING_RESPONSE);
 	const isTyping = $derived(message.event.kind === EVENT_KINDS.TYPING_INDICATOR);
 	const isReasoningEvent = $derived(message.event.hasTag('reasoning'));
@@ -97,7 +96,7 @@
 
 	// Handle suggestion click - create kind:1111 reply
 	async function handleSuggestionClick(suggestion: string) {
-		if (!currentUser) {
+		if (!ndk.$currentUser) {
 			alert('Unable to send response. Please ensure you are logged in.');
 			return;
 		}

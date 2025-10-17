@@ -32,7 +32,6 @@
 		initialContent = ''
 	}: Props = $props();
 
-	const currentUser = $derived(ndk.$sessions.currentUser);
 	const projectId = $derived(project?.tagId());
 	const availableModels = $derived(projectId ? projectStatusStore.getModels(projectId) : []);
 	const availableTools = $derived(projectId ? projectStatusStore.getTools(projectId) : []);
@@ -197,7 +196,7 @@
 	}
 
 	async function handleSend() {
-		if (!ndk || !currentUser || !messageInput.trim() || isSubmitting) return;
+		if (!ndk || !ndk.$currentUser || !messageInput.trim() || isSubmitting) return;
 
 		const content = messageInput.trim();
 		isSubmitting = true;
@@ -374,7 +373,7 @@
 	}
 
 	async function handleAgentConfigSave(config: { model: string; tools: string[] }) {
-		if (!ndk || !currentUser || !project || !currentAgent) return;
+		if (!ndk || !ndk.$currentUser || !project || !currentAgent) return;
 
 		try {
 			const projectTagId = project.tagId();
@@ -457,7 +456,7 @@
 					placeholder={isExpanded
 						? (rootEvent ? 'Type a message... (Cmd+Enter to send)' : 'Start a new conversation... (Cmd+Enter to send)')
 						: (rootEvent ? 'Type a message...' : 'Start a new conversation...')}
-					disabled={isSubmitting || !currentUser}
+					disabled={isSubmitting || !ndk.$currentUser}
 					class="w-full px-1 py-1 bg-transparent text-foreground rounded-lg resize-none focus:outline-none disabled:cursor-not-allowed placeholder:text-muted-foreground transition-all duration-200"
 					rows={isExpanded ? 30 : 2}
 					style={isExpanded ? 'font-family: monospace; max-height: 60vh;' : ''}
@@ -544,7 +543,7 @@
 						type="button"
 						title={isExpanded ? 'Shrink input (Cmd+Enter to send)' : 'Expand input (Enter for new lines)'}
 						aria-label={isExpanded ? 'Shrink input' : 'Expand input'}
-						disabled={isSubmitting || !currentUser}
+						disabled={isSubmitting || !ndk.$currentUser}
 					>
 						{#if isExpanded}
 							<Minimize2 class="w-5 h-5" />

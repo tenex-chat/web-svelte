@@ -15,7 +15,7 @@ interface StreamingSession {
  */
 class StreamingMessageStore {
 	// Use a reactive object instead of Map for proper Svelte reactivity
-	private sessions = $state<Record<string, StreamingSession>>({});
+	sessions = $state<Record<string, StreamingSession>>({});
 
 	/**
 	 * Process a streaming event and return the current reconstructed content

@@ -6,7 +6,6 @@
 	import CreateMCPToolDialog from '$lib/components/dialogs/CreateMCPToolDialog.svelte';
 
 	const toolId = $derived($page.params.id);
-	const currentUser = $derived(ndk.$sessions.currentUser);
 
 	const toolEventSub = ndk.$subscribe(
 		() => (toolId ? { ids: [toolId], kinds: [NDKMCPTool.kind] } : undefined),
@@ -18,7 +17,7 @@
 		return event ? NDKMCPTool.from(event) : null;
 	});
 
-	const isOwner = $derived(tool()?.pubkey === currentUser?.pubkey);
+	const isOwner = $derived(tool()?.pubkey === ndk.$currentUser?.pubkey);
 
 	let showEditDialog = $state(false);
 	let showActionsDropdown = $state(false);

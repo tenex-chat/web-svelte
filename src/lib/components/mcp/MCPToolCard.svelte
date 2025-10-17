@@ -10,8 +10,7 @@
 
 	let { tool, onEdit }: Props = $props();
 
-	const currentUser = $derived(ndk.$sessions.currentUser);
-	const isOwner = $derived(tool.pubkey === currentUser?.pubkey);
+	const isOwner = $derived(tool.pubkey === ndk.$currentUser?.pubkey);
 
 	function getToolIcon(command?: string): string {
 		if (!command) return '🛠️';

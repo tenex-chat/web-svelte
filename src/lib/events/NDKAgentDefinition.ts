@@ -6,13 +6,13 @@ export class NDKAgentDefinition extends NDKEvent {
 	static kind: NDKKind = 4199 as NDKKind;
 	static kinds = [4199];
 
-	constructor(ndk?: NDK, rawEvent?: NostrEvent) {
+	constructor(ndk?: NDK, rawEvent?: NostrEvent | NDKEvent) {
 		super(ndk, rawEvent);
 		this.kind ??= NDKAgentDefinition.kind;
 	}
 
 	static from(event: NDKEvent) {
-		return new NDKAgentDefinition(event.ndk, event.rawEvent());
+		return new NDKAgentDefinition(event.ndk, event);
 	}
 
 	get name(): string {

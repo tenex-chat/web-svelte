@@ -8,15 +8,13 @@
 
 	let { project }: Props = $props();
 
-	const currentUser = $derived(ndk.$sessions.currentUser);
-
 	let title = $state(project.title || '');
 	let description = $state(project.description || '');
 	let isSaving = $state(false);
 	let saveMessage = $state<{ type: 'success' | 'error'; text: string } | null>(null);
 
 	async function handleSave() {
-		if (!currentUser || isSaving) return;
+		if (!ndk.$currentUser || isSaving) return;
 
 		isSaving = true;
 		saveMessage = null;

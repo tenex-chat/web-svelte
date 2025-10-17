@@ -27,7 +27,6 @@
 		messages = $bindable([])
 	}: Props = $props();
 
-	const currentUser = $derived(ndk.$sessions.currentUser);
 
 	// Subscribe to all messages in this conversation
 	// Need to explicitly include streaming and typing events
@@ -111,11 +110,12 @@
 			'flattened', // Always process as flattened first
 			isBrainstorm,
 			false, // showAll
-			currentUser?.pubkey
+			ndk.$currentUser?.pubkey
 		);
 
 		// Add active streaming sessions as synthetic messages from the GLOBAL store
-		const streamingSessions = streamingMessageStore.getAllSessions();
+		// Access sessions directly as a reactive property, not via getAllSessions()
+		const streamingSessions = Object.entries(streamingMessageStore.sessions);
 		const streamingMessages: MessageType[] = [];
 
 		console.log('[MessageList] Processing streaming sessions from global store', {

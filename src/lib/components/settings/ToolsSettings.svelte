@@ -9,7 +9,6 @@
 
 	let { project }: Props = $props();
 
-	const currentUser = $derived(ndk.$sessions.currentUser);
 
 	// Subscribe to MCP tools (kind:4200)
 	const toolsSubscription = ndk.$subscribe(() => ({
@@ -31,7 +30,7 @@
 	let isAddingTool = $state(false);
 
 	async function handleAddTool() {
-		if (!currentUser || !newToolName.trim() || isAddingTool) return;
+		if (!ndk.$currentUser || !newToolName.trim() || isAddingTool) return;
 
 		isAddingTool = true;
 		try {
@@ -64,7 +63,7 @@
 	}
 
 	async function handleRemoveTool(toolName: string) {
-		if (!currentUser) return;
+		if (!ndk.$currentUser) return;
 
 		try {
 			// Remove tool from project tags

@@ -7,10 +7,8 @@
 	import MultiProjectView from '$lib/components/MultiProjectView.svelte';
 	import ProjectsSidebar from '$lib/components/ProjectsSidebar.svelte';
 
-	const currentUser = $derived(ndk.$sessions.currentUser);
-
 	onMount(() => {
-		if (!currentUser) {
+		if (!ndk.$currentUser) {
 			goto('/login');
 		}
 	});
@@ -18,9 +16,9 @@
 	// Subscribe to user's projects
 	const projectsSubscription = ndk.$subscribe(
 		() =>
-			currentUser
+			ndk.$currentUser
 				? {
-						filters: [{ kinds: [31933], authors: [currentUser.pubkey] }],
+						filters: [{ kinds: [31933], authors: [ndk.$currentUser.pubkey] }],
 						closeOnEose: false,
 						wrap: true,
 						eventClass: NDKProject
@@ -38,7 +36,7 @@
 	});
 </script>
 
-{#if currentUser}
+{#if ndk.$currentUser}
 	<div class="flex h-screen bg-background">
 		<!-- Sidebar -->
 		<ProjectsSidebar {projects} />

@@ -14,7 +14,7 @@
 
 	let { project, class: className }: Props = $props();
 
-	type TabType = 'conversations' | 'docs' | 'agents' | 'hashtags' | 'feed' | 'settings';
+	type TabType = 'conversations' | 'docs' | 'agents' | 'hashtags' | 'feed';
 
 	let activeTab = $state<TabType>('conversations');
 	let timeFilter = $state<string | null>(null);
@@ -43,8 +43,7 @@
 		{ id: 'docs', label: 'Docs', icon: FileText },
 		{ id: 'agents', label: 'Agents', icon: Bot },
 		{ id: 'hashtags', label: 'Tags', icon: Hash },
-		{ id: 'feed', label: 'Feed', icon: Rss },
-		{ id: 'settings', label: 'Settings', icon: SettingsIcon }
+		{ id: 'feed', label: 'Feed', icon: Rss }
 	] as const;
 </script>
 
@@ -70,8 +69,74 @@
 				<!-- Project Title -->
 				<h3 class="font-medium text-sm truncate flex-1 text-foreground">{project.title || 'Untitled Project'}</h3>
 
-				<!-- Activity Filter Button (only for conversations tab) -->
+				<!-- Settings Button -->
+				<button
+					onclick={() => windowManager.openSettings(project)}
+					class="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground dark:hover:text-foreground rounded hover:bg-muted transition-colors"
+					title="Project settings"
+					aria-label="Project settings"
+				>
+					<SettingsIcon class="h-3.5 w-3.5" />
+				</button>
+
+				<!-- Status Indicator -->
+				<button
+					class={cn(
+						'w-2 h-2 rounded-full transition-all',
+						isOnline ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-muted-foreground'
+					)}
+					title={isOnline ? 'Project is online' : 'Project is offline'}
+					aria-label={isOnline ? 'Project is online' : 'Project is offline'}
+				></button>
+			</div>
+		</div>
+
+		<!-- Tab Bar -->
+		<div class="flex items-center justify-between px-2 pb-1">
+			<div class="flex gap-1">
+				{#each tabs as tab (tab.id)}
+					<button
+						onclick={() => (activeTab = tab.id)}
+						class={cn(
+							'px-3 py-1.5 relative transition-all rounded-sm group text-xs',
+							activeTab === tab.id ? 'text-foreground' : 'text-muted-foreground hover:text-foreground dark:hover:text-foreground'
+						)}
+						style={activeTab === tab.id
+							? `background-color: ${projectColor.replace(')', ', 0.12)')}`
+							: ''}
+						title={tab.label}
+					>
+						<svelte:component this={tab.icon} class="w-4 h-4" />
+						{#if activeTab === tab.id}
+							<div
+								class="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full"
+								style="background-color: {projectColor.replace('55%', '65%')}"
+							></div>
+						{/if}
+					</button>
+				{/each}
+			</div>
+
+			<div class="flex items-center gap-1">
+				<!-- Add button - shown for conversations and docs tabs -->
 				{#if activeTab === 'conversations'}
+					<button
+						onclick={() => windowManager.openChat(project)}
+						class="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground dark:hover:text-foreground rounded hover:bg-muted transition-colors"
+						title="New conversation"
+						aria-label="New conversation"
+					>
+						<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 4v16m8-8H4"
+							/>
+						</svg>
+					</button>
+
+					<!-- Activity Filter Button (only for conversations tab) -->
 					<DropdownMenu.Root bind:open={filterDropdownOpen}>
 						<DropdownMenu.Trigger asChild>
 							<button
@@ -128,80 +193,24 @@
 							</DropdownMenu.Group>
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>
-				{/if}
-
-				<!-- Status Indicator -->
-				<button
-					class={cn(
-						'w-2 h-2 rounded-full transition-all',
-						isOnline ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-muted-foreground'
-					)}
-					title={isOnline ? 'Project is online' : 'Project is offline'}
-					aria-label={isOnline ? 'Project is online' : 'Project is offline'}
-				></button>
-			</div>
-		</div>
-
-		<!-- Tab Bar -->
-		<div class="flex items-center justify-between px-2 pb-1">
-			<div class="flex gap-1">
-				{#each tabs as tab (tab.id)}
+				{:else if activeTab === 'docs'}
 					<button
-						onclick={() => (activeTab = tab.id)}
-						class={cn(
-							'px-3 py-1.5 relative transition-all rounded-sm group text-xs',
-							activeTab === tab.id ? 'text-foreground' : 'text-muted-foreground hover:text-foreground dark:hover:text-foreground'
-						)}
-						style={activeTab === tab.id
-							? `background-color: ${projectColor.replace(')', ', 0.12)')}`
-							: ''}
-						title={tab.label}
+						onclick={() => showCreateDocDialog = true}
+						class="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground dark:hover:text-foreground rounded hover:bg-muted transition-colors"
+						title="New document"
+						aria-label="New document"
 					>
-						<svelte:component this={tab.icon} class="w-4 h-4" />
-						{#if activeTab === tab.id}
-							<div
-								class="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full"
-								style="background-color: {projectColor.replace('55%', '65%')}"
-							></div>
-						{/if}
+						<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 4v16m8-8H4"
+							/>
+						</svg>
 					</button>
-				{/each}
+				{/if}
 			</div>
-
-			<!-- Add button - shown for conversations and docs tabs -->
-			{#if activeTab === 'conversations'}
-				<button
-					onclick={() => windowManager.openChat(project)}
-					class="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground dark:hover:text-foreground rounded hover:bg-muted transition-colors"
-					title="New conversation"
-					aria-label="New conversation"
-				>
-					<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 4v16m8-8H4"
-						/>
-					</svg>
-				</button>
-			{:else if activeTab === 'docs'}
-				<button
-					onclick={() => showCreateDocDialog = true}
-					class="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground dark:hover:text-foreground rounded hover:bg-muted transition-colors"
-					title="New document"
-					aria-label="New document"
-				>
-					<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 4v16m8-8H4"
-						/>
-					</svg>
-				</button>
-			{/if}
 		</div>
 	</div>
 
@@ -281,17 +290,6 @@
 					}}
 				/>
 			{/await}
-		{:else if activeTab === 'settings'}
-			<div class="h-full flex flex-col items-center justify-center gap-3 text-center p-4">
-				<SettingsIcon class="w-16 h-16 text-muted-foreground" />
-				<button
-					onclick={() => windowManager.openSettings(project)}
-					class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors font-medium"
-				>
-					Open Settings
-				</button>
-				<p class="text-xs text-muted-foreground">Settings will open in a drawer</p>
-			</div>
 		{/if}
 	</div>
 </div>

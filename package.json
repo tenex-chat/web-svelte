@@ -28,7 +28,7 @@
 		"@nostr-dev-kit/cache-sqlite-wasm": "0.8.2",
 		"@nostr-dev-kit/ndk": "2.17.10",
 		"@nostr-dev-kit/sessions": "0.6.2",
-		"@nostr-dev-kit/svelte": "2.3.1",
+		"@nostr-dev-kit/svelte": "^2.3.2",
 		"@nostr-dev-kit/sync": "0.3.5",
 		"@nostr-dev-kit/wallet": "0.8.7",
 		"@openrouter/ai-sdk-provider": "^1.2.0",
