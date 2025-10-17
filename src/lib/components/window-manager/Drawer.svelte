@@ -4,6 +4,7 @@
 	import ChatView from '../chat/ChatView.svelte';
 	import SettingsTab from '../settings/SettingsTab.svelte';
 	import DocumentView from '../docs/DocumentView.svelte';
+	import CallView from '../call/CallView.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
 	import type { Message } from '$lib/utils/messageProcessor';
@@ -225,6 +226,23 @@
 				document={window.data?.document}
 				project={window.project}
 				onBack={handleClose}
+			/>
+		{:else if window.type === 'call' && window.project}
+			<CallView
+				project={window.project}
+				rootEvent={window.data?.thread}
+				onClose={(rootEvent) => {
+					// Update the window data with the thread if created during call
+					if (rootEvent && !window.data?.thread) {
+						windowManager.updateWindowData(
+							window.id,
+							{ thread: rootEvent },
+							`Voice Call - ${window.project?.title}`
+						);
+					}
+					handleClose();
+				}}
+				isEmbedded={true}
 			/>
 		{:else if window.type === 'agent'}
 			<div class="p-4">

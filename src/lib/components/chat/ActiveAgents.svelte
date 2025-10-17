@@ -46,7 +46,7 @@
 				class="group relative w-7 h-7 rounded-full"
 				title="Click to stop {agent.name || 'Agent'}"
 			>
-				<Avatar pubkey={agent.pubkey} {ndk} size="sm" class="w-7 h-7 rounded-full" />
+				<Avatar pubkey={agent.pubkey} {ndk} class="!w-7 !h-7" />
 
 				<!-- Simple X overlay on hover -->
 				<div class="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -56,14 +56,14 @@
 		{/each}
 
 		<!-- Simple stop all button if multiple agents -->
-		{#if activeAgents.length > 1}
+		<!-- {#if activeAgents.length >= 1} -->
 			<button
 				onclick={handleStopAll}
-				class="ml-1 p-1.5 rounded-full bg-red-500/20 hover:bg-red-500/30 transition-colors"
+				class="rounded-lg transition-colors"
 				title="Stop all"
 			>
-				<StopCircle class="w-4 h-4 text-red-600 dark:text-red-400" />
+				<StopCircle class="w-7 h-7 text-muted dark:text-muted-foreground" />
 			</button>
-		{/if}
+		<!-- {/if} -->
 	</div>
 {/if}

@@ -3,7 +3,7 @@ import type { NDKEvent } from '@nostr-dev-kit/ndk';
 import type { NDKProject } from '$lib/events/NDKProject';
 import { isElectron } from '$lib/utils/electron';
 
-export type WindowType = 'chat' | 'settings' | 'agent' | 'document' | 'hashtag';
+export type WindowType = 'chat' | 'settings' | 'agent' | 'document' | 'hashtag' | 'call';
 
 export interface WindowConfig {
 	id: string;
@@ -98,6 +98,18 @@ class WindowManager {
 			title: agentName,
 			project,
 			data: { agentPubkey, agentName }
+		});
+	}
+
+	/**
+	 * Open a voice call
+	 */
+	openCall(project: NDKProject, thread?: NDKEvent) {
+		return this.open({
+			type: 'call',
+			title: `Voice Call - ${project.title}`,
+			project,
+			data: { thread }
 		});
 	}
 

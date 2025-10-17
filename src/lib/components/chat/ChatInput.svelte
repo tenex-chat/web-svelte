@@ -7,7 +7,8 @@
 	import AgentConfigDialog from './AgentConfigDialog.svelte';
 	import AgentSelector from './AgentSelector.svelte';
 	import ActiveAgents from './ActiveAgents.svelte';
-	import { Maximize2, Minimize2 } from 'lucide-svelte';
+	import { Maximize2, Minimize2, Phone } from 'lucide-svelte';
+	import { windowManager } from '$lib/stores/windowManager.svelte';
 
 	interface Props {
 		project?: NDKProject;
@@ -365,6 +366,13 @@
 		hasManuallyToggled = true;
 	}
 
+	// Handle starting a voice call
+	function handleStartCall() {
+		if (project) {
+			windowManager.openCall(project, rootEvent);
+		}
+	}
+
 	async function handleAgentConfigSave(config: { model: string; tools: string[] }) {
 		if (!ndk || !currentUser || !project || !currentAgent) return;
 
@@ -500,6 +508,17 @@
 							onConfigure={() => (configDialogOpen = true)}
 						/>
 					{/if}
+
+					<!-- Voice Call Button -->
+					<button
+						onclick={handleStartCall}
+						class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-muted-foreground"
+						type="button"
+						title="Start voice call"
+						aria-label="Start voice call"
+					>
+						<Phone class="w-5 h-5" />
+					</button>
 
 					<!-- Attachment Button -->
 					<button
