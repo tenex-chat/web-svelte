@@ -4,7 +4,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const response = await resolve(event);
 
 	// Set COOP/COEP headers for SharedArrayBuffer support (required for VAD/WASM)
-	response.headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
+	// Using 'credentialless' instead of 'require-corp' to allow external images without CORS
+	response.headers.set('Cross-Origin-Embedder-Policy', 'credentialless');
 	response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
 
 	// Allow workers, WASM files, and static assets to be loaded with COEP

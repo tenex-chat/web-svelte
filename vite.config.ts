@@ -25,12 +25,16 @@ function injectCJSShim(): Plugin {
 	};
 }
 
-// Plugin to add CORP headers for COEP compatibility
-function addCORPHeaders(): Plugin {
+// Plugin to add COOP/COEP/CORP headers for SharedArrayBuffer and worker support
+function addSecurityHeaders(): Plugin {
 	return {
-		name: 'add-corp-headers',
+		name: 'add-security-headers',
 		configureServer(server) {
 			server.middlewares.use((req, res, next) => {
+				// Required for SharedArrayBuffer and Web Workers
+				// Using 'credentialless' to allow external images without CORS
+				res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
+				res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
 				res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 				next();
 			});
@@ -84,7 +88,7 @@ function copyVadWasmFiles(): Plugin {
 
 export default defineConfig({
 	plugins: [
-		addCORPHeaders(),
+		addSecurityHeaders(),
 		injectCJSShim(),
 		copyVadWasmFiles(),
 		sveltekit()

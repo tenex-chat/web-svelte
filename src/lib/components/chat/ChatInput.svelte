@@ -41,6 +41,7 @@
 	let isSubmitting = $state(false);
 	let textareaElement: HTMLTextAreaElement | null = $state(null);
 	let configDialogOpen = $state(false);
+	let agentToConfigurePubkey = $state<string | null>(null);
 	let isExpanded = $state(false);
 	let hasManuallyToggled = $state(false);
 
@@ -504,7 +505,10 @@
 							defaultAgent={defaultAgent}
 							currentModel={currentAgentModel}
 							onSelect={(pubkey) => (selectedAgent = pubkey)}
-							onConfigure={() => (configDialogOpen = true)}
+							onConfigure={(pubkey) => {
+								agentToConfigurePubkey = pubkey;
+								configDialogOpen = true;
+							}}
 						/>
 					{/if}
 
@@ -599,15 +603,19 @@
 </div>
 
 <!-- Agent Configuration Dialog -->
-{#if onlineAgents.length > 0}
-	{@const selectedAgentData = onlineAgents.find((a) => a.pubkey === selectedAgent)}
-	{@const displayAgent = selectedAgentData || onlineAgents[0]}
-	<AgentConfigDialog
-		bind:open={configDialogOpen}
-		agent={displayAgent}
-		availableModels={availableModels}
-		availableTools={availableTools}
-		onClose={() => (configDialogOpen = false)}
-		onSave={handleAgentConfigSave}
-	/>
+{#if onlineAgents.length > 0 && agentToConfigurePubkey}
+	{@const agentToConfig = onlineAgents.find((a) => a.pubkey === agentToConfigurePubkey)}
+	{#if agentToConfig}
+		<AgentConfigDialog
+			bind:open={configDialogOpen}
+			agent={agentToConfig}
+			availableModels={availableModels}
+			availableTools={availableTools}
+			onClose={() => {
+				configDialogOpen = false;
+				agentToConfigurePubkey = null;
+			}}
+			onSave={handleAgentConfigSave}
+		/>
+	{/if}
 {/if}

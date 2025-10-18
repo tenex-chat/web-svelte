@@ -11,6 +11,7 @@
 
 	const agentColor = $derived(generateAgentColor(agent.name || agent.id));
 	const initials = $derived(agent.name ? agent.name?.slice(0, 2).toUpperCase() : 'AG');
+	const proxiedImage = $derived(agent.picture ? `/api/proxy?url=${encodeURIComponent(agent.picture)}` : null);
 </script>
 
 <button
@@ -23,8 +24,8 @@
 			class="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
 			style="background-color: {agentColor}"
 		>
-			{#if agent.picture}
-				<img src={agent.picture} alt={agent.name} class="w-full h-full rounded-full object-cover" />
+			{#if proxiedImage}
+				<img src={proxiedImage} alt={agent.name} class="w-full h-full rounded-full object-cover" crossorigin="anonymous" />
 			{:else}
 				{initials}
 			{/if}

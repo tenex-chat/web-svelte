@@ -36,6 +36,8 @@
 		project = null,
 		onTimeClick,
 		onConversationNavigate,
+		isConsecutive = false,
+		hasNextConsecutive = false,
 		isLastReasoningMessage = false
 	}: Props = $props();
 
