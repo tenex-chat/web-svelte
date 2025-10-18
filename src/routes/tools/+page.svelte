@@ -3,6 +3,7 @@
 	import { NDKMCPTool } from '$lib/events/NDKMCPTool';
 	import MCPToolCard from '$lib/components/mcp/MCPToolCard.svelte';
 	import CreateMCPToolDialog from '$lib/components/dialogs/CreateMCPToolDialog.svelte';
+	import { Plus, Settings } from 'lucide-svelte';
 
 	let searchQuery = $state('');
 	let filterMode = $state<'all' | 'mine'>('all');
@@ -14,7 +15,7 @@
 		toolSubscription?.events?.map((event) => NDKMCPTool.from(event)) || []
 	);
 
-	const filteredTools = $derived(() => {
+	const filteredTools = $derived.by(() => {
 		let tools = allTools;
 
 		// Filter by ownership
@@ -107,41 +108,16 @@
 				onclick={handleCreateNew}
 				class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
 			>
-				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M12 4v16m8-8H4"
-					/>
-				</svg>
+				<Plus class="w-5 h-5" />
 				New Tool
 			</button>
 		{/if}
 	</div>
 
 	<!-- Tools Grid -->
-	{#if filteredTools().length === 0}
+	{#if filteredTools.length === 0}
 		<div class="text-center py-16 bg-card rounded-lg border border-border">
-			<svg
-				class="w-16 h-16 mx-auto text-muted-foreground mb-4"
-				fill="none"
-				stroke="currentColor"
-				viewBox="0 0 24 24"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-				/>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-				/>
-			</svg>
+			<Settings class="w-16 h-16 mx-auto text-muted-foreground mb-4" />
 			<h3 class="text-lg font-medium text-foreground mb-2">No tools found</h3>
 			<p class="text-muted-foreground mb-4">
 				{#if searchQuery}
@@ -165,7 +141,7 @@
 		</div>
 	{:else}
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-			{#each filteredTools() as tool (tool.id)}
+			{#each filteredTools as tool (tool.id)}
 				<MCPToolCard {tool} onEdit={handleEdit} />
 			{/each}
 		</div>

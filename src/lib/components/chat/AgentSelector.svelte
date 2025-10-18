@@ -4,7 +4,7 @@
 	import { Avatar } from '@nostr-dev-kit/svelte';
 	import { ChevronDown, Settings } from 'lucide-svelte';
 	import { clickOutside } from '$lib/utils/clickOutside';
-	import { Portal } from 'svelte-portal';
+	import Portal from 'svelte-portal';
 
 	interface Props {
 		agents: ProjectAgent[];
@@ -90,8 +90,10 @@
 							{#if agents[0]}
 								<Avatar {ndk} pubkey={agents[0].pubkey} size={32} />
 								<div class="flex-1 min-w-0">
-									<div class="font-medium text-sm text-foreground">Project Manager (default)</div>
-									<div class="text-xs text-muted-foreground">{agents[0].name}</div>
+									<div class="font-medium text-sm text-foreground truncate">{agents[0].name}</div>
+									{#if agents[0].model}
+										<div class="text-xs text-muted-foreground truncate">{agents[0].model}</div>
+									{/if}
 								</div>
 							{/if}
 							{#if !selectedAgent && defaultAgent === agents[0]?.pubkey}

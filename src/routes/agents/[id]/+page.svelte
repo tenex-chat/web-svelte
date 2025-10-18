@@ -4,36 +4,30 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKAgentDefinition } from '$lib/events/NDKAgentDefinition';
 	import { NDKMCPTool } from '$lib/events/NDKMCPTool';
-	import { generateAgentColor } from '$lib/utils/agent-colors';
+	import { generateAgentColor } from '$lib/utils/colors';
 	import CreateAgentDialog from '$lib/components/dialogs/CreateAgentDialog.svelte';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
+	import { ArrowLeft, Monitor, Copy, Check, GitFork, ClipboardCopy } from 'lucide-svelte';
 
 	const agentId = $derived($page.params.id);
 
 	const agentEvent = ndk.$fetchEvent(() => agentId);
 	console.log('agent definition', (agentEvent as NDKAgentDefinition)?.description);
 
-	const agentEventSub = ndk.$subscribe(
-		() => (agentId ? { ids: [agentId], kinds: [NDKAgentDefinition.kind] } : undefined),
-		{ closeOnEose: true }
-	);
-
 	const agent = $derived.by(() => {
-		const events = agentEventSub.events || [];
-		if (events.length === 0) return null;
-		return NDKAgentDefinition.from(events[0]);
+		if (!agentEvent) return null;
+		return NDKAgentDefinition.from(agentEvent);
 	});
 
 	const mcpEventIds = $derived(agent?.mcpServers || []);
 
-	const mcpEventsSub = ndk.$subscribe(
-		() => (mcpEventIds.length > 0 ? { ids: mcpEventIds, kinds: [4200] } : undefined),
-		{ closeOnEose: true }
+	const mcpEventsSub = ndk.$fetchEvents(
+		() => (mcpEventIds.length > 0 ? { ids: mcpEventIds } : undefined),
 	);
 
 	const mcpTools = $derived.by(() => {
-		const events = mcpEventsSub.events || [];
+		const events = mcpEventsSub || [];
 		return events.map((event) => NDKMCPTool.from(event));
 	});
 
@@ -88,19 +82,7 @@
 	{#if !agent}
 		<div class="flex-1 flex items-center justify-center bg-background">
 			<div class="text-center">
-				<svg
-					class="w-12 h-12 text-muted-foreground mx-auto mb-4"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-					/>
-				</svg>
+				<Monitor class="w-12 h-12 text-muted-foreground mx-auto mb-4" />
 				<h3 class="text-lg font-medium text-foreground mb-1">Agent definition not found</h3>
 				<p class="text-sm text-muted-foreground mb-4">This agent definition could not be found.</p>
 				<button
@@ -120,14 +102,7 @@
 						onclick={() => goto('/agents')}
 						class="p-2 hover:bg-muted rounded-md transition-colors"
 					>
-						<svg class="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M15 19l-7-7 7-7"
-							/>
-						</svg>
+						<ArrowLeft class="w-5 h-5 text-foreground" />
 					</button>
 					<div
 						class="w-16 h-16 rounded-full flex items-center justify-center text-white font-semibold text-xl flex-shrink-0"
@@ -153,18 +128,9 @@
 							>
 								{agent.id.slice(0, 8)}...{agent.id.slice(-8)}
 								{#if copiedId}
-									<svg class="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-									</svg>
+									<Check class="w-3 h-3 text-green-500" />
 								{:else}
-									<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-										/>
-									</svg>
+									<Copy class="w-3 h-3" />
 								{/if}
 							</button>
 						</div>
@@ -187,28 +153,14 @@
 									onclick={handleFork}
 									class="w-full text-left px-4 py-2 text-foreground hover:bg-muted flex items-center gap-2"
 								>
-									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-										/>
-									</svg>
+									<GitFork class="w-4 h-4" />
 									Fork
 								</button>
 								<button
 									onclick={handleClone}
 									class="w-full text-left px-4 py-2 text-foreground hover:bg-muted flex items-center gap-2"
 								>
-									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-										/>
-									</svg>
+									<ClipboardCopy class="w-4 h-4" />
 									Clone
 								</button>
 							</div>

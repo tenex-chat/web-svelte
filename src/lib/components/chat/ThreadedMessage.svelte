@@ -7,6 +7,7 @@
 	import { ChevronDown, ChevronRight } from 'lucide-svelte';
 	import { cn } from '$lib/utils/cn';
 	import Message from './Message.svelte';
+	import ThreadedMessage from './ThreadedMessage.svelte';
 	import { expandedRepliesStore } from '$lib/stores/expandedReplies.svelte';
 	import {
 		type Message as MessageType,
@@ -100,12 +101,14 @@
 		<Message
 			message={currentMessage}
 			isLastMessage={replies.length === 0 && !!currentEvent.tags?.some((t) => t[0] === 'reasoning')}
+			isConsecutive={false}
+			hasNextConsecutive={replies.length > 0 && replies[0].event.pubkey === currentEvent.pubkey}
 			{onTimeClick}
 		/>
 
 		<!-- Render direct replies recursively -->
 		{#each replyProperties as { message: replyMsg, isConsecutive: replyConsecutive, hasNextConsecutive: replyHasNext, isLastReasoningMessage: replyLastReasoning } (replyMsg.id)}
-			<svelte:self
+			<ThreadedMessage
 				message={replyMsg}
 				{rootEvent}
 				depth={1}
@@ -124,6 +127,8 @@
 		<Message
 			message={currentMessage}
 			isLastMessage={isLastReasoningMessage}
+			{isConsecutive}
+			{hasNextConsecutive}
 			{onTimeClick}
 		/>
 
@@ -171,7 +176,7 @@
 			{#if isExpanded}
 				<div class="ml-12 mt-2">
 					{#each replyProperties as { message: replyMsg, isConsecutive: replyConsecutive, hasNextConsecutive: replyHasNext, isLastReasoningMessage: replyLastReasoning } (replyMsg.id)}
-						<svelte:self
+						<ThreadedMessage
 							message={replyMsg}
 							{rootEvent}
 							depth={depth + 1}

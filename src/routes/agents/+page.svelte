@@ -5,6 +5,7 @@
 	import CreateAgentDialog from '$lib/components/dialogs/CreateAgentDialog.svelte';
 	import { goto } from '$app/navigation';
 	import { SvelteMap } from 'svelte/reactivity';
+	import { Plus, Monitor } from 'lucide-svelte';
 
 	let searchQuery = $state('');
 	let activeFilter = $state<'all' | 'owned' | 'subscribed'>('all');
@@ -20,10 +21,11 @@
 
 		agentEvents.forEach((agent) => {
 			const identifier = agent.slug || agent.dTag || agent.name || agent.id;
-			if (!agentGroups.has(identifier)) {
-				agentGroups.set(identifier, []);
+			const key = `${agent.pubkey}:${identifier}`;
+			if (!agentGroups.has(key)) {
+				agentGroups.set(key, []);
 			}
-			agentGroups.get(identifier)?.push(agent);
+			agentGroups.get(key)?.push(agent);
 		});
 
 		const latestAgents: NDKAgentDefinition[] = [];
@@ -93,14 +95,7 @@
 							onclick={() => (createDialogOpen = true)}
 							class="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
 						>
-							<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M12 4v16m8-8H4"
-								/>
-							</svg>
+							<Plus class="w-4 h-4 mr-2" />
 							Create Agent
 						</button>
 					{/if}
@@ -136,19 +131,7 @@
 		<div class="max-w-6xl mx-auto p-4">
 			{#if filteredAgents.length === 0}
 				<div class="flex flex-col items-center justify-center py-12">
-					<svg
-						class="w-12 h-12 text-muted-foreground mb-4"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-						/>
-					</svg>
+					<Monitor class="w-12 h-12 text-muted-foreground mb-4" />
 					<h3 class="text-lg font-medium text-foreground mb-1">
 						{searchQuery ? 'No agent definitions found' : 'No agent definitions yet'}
 					</h3>

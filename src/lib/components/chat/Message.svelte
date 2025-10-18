@@ -18,12 +18,14 @@
 	interface Props {
 		message: Message;
 		isLastMessage?: boolean;
+		isConsecutive?: boolean;
+		hasNextConsecutive?: boolean;
 		onReply?: (message: Message) => void;
 		onQuote?: (message: Message) => void;
 		onTimeClick?: (event: NDKEvent) => void;
 	}
 
-	let { message, isLastMessage = false, onReply, onQuote, onTimeClick }: Props = $props();
+	let { message, isLastMessage = false, isConsecutive = false, hasNextConsecutive = false, onReply, onQuote, onTimeClick }: Props = $props();
 
 	const isStreaming = $derived(message.event.kind === EVENT_KINDS.STREAMING_RESPONSE);
 	const isTyping = $derived(message.event.kind === EVENT_KINDS.TYPING_INDICATOR);
@@ -136,132 +138,207 @@
 </script>
 
 <div
-	class="group px-4 py-2 hover:bg-muted dark:hover:bg-zinc-800/50 transition-colors"
+	class="group px-4 py-1 hover:bg-muted dark:hover:bg-zinc-800/50 transition-colors"
 >
 	<div class="flex gap-3">
-		<!-- Avatar -->
-		<Avatar {ndk} pubkey={message.event.pubkey} size={32} />
+		<!-- Avatar or consecutive indicator -->
+		{#if !isConsecutive}
+			<div class="flex-shrink-0 pt-0.5 relative">
+				<Avatar {ndk} pubkey={message.event.pubkey} size={36} class="rounded-md" />
+				<!-- Line extending down from avatar if next message is consecutive -->
+				{#if hasNextConsecutive}
+					<div class="absolute left-1/2 -translate-x-1/2 top-9 bottom-0 border-l border-border/60"></div>
+				{/if}
+			</div>
+		{:else}
+			<div class="w-9 flex-shrink-0 relative">
+				<!-- Border line on the left that extends the full height -->
+				<div class="absolute left-1/2 -translate-x-1/2 inset-y-0 border-l border-border/60"></div>
+				<!-- Dot indicator -->
+				<div class="absolute left-1/2 -translate-x-1/2 top-2.5 w-1.5 h-1.5 bg-muted-foreground/80 rounded-full z-10"></div>
+			</div>
+		{/if}
 
 		<!-- Message Content -->
 		<div class="flex-1 min-w-0">
-			<div class="flex items-center gap-2 mb-1">
-				<span class="font-semibold text-sm text-foreground">{authorName}</span>
-				<button
-					type="button"
-					onclick={() => {
-						console.log('Timestamp clicked!', message.event.id);
-						console.log('onTimeClick exists?', !!onTimeClick);
-						onTimeClick?.(message.event);
-					}}
-					class="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer hover:underline"
-					title="Open as root conversation"
-				>
-					{timestamp}
-				</button>
+			{#if !isConsecutive}
+				<div class="flex items-center gap-2 mb-1">
+					<span class="font-semibold text-sm text-foreground">{authorName}</span>
+					<button
+						type="button"
+						onclick={() => {
+							console.log('Timestamp clicked!', message.event.id);
+							console.log('onTimeClick exists?', !!onTimeClick);
+							onTimeClick?.(message.event);
+						}}
+						class="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer hover:underline"
+						title="Open as root conversation"
+					>
+						{timestamp}
+					</button>
 
-				<!-- P-tagged user avatars -->
-				{#if replyingTo.length > 0}
-					<div class="flex items-center -space-x-2">
-						{#each replyingTo as pubkey (pubkey)}
-							<div class="relative">
-								<Avatar {ndk} {pubkey} size={20} class="ring-2 ring-white dark:ring-zinc-900" />
-							</div>
-						{/each}
-					</div>
-				{/if}
+					<!-- P-tagged user avatars -->
+					{#if replyingTo.length > 0}
+						<div class="flex items-center -space-x-2">
+							{#each replyingTo as pubkey (pubkey)}
+								<div class="relative">
+									<Avatar {ndk} {pubkey} size={20} class="ring-2 ring-white dark:ring-zinc-900" />
+								</div>
+							{/each}
+						</div>
+					{/if}
 
-				<!-- Phase indicator -->
-				{#if phaseInfo}
-					<div class="flex items-center gap-1.5 text-xs">
-						<svg class="w-3 h-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-						</svg>
-						<span class="px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium uppercase text-[10px] tracking-wide">
-							{phaseInfo}
+					<!-- Phase indicator -->
+					{#if phaseInfo}
+						<div class="flex items-center gap-1.5 text-xs">
+							<svg class="w-3 h-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+							</svg>
+							<span class="px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium uppercase text-[10px] tracking-wide">
+								{phaseInfo}
+							</span>
+						</div>
+					{/if}
+
+					{#if isStreaming}
+						<span class="text-xs text-primary dark:text-blue-300 flex items-center gap-1">
+							<span class="inline-block w-1.5 h-1.5 rounded-full bg-primary dark:bg-blue-300 animate-pulse"></span>
+							streaming...
 						</span>
-					</div>
-				{/if}
+					{/if}
+					{#if isTyping}
+						<TypingIndicator pubkey={message.event.pubkey} />
+					{/if}
 
-				{#if isStreaming}
-					<span class="text-xs text-primary dark:text-blue-300 flex items-center gap-1">
-						<span class="inline-block w-1.5 h-1.5 rounded-full bg-primary dark:bg-blue-300 animate-pulse"></span>
-						streaming...
-					</span>
-				{/if}
-				{#if isTyping}
-					<TypingIndicator pubkey={message.event.pubkey} />
-				{/if}
-
-				<!-- Message Actions Dropdown -->
-				<div class="ml-auto transition-opacity" class:opacity-0={!dropdownOpen} class:opacity-100={dropdownOpen} class:group-hover:opacity-100={!dropdownOpen}>
-					<DropdownMenu.Root bind:open={dropdownOpen}>
-						<DropdownMenu.Trigger asChild>
-							<button
-								type="button"
-								class="p-1 rounded hover:bg-secondary dark:hover:bg-zinc-700 transition-colors"
-								aria-label="Message actions"
-							>
-								<MoreVertical class="w-4 h-4 text-muted-foreground" />
-							</button>
-						</DropdownMenu.Trigger>
-						<DropdownMenu.Content align="end" class="w-48">
-							{#if onReply}
+					<!-- Message Actions Dropdown -->
+					<div class="ml-auto transition-opacity" class:opacity-0={!dropdownOpen} class:opacity-100={dropdownOpen} class:group-hover:opacity-100={!dropdownOpen}>
+						<DropdownMenu.Root bind:open={dropdownOpen}>
+							<DropdownMenu.Trigger asChild>
+								<button
+									type="button"
+									class="p-1 rounded hover:bg-secondary dark:hover:bg-zinc-700 transition-colors"
+									aria-label="Message actions"
+								>
+									<MoreVertical class="w-4 h-4 text-muted-foreground" />
+								</button>
+							</DropdownMenu.Trigger>
+							<DropdownMenu.Content align="end" class="w-48">
 								<DropdownMenu.Item onclick={() => onReply?.(message)}>
 									<Reply class="mr-2 h-4 w-4" />
 									<span>Reply</span>
 								</DropdownMenu.Item>
-							{/if}
-							{#if onQuote}
-								<DropdownMenu.Item onclick={() => onQuote?.(message)}>
-									<Quote class="mr-2 h-4 w-4" />
-									<span>Quote</span>
+								{#if onQuote}
+									<DropdownMenu.Item onclick={() => onQuote?.(message)}>
+										<Quote class="mr-2 h-4 w-4" />
+										<span>Quote</span>
+									</DropdownMenu.Item>
+								{/if}
+								<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.content)}>
+									<Copy class="mr-2 h-4 w-4" />
+									<span>Copy content</span>
 								</DropdownMenu.Item>
-							{/if}
-							<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.content)}>
-								<Copy class="mr-2 h-4 w-4" />
-								<span>Copy content</span>
-							</DropdownMenu.Item>
-							<DropdownMenu.Separator />
-							<DropdownMenu.Item onclick={() => (showLLMMetadata = true)}>
-								<Info class="mr-2 h-4 w-4" />
-								<span>View LLM metadata</span>
-							</DropdownMenu.Item>
-							<DropdownMenu.Item onclick={() => (showRawEvent = true)}>
-								<Eye class="mr-2 h-4 w-4" />
-								<span>View raw event</span>
-							</DropdownMenu.Item>
-						</DropdownMenu.Content>
-					</DropdownMenu.Root>
+								<DropdownMenu.Separator />
+								<DropdownMenu.Item onclick={() => (showLLMMetadata = true)}>
+									<Info class="mr-2 h-4 w-4" />
+									<span>View LLM metadata</span>
+								</DropdownMenu.Item>
+								<DropdownMenu.Item onclick={() => (showRawEvent = true)}>
+									<Eye class="mr-2 h-4 w-4" />
+									<span>View raw event</span>
+								</DropdownMenu.Item>
+							</DropdownMenu.Content>
+						</DropdownMenu.Root>
+					</div>
 				</div>
-			</div>
+			{/if}
 
 			<!-- Render content based on type -->
-			{#if isTyping}
-				<!-- Typing indicator is shown in the header, no content needed -->
-			{:else if isToolCallEvent}
-				<ToolCallContent event={message.event} />
-			{:else if isReasoningEvent}
-				<AIReasoningBlock
-					reasoningEvent={message.event}
-					{isStreaming}
-					{isLastMessage}
-				/>
-			{:else}
-				<div class="prose prose-sm max-w-none dark:prose-invert text-foreground">
-					{@html renderedContent}
-					{#if isStreaming}
-						<span class="inline-block w-1.5 h-4 ml-0.5 bg-primary dark:bg-blue-400 animate-pulse"></span>
+			<div class:flex={isConsecutive} class:items-start={isConsecutive} class:justify-between={isConsecutive} class:gap-4={isConsecutive}>
+				<div class="flex-1">
+					{#if isTyping}
+						<!-- Typing indicator is shown in the header, no content needed -->
+					{:else if isToolCallEvent}
+						<ToolCallContent event={message.event} />
+					{:else if isReasoningEvent}
+						<AIReasoningBlock
+							reasoningEvent={message.event}
+							{isStreaming}
+							{isLastMessage}
+						/>
+					{:else}
+						<div class="prose prose-sm max-w-none dark:prose-invert text-foreground">
+							{@html renderedContent}
+							{#if isStreaming}
+								<span class="inline-block w-1.5 h-4 ml-0.5 bg-primary dark:bg-blue-400 animate-pulse"></span>
+							{/if}
+						</div>
+
+						<!-- Render suggestion buttons if they exist -->
+						{#if hasSuggestions}
+							<SuggestionButtons
+								event={message.event}
+								onSuggestionClick={handleSuggestionClick}
+							/>
+						{/if}
 					{/if}
 				</div>
 
-				<!-- Render suggestion buttons if they exist -->
-				{#if hasSuggestions}
-					<SuggestionButtons
-						event={message.event}
-						onSuggestionClick={handleSuggestionClick}
-					/>
+				<!-- Compact header for consecutive messages -->
+				{#if isConsecutive}
+					<div class="flex items-center gap-2 flex-shrink-0 sticky top-0">
+						<button
+							type="button"
+							onclick={() => {
+								onTimeClick?.(message.event);
+							}}
+							class="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer hover:underline"
+							title="Open as root conversation"
+						>
+							{timestamp}
+						</button>
+
+						<!-- Message Actions Dropdown -->
+						<div class="transition-opacity" class:opacity-0={!dropdownOpen} class:opacity-100={dropdownOpen} class:group-hover:opacity-100={!dropdownOpen}>
+							<DropdownMenu.Root bind:open={dropdownOpen}>
+								<DropdownMenu.Trigger asChild>
+									<button
+										type="button"
+										class="p-1 rounded hover:bg-secondary dark:hover:bg-zinc-700 transition-colors"
+										aria-label="Message actions"
+									>
+										<MoreVertical class="w-4 h-4 text-muted-foreground" />
+									</button>
+								</DropdownMenu.Trigger>
+								<DropdownMenu.Content align="end" class="w-48">
+									<DropdownMenu.Item onclick={() => onReply?.(message)}>
+										<Reply class="mr-2 h-4 w-4" />
+										<span>Reply</span>
+									</DropdownMenu.Item>
+									{#if onQuote}
+										<DropdownMenu.Item onclick={() => onQuote?.(message)}>
+											<Quote class="mr-2 h-4 w-4" />
+											<span>Quote</span>
+										</DropdownMenu.Item>
+									{/if}
+									<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.content)}>
+										<Copy class="mr-2 h-4 w-4" />
+										<span>Copy content</span>
+									</DropdownMenu.Item>
+									<DropdownMenu.Separator />
+									<DropdownMenu.Item onclick={() => (showLLMMetadata = true)}>
+										<Info class="mr-2 h-4 w-4" />
+										<span>View LLM metadata</span>
+									</DropdownMenu.Item>
+									<DropdownMenu.Item onclick={() => (showRawEvent = true)}>
+										<Eye class="mr-2 h-4 w-4" />
+										<span>View raw event</span>
+									</DropdownMenu.Item>
+								</DropdownMenu.Content>
+							</DropdownMenu.Root>
+						</div>
+					</div>
 				{/if}
-			{/if}
+			</div>
 		</div>
 	</div>
 </div>

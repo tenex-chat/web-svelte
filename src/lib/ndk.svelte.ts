@@ -12,12 +12,12 @@ import { NDKAgentLesson } from '$lib/events/NDKAgentLesson';
 
 const DEFAULT_RELAYS = ['wss://tenex.chat'];
 
-// Initialize SQLite WASM cache with worker mode (browser only)
+// Initialize SQLite WASM cache (browser only)
+// Note: Worker mode disabled in dev due to COOP/COEP header issues with Vite HMR
 const cacheAdapter = browser
 	? new NDKCacheSqliteWasm({
 			dbName: 'tenex-cache',
-			useWorker: true,
-			workerUrl: '/worker.js',
+			useWorker: false,
 			wasmUrl: '/sql-wasm.wasm'
 		})
 	: undefined;

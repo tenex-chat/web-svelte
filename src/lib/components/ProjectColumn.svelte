@@ -4,8 +4,12 @@
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { cn } from '$lib/utils/cn';
-	import { MessageSquare, FileText, Bot, Hash, Rss, Settings as SettingsIcon, Filter, Clock, MoreVertical, MessageCircleQuestion } from 'lucide-svelte';
+	import { generateColorFromString } from '$lib/utils/colors';
+	import { MessageSquare, FileText, Bot, Hash, Rss, Settings as SettingsIcon, Filter, Clock, MoreVertical, MessageCircleQuestion, Plus } from 'lucide-svelte';
 	import * as DropdownMenu from './ui/dropdown-menu';
+	import { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { EVENT_KINDS } from '$lib/constants';
+	import { toastStore } from '$lib/stores/toast.svelte';
 
 	interface Props {
 		project: NDKProject;
@@ -26,17 +30,31 @@
 	const isOnline = $derived(projectStatusStore.isProjectOnline(projectId));
 	const onlineAgents = $derived(projectStatusStore.getOnlineAgents(projectId));
 
-	// Generate project color for UI accents
-	const projectColor = $derived.by(() => {
-		const str = project.dTag || '';
-		let hash = 0;
-		for (let i = 0; i < str.length; i++) {
-			hash = (hash << 5) - hash + str.charCodeAt(i);
-			hash = hash & hash;
+	// Handle status indicator click to start project
+	async function handleStatusClick() {
+		if (isOnline || !ndk) return;
+
+		try {
+			// Create a 24000 event to start the project
+			const event = new NDKEvent(ndk);
+			event.kind = EVENT_KINDS.PROJECT_START;
+			event.content = '';
+
+			// Tag the project using its NIP-33 reference
+			const projectTag = project.tagId();
+			if (projectTag) {
+				event.tags.push(['a', projectTag]);
+			}
+
+			await event.publish();
+		} catch (error) {
+			console.error('Failed to start project:', error);
+			toastStore.error('Failed to send project start event');
 		}
-		const hue = Math.abs(hash) % 360;
-		return `hsl(${hue}, 65%, 55%)`;
-	});
+	}
+
+	// Generate project color for UI accents
+	const projectColor = $derived(generateColorFromString(project.dTag || ''));
 
 	const tabs = [
 		{ id: 'conversations', label: 'Chat', icon: MessageSquare },
@@ -83,10 +101,11 @@
 				<button
 					class={cn(
 						'w-2 h-2 rounded-full transition-all',
-						isOnline ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-muted-foreground'
+						isOnline ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-muted-foreground cursor-pointer hover:bg-foreground'
 					)}
-					title={isOnline ? 'Project is online' : 'Project is offline'}
-					aria-label={isOnline ? 'Project is online' : 'Project is offline'}
+					title={isOnline ? 'Project is online' : 'Click to start project'}
+					aria-label={isOnline ? 'Project is online' : 'Click to start project'}
+					onclick={handleStatusClick}
 				></button>
 			</div>
 		</div>
@@ -106,7 +125,7 @@
 							: ''}
 						title={tab.label}
 					>
-						<svelte:component this={tab.icon} class="w-4 h-4" />
+						<tab.icon class="w-4 h-4" />
 						{#if activeTab === tab.id}
 							<div
 								class="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full"
@@ -126,14 +145,7 @@
 						title="New conversation"
 						aria-label="New conversation"
 					>
-						<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 4v16m8-8H4"
-							/>
-						</svg>
+						<Plus class="w-3.5 h-3.5" />
 					</button>
 
 					<!-- Activity Filter Button (only for conversations tab) -->
@@ -200,14 +212,7 @@
 						title="New document"
 						aria-label="New document"
 					>
-						<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 4v16m8-8H4"
-							/>
-						</svg>
+						<Plus class="w-3.5 h-3.5" />
 					</button>
 				{/if}
 			</div>

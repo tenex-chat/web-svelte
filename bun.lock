@@ -23,6 +23,7 @@
         "marked": "^16.4.0",
         "nostr-tools": "^2.17.0",
         "svelte-portal": "^2.2.1",
+        "svelte-virtual-list-ce": "^3.1.0-beta.2",
         "tailwind-merge": "^3.3.1",
       },
       "devDependencies": {
@@ -1085,6 +1086,8 @@
     "svelte-portal": ["svelte-portal@2.2.1", "", {}, "sha512-uF7is5sM4aq5iN7QF/67XLnTUvQCf2iiG/B1BHTqLwYVY1dsVmTeXZ/LeEyU6dLjApOQdbEG9lkqHzxiQtOLEQ=="],
 
     "svelte-toolbelt": ["svelte-toolbelt@0.10.5", "", { "dependencies": { "clsx": "^2.1.1", "runed": "^0.29.0", "style-to-object": "^1.0.8" }, "peerDependencies": { "svelte": "^5.30.2" } }, "sha512-8e+eWTgxw1aiLxhDE8Rb1X6AoLitqpJz+WhAul2W7W58C8KoLoJQf1TgQdFPBiCPJ0Jg5y0Zi1uyua9em4VS0w=="],
+
+    "svelte-virtual-list-ce": ["svelte-virtual-list-ce@3.1.0-beta.2", "", {}, "sha512-uS8BUtEglj5I18FMUtFjdSKKYSBD2DaSQ1PAiHMl8poo0m0qSjJZZm0C0bgY0w8/5le4fdDez9XvsgP8+r44Yg=="],
 
     "tabbable": ["tabbable@6.2.0", "", {}, "sha512-Cat63mxsVJlzYvN51JmVXIgNoUokrIaT2zLclCXjRd8boZ0004U4KCs/sToJ75C6sdlByWxpYnb5Boif1VSFew=="],
 

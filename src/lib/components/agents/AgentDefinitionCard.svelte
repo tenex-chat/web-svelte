@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { NDKAgentDefinition } from '$lib/events/NDKAgentDefinition';
-	import { generateAgentColor } from '$lib/utils/agent-colors';
+	import { generateAgentColor } from '$lib/utils/colors';
 
 	interface Props {
 		agent: NDKAgentDefinition;

@@ -25,6 +25,19 @@ function injectCJSShim(): Plugin {
 	};
 }
 
+// Plugin to add CORP headers for COEP compatibility
+function addCORPHeaders(): Plugin {
+	return {
+		name: 'add-corp-headers',
+		configureServer(server) {
+			server.middlewares.use((req, res, next) => {
+				res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+				next();
+			});
+		}
+	};
+}
+
 // Plugin to copy VAD WASM files to static folder
 function copyVadWasmFiles(): Plugin {
 	return {
@@ -71,6 +84,7 @@ function copyVadWasmFiles(): Plugin {
 
 export default defineConfig({
 	plugins: [
+		addCORPHeaders(),
 		injectCJSShim(),
 		copyVadWasmFiles(),
 		sveltekit()
@@ -79,10 +93,6 @@ export default defineConfig({
 		port: 5000,
 		fs: {
 			allow: ['..']
-		},
-		headers: {
-			'Cross-Origin-Embedder-Policy': 'require-corp',
-			'Cross-Origin-Opener-Policy': 'same-origin'
 		}
 	},
 	define: {

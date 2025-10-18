@@ -6,6 +6,7 @@
 	import { processEventsToMessages, type Message as MessageType } from '$lib/utils/messageProcessor';
 	import { streamingMessageStore } from '$lib/utils/streamingMessageStore.svelte';
 	import { EVENT_KINDS } from '$lib/constants';
+	import { calculateMessageProperties } from '$lib/utils/messageUtils';
 
 	interface Props {
 		rootEvent: NDKEvent;
@@ -183,8 +184,9 @@
 		</div>
 	{:else}
 		<!-- Flattened view: Render messages in chronological order -->
+		{@const messageProps = calculateMessageProperties(messages)}
 		<div class="flex flex-col">
-			{#each messages as message, index (message.id)}
+			{#each messageProps as { message, isConsecutive, hasNextConsecutive, isLastReasoningMessage }, index (message.id)}
 				{@const isStreamingMsg = message.event.kind === 21111}
 				{#if isStreamingMsg}
 					{console.log('[MessageList] Rendering streaming message in loop', {
@@ -195,7 +197,9 @@
 				{/if}
 				<Message
 					{message}
-					isLastMessage={index === messages.length - 1}
+					isLastMessage={index === messageProps.length - 1}
+					{isConsecutive}
+					{hasNextConsecutive}
 					{onReply}
 					{onQuote}
 					{onTimeClick}

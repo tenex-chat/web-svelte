@@ -7,6 +7,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Avatar } from '@nostr-dev-kit/svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+	import VirtualList from '@humanspeak/svelte-virtual-list';
 
 	interface Props {
 		project: NDKProject;
@@ -18,7 +19,6 @@
 	let searchQuery = $state('');
 	let selectedAuthor = $state<string | null>(null);
 	let groupThreads = $state(false);
-	let visibleCount = $state(20); // Start with 20 events
 	let filterDropdownOpen = $state(false);
 
 
@@ -172,24 +172,8 @@
 		return filtered;
 	});
 
-	// Reset visible count when filters change
-	$effect(() => {
-		// When search query or author filter changes, reset to initial count
-		searchQuery;
-		selectedAuthor;
-		visibleCount = 20;
-	});
-
-	// Visible events (lazy loaded)
-	const visibleEvents = $derived(filteredEvents.slice(0, visibleCount));
-	const hasMore = $derived(filteredEvents.length > visibleCount);
-
 	// Handle empty states
 	const showNoResults = $derived(searchQuery && filteredEvents.length === 0);
-
-	function loadMore() {
-		visibleCount += 20;
-	}
 </script>
 
 <div class="h-full flex flex-col">
@@ -305,24 +289,11 @@
 		</div>
 	{:else}
 		<div class="flex-1 overflow-auto">
-			<div>
-				{#each visibleEvents as event (event.id)}
+			<VirtualList items={filteredEvents} height="100%" itemHeight={80}>
+				{#snippet slot({ item: event })}
 					<EventItem {event} onclick={() => onEventClick?.(event)} />
-				{/each}
-			</div>
-
-			<!-- Load More Button -->
-			{#if hasMore}
-				<div class="p-4 flex justify-center border-t">
-					<button
-						type="button"
-						onclick={loadMore}
-						class="px-6 py-2 text-sm font-medium text-primary hover:bg-muted rounded-lg transition-colors"
-					>
-						Load More ({filteredEvents.length - visibleCount} remaining)
-					</button>
-				</div>
-			{/if}
+				{/snippet}
+			</VirtualList>
 		</div>
 	{/if}
 </div>

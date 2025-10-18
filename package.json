@@ -24,6 +24,7 @@
 		"@ai-sdk/google": "^2.0.23",
 		"@ai-sdk/openai": "^2.0.52",
 		"@elevenlabs/elevenlabs-js": "^2.19.0",
+		"@humanspeak/svelte-virtual-list": "^0.3.5",
 		"@nostr-dev-kit/blossom": "6.1.0",
 		"@nostr-dev-kit/cache-sqlite-wasm": "0.8.2",
 		"@nostr-dev-kit/ndk": "2.17.10",
