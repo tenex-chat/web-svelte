@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKKind } from '@nostr-dev-kit/ndk';
+	import { NDKKind } from '$lib/kinds';
 	import { Avatar, Name } from '@nostr-dev-kit/svelte';
 	import { ArrowLeft, Copy, CheckCircle2, Sparkles } from 'lucide-svelte';
 	import { cn } from '$lib/utils/cn';

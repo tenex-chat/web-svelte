@@ -1,10 +1,11 @@
-import { NDKEvent, type NDKKind, type NostrEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, type NostrEvent } from '@nostr-dev-kit/ndk';
 import type NDK from '@nostr-dev-kit/ndk';
 import { slugify } from '$lib/utils/slugify';
+import { NDKKind } from '$lib/kinds';
 
 export class NDKAgentDefinition extends NDKEvent {
-	static kind: NDKKind = 4199 as NDKKind;
-	static kinds = [4199];
+	static kind = NDKKind.AgentDefinition;
+	static kinds = [NDKKind.AgentDefinition];
 
 	constructor(ndk?: NDK, rawEvent?: NostrEvent | NDKEvent) {
 		super(ndk, rawEvent);

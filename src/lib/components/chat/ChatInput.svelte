@@ -9,8 +9,8 @@
 	import AgentSelector from './AgentSelector.svelte';
 	import NudgeSelector from './NudgeSelector.svelte';
 	import ActiveAgents from './ActiveAgents.svelte';
-	import { Maximize2, Minimize2, Phone } from 'lucide-svelte';
-	import type { NDKEvent as NDKEventType } from '@nostr-dev-kit/ndk';
+	import { Maximize2, Minimize2, Phone, X } from 'lucide-svelte';
+	import { nudgeStore } from '$lib/stores/nudges.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 
 	interface Props {
@@ -81,33 +81,9 @@
 		}
 	});
 
-	// Load available nudges and saved nudges on mount
+	// Load nudges on mount
 	$effect(() => {
-		async function loadNudges() {
-			try {
-				const nudgeEvents = await ndk.fetchEvents({
-					kinds: [NDKKind.AgentNudge]
-				});
-				availableNudges = Array.from(nudgeEvents).sort((a, b) => {
-					const aTime = a.created_at || 0;
-					const bTime = b.created_at || 0;
-					return bTime - aTime;
-				});
-			} catch (error) {
-				console.error('Failed to fetch nudges:', error);
-			}
-		}
-
-		const saved = localStorage.getItem('saved_nudges');
-		if (saved) {
-			try {
-				savedNudges = JSON.parse(saved);
-			} catch {
-				savedNudges = [];
-			}
-		}
-
-		loadNudges();
+		nudgeStore.loadNudges();
 	});
 
 	// Autofocus on mount
@@ -184,8 +160,6 @@
 	let nudgeQuery = $state('');
 	let nudgeStartPos = $state(0);
 	let selectedNudgeIndex = $state(0);
-	let availableNudges = $state<NDKEventType[]>([]);
-	let savedNudges = $state<string[]>([]);
 
 	// Filter agents for autocomplete
 	const filteredAgents = $derived.by(() => {
@@ -198,11 +172,8 @@
 	const filteredNudges = $derived.by(() => {
 		if (!showNudgeAutocomplete) return [];
 		const query = nudgeQuery.toLowerCase();
-		return availableNudges.filter((nudge) => {
-			const isMine = nudge.pubkey === ndk.$currentUser?.pubkey;
-			const isSaved = savedNudges.includes(nudge.id);
-			if (!isMine && !isSaved) return false;
-
+		const displayNudges = nudgeStore.getDisplayNudges(ndk.$currentUser?.pubkey);
+		return displayNudges.filter((nudge) => {
 			const title = nudge.tagValue('title') || '';
 			const description = nudge.tagValue('description') || '';
 			return title.toLowerCase().includes(query) || description.toLowerCase().includes(query);
@@ -299,13 +270,12 @@
 	}
 
 	// Insert nudge selection
-	function selectNudge(nudge: NDKEventType) {
+	function selectNudge(nudge: NDKEvent) {
 		const before = messageInput.substring(0, nudgeStartPos);
 		const after = messageInput.substring(textareaElement?.selectionStart || 0);
-		const nudgeTitle = nudge.tagValue('title') || 'Untitled';
-		const nudgeText = `/${nudgeTitle} `;
 
-		messageInput = before + nudgeText + after;
+		// Remove the /command text from input
+		messageInput = before + after;
 
 		// Toggle nudge in selectedNudges
 		if (!selectedNudges.includes(nudge.id)) {
@@ -316,14 +286,17 @@
 		showNudgeAutocomplete = false;
 		nudgeQuery = '';
 
-		// Focus and set cursor after nudge text
+		// Focus and set cursor
 		setTimeout(() => {
 			if (textareaElement) {
-				const newCursorPos = before.length + nudgeText.length;
 				textareaElement.focus();
-				textareaElement.setSelectionRange(newCursorPos, newCursorPos);
+				textareaElement.setSelectionRange(before.length, before.length);
 			}
 		}, 0);
+	}
+
+	function removeNudge(nudgeId: string) {
+		selectedNudges = selectedNudges.filter(id => id !== nudgeId);
 	}
 
 	async function handleSend() {
@@ -802,6 +775,32 @@
 									d="M6 18L18 6M6 6l12 12"
 								/>
 							</svg>
+						</button>
+					</span>
+				{/if}
+			{/each}
+		</div>
+	{/if}
+
+	<!-- Selected Nudges Indicator -->
+	{#if selectedNudges.length > 0}
+		<div class="mt-3 flex items-center gap-2 flex-wrap">
+			<span class="text-xs text-muted-foreground">Nudges:</span>
+			{#each selectedNudges as nudgeId (nudgeId)}
+				{@const nudge = nudgeStore.nudges.find((n) => n.id === nudgeId)}
+				{#if nudge}
+					{@const title = nudge.tagValue('title') || 'Untitled'}
+					<span
+						class="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 backdrop-blur-sm text-primary rounded-full text-xs"
+					>
+						<span>/{title}</span>
+						<button
+							type="button"
+							onclick={() => removeNudge(nudgeId)}
+							class="hover:bg-primary/20 rounded-full p-0.5"
+							aria-label="Remove nudge"
+						>
+							<X class="w-3 h-3" />
 						</button>
 					</span>
 				{/if}

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import type { NDKProject } from '$lib/events/NDKProject';
-	import { NDKEvent, NDKKind } from '@nostr-dev-kit/ndk';
+	import { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKKind } from '$lib/kinds';
 	import { X, Loader2, FileText, Trash2, Hash as HashIcon } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 

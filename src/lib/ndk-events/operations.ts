@@ -1,5 +1,6 @@
 import type NDK from "@nostr-dev-kit/ndk";
-import { NDKEvent, NDKKind } from "@nostr-dev-kit/ndk";
+import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { NDKKind } from "$lib/kinds";
 
 /**
  * Contract-aligned helpers for kinds 24133/24134
@@ -63,7 +64,7 @@ export async function publishKind24134(
   if (eIds.length === 0) return;
 
   const event = new NDKEvent(ndk);
-  event.kind = 24134 as NDKKind;
+  event.kind = NDKKind.TenexStopCommand;
   event.content = '';
 
   // Build tags
@@ -126,7 +127,7 @@ export async function stopAgentOperation(
   try {
     // Create a targeted stop event with the agent's pubkey
     const event = new NDKEvent(ndk);
-    event.kind = 24134 as NDKKind;
+    event.kind = NDKKind.TenexStopCommand;
     event.content = '';
     event.tags = [
       ["a", projectId],

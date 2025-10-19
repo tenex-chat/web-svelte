@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKKind } from '@nostr-dev-kit/ndk';
+	import { NDKKind } from '$lib/kinds';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { Avatar } from '@nostr-dev-kit/svelte';
 	import { ChevronDown, ChevronRight } from 'lucide-svelte';

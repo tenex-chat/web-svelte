@@ -1,6 +1,6 @@
 import { DeltaContentAccumulator } from './DeltaContentAccumulator';
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
-import { EVENT_KINDS } from '$lib/constants';
+import { NDKKind } from '$lib/kinds';
 
 interface StreamingSession {
 	syntheticId: string;
@@ -22,8 +22,8 @@ class StreamingMessageStore {
 	 */
 	processStreamingEvent(event: NDKEvent): { syntheticId: string; content: string } | null {
 		// Handle both streaming responses and typing indicators
-		if (event.kind !== EVENT_KINDS.STREAMING_RESPONSE &&
-		    event.kind !== EVENT_KINDS.TYPING_INDICATOR) {
+		if (event.kind !== NDKKind.TenexStreamingResponse &&
+		    event.kind !== NDKKind.TenexAgentTypingStart) {
 			return null;
 		}
 
@@ -31,7 +31,7 @@ class StreamingMessageStore {
 		let session = this.sessions[key];
 
 		// Handle typing indicators differently - they don't accumulate
-		if (event.kind === EVENT_KINDS.TYPING_INDICATOR) {
+		if (event.kind === NDKKind.TenexAgentTypingStart) {
 			const syntheticId = `typing-${event.pubkey}`;
 
 			if (!session || session.syntheticId !== syntheticId) {

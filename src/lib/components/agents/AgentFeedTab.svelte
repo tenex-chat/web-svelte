@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKKind, type NDKEvent } from '@nostr-dev-kit/ndk';
+	import type { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKKind } from '$lib/kinds';
 	import { Activity } from 'lucide-svelte';
 	import Message from '../chat/Message.svelte';
 	import { formatRelativeTime } from '$lib/utils/time';

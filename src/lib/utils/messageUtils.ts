@@ -1,5 +1,5 @@
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
-import { EVENT_KINDS } from '$lib/constants';
+import { NDKKind } from '$lib/kinds';
 
 export interface Message {
 	id: string;
@@ -20,8 +20,8 @@ export function isConsecutiveMessage(
 
 	return (
 		previousMessage.event.pubkey === currentMessage.event.pubkey &&
-		previousMessage.event.kind !== EVENT_KINDS.CONVERSATION_METADATA &&
-		currentMessage.event.kind !== EVENT_KINDS.CONVERSATION_METADATA &&
+		previousMessage.event.kind !== NDKKind.TenexConversationMetadata &&
+		currentMessage.event.kind !== NDKKind.TenexConversationMetadata &&
 		!hasPTag(currentMessage.event) &&
 		!hasPTag(previousMessage.event)
 	);
@@ -40,8 +40,8 @@ export function hasNextConsecutiveMessage(
 
 	return (
 		nextMessage.event.pubkey === currentMessage.event.pubkey &&
-		nextMessage.event.kind !== EVENT_KINDS.CONVERSATION_METADATA &&
-		currentMessage.event.kind !== EVENT_KINDS.CONVERSATION_METADATA &&
+		nextMessage.event.kind !== NDKKind.TenexConversationMetadata &&
+		currentMessage.event.kind !== NDKKind.TenexConversationMetadata &&
 		!hasPTag(nextMessage.event) &&
 		!hasPTag(currentMessage.event)
 	);

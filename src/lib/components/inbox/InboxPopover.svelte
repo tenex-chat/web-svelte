@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { inboxStore } from '$lib/stores/inbox.svelte';
-	import { formatRelativeTime } from '$lib/utils/time';
+	import { goto } from '$app/navigation';
+	import InboxEventCard from './InboxEventCard.svelte';
+	import { Inbox } from 'lucide-svelte';
 
 	interface Props {
 		open?: boolean;
@@ -12,9 +14,54 @@
 
 	let triggerRef: HTMLElement | null = $state(null);
 	let popoverRef: HTMLDivElement | null = $state(null);
+	let markAsReadTimer: NodeJS.Timeout | null = null;
+	let popoverPosition = $state<{ top: number; left: number } | null>(null);
+
+	// Get recent events to show (max 5)
+	const recentEvents = $derived(inboxStore.events.slice(0, 5));
+
+	// Calculate popover position when it opens
+	function calculatePosition() {
+		if (!triggerRef) return;
+
+		const rect = triggerRef.getBoundingClientRect();
+		const popoverWidth = 400;
+		const popoverMaxHeight = 400;
+		const offset = 12;
+
+		let top = rect.top;
+		let left = rect.right + offset;
+
+		// Check if popover would overflow right edge of viewport
+		if (left + popoverWidth > window.innerWidth) {
+			// Try positioning to the left of the trigger instead
+			left = rect.left - popoverWidth - offset;
+
+			// If that also overflows, just position at the right edge with margin
+			if (left < 0) {
+				left = window.innerWidth - popoverWidth - 16; // 16px margin
+			}
+		}
+
+		// Check if popover would overflow bottom edge of viewport
+		if (top + popoverMaxHeight > window.innerHeight) {
+			// Align to bottom edge with margin
+			top = Math.max(16, window.innerHeight - popoverMaxHeight - 16);
+		}
+
+		// Ensure it doesn't overflow the top
+		if (top < 16) {
+			top = 16;
+		}
+
+		popoverPosition = { top, left };
+	}
 
 	function handleTriggerClick() {
 		open = !open;
+		if (open) {
+			calculatePosition();
+		}
 		onOpenChange?.(open);
 	}
 
@@ -38,99 +85,129 @@
 		}
 	}
 
-	function handleMarkAllRead() {
-		inboxStore.markAllRead();
+	function handleOpenInboxPage() {
+		open = false;
+		onOpenChange?.(false);
+		goto('/inbox');
 	}
+
+	function handleEventClick(eventId: string) {
+		open = false;
+		onOpenChange?.(false);
+		goto(`/chat/${eventId}`);
+	}
+
+	// Mark as read when opening the popover
+	$effect(() => {
+		if (open && inboxStore.unreadCount > 0) {
+			// Mark as read after a small delay to ensure user actually sees the content
+			markAsReadTimer = setTimeout(() => {
+				inboxStore.markAllRead();
+			}, 1500);
+		} else if (!open && markAsReadTimer) {
+			clearTimeout(markAsReadTimer);
+			markAsReadTimer = null;
+		}
+
+		return () => {
+			if (markAsReadTimer) {
+				clearTimeout(markAsReadTimer);
+			}
+		};
+	});
 
 	$effect(() => {
 		if (open) {
 			document.addEventListener('mousedown', handleClickOutside);
 			document.addEventListener('keydown', handleKeydown);
+			window.addEventListener('resize', calculatePosition);
+			window.addEventListener('scroll', calculatePosition, true);
 		}
 		return () => {
 			document.removeEventListener('mousedown', handleClickOutside);
 			document.removeEventListener('keydown', handleKeydown);
+			window.removeEventListener('resize', calculatePosition);
+			window.removeEventListener('scroll', calculatePosition, true);
 		};
 	});
 </script>
 
 <div class="relative">
-	<div bind:this={triggerRef} onclick={handleTriggerClick}>
+	<div
+		bind:this={triggerRef}
+		onclick={handleTriggerClick}
+		role="button"
+		tabindex="0"
+		onkeydown={(e) => {
+			if (e.key === 'Enter' || e.key === ' ') {
+				handleTriggerClick();
+			}
+		}}
+	>
 		{@render children?.()}
 	</div>
 
-	{#if open}
+	{#if open && popoverPosition}
 		<div
 			bind:this={popoverRef}
-			class="absolute left-0 bottom-full mb-2 w-96 bg-card rounded-lg shadow-xl border border-border overflow-hidden z-50"
+			class="fixed w-[400px] bg-card rounded-lg shadow-xl border border-border overflow-hidden z-50"
+			style="top: {popoverPosition.top}px; left: {popoverPosition.left}px;"
 		>
 			<!-- Header -->
 			<div class="flex items-center justify-between px-4 py-3 border-b border-border">
-				<h3 class="font-semibold text-foreground">Inbox</h3>
-				{#if inboxStore.unreadCount > 0}
-					<button
-						onclick={handleMarkAllRead}
-						class="text-xs text-primary dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
-					>
-						Mark all read
-					</button>
-				{/if}
+				<div class="flex items-center gap-2">
+					<Inbox class="h-5 w-5" />
+					<h3 class="font-semibold text-foreground">Inbox</h3>
+					{#if inboxStore.events.length > 0}
+						<span class="text-sm text-muted-foreground">
+							({inboxStore.events.length} events)
+						</span>
+					{/if}
+				</div>
+				<button
+					onclick={handleOpenInboxPage}
+					class="text-sm text-primary hover:text-primary/80 font-medium"
+				>
+					View All
+				</button>
 			</div>
 
 			<!-- Content -->
 			<div class="max-h-[400px] overflow-y-auto">
-				{#if inboxStore.items.length === 0}
+				{#if inboxStore.events.length === 0}
 					<div class="p-8 text-center">
-						<svg
-							class="w-12 h-12 mx-auto text-muted-foreground mb-3"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-							/>
-						</svg>
-						<p class="text-sm text-muted-foreground">No messages yet</p>
+						<Inbox class="h-10 w-10 mx-auto mb-2 opacity-50 text-muted-foreground" />
+						<p class="text-sm text-muted-foreground">Your inbox is empty</p>
 					</div>
 				{:else}
-					{#each inboxStore.items as item (item.id)}
-						<button
-							class="w-full text-left px-4 py-3 hover:bg-muted dark:hover:bg-zinc-800 transition-colors border-b border-gray-100 dark:border-zinc-700"
-						>
-							<div class="flex items-start gap-3">
-								<div class="flex-1 min-w-0">
-									<p class="text-sm font-medium text-foreground truncate">
-										From: {item.author?.npub?.slice(0, 12)}...
-									</p>
-									<p class="text-sm text-muted-foreground line-clamp-2 mt-1">
-										{item.content}
-									</p>
-									<p class="text-xs text-muted-foreground mt-1">
-										{item.created_at ? formatRelativeTime(item.created_at) : ''}
-									</p>
-								</div>
+					<div class="divide-y divide-border">
+						{#each recentEvents as event (event.id)}
+							<div
+								class="cursor-pointer hover:bg-muted/50 transition-colors"
+								onclick={() => handleEventClick(event.id)}
+								role="button"
+								tabindex="0"
+								onkeydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										handleEventClick(event.id);
+									}
+								}}
+							>
+								<InboxEventCard {event} isUnread={inboxStore.isEventUnread(event)} />
 							</div>
-						</button>
-					{/each}
+						{/each}
+					</div>
+					{#if inboxStore.events.length > 5}
+						<div class="p-3 text-center border-t border-border">
+							<button
+								onclick={handleOpenInboxPage}
+								class="w-full text-sm text-primary hover:text-primary/80 font-medium"
+							>
+								View all {inboxStore.events.length} events →
+							</button>
+						</div>
+					{/if}
 				{/if}
-			</div>
-
-			<!-- Footer -->
-			<div class="border-t border-border px-4 py-3 bg-muted dark:bg-zinc-800">
-				<a
-					href="/inbox"
-					class="text-sm text-primary dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium block text-center"
-					onclick={() => {
-						open = false;
-						onOpenChange?.(false);
-					}}
-				>
-					View all messages
-				</a>
 			</div>
 		</div>
 	{/if}

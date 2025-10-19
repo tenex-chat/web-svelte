@@ -1,5 +1,6 @@
-import { NDKEvent, type NDKKind, type NostrEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, type NostrEvent } from '@nostr-dev-kit/ndk';
 import type NDK from '@nostr-dev-kit/ndk';
+import { NDKKind } from '$lib/kinds';
 
 export interface ProjectAgent {
 	pubkey: string;
@@ -17,8 +18,8 @@ export interface ProjectModel {
 }
 
 export class NDKProjectStatus extends NDKEvent {
-	static kind: NDKKind = 24010 as NDKKind;
-	static kinds = [24010];
+	static kind = NDKKind.ProjectStatus;
+	static kinds = [NDKKind.ProjectStatus];
 
 	constructor(ndk?: NDK, rawEvent?: NostrEvent | NDKEvent) {
 		super(ndk, rawEvent);

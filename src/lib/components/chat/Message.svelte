@@ -3,8 +3,8 @@
 	import type { Message } from '$lib/utils/messageProcessor';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
-	import { EVENT_KINDS } from '$lib/constants';
-	import { NDKKind, NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKKind } from '$lib/kinds';
 	import { Avatar } from '@nostr-dev-kit/svelte';
 	import { NDKProject } from '$lib/events/NDKProject';
 	import AIReasoningBlock from './AIReasoningBlock.svelte';
@@ -27,8 +27,8 @@
 
 	let { message, isLastMessage = false, isConsecutive = false, hasNextConsecutive = false, onReply, onQuote, onTimeClick }: Props = $props();
 
-	const isStreaming = $derived(message.event.kind === EVENT_KINDS.STREAMING_RESPONSE);
-	const isTyping = $derived(message.event.kind === EVENT_KINDS.TYPING_INDICATOR);
+	const isStreaming = $derived(message.event.kind === NDKKind.TenexStreamingResponse);
+	const isTyping = $derived(message.event.kind === NDKKind.TenexAgentTypingStart);
 	const isReasoningEvent = $derived(message.event.hasTag('reasoning'));
 	const isToolCallEvent = $derived(
 		message.event.kind === NDKKind.GenericReply && message.event.hasTag('tool')

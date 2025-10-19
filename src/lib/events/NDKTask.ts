@@ -1,9 +1,10 @@
-import { NDKEvent, type NDKKind, type NostrEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, type NostrEvent } from '@nostr-dev-kit/ndk';
 import type NDK from '@nostr-dev-kit/ndk';
+import { NDKKind } from '$lib/kinds';
 
 export class NDKTask extends NDKEvent {
-	static kind: NDKKind = 1934 as NDKKind;
-	static kinds = [1934];
+	static kind = NDKKind.Task;
+	static kinds = [NDKKind.Task];
 
 	constructor(ndk?: NDK, rawEvent?: NostrEvent) {
 		super(ndk, rawEvent);

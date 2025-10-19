@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKEvent, NDKKind } from '@nostr-dev-kit/ndk';
+	import { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKKind } from '$lib/kinds';
 	import Message from './Message.svelte';
 	import ThreadedMessage from './ThreadedMessage.svelte';
 	import { processEventsToMessages, type Message as MessageType } from '$lib/utils/messageProcessor';
 	import { streamingMessageStore } from '$lib/utils/streamingMessageStore.svelte';
-	import { EVENT_KINDS } from '$lib/constants';
 	import { calculateMessageProperties } from '$lib/utils/messageUtils';
+	import { ChevronDown } from 'lucide-svelte';
 
 	interface Props {
 		rootEvent: NDKEvent;
@@ -27,6 +28,46 @@
 		onTimeClick,
 		messages = $bindable([])
 	}: Props = $props();
+
+	// Scroll management
+	let scrollContainer: HTMLDivElement;
+	let isUserAtBottom = $state(true);
+	let showScrollButton = $state(false);
+	let unreadMessageCount = $state(0);
+	const SCROLL_THRESHOLD = 150; // pixels from bottom to consider "at bottom"
+
+	// Check if user is at bottom of scroll container
+	function checkScrollPosition() {
+		if (!scrollContainer) return;
+
+		const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+		const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+		const wasAtBottom = isUserAtBottom;
+		isUserAtBottom = distanceFromBottom < SCROLL_THRESHOLD;
+
+		// Show button if user scrolled up, hide if at bottom
+		showScrollButton = !isUserAtBottom && messages.length > 0;
+
+		// Reset unread count when user scrolls to bottom
+		if (isUserAtBottom && !wasAtBottom) {
+			unreadMessageCount = 0;
+		}
+	}
+
+	// Scroll to bottom smoothly
+	function scrollToBottom(smooth = true) {
+		if (!scrollContainer) return;
+
+		scrollContainer.scrollTo({
+			top: scrollContainer.scrollHeight,
+			behavior: smooth ? 'smooth' : 'instant'
+		});
+
+		unreadMessageCount = 0;
+		showScrollButton = false;
+		isUserAtBottom = true;
+	}
 
 
 	// Subscribe to all messages in this conversation
@@ -53,8 +94,8 @@
 	$effect(() => {
 		// Process streaming and typing events
 		const streamingEvents = messagesSubscription.events.filter(e =>
-			e.kind === EVENT_KINDS.STREAMING_RESPONSE ||
-			e.kind === EVENT_KINDS.TYPING_INDICATOR
+			e.kind === NDKKind.TenexStreamingResponse ||
+			e.kind === NDKKind.TenexAgentTypingStart
 		);
 
 		// Process only new streaming/typing events
@@ -67,7 +108,7 @@
 
 		// Handle typing indicator stop events
 		const typingStopEvents = messagesSubscription.events.filter(e =>
-			e.kind === EVENT_KINDS.TYPING_INDICATOR_STOP
+			e.kind === NDKKind.TenexAgentTypingStop
 		);
 		for (const event of typingStopEvents) {
 			streamingMessageStore.clearSession(event.pubkey);
@@ -98,9 +139,9 @@
 		// Filter out streaming events - we handle them separately via the global store
 		// Also filter out typing indicators as they're handled by streaming store
 		const nonStreamingEvents = allEvents.filter(e =>
-			e.kind !== EVENT_KINDS.STREAMING_RESPONSE &&
-			e.kind !== EVENT_KINDS.TYPING_INDICATOR &&
-			e.kind !== EVENT_KINDS.TYPING_INDICATOR_STOP
+			e.kind !== NDKKind.TenexStreamingResponse &&
+			e.kind !== NDKKind.TenexAgentTypingStart &&
+			e.kind !== NDKKind.TenexAgentTypingStop
 		);
 
 		// Get base messages - processEventsToMessages will NOT handle streaming
@@ -127,7 +168,7 @@
 		streamingSessions.forEach(([key, session]) => {
 			// Create synthetic event for the streaming message
 			const syntheticEvent = new NDKEvent(ndk);
-			syntheticEvent.kind = EVENT_KINDS.STREAMING_RESPONSE;
+			syntheticEvent.kind = NDKKind.TenexStreamingResponse;
 			syntheticEvent.pubkey = session.latestEvent.pubkey;
 			syntheticEvent.created_at = session.latestEvent.created_at;
 			syntheticEvent.tags = session.latestEvent.tags;
@@ -170,41 +211,97 @@
 			});
 		}
 	});
+
+	// Auto-scroll when new messages arrive (if user is at bottom)
+	let previousMessageCount = 0;
+	$effect(() => {
+		const currentCount = messages.length;
+
+		// Only process after initial render
+		if (scrollContainer && previousMessageCount > 0) {
+			const hasNewMessages = currentCount > previousMessageCount;
+
+			if (hasNewMessages) {
+				if (isUserAtBottom) {
+					// User is at bottom, auto-scroll to show new message
+					// Use requestAnimationFrame to ensure DOM has updated
+					requestAnimationFrame(() => scrollToBottom(true));
+				} else {
+					// User is scrolled up, increment unread count
+					unreadMessageCount += currentCount - previousMessageCount;
+				}
+			}
+		}
+
+		previousMessageCount = currentCount;
+	});
+
+	// Initial scroll to bottom on mount
+	$effect(() => {
+		if (scrollContainer && messages.length > 0) {
+			scrollToBottom(false);
+		}
+	});
 </script>
 
-<div class="flex-1 overflow-y-auto">
-	{#if messages.length === 0}
-		<div class="flex items-center justify-center h-full text-muted-foreground text-sm">
-			No messages yet. Start the conversation!
-		</div>
-	{:else if viewMode === 'threaded'}
-		<!-- Threaded view: Use recursive ThreadedMessage component -->
-		<div class="flex flex-col">
-			<ThreadedMessage {rootEvent} eventId={rootEvent.id} depth={0} {onTimeClick} />
-		</div>
-	{:else}
-		<!-- Flattened view: Render messages in chronological order -->
-		{@const messageProps = calculateMessageProperties(messages)}
-		<div class="flex flex-col">
-			{#each messageProps as { message, isConsecutive, hasNextConsecutive, isLastReasoningMessage }, index (message.id)}
-				{@const isStreamingMsg = message.event.kind === 21111}
-				{#if isStreamingMsg}
-					{console.log('[MessageList] Rendering streaming message in loop', {
-						messageId: message.id,
-						index,
-						content: message.event.content?.substring(0, 100)
-					}) || ''}
+<div class="relative flex-1">
+	<div
+		bind:this={scrollContainer}
+		onscroll={checkScrollPosition}
+		class="absolute inset-0 overflow-y-auto"
+	>
+		{#if messages.length === 0}
+			<div class="flex items-center justify-center h-full text-muted-foreground text-sm">
+				No messages yet. Start the conversation!
+			</div>
+		{:else if viewMode === 'threaded'}
+			<!-- Threaded view: Use recursive ThreadedMessage component -->
+			<div class="flex flex-col">
+				<ThreadedMessage {rootEvent} eventId={rootEvent.id} depth={0} {onTimeClick} />
+			</div>
+		{:else}
+			<!-- Flattened view: Render messages in chronological order -->
+			{@const messageProps = calculateMessageProperties(messages)}
+			<div class="flex flex-col">
+				{#each messageProps as { message, isConsecutive, hasNextConsecutive, isLastReasoningMessage }, index (message.id)}
+					{@const isStreamingMsg = message.event.kind === 21111}
+					{#if isStreamingMsg}
+						{console.log('[MessageList] Rendering streaming message in loop', {
+							messageId: message.id,
+							index,
+							content: message.event.content?.substring(0, 100)
+						}) || ''}
+					{/if}
+					<Message
+						{message}
+						isLastMessage={index === messageProps.length - 1}
+						{isConsecutive}
+						{hasNextConsecutive}
+						{onReply}
+						{onQuote}
+						{onTimeClick}
+					/>
+				{/each}
+			</div>
+		{/if}
+	</div>
+
+	<!-- Scroll to bottom button -->
+	{#if showScrollButton}
+		<div class="absolute bottom-4 right-4 z-10">
+			<button
+				type="button"
+				class="relative rounded-full shadow-lg h-10 w-10 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors flex items-center justify-center"
+				onclick={() => scrollToBottom(true)}
+				aria-label="Scroll to bottom"
+			>
+				<ChevronDown class="h-5 w-5" />
+				{#if unreadMessageCount > 0}
+					<span class="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-semibold rounded-full h-5 min-w-5 px-1 flex items-center justify-center">
+						{unreadMessageCount}
+					</span>
 				{/if}
-				<Message
-					{message}
-					isLastMessage={index === messageProps.length - 1}
-					{isConsecutive}
-					{hasNextConsecutive}
-					{onReply}
-					{onQuote}
-					{onTimeClick}
-				/>
-			{/each}
+			</button>
 		</div>
 	{/if}
 </div>

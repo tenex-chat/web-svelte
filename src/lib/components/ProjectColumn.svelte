@@ -8,7 +8,7 @@
 	import { MessageSquare, FileText, Bot, Hash, Rss, Settings as SettingsIcon, Filter, Clock, MoreVertical, MessageCircleQuestion, Plus } from 'lucide-svelte';
 	import * as DropdownMenu from './ui/dropdown-menu';
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { EVENT_KINDS } from '$lib/constants';
+	import { NDKKind } from '$lib/kinds';
 	import { toastStore } from '$lib/stores/toast.svelte';
 
 	interface Props {
@@ -37,7 +37,7 @@
 		try {
 			// Create a 24000 event to start the project
 			const event = new NDKEvent(ndk);
-			event.kind = EVENT_KINDS.PROJECT_START;
+			event.kind = NDKKind.TenexProjectStart;
 			event.content = '';
 
 			// Tag the project using its NIP-33 reference

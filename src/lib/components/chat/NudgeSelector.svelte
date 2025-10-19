@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKKind } from '$lib/kinds';
-	import type { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { clickOutside } from '$lib/utils/clickOutside';
 	import Portal from 'svelte-portal';
-	import { Plus, Slash } from 'lucide-svelte';
+	import { Plus, SquareSlash } from 'lucide-svelte';
+	import { nudgeStore } from '$lib/stores/nudges.svelte';
 
 	interface Props {
 		selectedNudges: string[];
@@ -15,10 +16,7 @@
 
 	let { selectedNudges = $bindable([]), onSelectionChange }: Props = $props();
 
-	let nudges = $state<NDKEvent[]>([]);
-	let savedNudges = $state<string[]>([]);
 	let isOpen = $state(false);
-	let loading = $state(true);
 	let buttonElement: HTMLButtonElement | null = $state(null);
 	let dropdownPosition = $state({ top: 0, left: 0 });
 	let showCreateModal = $state(false);
@@ -31,43 +29,10 @@
 	});
 
 	onMount(async () => {
-		// Load saved nudges
-		const saved = localStorage.getItem('saved_nudges');
-		if (saved) {
-			try {
-				savedNudges = JSON.parse(saved);
-			} catch {
-				savedNudges = [];
-			}
-		}
-		await fetchNudges();
+		await nudgeStore.loadNudges();
 	});
 
-	async function fetchNudges() {
-		loading = true;
-		try {
-			const nudgeEvents = await ndk.fetchEvents({
-				kinds: [NDKKind.AgentNudge]
-			});
-
-			nudges = Array.from(nudgeEvents).sort((a, b) => {
-				const aTime = a.created_at || 0;
-				const bTime = b.created_at || 0;
-				return bTime - aTime;
-			});
-		} catch (error) {
-			console.error('Failed to fetch nudges:', error);
-		} finally {
-			loading = false;
-		}
-	}
-
-	const displayNudges = $derived.by(() => {
-		if (!ndk.activeUser?.pubkey) return nudges;
-		return nudges.filter((nudge) => {
-			return nudge.pubkey === ndk.activeUser?.pubkey || savedNudges.includes(nudge.id);
-		});
-	});
+	const displayNudges = $derived(nudgeStore.getDisplayNudges(ndk.activeUser?.pubkey));
 
 	function toggleNudge(nudgeId: string) {
 		const newSelection = selectedNudges.includes(nudgeId)
@@ -144,7 +109,7 @@
 			}
 
 			await event.publish();
-			await fetchNudges();
+			await nudgeStore.loadNudges();
 			handleCloseModal();
 		} catch (error) {
 			console.error('Failed to create nudge:', error);
@@ -168,7 +133,7 @@
 		onclick={handleToggle}
 		class="relative flex items-center justify-center p-2 rounded-lg border border-border hover:bg-accent transition-colors"
 	>
-		<Slash size={20} class="text-muted-foreground" />
+		<SquareSlash size={20} class="text-muted-foreground" />
 		{#if selectedNudges.length > 0}
 			<span
 				class="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none"
@@ -185,7 +150,7 @@
 				class="fixed w-80 bg-card border border-border rounded-lg shadow-lg overflow-hidden"
 				style="top: {dropdownPosition.top}px; left: {dropdownPosition.left}px; z-index: 9999; transform: translateY(-100%);"
 			>
-				{#if loading}
+				{#if nudgeStore.loading}
 					<div class="p-4 text-center text-sm text-muted-foreground">Loading nudges...</div>
 				{:else if displayNudges.length === 0}
 					<div class="p-4 text-center text-sm text-muted-foreground">No nudges available</div>

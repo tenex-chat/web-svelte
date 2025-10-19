@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKKind } from '@nostr-dev-kit/ndk';
+	import { NDKKind } from '$lib/kinds';
 	import { BookOpen } from 'lucide-svelte';
 
 	interface Props {

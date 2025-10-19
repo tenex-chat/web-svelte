@@ -1,9 +1,10 @@
-import { NDKEvent, type NDKKind, type NostrEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, type NostrEvent } from '@nostr-dev-kit/ndk';
 import type NDK from '@nostr-dev-kit/ndk';
+import { NDKKind } from '$lib/kinds';
 
 export class NDKMCPTool extends NDKEvent {
-	static kind: NDKKind = 4200 as NDKKind;
-	static kinds = [4200];
+	static kind = NDKKind.MCPTool;
+	static kinds = [NDKKind.MCPTool];
 
 	constructor(ndk?: NDK, rawEvent?: NostrEvent) {
 		super(ndk, rawEvent);

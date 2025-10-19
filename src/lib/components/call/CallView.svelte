@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKThread, NDKEvent, NDKKind } from '@nostr-dev-kit/ndk';
+	import { NDKThread, NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKKind } from '$lib/kinds';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { processEventsToMessages } from '$lib/utils/messageProcessor';
 	import { streamingMessageStore } from '$lib/utils/streamingMessageStore.svelte';
-	import { EVENT_KINDS } from '$lib/constants';
 	import { CallStore, type CallStoreOptions, type CallState } from '$lib/stores/call-store.svelte';
 	import VoiceVisualizer from './VoiceVisualizer.svelte';
 	import AudioControls from './AudioControls.svelte';
@@ -96,7 +96,7 @@
 
 	// Process streaming events separately for immediate updates
 	$effect(() => {
-		const streamingEvents = messagesSubscription.events.filter(e => e.kind === EVENT_KINDS.STREAMING_RESPONSE);
+		const streamingEvents = messagesSubscription.events.filter(e => e.kind === NDKKind.TenexStreamingResponse);
 
 		// Process only new streaming events
 		for (const event of streamingEvents) {
@@ -131,9 +131,9 @@
 		// Filter out streaming events - we handle them separately via the global store
 		// Also filter out typing indicators as they're handled by streaming store
 		const nonStreamingEvents = allEvents.filter(e =>
-			e.kind !== EVENT_KINDS.STREAMING_RESPONSE &&
-			e.kind !== EVENT_KINDS.TYPING_INDICATOR &&
-			e.kind !== EVENT_KINDS.TYPING_INDICATOR_STOP
+			e.kind !== NDKKind.TenexStreamingResponse &&
+			e.kind !== NDKKind.TenexAgentTypingStart &&
+			e.kind !== NDKKind.TenexAgentTypingStop
 		);
 
 		// Get base messages - processEventsToMessages will NOT handle streaming
@@ -155,7 +155,7 @@
 		streamingSessions.forEach(([key, session]) => {
 			// Create synthetic event for the streaming message
 			const syntheticEvent = new NDKEvent(ndk);
-			syntheticEvent.kind = EVENT_KINDS.STREAMING_RESPONSE;
+			syntheticEvent.kind = NDKKind.TenexStreamingResponse;
 			syntheticEvent.pubkey = session.latestEvent.pubkey;
 			syntheticEvent.created_at = session.latestEvent.created_at;
 			syntheticEvent.tags = session.latestEvent.tags;

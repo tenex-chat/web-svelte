@@ -1,5 +1,5 @@
-import { NDKEvent, NDKKind } from '@nostr-dev-kit/ndk';
-import { EVENT_KINDS } from '$lib/constants';
+import { NDKEvent } from '@nostr-dev-kit/ndk';
+import { NDKKind } from '$lib/kinds';
 import { DeltaContentAccumulator } from './DeltaContentAccumulator';
 
 export type ThreadViewMode = 'threaded' | 'flattened';
@@ -52,7 +52,7 @@ export function processEvent(
 	}
 
 	// Metadata events always shown
-	if (event.kind === EVENT_KINDS.CONVERSATION_METADATA) {
+	if (event.kind === NDKKind.TenexConversationMetadata) {
 		finalMessages.push({ id: event.id, event });
 		return;
 	}
@@ -83,7 +83,7 @@ export function processEvent(
 	}
 
 	// Handle streaming responses
-	if (event.kind === EVENT_KINDS.STREAMING_RESPONSE) {
+	if (event.kind === NDKKind.TenexStreamingResponse) {
 		console.log('[MessageProcessor] Processing streaming event (21111)', {
 			eventId: event.id,
 			pubkey: event.pubkey,
@@ -126,7 +126,7 @@ export function processEvent(
 				reconstructedContent: session.reconstructedContent?.substring(0, 100) + '...'
 			});
 		}
-	} else if (event.kind === EVENT_KINDS.TYPING_INDICATOR) {
+	} else if (event.kind === NDKKind.TenexAgentTypingStart) {
 		let session = streamingSessions.get(event.pubkey);
 
 		if (!session) {
@@ -144,9 +144,9 @@ export function processEvent(
 			session.latestEvent = event;
 			session.reconstructedContent = event.content;
 		}
-	} else if (event.kind === EVENT_KINDS.TYPING_INDICATOR_STOP) {
+	} else if (event.kind === NDKKind.TenexAgentTypingStop) {
 		const session = streamingSessions.get(event.pubkey);
-		if (session?.latestEvent?.kind === EVENT_KINDS.TYPING_INDICATOR) {
+		if (session?.latestEvent?.kind === NDKKind.TenexAgentTypingStart) {
 			streamingSessions.delete(event.pubkey);
 		}
 	} else {
@@ -170,7 +170,7 @@ export function streamingSessionsToMessages(
 ): Message[] {
 	const messages: Message[] = [];
 	streamingSessions.forEach((session) => {
-		if (session.latestEvent.kind === EVENT_KINDS.STREAMING_RESPONSE) {
+		if (session.latestEvent.kind === NDKKind.TenexStreamingResponse) {
 			// Create synthetic event with reconstructed content
 			const syntheticEvent = new NDKEvent(session.latestEvent.ndk);
 			syntheticEvent.kind = session.latestEvent.kind;
@@ -312,7 +312,7 @@ export function processEventsToMessages(
 				}
 			} else {
 				// Show all: still hide kind:7 and streaming
-				if (event.kind === 7 || event.kind === EVENT_KINDS.STREAMING_RESPONSE) {
+				if (event.kind === 7 || event.kind === NDKKind.TenexStreamingResponse) {
 					continue;
 				}
 			}
@@ -395,7 +395,7 @@ export function processEventsToMessages(
 			return timeDiff;
 		});
 
-	const streamingCount = messagesWithTime.filter(msg => msg.event.kind === EVENT_KINDS.STREAMING_RESPONSE).length;
+	const streamingCount = messagesWithTime.filter(msg => msg.event.kind === NDKKind.TenexStreamingResponse).length;
 	if (streamingCount > 0) {
 		console.log('[MessageProcessor] Returning messages with streaming', {
 			totalMessages: messagesWithTime.length,
