@@ -131,9 +131,11 @@
 		bind:this={buttonElement}
 		type="button"
 		onclick={handleToggle}
-		class="relative flex items-center justify-center p-2 rounded-lg border border-border hover:bg-accent transition-colors"
+		class="relative p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground"
+		title="Select nudges"
+		aria-label="Select nudges"
 	>
-		<SquareSlash size={20} class="text-muted-foreground" />
+		<SquareSlash class="w-5 h-5" />
 		{#if selectedNudges.length > 0}
 			<span
 				class="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none"
