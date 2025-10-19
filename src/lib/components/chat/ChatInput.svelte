@@ -10,6 +10,7 @@
 	import NudgeSelector from './NudgeSelector.svelte';
 	import ActiveAgents from './ActiveAgents.svelte';
 	import { Maximize2, Minimize2, Phone } from 'lucide-svelte';
+	import type { NDKEvent as NDKEventType } from '@nostr-dev-kit/ndk';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 
 	interface Props {
@@ -78,6 +79,35 @@
 			const storageKey = `nudges_${conversationId}`;
 			localStorage.setItem(storageKey, JSON.stringify(selectedNudges));
 		}
+	});
+
+	// Load available nudges and saved nudges on mount
+	$effect(() => {
+		async function loadNudges() {
+			try {
+				const nudgeEvents = await ndk.fetchEvents({
+					kinds: [NDKKind.AgentNudge]
+				});
+				availableNudges = Array.from(nudgeEvents).sort((a, b) => {
+					const aTime = a.created_at || 0;
+					const bTime = b.created_at || 0;
+					return bTime - aTime;
+				});
+			} catch (error) {
+				console.error('Failed to fetch nudges:', error);
+			}
+		}
+
+		const saved = localStorage.getItem('saved_nudges');
+		if (saved) {
+			try {
+				savedNudges = JSON.parse(saved);
+			} catch {
+				savedNudges = [];
+			}
+		}
+
+		loadNudges();
 	});
 
 	// Autofocus on mount
@@ -149,6 +179,14 @@
 	let selectedMentionIndex = $state(0);
 	let mentionedAgents = $state<string[]>([]);
 
+	// Nudge autocomplete state
+	let showNudgeAutocomplete = $state(false);
+	let nudgeQuery = $state('');
+	let nudgeStartPos = $state(0);
+	let selectedNudgeIndex = $state(0);
+	let availableNudges = $state<NDKEventType[]>([]);
+	let savedNudges = $state<string[]>([]);
+
 	// Filter agents for autocomplete
 	const filteredAgents = $derived.by(() => {
 		if (!showMentionAutocomplete) return [];
@@ -156,12 +194,45 @@
 		return onlineAgents.filter((agent) => agent.name.toLowerCase().includes(query));
 	});
 
-	// Detect @ mentions and update autocomplete
+	// Filter nudges for autocomplete (user's own nudges + saved nudges)
+	const filteredNudges = $derived.by(() => {
+		if (!showNudgeAutocomplete) return [];
+		const query = nudgeQuery.toLowerCase();
+		return availableNudges.filter((nudge) => {
+			const isMine = nudge.pubkey === ndk.$currentUser?.pubkey;
+			const isSaved = savedNudges.includes(nudge.id);
+			if (!isMine && !isSaved) return false;
+
+			const title = nudge.tagValue('title') || '';
+			const description = nudge.tagValue('description') || '';
+			return title.toLowerCase().includes(query) || description.toLowerCase().includes(query);
+		});
+	});
+
+	// Detect @ mentions and / nudges and update autocomplete
 	function handleInput() {
 		if (!textareaElement) return;
 
 		const cursorPos = textareaElement.selectionStart;
 		const textBeforeCursor = messageInput.substring(0, cursorPos);
+
+		// Check for / nudge autocomplete first
+		const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
+		if (lastSlashIndex !== -1) {
+			const charBeforeSlash = lastSlashIndex > 0 ? textBeforeCursor[lastSlashIndex - 1] : ' ';
+			const isAtWordBoundary = /\s/.test(charBeforeSlash) || lastSlashIndex === 0;
+			const textAfterSlash = textBeforeCursor.substring(lastSlashIndex + 1);
+			const hasNoSpace = !textAfterSlash.includes(' ');
+
+			if (isAtWordBoundary && hasNoSpace) {
+				showNudgeAutocomplete = true;
+				nudgeQuery = textAfterSlash;
+				nudgeStartPos = lastSlashIndex;
+				selectedNudgeIndex = 0;
+				showMentionAutocomplete = false;
+				return;
+			}
+		}
 
 		// Find the last @ before cursor
 		const lastAtIndex = textBeforeCursor.lastIndexOf('@');
@@ -182,13 +253,16 @@
 				mentionQuery = textAfterAt;
 				mentionStartPos = lastAtIndex;
 				selectedMentionIndex = 0;
+				showNudgeAutocomplete = false;
 				return;
 			}
 		}
 
 		// Hide autocomplete
 		showMentionAutocomplete = false;
+		showNudgeAutocomplete = false;
 		mentionQuery = '';
+		nudgeQuery = '';
 	}
 
 	// Insert mention into textarea
@@ -218,6 +292,34 @@
 		setTimeout(() => {
 			if (textareaElement) {
 				const newCursorPos = before.length + mention.length;
+				textareaElement.focus();
+				textareaElement.setSelectionRange(newCursorPos, newCursorPos);
+			}
+		}, 0);
+	}
+
+	// Insert nudge selection
+	function selectNudge(nudge: NDKEventType) {
+		const before = messageInput.substring(0, nudgeStartPos);
+		const after = messageInput.substring(textareaElement?.selectionStart || 0);
+		const nudgeTitle = nudge.tagValue('title') || 'Untitled';
+		const nudgeText = `/${nudgeTitle} `;
+
+		messageInput = before + nudgeText + after;
+
+		// Toggle nudge in selectedNudges
+		if (!selectedNudges.includes(nudge.id)) {
+			selectedNudges = [...selectedNudges, nudge.id];
+		}
+
+		// Hide autocomplete
+		showNudgeAutocomplete = false;
+		nudgeQuery = '';
+
+		// Focus and set cursor after nudge text
+		setTimeout(() => {
+			if (textareaElement) {
+				const newCursorPos = before.length + nudgeText.length;
 				textareaElement.focus();
 				textareaElement.setSelectionRange(newCursorPos, newCursorPos);
 			}
@@ -351,7 +453,32 @@
 	}
 
 	function handleKeyDown(e: KeyboardEvent) {
-		// Handle autocomplete navigation
+		// Handle nudge autocomplete navigation
+		if (showNudgeAutocomplete && filteredNudges.length > 0) {
+			if (e.key === 'ArrowDown') {
+				e.preventDefault();
+				selectedNudgeIndex = (selectedNudgeIndex + 1) % filteredNudges.length;
+				return;
+			}
+			if (e.key === 'ArrowUp') {
+				e.preventDefault();
+				selectedNudgeIndex =
+					selectedNudgeIndex === 0 ? filteredNudges.length - 1 : selectedNudgeIndex - 1;
+				return;
+			}
+			if (e.key === 'Enter' || e.key === 'Tab') {
+				e.preventDefault();
+				selectNudge(filteredNudges[selectedNudgeIndex]);
+				return;
+			}
+			if (e.key === 'Escape') {
+				e.preventDefault();
+				showNudgeAutocomplete = false;
+				return;
+			}
+		}
+
+		// Handle mention autocomplete navigation
 		if (showMentionAutocomplete && filteredAgents.length > 0) {
 			if (e.key === 'ArrowDown') {
 				e.preventDefault();
@@ -500,6 +627,43 @@
 					rows={isExpanded ? 30 : 2}
 					style={isExpanded ? 'font-family: monospace; max-height: 60vh;' : ''}
 				></textarea>
+
+				<!-- /nudge Autocomplete Dropdown -->
+				{#if showNudgeAutocomplete && filteredNudges.length > 0}
+					<div
+						class="absolute bottom-full left-0 mb-2 w-full max-w-md bg-popover/90 backdrop-blur-xl border border-border/50 rounded-xl shadow-lg overflow-hidden z-50"
+					>
+						<div class="max-h-64 overflow-y-auto">
+							{#each filteredNudges as nudge, index (nudge.id)}
+								{@const title = nudge.tagValue('title') || 'Untitled'}
+								{@const description = nudge.tagValue('description') || ''}
+								{@const isActive = selectedNudges.includes(nudge.id)}
+								<button
+									type="button"
+									onclick={() => selectNudge(nudge)}
+									onmouseenter={() => (selectedNudgeIndex = index)}
+									class="w-full px-3 py-2 text-left hover:bg-accent transition-colors {index ===
+									selectedNudgeIndex
+										? 'bg-accent'
+										: ''}"
+								>
+									<div class="flex items-center gap-2">
+										<div class="font-medium text-sm text-foreground">/{title}</div>
+										{#if isActive}
+											<span class="text-xs px-1.5 py-0.5 bg-primary/20 text-primary rounded">Active</span>
+										{/if}
+									</div>
+									{#if description}
+										<div class="text-xs text-muted-foreground mt-0.5">{description}</div>
+									{/if}
+								</button>
+							{/each}
+						</div>
+						<div class="px-3 py-1 bg-muted/50 backdrop-blur-sm border-t border-border/50 text-xs text-muted-foreground">
+							↑↓ navigate • ↵ select • esc dismiss
+						</div>
+					</div>
+				{/if}
 
 				<!-- @mention Autocomplete Dropdown -->
 				{#if showMentionAutocomplete && filteredAgents.length > 0}

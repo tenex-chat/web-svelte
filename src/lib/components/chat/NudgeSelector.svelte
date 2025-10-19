@@ -6,7 +6,7 @@
 	import { goto } from '$app/navigation';
 	import { clickOutside } from '$lib/utils/clickOutside';
 	import Portal from 'svelte-portal';
-	import { Plus } from 'lucide-svelte';
+	import { Plus, Slash } from 'lucide-svelte';
 
 	interface Props {
 		selectedNudges: string[];
@@ -168,21 +168,7 @@
 		onclick={handleToggle}
 		class="relative flex items-center justify-center p-2 rounded-lg border border-border hover:bg-accent transition-colors"
 	>
-		<svg
-			width="20"
-			height="20"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			class="text-muted-foreground"
-		>
-			<path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-			<path d="M2 17l10 5 10-5"></path>
-			<path d="M2 12l10 5 10-5"></path>
-		</svg>
+		<Slash size={20} class="text-muted-foreground" />
 		{#if selectedNudges.length > 0}
 			<span
 				class="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none"
