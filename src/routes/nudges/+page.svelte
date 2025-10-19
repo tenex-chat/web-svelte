@@ -6,10 +6,12 @@
 	import { goto } from '$app/navigation';
 	import { Trash2, Plus, ArrowLeft, Search, Star, X } from 'lucide-svelte';
 	import { Avatar, Name } from '@nostr-dev-kit/svelte';
+	import Portal from 'svelte-portal';
 
 	let nudges = $state<NDKEvent[]>([]);
 	let loading = $state(true);
-	let showCreateForm = $state(false);
+	let showCreateModal = $state(false);
+	let creating = $state(false);
 	let searchQuery = $state('');
 	let selectedAuthors = $state<string[]>([]);
 	let selectedHashtags = $state<string[]>([]);
@@ -54,12 +56,23 @@
 		}
 	}
 
+	function handleCloseModal() {
+		showCreateModal = false;
+		newNudge = {
+			title: '',
+			description: '',
+			content: '',
+			tags: ''
+		};
+	}
+
 	async function createNudge() {
 		if (!ndk.$currentUser || !newNudge.title.trim() || !newNudge.content.trim()) {
 			alert('Please fill in at least title and content');
 			return;
 		}
 
+		creating = true;
 		try {
 			const event = new NDKEvent(ndk);
 			event.kind = NDKKind.AgentNudge;
@@ -84,12 +97,19 @@
 			await event.sign();
 			await event.publish();
 
-			newNudge = { title: '', description: '', content: '', tags: '' };
-			showCreateForm = false;
 			await fetchNudges();
+			handleCloseModal();
 		} catch (error) {
 			console.error('Failed to create nudge:', error);
 			alert('Failed to create nudge');
+		} finally {
+			creating = false;
+		}
+	}
+
+	function handleModalKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape') {
+			handleCloseModal();
 		}
 	}
 
@@ -295,16 +315,11 @@
 						</p>
 					</div>
 					<button
-						onclick={() => (showCreateForm = !showCreateForm)}
+						onclick={() => (showCreateModal = true)}
 						class="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
 					>
-						{#if showCreateForm}
-							<X size={20} />
-							Cancel
-						{:else}
-							<Plus size={20} />
-							New Nudge
-						{/if}
+						<Plus size={20} />
+						New Nudge
 					</button>
 				</div>
 
@@ -319,76 +334,6 @@
 					/>
 				</div>
 			</div>
-
-			<!-- Create Form -->
-			{#if showCreateForm}
-				<div class="border-t border-border bg-muted/30 p-6">
-					<div class="max-w-3xl mx-auto bg-card border border-border rounded-lg p-6 space-y-4">
-						<h2 class="text-lg font-semibold text-foreground">Create New Nudge</h2>
-
-						<div class="grid grid-cols-2 gap-4">
-							<div class="space-y-1.5">
-								<label for="title" class="block text-sm font-medium text-foreground">Title *</label>
-								<input
-									id="title"
-									type="text"
-									bind:value={newNudge.title}
-									placeholder="e.g., Funny, Professional, Concise"
-									class="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-								/>
-							</div>
-
-							<div class="space-y-1.5">
-								<label for="tags" class="block text-sm font-medium text-foreground">Hashtags</label>
-								<input
-									id="tags"
-									type="text"
-									bind:value={newNudge.tags}
-									placeholder="funny, casual, humor"
-									class="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-								/>
-							</div>
-						</div>
-
-						<div class="space-y-1.5">
-							<label for="description" class="block text-sm font-medium text-foreground">Description</label>
-							<input
-								id="description"
-								type="text"
-								bind:value={newNudge.description}
-								placeholder="Brief description of what this nudge does..."
-								class="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-							/>
-						</div>
-
-						<div class="space-y-1.5">
-							<label for="content" class="block text-sm font-medium text-foreground">Content *</label>
-							<textarea
-								id="content"
-								bind:value={newNudge.content}
-								placeholder="The system prompt text that will be injected into agent conversations..."
-								rows="6"
-								class="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y font-mono"
-							></textarea>
-						</div>
-
-						<div class="flex justify-end gap-2">
-							<button
-								onclick={() => (showCreateForm = false)}
-								class="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-							>
-								Cancel
-							</button>
-							<button
-								onclick={createNudge}
-								class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
-							>
-								Create Nudge
-							</button>
-						</div>
-					</div>
-				</div>
-			{/if}
 		</div>
 
 		<!-- Nudge List -->
@@ -487,6 +432,124 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- Create Nudge Modal -->
+	{#if showCreateModal}
+		<Portal>
+			<div
+				class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50"
+				onclick={handleCloseModal}
+				onkeydown={handleModalKeydown}
+				role="presentation"
+				tabindex="0"
+			>
+				<div
+					class="relative w-full max-w-lg bg-card rounded-lg shadow-xl flex flex-col max-h-[90vh] mx-4"
+					onclick={(e) => e.stopPropagation()}
+					role="dialog"
+					aria-modal="true"
+				>
+					<!-- Close Button -->
+					<button
+						onclick={handleCloseModal}
+						class="absolute top-4 right-4 text-muted-foreground hover:text-foreground z-10"
+						aria-label="Close dialog"
+					>
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M6 18L18 6M6 6l12 12"
+							/>
+						</svg>
+					</button>
+
+					<!-- Header -->
+					<div class="px-6 pt-6 pb-4 border-b border-border">
+						<h2 class="text-xl font-semibold text-foreground">Create New Nudge</h2>
+						<p class="text-sm text-muted-foreground mt-1">
+							Add a system prompt snippet to guide agent behavior
+						</p>
+					</div>
+
+					<!-- Content -->
+					<div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+						<div class="space-y-1.5">
+							<label for="modal-title" class="block text-sm font-medium text-foreground">
+								Title *
+							</label>
+							<input
+								id="modal-title"
+								type="text"
+								bind:value={newNudge.title}
+								placeholder="e.g., Funny, Professional, Concise"
+								class="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+							/>
+						</div>
+
+						<div class="space-y-1.5">
+							<label for="modal-description" class="block text-sm font-medium text-foreground">
+								Description
+							</label>
+							<input
+								id="modal-description"
+								type="text"
+								bind:value={newNudge.description}
+								placeholder="Brief description of what this nudge does..."
+								class="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+							/>
+						</div>
+
+						<div class="space-y-1.5">
+							<label for="modal-content" class="block text-sm font-medium text-foreground">
+								Content *
+							</label>
+							<textarea
+								id="modal-content"
+								bind:value={newNudge.content}
+								placeholder="The system prompt text that will be injected..."
+								rows="6"
+								class="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y font-mono"
+							></textarea>
+						</div>
+
+						<div class="space-y-1.5">
+							<label for="modal-tags" class="block text-sm font-medium text-foreground">
+								Hashtags
+							</label>
+							<input
+								id="modal-tags"
+								type="text"
+								bind:value={newNudge.tags}
+								placeholder="funny, casual, humor"
+								class="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+							/>
+							<p class="text-xs text-muted-foreground">Separate multiple tags with commas</p>
+						</div>
+					</div>
+
+					<!-- Footer -->
+					<div class="px-6 py-4 border-t border-border flex justify-end gap-2">
+						<button
+							onclick={handleCloseModal}
+							class="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+							disabled={creating}
+						>
+							Cancel
+						</button>
+						<button
+							onclick={createNudge}
+							disabled={creating}
+							class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+						>
+							{creating ? 'Creating...' : 'Create Nudge'}
+						</button>
+					</div>
+				</div>
+			</div>
+		</Portal>
+	{/if}
 </div>
 
 <style>
