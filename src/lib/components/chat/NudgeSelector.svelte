@@ -3,8 +3,10 @@
 	import { NDKKind } from '$lib/kinds';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { clickOutside } from '$lib/utils/clickOutside';
 	import Portal from 'svelte-portal';
+	import { Plus } from 'lucide-svelte';
 
 	interface Props {
 		selectedNudges: string[];
@@ -14,12 +16,22 @@
 	let { selectedNudges = $bindable([]), onSelectionChange }: Props = $props();
 
 	let nudges = $state<NDKEvent[]>([]);
+	let savedNudges = $state<string[]>([]);
 	let isOpen = $state(false);
 	let loading = $state(true);
 	let buttonElement: HTMLButtonElement | null = $state(null);
 	let dropdownPosition = $state({ top: 0, left: 0 });
 
 	onMount(async () => {
+		// Load saved nudges
+		const saved = localStorage.getItem('saved_nudges');
+		if (saved) {
+			try {
+				savedNudges = JSON.parse(saved);
+			} catch {
+				savedNudges = [];
+			}
+		}
 		await fetchNudges();
 	});
 
@@ -41,6 +53,13 @@
 			loading = false;
 		}
 	}
+
+	const displayNudges = $derived.by(() => {
+		if (!ndk.activeUser?.pubkey) return nudges;
+		return nudges.filter((nudge) => {
+			return nudge.pubkey === ndk.activeUser?.pubkey || savedNudges.includes(nudge.id);
+		});
+	});
 
 	function toggleNudge(nudgeId: string) {
 		const newSelection = selectedNudges.includes(nudgeId)
@@ -71,6 +90,11 @@
 
 	function getNudgeDescription(nudge: NDKEvent): string {
 		return nudge.tagValue('description') || '';
+	}
+
+	function handleCreateNew() {
+		isOpen = false;
+		goto('/nudges');
 	}
 </script>
 
@@ -114,11 +138,11 @@
 			>
 				{#if loading}
 					<div class="p-4 text-center text-sm text-muted-foreground">Loading nudges...</div>
-				{:else if nudges.length === 0}
+				{:else if displayNudges.length === 0}
 					<div class="p-4 text-center text-sm text-muted-foreground">No nudges available</div>
 				{:else}
 					<div class="max-h-96 overflow-y-auto">
-						{#each nudges as nudge (nudge.id)}
+						{#each displayNudges as nudge (nudge.id)}
 							{@const isSelected = selectedNudges.includes(nudge.id)}
 							<label
 								class="flex items-start gap-3 px-3 py-2.5 hover:bg-accent cursor-pointer border-b border-border last:border-b-0"
@@ -143,6 +167,17 @@
 						{/each}
 					</div>
 				{/if}
+
+				<div class="border-t border-border">
+					<button
+						type="button"
+						onclick={handleCreateNew}
+						class="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+					>
+						<Plus class="h-4 w-4" />
+						Create New Nudge
+					</button>
+				</div>
 			</div>
 		</Portal>
 	{/if}
