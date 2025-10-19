@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKThread, NDKKind, NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKThread, NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKKind } from '$lib/kinds';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import AgentConfigDialog from './AgentConfigDialog.svelte';
 	import AgentSelector from './AgentSelector.svelte';
+	import NudgeSelector from './NudgeSelector.svelte';
 	import ActiveAgents from './ActiveAgents.svelte';
 	import { Maximize2, Minimize2, Phone } from 'lucide-svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
@@ -38,6 +40,7 @@
 
 	let messageInput = $state('');
 	let selectedAgent = $state<string | null>(null);
+	let selectedNudges = $state<string[]>([]);
 	let isSubmitting = $state(false);
 	let textareaElement: HTMLTextAreaElement | null = $state(null);
 	let configDialogOpen = $state(false);
@@ -49,6 +52,31 @@
 	$effect(() => {
 		if (initialContent) {
 			messageInput = initialContent;
+		}
+	});
+
+	// Load selected nudges from localStorage based on conversation
+	$effect(() => {
+		const conversationId = rootEvent?.id;
+		if (conversationId && typeof window !== 'undefined') {
+			const storageKey = `nudges_${conversationId}`;
+			const stored = localStorage.getItem(storageKey);
+			if (stored) {
+				try {
+					selectedNudges = JSON.parse(stored);
+				} catch {
+					selectedNudges = [];
+				}
+			}
+		}
+	});
+
+	// Save selected nudges to localStorage when they change
+	$effect(() => {
+		const conversationId = rootEvent?.id;
+		if (conversationId && typeof window !== 'undefined') {
+			const storageKey = `nudges_${conversationId}`;
+			localStorage.setItem(storageKey, JSON.stringify(selectedNudges));
 		}
 	});
 
@@ -233,6 +261,11 @@
 					thread.tags.push(['p', currentAgent]);
 				}
 
+				// Add nudge tags
+				for (const nudgeId of selectedNudges) {
+					thread.tags.push(['nudge', nudgeId]);
+				}
+
 				// Sign and publish
 				await thread.sign(undefined, { pTags: false });
 				await thread.publish();
@@ -282,6 +315,11 @@
 				} else if (currentAgent) {
 					// Single source of truth: use currentAgent (handles single mention, selection, or default)
 					reply.tags.push(['p', currentAgent]);
+				}
+
+				// Add nudge tags
+				for (const nudgeId of selectedNudges) {
+					reply.tags.push(['nudge', nudgeId]);
 				}
 
 				// Sign and publish
@@ -497,6 +535,12 @@
 			<div class="flex items-center justify-between gap-2 border-t border-border/30 pt-2">
 				<!-- Left side controls -->
 				<div class="flex items-center gap-2">
+					<!-- Nudge Selector -->
+					<NudgeSelector
+						bind:selectedNudges
+						onSelectionChange={(newSelection) => (selectedNudges = newSelection)}
+					/>
+
 					<!-- Agent Selector -->
 					{#if onlineAgents.length > 0}
 						<AgentSelector

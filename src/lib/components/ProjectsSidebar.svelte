@@ -25,7 +25,8 @@
 		Sun,
 		Monitor,
 		Bug,
-		LogOut
+		LogOut,
+		Layers
 	} from 'lucide-svelte';
 
 	interface Props {
@@ -401,6 +402,10 @@
 				<DropdownMenu.Item onclick={() => goto('/tools')}>
 					<Wrench class="mr-2 h-4 w-4" />
 					<span>MCP Tools</span>
+				</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={() => goto('/nudges')}>
+					<Layers class="mr-2 h-4 w-4" />
+					<span>Agent Nudges</span>
 				</DropdownMenu.Item>
 				<DropdownMenu.Item onclick={() => goto('/settings')}>
 					<Settings class="mr-2 h-4 w-4" />
