@@ -247,19 +247,20 @@
 
 	<!-- Create Nudge Modal -->
 	{#if showCreateModal}
-		<div
-			class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50"
-			onclick={handleCloseModal}
-			onkeydown={handleModalKeydown}
-			role="presentation"
-			tabindex="0"
-		>
+		<Portal>
 			<div
-				class="relative w-full max-w-lg bg-card rounded-lg shadow-xl flex flex-col max-h-[90vh]"
-				onclick={(e) => e.stopPropagation()}
-				role="dialog"
-				aria-modal="true"
+				class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50"
+				onclick={handleCloseModal}
+				onkeydown={handleModalKeydown}
+				role="presentation"
+				tabindex="0"
 			>
+				<div
+					class="relative w-full max-w-lg bg-card rounded-lg shadow-xl flex flex-col max-h-[90vh] mx-4"
+					onclick={(e) => e.stopPropagation()}
+					role="dialog"
+					aria-modal="true"
+				>
 				<!-- Close Button -->
 				<button
 					onclick={handleCloseModal}
@@ -358,6 +359,6 @@
 					</button>
 				</div>
 			</div>
-		</div>
+		</Portal>
 	{/if}
 </div>
