@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { writable } from 'svelte/store';
 
 const STORAGE_KEY = 'tenex:projectGroups';
 const SELECTED_GROUP_KEY = 'tenex:selectedProjectGroup';
@@ -126,3 +127,20 @@ export function setSelectedProjectGroup(groupId: string | null): void {
 function generateId(): string {
 	return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
+
+/**
+ * Reactive store for the selected project group
+ */
+function createSelectedProjectGroupStore() {
+	const { subscribe, set } = writable<string | null>(browser ? getSelectedProjectGroup() : null);
+
+	return {
+		subscribe,
+		set: (groupId: string | null) => {
+			set(groupId);
+			setSelectedProjectGroup(groupId);
+		}
+	};
+}
+
+export const selectedProjectGroupStore = createSelectedProjectGroupStore();

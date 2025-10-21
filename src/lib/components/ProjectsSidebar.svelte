@@ -37,8 +37,7 @@
 		saveProjectGroup,
 		updateProjectGroup,
 		deleteProjectGroup,
-		getSelectedProjectGroup,
-		setSelectedProjectGroup,
+		selectedProjectGroupStore,
 		type ProjectGroup
 	} from '$lib/utils/projectGroups';
 
@@ -61,7 +60,6 @@
 
 	// Project Groups
 	let projectGroups = $state<ProjectGroup[]>([]);
-	let selectedGroupId = $state<string | null>(null);
 	let editingGroup = $state<ProjectGroup | null>(null);
 
 	// Derived state
@@ -69,11 +67,11 @@
 
 	// Filtered projects based on selected group
 	const filteredProjects = $derived(() => {
-		if (!selectedGroupId) {
+		if (!$selectedProjectGroupStore) {
 			return projects; // Show all projects
 		}
 
-		const selectedGroup = projectGroups.find((g) => g.id === selectedGroupId);
+		const selectedGroup = projectGroups.find((g) => g.id === $selectedProjectGroupStore);
 		if (!selectedGroup) {
 			return projects;
 		}
@@ -86,8 +84,8 @@
 
 	// Get the current group display name
 	const currentGroupName = $derived(() => {
-		if (!selectedGroupId) return 'Projects';
-		const group = projectGroups.find((g) => g.id === selectedGroupId);
+		if (!$selectedProjectGroupStore) return 'Projects';
+		const group = projectGroups.find((g) => g.id === $selectedProjectGroupStore);
 		return group?.name || 'Projects';
 	});
 
@@ -95,7 +93,6 @@
 	$effect(() => {
 		if (browser) {
 			projectGroups = getProjectGroups();
-			selectedGroupId = getSelectedProjectGroup();
 		}
 
 		inboxStore.init();
@@ -121,8 +118,7 @@
 
 	// Project Group handlers
 	function handleSelectGroup(groupId: string | null) {
-		selectedGroupId = groupId;
-		setSelectedProjectGroup(groupId);
+		selectedProjectGroupStore.set(groupId);
 		projectGroupMenuOpen = false;
 	}
 
@@ -165,9 +161,8 @@
 		projectGroups = getProjectGroups();
 
 		// If the deleted group was selected, reset to showing all projects
-		if (selectedGroupId === editingGroup.id) {
-			selectedGroupId = null;
-			setSelectedProjectGroup(null);
+		if ($selectedProjectGroupStore === editingGroup.id) {
+			selectedProjectGroupStore.set(null);
 		}
 
 		// Close the dialog
@@ -306,7 +301,7 @@
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Content align="start" class="w-64">
 							<DropdownMenu.Item onclick={() => handleSelectGroup(null)}>
-								<span class={cn(!selectedGroupId && 'font-semibold')}>Projects</span>
+								<span class={cn(!$selectedProjectGroupStore && 'font-semibold')}>Projects</span>
 							</DropdownMenu.Item>
 							{#if projectGroups.length > 0}
 								<DropdownMenu.Separator />
@@ -316,7 +311,7 @@
 											onclick={() => handleSelectGroup(group.id)}
 											class="flex-1"
 										>
-											<span class={cn(selectedGroupId === group.id && 'font-semibold')}>
+											<span class={cn($selectedProjectGroupStore === group.id && 'font-semibold')}>
 												{group.name}
 											</span>
 										</DropdownMenu.Item>
@@ -378,7 +373,7 @@
 				{#if filteredProjects().length === 0}
 					{#if !collapsed}
 						<div class="text-center py-8 text-muted-foreground text-sm">
-							{selectedGroupId ? 'No projects in this group' : 'No projects yet'}
+							{$selectedProjectGroupStore ? 'No projects in this group' : 'No projects yet'}
 						</div>
 					{/if}
 				{:else}

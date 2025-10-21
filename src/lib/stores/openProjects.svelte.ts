@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import type { NDKProject } from '$lib/events/NDKProject';
+import { selectedProjectGroupStore, getProjectGroups } from '$lib/utils/projectGroups';
 
 const STORAGE_KEY = 'tenex:openProjects';
 
@@ -25,6 +26,12 @@ function saveToStorage(ids: string[]) {
 export const openProjects = (() => {
 	let projectIds = $state<string[]>(loadFromStorage());
 	let projects = $state<NDKProject[]>([]);
+	let selectedGroupId = $state<string | null>(null);
+
+	// Subscribe to the store
+	selectedProjectGroupStore.subscribe((value) => {
+		selectedGroupId = value;
+	});
 
 	return {
 		get ids() {
@@ -32,6 +39,26 @@ export const openProjects = (() => {
 		},
 		get projects() {
 			return projects;
+		},
+		get filteredProjects() {
+			// If no group is selected, show all open projects
+			if (!selectedGroupId) {
+				return projects;
+			}
+
+			// Find the selected group
+			const groups = getProjectGroups();
+			const selectedGroup = groups.find((g) => g.id === selectedGroupId);
+
+			if (!selectedGroup) {
+				return projects;
+			}
+
+			// Filter open projects to only those in the selected group
+			return projects.filter((project) => {
+				const projectId = project.dTag || project.id || '';
+				return selectedGroup.projectIds.includes(projectId);
+			});
 		},
 		toggle(project: NDKProject) {
 			const projectId = project.dTag || project.encode();
