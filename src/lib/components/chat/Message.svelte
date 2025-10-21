@@ -13,7 +13,7 @@
 	import LLMMetadataDialog from './LLMMetadataDialog.svelte';
 	import TypingIndicator from './TypingIndicator.svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { Copy, Reply, Quote, MoreVertical, Info, Eye } from 'lucide-svelte';
+	import { Copy, Reply, Quote, MoreVertical, Info, Eye, Hash } from 'lucide-svelte';
 
 	interface Props {
 		message: Message;
@@ -237,6 +237,10 @@
 									<Copy class="mr-2 h-4 w-4" />
 									<span>Copy content</span>
 								</DropdownMenu.Item>
+								<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.encode())}>
+									<Hash class="mr-2 h-4 w-4" />
+									<span>Copy ID</span>
+								</DropdownMenu.Item>
 								<DropdownMenu.Separator />
 								<DropdownMenu.Item onclick={() => (showLLMMetadata = true)}>
 									<Info class="mr-2 h-4 w-4" />
@@ -323,6 +327,10 @@
 									<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.content)}>
 										<Copy class="mr-2 h-4 w-4" />
 										<span>Copy content</span>
+									</DropdownMenu.Item>
+									<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.encode())}>
+										<Hash class="mr-2 h-4 w-4" />
+										<span>Copy ID</span>
 									</DropdownMenu.Item>
 									<DropdownMenu.Separator />
 									<DropdownMenu.Item onclick={() => (showLLMMetadata = true)}>

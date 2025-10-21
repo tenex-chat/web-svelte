@@ -10,6 +10,7 @@
 
 	let title = $state(project.title || '');
 	let description = $state(project.description || '');
+	let repoUrl = $state(project.repoUrl || '');
 	let isSaving = $state(false);
 	let saveMessage = $state<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -23,6 +24,7 @@
 			// Update project properties
 			project.title = title;
 			project.description = description;
+			project.repoUrl = repoUrl || undefined;
 
 			// Sign and publish the updated project
 			await project.sign();
@@ -45,10 +47,15 @@
 	function handleReset() {
 		title = project.title || '';
 		description = project.description || '';
+		repoUrl = project.repoUrl || '';
 		saveMessage = null;
 	}
 
-	const hasChanges = $derived(title !== (project.title || '') || description !== (project.description || ''));
+	const hasChanges = $derived(
+		title !== (project.title || '') ||
+		description !== (project.description || '') ||
+		repoUrl !== (project.repoUrl || '')
+	);
 </script>
 
 <div class="p-4 max-w-2xl">
@@ -96,6 +103,21 @@
 				class="w-full px-3 py-2 border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
 			></textarea>
 			<p class="text-xs text-muted-foreground mt-1">A brief description of what this project is about.</p>
+		</div>
+
+		<!-- Repository URL -->
+		<div>
+			<label for="project-repo" class="block text-sm font-medium text-foreground mb-1">
+				Repository URL
+			</label>
+			<input
+				id="project-repo"
+				type="text"
+				bind:value={repoUrl}
+				placeholder="https://github.com/user/repo"
+				class="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+			/>
+			<p class="text-xs text-muted-foreground mt-1">The URL of your project's repository (e.g., GitHub, GitLab).</p>
 		</div>
 
 		<!-- Project ID (Read-only) -->

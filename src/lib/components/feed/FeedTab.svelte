@@ -290,7 +290,7 @@
 	{:else}
 		<div class="flex-1 overflow-auto">
 			<VirtualList items={filteredEvents} height="100%" itemHeight={80}>
-				{#snippet slot({ item: event })}
+				{#snippet renderItem(event)}
 					<EventItem {event} onclick={() => onEventClick?.(event)} />
 				{/snippet}
 			</VirtualList>

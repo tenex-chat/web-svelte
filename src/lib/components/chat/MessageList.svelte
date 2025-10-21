@@ -79,9 +79,17 @@
 					{ kinds: [1111, 7], ...rootEvent.nip22Filter() }
 				]
 			: [
-					{ kinds: [11, 1111, 7, 21111, 24111, 24112, 513], ...rootEvent.filter() },
-					{ kinds: [11, 1111, 7, 21111, 24111, 24112, 513], ...rootEvent.nip22Filter() }
+					{ kinds: [11, 1111, 7, 513], ...rootEvent.filter() },
+					{ kinds: [11, 1111, 7, 513], ...rootEvent.nip22Filter() },
+
+					// streaming events only the ones a few
+					{ kinds: [
+						NDKKind.TenexAgentTypingStart,
+						NDKKind.TenexAgentTypingStop,
+						NDKKind.TenexStreamingResponse
+					], limit: 5, ...rootEvent.nip22Filter() },
 				],
+		subId: 'message-list',
 		closeOnEose: false,
 		bufferMs: 30
 	}));
@@ -202,7 +210,7 @@
 		messages = flatMessages;
 
 		// Debug: Log the messages being rendered
-		const streamingMsgs = flatMessages.filter(m => m.event.kind === 21111);
+		const streamingMsgs = flatMessages.filter(m => m.event.kind === NDKKind.TenexStreamingResponse);
 		if (streamingMsgs.length > 0) {
 			console.log('[MessageList] Rendering messages with streaming', {
 				totalMessages: flatMessages.length,
@@ -264,14 +272,6 @@
 			{@const messageProps = calculateMessageProperties(messages)}
 			<div class="flex flex-col">
 				{#each messageProps as { message, isConsecutive, hasNextConsecutive, isLastReasoningMessage }, index (message.id)}
-					{@const isStreamingMsg = message.event.kind === 21111}
-					{#if isStreamingMsg}
-						{console.log('[MessageList] Rendering streaming message in loop', {
-							messageId: message.id,
-							index,
-							content: message.event.content?.substring(0, 100)
-						}) || ''}
-					{/if}
 					<Message
 						{message}
 						isLastMessage={index === messageProps.length - 1}

@@ -1,6 +1,9 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { cn } from '$lib/utils/cn';
+	import { marked } from 'marked';
+	import DOMPurify from 'dompurify';
+	import { dev } from '$app/environment';
 
 	interface Props {
 		reasoningEvent: NDKEvent;
@@ -13,6 +16,46 @@
 	let isOpen = $state(isLastMessage);
 
 	const reasoningContent = $derived(reasoningEvent.content || '');
+
+	// Compute stable ID for accessibility
+	const contentId = $derived(
+		reasoningEvent.id
+			? `reasoning-content-${reasoningEvent.id}`
+			: `reasoning-content-${Date.now()}`
+	);
+
+	// Helper function to escape HTML and convert newlines to <br>
+	function escapeAndPreserveNewlines(text: string): string {
+		return text
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#039;')
+			.replace(/\n/g, '<br>');
+	}
+
+	// Render markdown with sanitization - optimized for streaming
+	const renderedReasoningContent = $derived.by(() => {
+		// During streaming, use plain-text fallback to avoid re-parsing markdown on every character
+		if (isStreaming) {
+			const escapedHtml = escapeAndPreserveNewlines(reasoningContent);
+			return DOMPurify.sanitize(escapedHtml);
+		}
+
+		// When finalized, parse markdown
+		try {
+			const rawHtml = marked(reasoningContent);
+			return DOMPurify.sanitize(rawHtml);
+		} catch (error) {
+			// Log error in dev mode and fallback to escaped plain-text
+			if (dev) {
+				console.warn('[AIReasoningBlock] Markdown parsing failed:', error);
+			}
+			const escapedHtml = escapeAndPreserveNewlines(reasoningContent);
+			return DOMPurify.sanitize(escapedHtml);
+		}
+	});
 </script>
 
 {#if reasoningContent}
@@ -28,7 +71,10 @@
 		>
 			<!-- Trigger Button -->
 			<button
+				type="button"
 				onclick={() => (isOpen = !isOpen)}
+				aria-expanded={isOpen}
+				aria-controls={contentId}
 				class="w-full px-4 py-2 flex items-center gap-2 text-left hover:bg-muted/50 transition-colors rounded-lg"
 			>
 				<svg
@@ -69,13 +115,13 @@
 
 			<!-- Reasoning Content -->
 			{#if isOpen}
-				<div class="px-4 py-3 border-t border-border bg-card/50">
-					<div class="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
-						{reasoningContent}
-						{#if isStreaming}
-							<span class="inline-block w-1.5 h-4 ml-0.5 bg-primary animate-pulse"></span>
-						{/if}
+				<div id={contentId} class="px-4 py-3 border-t border-border bg-card/50">
+					<div class="prose prose-sm max-w-none dark:prose-invert text-foreground">
+						{@html renderedReasoningContent}
 					</div>
+					{#if isStreaming}
+						<span class="inline-block w-1.5 h-4 ml-0.5 bg-primary animate-pulse"></span>
+					{/if}
 				</div>
 			{/if}
 		</div>
