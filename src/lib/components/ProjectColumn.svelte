@@ -2,6 +2,7 @@
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { ndk } from '$lib/ndk.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
+	import { projectFiltersStore } from '$lib/stores/projectFilters.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { cn } from '$lib/utils/cn';
 	import { generateColorFromString } from '$lib/utils/colors';
@@ -21,7 +22,6 @@
 	type TabType = 'conversations' | 'docs' | 'agents' | 'hashtags' | 'feed';
 
 	let activeTab = $state<TabType>('conversations');
-	let timeFilter = $state<string | null>(null);
 	let filterDropdownOpen = $state(false);
 	let showCreateDocDialog = $state(false);
 
@@ -29,6 +29,14 @@
 	const projectId = $derived(project.tagId());
 	const isOnline = $derived(projectStatusStore.isProjectOnline(projectId));
 	const onlineAgents = $derived(projectStatusStore.getOnlineAgents(projectId));
+
+	// Load time filter from store and make it reactive
+	const timeFilter = $derived(projectFiltersStore.getFilter(projectId));
+
+	// Function to update the time filter
+	function setTimeFilter(filter: string | null) {
+		projectFiltersStore.setFilter(projectId, filter);
+	}
 
 	// Handle status indicator click to start project
 	async function handleStatusClick() {
@@ -167,22 +175,22 @@
 							</button>
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Content align="end" class="w-56">
-							<DropdownMenu.Item onclick={() => (timeFilter = null)}>
+							<DropdownMenu.Item onclick={() => setTimeFilter(null)}>
 								<Clock class="mr-2 h-4 w-4" />
 								<span>All conversations</span>
 							</DropdownMenu.Item>
 							<DropdownMenu.Separator />
 							<DropdownMenu.Group>
 								<DropdownMenu.GroupHeading>Activity filters</DropdownMenu.GroupHeading>
-							<DropdownMenu.Item onclick={() => (timeFilter = '1h')}>
+							<DropdownMenu.Item onclick={() => setTimeFilter('1h')}>
 								<Clock class="mr-2 h-4 w-4" />
 								<span>Active in last hour</span>
 							</DropdownMenu.Item>
-							<DropdownMenu.Item onclick={() => (timeFilter = '4h')}>
+							<DropdownMenu.Item onclick={() => setTimeFilter('4h')}>
 								<Clock class="mr-2 h-4 w-4" />
 								<span>Active in last 4 hours</span>
 							</DropdownMenu.Item>
-							<DropdownMenu.Item onclick={() => (timeFilter = '1d')}>
+							<DropdownMenu.Item onclick={() => setTimeFilter('1d')}>
 								<Clock class="mr-2 h-4 w-4" />
 								<span>Active in last 24 hours</span>
 							</DropdownMenu.Item>
@@ -190,15 +198,15 @@
 							<DropdownMenu.Separator />
 							<DropdownMenu.Group>
 								<DropdownMenu.GroupHeading>Response filters</DropdownMenu.GroupHeading>
-							<DropdownMenu.Item onclick={() => (timeFilter = 'needs-response-1h')}>
+							<DropdownMenu.Item onclick={() => setTimeFilter('needs-response-1h')}>
 								<MessageCircleQuestion class="mr-2 h-4 w-4" />
 								<span>Needs response (1h)</span>
 							</DropdownMenu.Item>
-							<DropdownMenu.Item onclick={() => (timeFilter = 'needs-response-4h')}>
+							<DropdownMenu.Item onclick={() => setTimeFilter('needs-response-4h')}>
 								<MessageCircleQuestion class="mr-2 h-4 w-4" />
 								<span>Needs response (4h)</span>
 							</DropdownMenu.Item>
-							<DropdownMenu.Item onclick={() => (timeFilter = 'needs-response-1d')}>
+							<DropdownMenu.Item onclick={() => setTimeFilter('needs-response-1d')}>
 								<MessageCircleQuestion class="mr-2 h-4 w-4" />
 								<span>Needs response (24h)</span>
 							</DropdownMenu.Item>
