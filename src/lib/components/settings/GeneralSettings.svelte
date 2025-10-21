@@ -27,8 +27,7 @@
 			project.repoUrl = repoUrl || undefined;
 
 			// Sign and publish the updated project
-			await project.sign();
-			await project.publish();
+			await project.publishReplaceable();
 
 			saveMessage = { type: 'success', text: 'Project updated successfully!' };
 

@@ -80,8 +80,8 @@
 				pendingPmId = eventId;
 			}
 		}
-		showAddDialog = false;
-		searchQuery = '';
+		// Don't close dialog - allow multiple selections
+		// User can close manually with X button or clicking outside
 	}
 
 	function closeAddDialog() {
