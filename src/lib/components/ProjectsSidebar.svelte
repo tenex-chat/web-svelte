@@ -13,6 +13,7 @@
 	import { registerShortcut } from '$lib/utils/keyboardShortcuts';
 	import * as DropdownMenu from './ui/dropdown-menu';
 	import CreateProjectDialog from './dialogs/CreateProjectDialog.svelte';
+	import CreateProjectGroupDialog from './dialogs/CreateProjectGroupDialog.svelte';
 	import GlobalSearchDialog from './dialogs/GlobalSearchDialog.svelte';
 	import InboxPopover from './inbox/InboxPopover.svelte';
 	import ProjectStatusDebug from './debug/ProjectStatusDebug.svelte';
@@ -26,8 +27,20 @@
 		Monitor,
 		Bug,
 		LogOut,
-		Layers
+		Layers,
+		ChevronDown,
+		Pencil,
+		Trash2
 	} from 'lucide-svelte';
+	import {
+		getProjectGroups,
+		saveProjectGroup,
+		updateProjectGroup,
+		deleteProjectGroup,
+		getSelectedProjectGroup,
+		setSelectedProjectGroup,
+		type ProjectGroup
+	} from '$lib/utils/projectGroups';
 
 	interface Props {
 		projects: NDKProject[];
@@ -37,18 +50,54 @@
 
 	// State
 	let createDialogOpen = $state(false);
+	let createGroupDialogOpen = $state(false);
 	let searchDialogOpen = $state(false);
 	let inboxPopoverOpen = $state(false);
 	let debugDialogOpen = $state(false);
 	let userMenuOpen = $state(false);
+	let projectGroupMenuOpen = $state(false);
 	let longPressTimer: NodeJS.Timeout | null = null;
 	let longPressProjectId: string | null = null;
+
+	// Project Groups
+	let projectGroups = $state<ProjectGroup[]>([]);
+	let selectedGroupId = $state<string | null>(null);
+	let editingGroup = $state<ProjectGroup | null>(null);
 
 	// Derived state
 	const collapsed = $derived(sidebarCollapsedStore.collapsed);
 
-	// Initialize inbox store
+	// Filtered projects based on selected group
+	const filteredProjects = $derived(() => {
+		if (!selectedGroupId) {
+			return projects; // Show all projects
+		}
+
+		const selectedGroup = projectGroups.find((g) => g.id === selectedGroupId);
+		if (!selectedGroup) {
+			return projects;
+		}
+
+		return projects.filter((project) => {
+			const projectId = project.dTag || project.id || '';
+			return selectedGroup.projectIds.includes(projectId);
+		});
+	});
+
+	// Get the current group display name
+	const currentGroupName = $derived(() => {
+		if (!selectedGroupId) return 'Projects';
+		const group = projectGroups.find((g) => g.id === selectedGroupId);
+		return group?.name || 'Projects';
+	});
+
+	// Initialize project groups and inbox
 	$effect(() => {
+		if (browser) {
+			projectGroups = getProjectGroups();
+			selectedGroupId = getSelectedProjectGroup();
+		}
+
 		inboxStore.init();
 		return () => inboxStore.destroy();
 	});
@@ -69,6 +118,62 @@
 			cleanupSidebar();
 		};
 	});
+
+	// Project Group handlers
+	function handleSelectGroup(groupId: string | null) {
+		selectedGroupId = groupId;
+		setSelectedProjectGroup(groupId);
+		projectGroupMenuOpen = false;
+	}
+
+	function handleCreateGroup(groupName: string, projectIds: string[]) {
+		const newGroup = saveProjectGroup(groupName, projectIds);
+		projectGroups = getProjectGroups();
+		// Optionally select the newly created group
+		handleSelectGroup(newGroup.id);
+	}
+
+	function handleOpenCreateGroupDialog() {
+		projectGroupMenuOpen = false;
+		editingGroup = null;
+		createGroupDialogOpen = true;
+	}
+
+	function handleEditGroup(group: ProjectGroup, event: Event) {
+		event.stopPropagation();
+		projectGroupMenuOpen = false;
+		editingGroup = group;
+		createGroupDialogOpen = true;
+	}
+
+	function handleUpdateGroup(groupName: string, projectIds: string[]) {
+		if (!editingGroup) return;
+
+		updateProjectGroup(editingGroup.id, {
+			name: groupName,
+			projectIds
+		});
+
+		projectGroups = getProjectGroups();
+		editingGroup = null;
+	}
+
+	function handleDeleteGroup() {
+		if (!editingGroup) return;
+
+		deleteProjectGroup(editingGroup.id);
+		projectGroups = getProjectGroups();
+
+		// If the deleted group was selected, reset to showing all projects
+		if (selectedGroupId === editingGroup.id) {
+			selectedGroupId = null;
+			setSelectedProjectGroup(null);
+		}
+
+		// Close the dialog
+		editingGroup = null;
+		createGroupDialogOpen = false;
+	}
 
 	// User menu handlers
 	function handleLogout() {
@@ -189,7 +294,51 @@
 		<div class="p-2">
 			{#if !collapsed}
 				<div class="flex items-center justify-between px-2 py-1 mb-1">
-					<span class="text-xs font-medium text-muted-foreground">Projects</span>
+					<!-- Project Group Dropdown -->
+					<DropdownMenu.Root bind:open={projectGroupMenuOpen}>
+						<DropdownMenu.Trigger asChild>
+							<button
+								class="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+							>
+								{currentGroupName()}
+								<ChevronDown class="w-3 h-3" />
+							</button>
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content align="start" class="w-64">
+							<DropdownMenu.Item onclick={() => handleSelectGroup(null)}>
+								<span class={cn(!selectedGroupId && 'font-semibold')}>Projects</span>
+							</DropdownMenu.Item>
+							{#if projectGroups.length > 0}
+								<DropdownMenu.Separator />
+								{#each projectGroups as group (group.id)}
+									<div class="flex items-center">
+										<DropdownMenu.Item
+											onclick={() => handleSelectGroup(group.id)}
+											class="flex-1"
+										>
+											<span class={cn(selectedGroupId === group.id && 'font-semibold')}>
+												{group.name}
+											</span>
+										</DropdownMenu.Item>
+										<button
+											onclick={(e) => handleEditGroup(group, e)}
+											class="px-2 py-1.5 hover:bg-muted rounded transition-colors"
+											aria-label="Edit group"
+											title="Edit group"
+										>
+											<Pencil class="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+										</button>
+									</div>
+								{/each}
+							{/if}
+							<DropdownMenu.Separator />
+							<DropdownMenu.Item onclick={handleOpenCreateGroupDialog}>
+								<Plus class="mr-2 h-3 w-3" />
+								<span>Create Project Group</span>
+							</DropdownMenu.Item>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
+
 					<div class="flex items-center gap-0.5">
 						<button
 							onclick={() => (searchDialogOpen = true)}
@@ -226,12 +375,14 @@
 			{/if}
 
 			<div class="flex flex-col gap-1">
-				{#if projects.length === 0}
+				{#if filteredProjects().length === 0}
 					{#if !collapsed}
-						<div class="text-center py-8 text-muted-foreground text-sm">No projects yet</div>
+						<div class="text-center py-8 text-muted-foreground text-sm">
+							{selectedGroupId ? 'No projects in this group' : 'No projects yet'}
+						</div>
 					{/if}
 				{:else}
-					{#each projects as project (project.dTag || project.id)}
+					{#each filteredProjects() as project (project.dTag || project.id)}
 						{@const projectId = project.tagId()}
 						{@const isOnline = projectStatusStore.isProjectOnline(projectId)}
 						{@const isOpen = openProjects.isOpen(project)}
@@ -456,5 +607,12 @@
 
 <!-- Dialogs -->
 <CreateProjectDialog bind:open={createDialogOpen} />
+<CreateProjectGroupDialog
+	bind:open={createGroupDialogOpen}
+	{projects}
+	editingGroup={editingGroup}
+	onSave={editingGroup ? handleUpdateGroup : handleCreateGroup}
+	onDelete={handleDeleteGroup}
+/>
 <GlobalSearchDialog bind:open={searchDialogOpen} />
 <ProjectStatusDebug bind:open={debugDialogOpen} />
