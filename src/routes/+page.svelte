@@ -36,8 +36,8 @@
 
 		<!-- Main Content Area -->
 		<div class="flex-1 flex overflow-hidden">
-			{#if openProjects.projects.length > 0}
-				<MultiProjectView projects={openProjects.projects} />
+			{#if openProjects.filteredProjects.length > 0}
+				<MultiProjectView projects={openProjects.filteredProjects} />
 			{:else}
 				<div class="flex-1 flex items-center justify-center">
 					<div class="text-center">
