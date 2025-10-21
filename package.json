@@ -5,8 +5,8 @@
 	"type": "module",
 	"main": "dist-electron/main/index.js",
 	"scripts": {
-		"dev": "electron-vite dev",
-		"dev:web": "vite dev",
+		"dev:app": "electron-vite dev",
+		"dev": "vite dev",
 		"build": "vite build && electron-vite build",
 		"build:web": "vite build",
 		"build:electron": "electron-vite build",

@@ -94,7 +94,7 @@ export default defineConfig({
 		sveltekit()
 	],
 	server: {
-		port: 5000,
+		port: 5005,
 		fs: {
 			allow: ['..']
 		}
