@@ -12,6 +12,8 @@
 	import { Maximize2, Minimize2, Phone, X } from 'lucide-svelte';
 	import { nudgeStore } from '$lib/stores/nudges.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
+	import { draftStore } from '$lib/stores/drafts.svelte';
+	import { TIMING } from '$lib/constants';
 
 	interface Props {
 		project?: NDKProject;
@@ -39,6 +41,9 @@
 	const availableModels = $derived(projectId ? projectStatusStore.getModels(projectId) : []);
 	const availableTools = $derived(projectId ? projectStatusStore.getTools(projectId) : []);
 
+	// Draft key: use conversation ID if exists, otherwise use project-level key for new threads
+	const draftKey = $derived(rootEvent?.id || (projectId ? `project:${projectId}` : undefined));
+
 	let messageInput = $state('');
 	let selectedAgent = $state<string | null>(null);
 	let selectedNudges = $state<string[]>([]);
@@ -49,10 +54,15 @@
 	let isExpanded = $state(false);
 	let hasManuallyToggled = $state(false);
 
-	// Set initial content when provided
+	// Load draft when conversation or project changes
 	$effect(() => {
-		if (initialContent) {
+		if (draftKey) {
+			const draft = draftStore.getDraft(draftKey);
+			messageInput = draft || '';
+		} else if (initialContent) {
 			messageInput = initialContent;
+		} else {
+			messageInput = '';
 		}
 	});
 
@@ -98,6 +108,19 @@
 		if (!hasManuallyToggled && messageInput.length > 300 && !isExpanded) {
 			isExpanded = true;
 		}
+	});
+
+	// Debounced draft saving
+	$effect(() => {
+		if (!draftKey) return;
+
+		const timeoutId = setTimeout(() => {
+			draftStore.saveDraft(draftKey, messageInput);
+		}, TIMING.DRAFT_SAVE_DEBOUNCE);
+
+		return () => {
+			clearTimeout(timeoutId);
+		};
 	});
 
 	// Compute default agent based on recent messages (SINGLE SOURCE OF TRUTH)
@@ -401,6 +424,9 @@
 				await reply.sign(undefined, { pTags: false });
 				await reply.publish();
 			}
+
+			// Clear draft
+			draftStore.clearDraft(draftKey);
 
 			// Reset state
 			selectedAgent = null;
