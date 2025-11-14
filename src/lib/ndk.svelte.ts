@@ -5,6 +5,7 @@ import { browser } from '$app/environment';
 import { registerEventClass } from '@nostr-dev-kit/ndk';
 import { NDKProject } from '$lib/events/NDKProject';
 import { NDKAgentDefinition } from '$lib/events/NDKAgentDefinition';
+import { NDKAgentDefinitionPack } from '$lib/events/NDKAgentDefinitionPack';
 import { NDKProjectStatus } from '$lib/events/NDKProjectStatus';
 import { NDKTask } from '$lib/events/NDKTask';
 import { NDKMCPTool } from '$lib/events/NDKMCPTool';
@@ -48,6 +49,7 @@ export const ndk =new NDKSvelte({
 if (browser) {
 	registerEventClass(NDKProject);
 	registerEventClass(NDKAgentDefinition);
+	registerEventClass(NDKAgentDefinitionPack);
 	registerEventClass(NDKProjectStatus);
 	registerEventClass(NDKTask);
 	registerEventClass(NDKMCPTool);

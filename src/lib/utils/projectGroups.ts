@@ -9,6 +9,7 @@ export interface ProjectGroup {
 	name: string;
 	projectIds: string[];
 	createdAt: number;
+	pinned?: boolean;
 }
 
 /**
@@ -29,74 +30,121 @@ export function getProjectGroups(): ProjectGroup[] {
 }
 
 /**
- * Save a new project group
+ * Persist project groups to localStorage
  */
-export function saveProjectGroup(name: string, projectIds: string[]): ProjectGroup {
-	const groups = getProjectGroups();
-
-	const newGroup: ProjectGroup = {
-		id: generateId(),
-		name,
-		projectIds,
-		createdAt: Date.now()
-	};
-
-	groups.push(newGroup);
-
-	if (browser) {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(groups));
-	}
-
-	return newGroup;
+function persistProjectGroups(groups: ProjectGroup[]): void {
+	if (!browser) return;
+	localStorage.setItem(STORAGE_KEY, JSON.stringify(groups));
 }
 
 /**
- * Update an existing project group
+ * Reactive store for project groups
+ */
+function createProjectGroupsStore() {
+	const { subscribe, set, update } = writable<ProjectGroup[]>(
+		browser ? getProjectGroups() : []
+	);
+
+	// Internal helper to update and persist in one place
+	const updateAndPersist = (updater: (groups: ProjectGroup[]) => ProjectGroup[]) => {
+		update((groups) => {
+			const updated = updater(groups);
+			persistProjectGroups(updated);
+			return updated;
+		});
+	};
+
+	return {
+		subscribe,
+		add: (name: string, projectIds: string[]) => {
+			const newGroup: ProjectGroup = {
+				id: generateId(),
+				name,
+				projectIds,
+				createdAt: Date.now()
+			};
+			updateAndPersist((groups) => [...groups, newGroup]);
+			return newGroup;
+		},
+		update: (groupId: string, changes: Partial<Pick<ProjectGroup, 'name' | 'projectIds'>>) => {
+			let result: ProjectGroup | null = null;
+			updateAndPersist((groups) => {
+				const index = groups.findIndex((g) => g.id === groupId);
+				if (index === -1) return groups;
+
+				const updated = [...groups];
+				updated[index] = { ...updated[index], ...changes };
+				result = updated[index];
+				return updated;
+			});
+			return result;
+		},
+		delete: (groupId: string) => {
+			let deleted = false;
+			updateAndPersist((groups) => {
+				const filtered = groups.filter((g) => g.id !== groupId);
+				if (filtered.length !== groups.length) {
+					deleted = true;
+					// Clear selection if deleted group was selected
+					if (browser && getSelectedProjectGroup() === groupId) {
+						setSelectedProjectGroup(null);
+					}
+				}
+				return filtered;
+			});
+			return deleted;
+		},
+		togglePin: (groupId: string) => {
+			let toggled = false;
+			updateAndPersist((groups) => {
+				const updated = groups.map((g) => {
+					if (g.id === groupId) {
+						toggled = true;
+						return { ...g, pinned: !g.pinned };
+					}
+					return g;
+				});
+				return toggled ? updated : groups;
+			});
+			return toggled;
+		},
+		refresh: () => {
+			set(browser ? getProjectGroups() : []);
+		}
+	};
+}
+
+export const projectGroupsStore = createProjectGroupsStore();
+
+/**
+ * Save a new project group (backwards compatibility wrapper)
+ */
+export function saveProjectGroup(name: string, projectIds: string[]): ProjectGroup {
+	return projectGroupsStore.add(name, projectIds);
+}
+
+/**
+ * Update an existing project group (backwards compatibility wrapper)
  */
 export function updateProjectGroup(
 	groupId: string,
 	updates: Partial<Pick<ProjectGroup, 'name' | 'projectIds'>>
 ): ProjectGroup | null {
-	const groups = getProjectGroups();
-	const groupIndex = groups.findIndex((g) => g.id === groupId);
-
-	if (groupIndex === -1) return null;
-
-	const updatedGroup = {
-		...groups[groupIndex],
-		...updates
-	};
-
-	groups[groupIndex] = updatedGroup;
-
-	if (browser) {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(groups));
-	}
-
-	return updatedGroup;
+	return projectGroupsStore.update(groupId, updates);
 }
 
 /**
- * Delete a project group
+ * Delete a project group (backwards compatibility wrapper)
  */
 export function deleteProjectGroup(groupId: string): boolean {
-	const groups = getProjectGroups();
-	const filteredGroups = groups.filter((g) => g.id !== groupId);
+	return projectGroupsStore.delete(groupId);
+}
 
-	if (filteredGroups.length === groups.length) {
-		return false; // Group not found
-	}
-
-	if (browser) {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredGroups));
-
-		// If the deleted group was selected, clear the selection
-		if (getSelectedProjectGroup() === groupId) {
-			setSelectedProjectGroup(null);
-		}
-	}
-
-	return true;
+/**
+ * Toggle the pinned status of a project group (backwards compatibility wrapper)
+ */
+export function toggleGroupPin(groupId: string): boolean {
+	return projectGroupsStore.togglePin(groupId);
 }
 
 /**

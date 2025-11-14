@@ -6,8 +6,9 @@ import type { NDKEvent } from '@nostr-dev-kit/ndk';
  */
 export class DeltaContentAccumulator {
 	private deltas = new Map<number, string>();
-	private lastReconstructedSequence = 0;
 	private cachedContent = '';
+	private lastReconstructedSequence = 0;
+	private highestContiguousSequence = -1; // Track the highest sequence without gaps
 
 	/**
 	 * Add a delta event and return the reconstructed content
@@ -33,9 +34,23 @@ export class DeltaContentAccumulator {
 
 		this.deltas.set(sequence, event.content);
 
-		// Always reconstruct to handle out-of-order events
-		this.cachedContent = this.reconstruct();
-		this.lastReconstructedSequence = this.getHighestSequence();
+		// Optimize: If this is the next expected sequence, just append
+		if (sequence === this.highestContiguousSequence + 1) {
+			this.cachedContent += event.content;
+			this.highestContiguousSequence = sequence;
+
+			// Check if we can now append more sequences that were waiting
+			while (this.deltas.has(this.highestContiguousSequence + 1)) {
+				this.highestContiguousSequence++;
+				// Note: content already in deltas map, just update pointer
+			}
+			this.lastReconstructedSequence = this.getHighestSequence();
+		} else {
+			// Out-of-order or gap detected, need full reconstruction
+			this.cachedContent = this.reconstruct();
+			this.lastReconstructedSequence = this.getHighestSequence();
+			this.updateHighestContiguous();
+		}
 
 		console.log('[DeltaAccumulator] After adding', {
 			totalDeltas: this.deltas.size,
@@ -87,9 +102,28 @@ export class DeltaContentAccumulator {
 		return missing;
 	}
 
+	private updateHighestContiguous(): void {
+		const sequences = Array.from(this.deltas.keys()).sort((a, b) => a - b);
+		if (sequences.length === 0) {
+			this.highestContiguousSequence = -1;
+			return;
+		}
+
+		// Find highest sequence without gaps from 0
+		this.highestContiguousSequence = -1;
+		for (const seq of sequences) {
+			if (seq === this.highestContiguousSequence + 1) {
+				this.highestContiguousSequence = seq;
+			} else {
+				break;
+			}
+		}
+	}
+
 	clear(): void {
 		this.deltas.clear();
 		this.lastReconstructedSequence = 0;
+		this.highestContiguousSequence = -1;
 		this.cachedContent = '';
 	}
 

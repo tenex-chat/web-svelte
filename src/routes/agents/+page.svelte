@@ -5,7 +5,7 @@
 	import CreateAgentDialog from '$lib/components/dialogs/CreateAgentDialog.svelte';
 	import { goto } from '$app/navigation';
 	import { SvelteMap } from 'svelte/reactivity';
-	import { Plus, Monitor } from 'lucide-svelte';
+	import { Plus, Monitor, Package } from 'lucide-svelte';
 
 	let searchQuery = $state('');
 	let activeFilter = $state<'all' | 'owned' | 'subscribed'>('all');
@@ -90,6 +90,13 @@
 					</p>
 				</div>
 				<div class="flex gap-2">
+					<button
+						onclick={() => goto('/packs')}
+						class="inline-flex items-center px-4 py-2 border border-border text-foreground rounded-md hover:bg-muted transition-colors"
+					>
+						<Package class="w-4 h-4 mr-2" />
+						Browse Packs
+					</button>
 					{#if ndk.$currentUser}
 						<button
 							onclick={() => (createDialogOpen = true)}

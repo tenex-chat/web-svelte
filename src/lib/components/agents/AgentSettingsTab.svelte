@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { Volume2, Settings2, Save } from 'lucide-svelte';
+	import { aiConfigStore } from '$lib/stores/aiConfig.svelte';
 
 	interface Props {
 		pubkey: string;
@@ -13,7 +14,6 @@
 
 	interface AgentVoiceConfig {
 		voiceId: string;
-		provider: 'openai' | 'elevenlabs';
 		speed?: number;
 	}
 
@@ -41,13 +41,15 @@
 		}
 	}
 
-	// Initialize with saved config or defaults
+	// Initialize with saved config or defaults from global settings
 	const savedConfig = loadVoiceConfig();
-	let voiceProvider = $state<'openai' | 'elevenlabs'>(savedConfig?.provider || 'openai');
 	let voiceId = $state(savedConfig?.voiceId || '');
-	let voiceSpeed = $state(savedConfig?.speed || 1.0);
+	let voiceSpeed = $state(savedConfig?.speed || aiConfigStore.config.voiceSettings.speed);
 
 	let isSaving = $state(false);
+
+	// Get available voices from global settings
+	const availableVoiceIds = $derived(aiConfigStore.config.voiceSettings.voiceIds);
 
 	async function handleSaveSettings() {
 		isSaving = true;
@@ -55,7 +57,6 @@
 			// Save voice settings to localStorage
 			saveVoiceConfig({
 				voiceId,
-				provider: voiceProvider,
 				speed: voiceSpeed
 			});
 			console.log('[AgentSettingsTab] Settings saved successfully for agent:', pubkey);
@@ -68,11 +69,6 @@
 		}
 	}
 
-	async function handleTestVoice() {
-		// TODO: Implement TTS preview using the selected voice
-		console.log('[AgentSettingsTab] Testing voice:', voiceId, voiceProvider);
-	}
-
 	function handleResetVoice() {
 		try {
 			const stored = localStorage.getItem(AGENT_VOICE_STORAGE_KEY);
@@ -83,9 +79,8 @@
 			}
 
 			// Reset to defaults
-			voiceProvider = 'openai';
 			voiceId = '';
-			voiceSpeed = 1.0;
+			voiceSpeed = aiConfigStore.config.voiceSettings.speed;
 
 			console.log('[AgentSettingsTab] Voice settings reset to global defaults');
 		} catch (error) {
@@ -101,38 +96,33 @@
 			<div class="flex items-center gap-2">
 				<Volume2 class="w-5 h-5 text-foreground" />
 				<h3 class="font-semibold text-foreground">Voice Settings</h3>
+				{#if voiceId}
+					<span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded">
+						Custom
+					</span>
+				{/if}
 			</div>
 			<p class="text-sm text-muted-foreground mt-1">
 				Configure the voice for this agent
 			</p>
 		</div>
 		<div class="px-4 py-4 space-y-4">
-			<!-- Voice Provider -->
-			<div class="space-y-2">
-				<label class="text-sm font-medium text-foreground">Voice Provider</label>
-				<select
-					bind:value={voiceProvider}
-					class="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-				>
-					<option value="openai">OpenAI</option>
-					<option value="elevenlabs">ElevenLabs</option>
-				</select>
-			</div>
-
 			<!-- Voice Selection -->
 			<div class="space-y-2">
 				<label class="text-sm font-medium text-foreground">Voice</label>
+				<p class="text-xs text-muted-foreground">
+					Select from pre-configured voices in AI settings
+				</p>
 				<select
 					bind:value={voiceId}
 					class="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 				>
-					<option value="">Select a voice...</option>
-					<option value="alloy">Alloy</option>
-					<option value="echo">Echo</option>
-					<option value="fable">Fable</option>
-					<option value="onyx">Onyx</option>
-					<option value="nova">Nova</option>
-					<option value="shimmer">Shimmer</option>
+					<option value="">Use global default</option>
+					{#each availableVoiceIds as voice (voice)}
+						<option value={voice}>
+							{voice}
+						</option>
+					{/each}
 				</select>
 			</div>
 
@@ -153,14 +143,6 @@
 
 			<!-- Action Buttons -->
 			<div class="flex gap-2">
-				<button
-					onclick={handleTestVoice}
-					disabled={!voiceId}
-					class="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-foreground"
-				>
-					<Volume2 class="w-4 h-4 inline-block mr-2" />
-					Test Voice
-				</button>
 				<button
 					onclick={handleResetVoice}
 					class="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors text-foreground"

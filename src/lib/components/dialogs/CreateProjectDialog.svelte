@@ -2,9 +2,11 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKProject } from '$lib/events/NDKProject';
 	import { NDKAgentDefinition } from '$lib/events/NDKAgentDefinition';
+	import { NDKAgentDefinitionPack } from '$lib/events/NDKAgentDefinitionPack';
 	import { NDKMCPTool } from '$lib/events/NDKMCPTool';
 	import { cn } from '$lib/utils/cn';
 	import AgentDefinitionCard from '$lib/components/agents/AgentDefinitionCard.svelte';
+	import PackCard from '$lib/components/agents/PackCard.svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
@@ -35,8 +37,11 @@
 	// Available items
 	let availableAgents = $state<NDKAgentDefinition[]>([]);
 	let availableTools = $state<NDKMCPTool[]>([]);
+	let availablePacks = $state<NDKAgentDefinitionPack[]>([]);
 	let isLoadingAgents = $state(true);
 	let isLoadingTools = $state(true);
+	let isLoadingPacks = $state(true);
+	let selectedPackId = $state<string | null>(null);
 
 	// Tag input
 	let tagInput = $state('');
@@ -50,6 +55,7 @@
 			resetForm();
 			fetchAgents();
 			fetchTools();
+			fetchPacks();
 		}
 	});
 
@@ -156,6 +162,46 @@
 		} finally {
 			isLoadingTools = false;
 		}
+	}
+
+	async function fetchPacks() {
+		if (!ndk) return;
+
+		isLoadingPacks = true;
+		try {
+			const events = await ndk.fetchEvents({
+				kinds: [34199],
+				limit: 50
+			});
+
+			const packs = Array.from(events).map((event) => {
+				return new NDKAgentDefinitionPack(ndk, event.rawEvent());
+			});
+
+			availablePacks = packs;
+		} catch (error) {
+			console.error('Failed to fetch packs:', error);
+		} finally {
+			isLoadingPacks = false;
+		}
+	}
+
+	function handleSelectPack(packId: string) {
+		if (selectedPackId === packId) {
+			selectedPackId = null;
+			return;
+		}
+
+		selectedPackId = packId;
+		const pack = availablePacks.find((p) => p.id === packId);
+		if (!pack) return;
+
+		const newSelected = new SvelteSet<string>();
+		pack.agentEventIds.forEach((agentId) => {
+			newSelected.add(agentId);
+		});
+
+		selectedAgents = newSelected;
 	}
 
 	function canProceed(): boolean {
@@ -462,8 +508,30 @@
 					</div>
 				{:else if currentStep === 'agents'}
 					<div class="space-y-4">
+						<!-- Pack Selection -->
+						{#if !isLoadingPacks && availablePacks.length > 0}
+							<div class="space-y-2">
+								<h3 class="text-sm font-medium">Quick Start: Select from a Pack</h3>
+								<p class="text-xs text-muted-foreground">
+									Choose a pre-configured pack of agents, or select individual agents below
+								</p>
+								<div class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+									{#each availablePacks.slice(0, 6) as pack (pack.id)}
+										<div class="transform scale-75 origin-top-left">
+											<PackCard
+												{pack}
+												selected={selectedPackId === pack.id}
+												onclick={() => handleSelectPack(pack.id)}
+											/>
+										</div>
+									{/each}
+								</div>
+							</div>
+							<div class="border-t border-border pt-4"></div>
+						{/if}
+
 						<p class="text-sm text-muted-foreground">
-							Select individual agents to work on this project (optional)
+							{selectedPackId ? 'Agents from selected pack (you can modify the selection)' : 'Select individual agents to work on this project (optional)'}
 						</p>
 
 						<div class="border border-border rounded-lg p-4">

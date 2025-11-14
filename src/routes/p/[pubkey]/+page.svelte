@@ -7,6 +7,7 @@
 	import { ArrowLeft, Copy, CheckCircle2, Sparkles } from 'lucide-svelte';
 	import { cn } from '$lib/utils/cn';
 	import AgentProfileTabs from '$lib/components/agents/AgentProfileTabs.svelte';
+	import CreateAgentDialog from '$lib/components/dialogs/CreateAgentDialog.svelte';
 
 	// Get pubkey from route params
 	const pubkey = $derived($page.params.pubkey);
@@ -18,13 +19,13 @@
 	// Fetch agent profile
 	const profile = $derived(ndk.$fetchProfile(() => pubkey));
 
-	// Subscribe to NDKAgentDefinition events (kind 4128)
+	// Subscribe to NDKAgentDefinition events
 	const agentDefSubscription = ndk.$subscribe(() =>
 		pubkey
 			? {
 					filters: [
 						{
-							kinds: [4128 as NDKKind],
+							kinds: [NDKKind.AgentDefinition],
 							authors: [pubkey],
 							limit: 1
 						}
@@ -42,7 +43,7 @@
 			? {
 					filters: [
 						{
-							kinds: [0 as NDKKind],
+							kinds: [NDKKind.Metadata],
 							authors: [pubkey],
 							limit: 1
 						}
@@ -79,6 +80,27 @@
 
 	// Check if we should show conversion button
 	const showConversionButton = $derived(!agentDef && !!agentMetadata);
+
+	// Create conversion data for CreateAgentDialog
+	const conversionData = $derived.by(() => {
+		if (!agentMetadata) return undefined;
+
+		const baseName = agentMetadata.name || profile?.displayName || profile?.name || 'Unnamed Agent';
+		const baseSlug = baseName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+		return {
+			name: baseName,
+			description: agentMetadata.about || '',
+			role: agentMetadata.role || 'assistant',
+			instructions: agentMetadata.instructions || agentMetadata.systemPrompt || '',
+			useCriteria: agentMetadata.useCriteria || [],
+			version: '1',
+			slug: baseSlug,
+			tools: [],
+			mcpServers: [],
+			phases: []
+		};
+	});
 
 	function handleBack() {
 		goto('/agents');
@@ -159,34 +181,11 @@
 	</div>
 </div>
 
-<!-- TODO: Add CreateAgentDialog for conversion -->
-{#if convertDialogOpen}
-	<div class="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
-		<div
-			class="bg-card rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
-			onclick={(e) => e.stopPropagation()}
-		>
-			<h3 class="text-lg font-semibold text-foreground mb-4">
-				Convert to Agent Definition
-			</h3>
-			<p class="text-sm text-muted-foreground mb-4">
-				This feature will convert the agent's kind:0 metadata to a proper Agent Definition
-				(kind 4128) event.
-			</p>
-			<div class="flex gap-2 justify-end">
-				<button
-					onclick={() => (convertDialogOpen = false)}
-					class="px-4 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg transition-colors"
-				>
-					Cancel
-				</button>
-				<button
-					onclick={() => (convertDialogOpen = false)}
-					class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 dark:bg-blue-500 dark:hover:bg-primary rounded-lg transition-colors"
-				>
-					Convert
-				</button>
-			</div>
-		</div>
-	</div>
+<!-- Convert kind:0 metadata to Agent Definition dialog -->
+{#if conversionData}
+	<CreateAgentDialog
+		bind:open={convertDialogOpen}
+		forkAgent={conversionData}
+		cloneMode={false}
+	/>
 {/if}

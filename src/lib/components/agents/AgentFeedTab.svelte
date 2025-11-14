@@ -2,9 +2,11 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKKind } from '$lib/kinds';
+	import { NDKAgentLesson } from '$lib/events/NDKAgentLesson';
 	import { Activity } from 'lucide-svelte';
 	import Message from '../chat/Message.svelte';
-	import { formatRelativeTime } from '$lib/utils/time';
+	import LessonCard from './LessonCard.svelte';
+	import GenericEventCard from '../events/GenericEventCard.svelte';
 	import VirtualList from '@humanspeak/svelte-virtual-list';
 
 	interface Props {
@@ -12,6 +14,8 @@
 	}
 
 	let { pubkey }: Props = $props();
+
+	console.log('[AgentFeedTab] Subscribing to agent:', pubkey);
 
 	// Subscribe to all events from this agent
 	const feedSubscription = ndk.$subscribe(() => ({
@@ -24,24 +28,21 @@
 		closeOnEose: false
 	}));
 
-	const EVENT_KIND_NAMES: Record<number, string> = {
-		1: 'Note',
-		4128: 'Agent Definition',
-		4129: 'Lesson',
-		9905: 'Job Request',
-		9906: 'Job Accepted',
-		9907: 'Job Status',
-		9908: 'Job Feedback',
-		30078: 'Application Specific Data',
-		1111: 'Generic Reply',
-		30023: 'Long-form Article'
-	};
+	// Debug: log subscription state
+	$effect(() => {
+		console.log('[AgentFeedTab] Subscription events changed:', feedSubscription.events?.length || 0);
+	});
 
 	// Filter and sort events
 	const sortedEvents = $derived.by(() => {
-		if (!feedSubscription.events) return [];
+		if (!feedSubscription.events) {
+			console.log('[AgentFeedTab] No events from subscription');
+			return [];
+		}
 
-		return [...feedSubscription.events]
+		console.log('[AgentFeedTab] Raw events:', feedSubscription.events.length);
+
+		const filtered = [...feedSubscription.events]
 			.filter((event) => {
 				const kind = event.kind as number;
 				// Filter out ephemeral events (20000-29999)
@@ -49,44 +50,12 @@
 				// Filter out operations status and stop request events
 				if (kind === 24133 || kind === 24134) return false;
 				return true;
-			})
-			.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+			});
+
+		console.log('[AgentFeedTab] Filtered events:', filtered.length, 'kinds:', filtered.map(e => e.kind));
+
+		return filtered.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
 	});
-
-	function getEventKindName(kind: NDKKind | undefined): string {
-		if (!kind) return 'Unknown';
-		return EVENT_KIND_NAMES[kind as number] || `Kind ${kind}`;
-	}
-
-	function getEventPreview(event: NDKEvent): string {
-		try {
-			const content = event.content;
-			if (!content) return 'No content';
-
-			// Try to parse as JSON
-			try {
-				const parsed = JSON.parse(content);
-				if (parsed.content) return parsed.content;
-				if (parsed.text) return parsed.text;
-				if (parsed.message) return parsed.message;
-				if (parsed.description) return parsed.description;
-				if (parsed.title) return parsed.title;
-				if (parsed.name) return parsed.name;
-				// Return first string value found
-				for (const value of Object.values(parsed)) {
-					if (typeof value === 'string' && value.trim()) {
-						return value;
-					}
-				}
-			} catch {
-				// Not JSON, return as is
-			}
-
-			return content;
-		} catch {
-			return 'Unable to parse content';
-		}
-	}
 </script>
 
 <div class="h-full flex flex-col overflow-hidden">
@@ -97,63 +66,38 @@
 			<p class="text-sm text-muted-foreground">This agent hasn't published any events.</p>
 		</div>
 	{:else}
-		<div class="flex-1 overflow-auto">
-			<VirtualList items={sortedEvents} height="100%" itemHeight={150}>
-				{#snippet slot({ item: event })}
-					{@const kind = event.kind as number}
+		<div class="p-4">
+			<p class="text-sm text-muted-foreground mb-2">Showing {sortedEvents.length} events</p>
+		</div>
+		<div class="flex-1 overflow-auto space-y-2 px-4">
+			{#each sortedEvents.slice(0, 10) as event (event.id)}
+				{@const kind = event.kind as number}
 
-					<div class="px-3 py-1.5">
-						{#if kind === 1111}
-							<!-- Use Message component for Generic Reply -->
-							<Message message={{ id: event.id, event }} />
-						{:else}
-							<!-- Default card rendering for other events -->
-							<div
-								class="bg-card border border-border rounded-lg hover:bg-muted dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-							>
-								<div class="px-4 py-3 border-b border-border">
-									<div class="flex items-start justify-between">
-										<div class="flex items-center gap-2">
-											<span
-												class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded"
-											>
-												{getEventKindName(event.kind)}
-											</span>
-											<span class="text-xs text-muted-foreground">
-												{formatRelativeTime(event.created_at || 0)}
-											</span>
-										</div>
-										<span class="text-xs font-mono text-muted-foreground">
-											{event.id?.slice(0, 8)}...
-										</span>
-									</div>
-								</div>
-								<div class="px-4 py-3">
-									<p class="text-sm text-muted-foreground line-clamp-3">
-										{getEventPreview(event)}
-									</p>
-									{#if event.tags.length > 0}
-										<div class="mt-2 flex flex-wrap gap-1">
-											{#each event.tags.slice(0, 5) as tag, idx (idx)}
-												<span
-													class="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded"
-												>
-													{tag[0]}{tag[1] ? `: ${tag[1].slice(0, 20)}${tag[1].length > 20 ? '...' : ''}` : ''}
-												</span>
-											{/each}
-											{#if event.tags.length > 5}
-												<span class="text-xs text-muted-foreground">
-													+{event.tags.length - 5} more
-												</span>
-											{/if}
-										</div>
-									{/if}
-								</div>
-							</div>
-						{/if}
-					</div>
-				{/snippet}
-			</VirtualList>
+				<!-- Debug: log each render attempt -->
+				{console.log('[AgentFeedTab] Rendering event:', event.id, 'kind:', kind)}
+
+				<!--
+					Event Type Rendering
+					Add new event type handlers here for specialized rendering.
+					Format: {#if kind === NDKKind.YourKind}
+				-->
+
+				{#if kind === 1111}
+					<!-- Generic Reply (kind 1111) - Chat message -->
+					<Message message={{ id: event.id, event }} />
+				{:else if kind === 4129}
+					<!-- Agent Lesson (kind 4129) - Learning events -->
+					{@const lesson = NDKAgentLesson.from(event)}
+					<LessonCard {lesson} compact={true} />
+				{:else if kind === 30023}
+					<!-- Long-form Article (kind 30023) - Future: ArticleEmbedCard -->
+					<!-- TODO: Add ArticleEmbedCard component when implemented -->
+					<GenericEventCard {event} />
+				{:else}
+					<!-- Generic fallback for unhandled event types -->
+					<GenericEventCard {event} />
+				{/if}
+			{/each}
 		</div>
 	{/if}
 </div>

@@ -59,19 +59,55 @@ export function findLastReasoningIndex(messages: Message[]): number {
 	return -1;
 }
 
+// Cache for memoized message properties
+const messagePropertiesCache = new WeakMap<Message[], any[]>();
+let lastMessagesCacheKey: Message[] | null = null;
+let lastMessagesHash: string | null = null;
+
+/**
+ * Generate a simple hash for message array comparison
+ */
+function generateMessagesHash(messages: Message[]): string {
+	return messages.map(m => `${m.id}:${m.event.created_at}`).join(',');
+}
+
 /**
  * Calculate message display properties for a list of messages
  * Pre-computes consecutive states and reasoning flags
+ * OPTIMIZED: Uses memoization to avoid recalculating unchanged messages
  */
 export function calculateMessageProperties(messages: Message[]) {
+	// Fast path: If same array reference and no changes, return cached
+	if (messages === lastMessagesCacheKey && messagePropertiesCache.has(messages)) {
+		return messagePropertiesCache.get(messages)!;
+	}
+
+	// Check if content is the same despite different array reference
+	const currentHash = generateMessagesHash(messages);
+	if (currentHash === lastMessagesHash && lastMessagesCacheKey && messagePropertiesCache.has(lastMessagesCacheKey)) {
+		// Same content, just update the cache with new array reference
+		const cachedResult = messagePropertiesCache.get(lastMessagesCacheKey)!;
+		messagePropertiesCache.set(messages, cachedResult);
+		lastMessagesCacheKey = messages;
+		return cachedResult;
+	}
+
+	// Need to recalculate
 	const lastReasoningIndex = findLastReasoningIndex(messages);
 
-	return messages.map((msg, index) => ({
+	const result = messages.map((msg, index) => ({
 		message: msg,
 		isConsecutive: isConsecutiveMessage(messages[index - 1], msg),
 		hasNextConsecutive: hasNextConsecutiveMessage(msg, messages[index + 1]),
 		isLastReasoningMessage: index === lastReasoningIndex
 	}));
+
+	// Cache the result
+	messagePropertiesCache.set(messages, result);
+	lastMessagesCacheKey = messages;
+	lastMessagesHash = currentHash;
+
+	return result;
 }
 
 /**

@@ -30,16 +30,18 @@
 		Layers,
 		ChevronDown,
 		Pencil,
-		Trash2
+		Trash2,
+		Pin
 	} from 'lucide-svelte';
 	import {
-		getProjectGroups,
+		projectGroupsStore,
 		saveProjectGroup,
 		updateProjectGroup,
 		deleteProjectGroup,
 		selectedProjectGroupStore,
 		type ProjectGroup
 	} from '$lib/utils/projectGroups';
+	import { generateColorFromString, generateLinearGradientFromHsl } from '$lib/utils/colors';
 
 	interface Props {
 		projects: NDKProject[];
@@ -57,44 +59,64 @@
 	let projectGroupMenuOpen = $state(false);
 	let longPressTimer: NodeJS.Timeout | null = null;
 	let longPressProjectId: string | null = null;
-
-	// Project Groups
-	let projectGroups = $state<ProjectGroup[]>([]);
 	let editingGroup = $state<ProjectGroup | null>(null);
+	let showPinnedPopover = $state(false);
+	let popoverButtonRef: HTMLButtonElement | null = null;
 
 	// Derived state
 	const collapsed = $derived(sidebarCollapsedStore.collapsed);
+	const projectGroups = $derived($projectGroupsStore);
+
+	// Common button classes
+	const iconButtonClass = 'h-5 w-5 flex items-center justify-center hover:bg-muted rounded text-foreground';
+
+	// Get the currently selected group (single find)
+	const currentGroup = $derived(
+		$selectedProjectGroupStore
+			? projectGroups.find((g) => g.id === $selectedProjectGroupStore) || null
+			: null
+	);
+
+	// Derive name, color, and gradient from currentGroup
+	const currentGroupName = $derived(currentGroup?.name || 'Projects');
+	const currentGroupColor = $derived(
+		currentGroup ? generateColorFromString(currentGroup.name) : null
+	);
+
+	// Background style for gradient (single style string)
+	const backgroundStyle = $derived(
+		currentGroupColor
+			? `background: ${generateLinearGradientFromHsl(currentGroupColor)}; opacity: 1;`
+			: 'opacity: 0;'
+	);
+
+	// Get pinned groups
+	const pinnedGroups = $derived(projectGroups.filter((g) => g.pinned));
+
+	// Calculate popover position
+	const popoverPosition = $derived(() => {
+		if (!popoverButtonRef) return { top: 0, left: 0 };
+		const rect = popoverButtonRef.getBoundingClientRect();
+		return {
+			top: rect.top,
+			left: rect.right + 8
+		};
+	});
 
 	// Filtered projects based on selected group
 	const filteredProjects = $derived(() => {
-		if (!$selectedProjectGroupStore) {
+		if (!currentGroup) {
 			return projects; // Show all projects
-		}
-
-		const selectedGroup = projectGroups.find((g) => g.id === $selectedProjectGroupStore);
-		if (!selectedGroup) {
-			return projects;
 		}
 
 		return projects.filter((project) => {
 			const projectId = project.dTag || project.id || '';
-			return selectedGroup.projectIds.includes(projectId);
+			return currentGroup.projectIds.includes(projectId);
 		});
 	});
 
-	// Get the current group display name
-	const currentGroupName = $derived(() => {
-		if (!$selectedProjectGroupStore) return 'Projects';
-		const group = projectGroups.find((g) => g.id === $selectedProjectGroupStore);
-		return group?.name || 'Projects';
-	});
-
-	// Initialize project groups and inbox
+	// Initialize inbox
 	$effect(() => {
-		if (browser) {
-			projectGroups = getProjectGroups();
-		}
-
 		inboxStore.init();
 		return () => inboxStore.destroy();
 	});
@@ -124,7 +146,6 @@
 
 	function handleCreateGroup(groupName: string, projectIds: string[]) {
 		const newGroup = saveProjectGroup(groupName, projectIds);
-		projectGroups = getProjectGroups();
 		// Optionally select the newly created group
 		handleSelectGroup(newGroup.id);
 	}
@@ -150,7 +171,6 @@
 			projectIds
 		});
 
-		projectGroups = getProjectGroups();
 		editingGroup = null;
 	}
 
@@ -158,7 +178,6 @@
 		if (!editingGroup) return;
 
 		deleteProjectGroup(editingGroup.id);
-		projectGroups = getProjectGroups();
 
 		// If the deleted group was selected, reset to showing all projects
 		if ($selectedProjectGroupStore === editingGroup.id) {
@@ -168,6 +187,11 @@
 		// Close the dialog
 		editingGroup = null;
 		createGroupDialogOpen = false;
+	}
+
+	function handleTogglePin(groupId: string, event: Event) {
+		event.stopPropagation();
+		projectGroupsStore.togglePin(groupId);
 	}
 
 	// User menu handlers
@@ -211,35 +235,28 @@
 		}
 		longPressProjectId = null;
 	}
-
-	// Generate project color from dTag
-	function getProjectColor(project: NDKProject): string {
-		const str = project.dTag || '';
-		let hash = 0;
-		for (let i = 0; i < str.length; i++) {
-			hash = (hash << 5) - hash + str.charCodeAt(i);
-			hash = hash & hash;
-		}
-		const hue = Math.abs(hash) % 360;
-		return `hsl(${hue}, 65%, 55%)`;
-	}
 </script>
 
 <div
 	class={cn(
-		'bg-card border-r border-border flex flex-col transition-all duration-300 relative',
+		'bg-card border-r border-border flex flex-col transition-all duration-300 relative overflow-hidden',
 		collapsed ? 'w-16' : 'w-64',
 		browser && window.electron ? 'pt-10' : ''
 	)}
 	data-collapsed={collapsed}
 >
+	<!-- Gradient background when group is selected -->
+	<div
+		class="absolute top-0 left-0 right-0 bottom-0 pointer-events-none z-0 transition-opacity duration-300"
+		style={backgroundStyle}
+	></div>
 	<!-- Electron Title Bar Drag Region (only in sidebar) -->
 	{#if browser && window.electron}
 		<div class="electron-titlebar-sidebar"></div>
 	{/if}
 
 	<!-- Header -->
-	<div class="border-b border-border px-3 py-3">
+	<div class="border-b border-border px-3 py-3 relative z-10">
 		<div class="flex items-center justify-between">
 			{#if !collapsed}
 				<a href="/projects" class="flex items-center gap-2 flex-1 hover:opacity-80 transition-opacity text-foreground">
@@ -284,9 +301,47 @@
 	</div>
 
 	<!-- Content -->
-	<div class="flex-1 overflow-y-auto">
+	<div class="flex-1 overflow-y-auto relative z-10">
 		<!-- Projects Section -->
 		<div class="p-2">
+			<!-- Pinned Groups -->
+			{#if pinnedGroups.length > 0}
+				{#if collapsed}
+					<!-- Collapsed: Show only current group with popover on hover -->
+					<div class="px-2 py-1 mb-2 flex justify-center">
+						<button
+							bind:this={popoverButtonRef}
+							onmouseenter={() => showPinnedPopover = true}
+							onmouseleave={() => showPinnedPopover = false}
+							onclick={() => handleSelectGroup(currentGroup?.id || null)}
+							class={cn(
+								'w-8 h-8 rounded transition-all flex items-center justify-center',
+								currentGroup ? 'ring-2 ring-offset-1 ring-offset-card' : 'opacity-60 hover:opacity-100'
+							)}
+							style={currentGroup ? `background-color: ${currentGroupColor}; ring-color: ${currentGroupColor}` : 'background-color: hsl(220, 10%, 50%)'}
+							title={currentGroupName}
+							aria-label={currentGroupName}
+						></button>
+					</div>
+				{:else}
+					<!-- Expanded: Show all pinned groups horizontally -->
+					<div class="flex gap-1 px-2 py-1 mb-2 items-center">
+						{#each pinnedGroups as group (group.id)}
+							<button
+								onclick={() => handleSelectGroup(group.id)}
+								class={cn(
+									'w-6 h-6 rounded transition-all flex items-center justify-center',
+									$selectedProjectGroupStore === group.id ? 'ring-2 ring-offset-1 ring-offset-card' : 'opacity-60 hover:opacity-100'
+								)}
+								style="background-color: {generateColorFromString(group.name)}; ring-color: {generateColorFromString(group.name)}"
+								title={group.name}
+								aria-label={`Select ${group.name}`}
+							></button>
+						{/each}
+					</div>
+				{/if}
+			{/if}
+
 			{#if !collapsed}
 				<div class="flex items-center justify-between px-2 py-1 mb-1">
 					<!-- Project Group Dropdown -->
@@ -295,7 +350,7 @@
 							<button
 								class="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
 							>
-								{currentGroupName()}
+								{currentGroupName}
 								<ChevronDown class="w-3 h-3" />
 							</button>
 						</DropdownMenu.Trigger>
@@ -311,10 +366,25 @@
 											onclick={() => handleSelectGroup(group.id)}
 											class="flex-1"
 										>
+											<div
+												class="w-3 h-3 rounded mr-2 flex-shrink-0"
+												style="background-color: {generateColorFromString(group.name)}"
+											></div>
 											<span class={cn($selectedProjectGroupStore === group.id && 'font-semibold')}>
 												{group.name}
 											</span>
 										</DropdownMenu.Item>
+										<button
+											onclick={(e) => handleTogglePin(group.id, e)}
+											class={cn(
+												'px-2 py-1.5 hover:bg-muted rounded transition-colors',
+												group.pinned && 'text-primary'
+											)}
+											aria-label={group.pinned ? 'Unpin group' : 'Pin group'}
+											title={group.pinned ? 'Unpin group' : 'Pin group'}
+										>
+											<Pin class={cn('h-3.5 w-3.5', group.pinned ? '' : 'text-muted-foreground hover:text-foreground')} />
+										</button>
 										<button
 											onclick={(e) => handleEditGroup(group, e)}
 											class="px-2 py-1.5 hover:bg-muted rounded transition-colors"
@@ -337,7 +407,7 @@
 					<div class="flex items-center gap-0.5">
 						<button
 							onclick={() => (searchDialogOpen = true)}
-							class="h-5 w-5 flex items-center justify-center hover:bg-muted rounded text-foreground"
+							class={iconButtonClass}
 							aria-label="Global Search (⌘K)"
 							title="Global Search (⌘K)"
 						>
@@ -352,7 +422,7 @@
 						</button>
 						<button
 							onclick={() => (createDialogOpen = true)}
-							class="h-5 w-5 flex items-center justify-center hover:bg-muted rounded -mr-1 text-foreground"
+							class={cn(iconButtonClass, '-mr-1')}
 							aria-label="Create new project"
 							title="Create new project"
 						>
@@ -381,70 +451,37 @@
 						{@const projectId = project.tagId()}
 						{@const isOnline = projectStatusStore.isProjectOnline(projectId)}
 						{@const isOpen = openProjects.isOpen(project)}
-						{@const projectColor = getProjectColor(project)}
+						{@const projectColor = generateColorFromString(project.dTag || '')}
 
-						{#if collapsed}
-							<button
-								onmousedown={(e) =>
-									handleProjectMouseDown(project.dTag || project.id || '', e)}
-								onmouseup={() => handleProjectMouseUp(project)}
-								onmouseleave={handleProjectMouseLeave}
-								class={cn(
-									'w-full text-left px-3 py-2 rounded-lg transition-all flex items-center gap-2',
-									isOpen ? 'bg-primary/10 border border-primary/20 text-primary' : 'hover:bg-muted text-foreground',
-									!isOnline && 'opacity-75'
-								)}
-								aria-label={project.title || 'Untitled'}
-								title={project.title || 'Untitled'}
-							>
-								<!-- Project Avatar -->
-								<div class="relative flex-shrink-0">
-									<div
-										class={cn(
-											'rounded-lg flex items-center justify-center text-white font-semibold',
-											collapsed ? 'w-8 h-8 text-sm' : 'w-8 h-8 text-sm'
-										)}
-										style="background: {projectColor}"
-									>
-										{project.title?.charAt(0).toUpperCase() || 'P'}
-									</div>
-									{#if isOnline}
-										<div
-											class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-card"
-										></div>
-									{/if}
+						<button
+							onmousedown={(e) =>
+								handleProjectMouseDown(project.dTag || project.id || '', e)}
+							onmouseup={() => handleProjectMouseUp(project)}
+							onmouseleave={handleProjectMouseLeave}
+							class={cn(
+								'w-full text-left px-3 py-2 rounded-lg transition-all flex items-center gap-2',
+								isOpen ? 'bg-primary/10 border border-primary/20 text-primary' : 'hover:bg-muted text-foreground',
+								!isOnline && 'opacity-75'
+							)}
+							aria-label={collapsed ? (project.title || 'Untitled') : undefined}
+							title={collapsed ? (project.title || 'Untitled') : undefined}
+						>
+							<!-- Project Avatar -->
+							<div class="relative flex-shrink-0">
+								<div
+									class="rounded-lg flex items-center justify-center text-white font-semibold w-8 h-8 text-sm"
+									style="background: {projectColor}"
+								>
+									{project.title?.charAt(0).toUpperCase() || 'P'}
 								</div>
-							</button>
-						{:else}
-							<button
-								onmousedown={(e) =>
-									handleProjectMouseDown(project.dTag || project.id || '', e)}
-								onmouseup={() => handleProjectMouseUp(project)}
-								onmouseleave={handleProjectMouseLeave}
-								class={cn(
-									'w-full text-left px-3 py-2 rounded-lg transition-all flex items-center gap-2',
-									isOpen ? 'bg-primary/10 border border-primary/20 text-primary' : 'hover:bg-muted text-foreground',
-									!isOnline && 'opacity-75'
-								)}
-							>
-								<!-- Project Avatar -->
-								<div class="relative flex-shrink-0">
+								{#if isOnline}
 									<div
-										class={cn(
-											'rounded-lg flex items-center justify-center text-white font-semibold',
-											collapsed ? 'w-8 h-8 text-sm' : 'w-8 h-8 text-sm'
-										)}
-										style="background: {projectColor}"
-									>
-										{project.title?.charAt(0).toUpperCase() || 'P'}
-									</div>
-									{#if isOnline}
-										<div
-											class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-card"
-										></div>
-									{/if}
-								</div>
+										class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-card"
+									></div>
+								{/if}
+							</div>
 
+							{#if !collapsed}
 								<div class="flex-1 min-w-0">
 									<div class="font-medium text-sm truncate">{project.title || 'Untitled'}</div>
 									<div class="text-xs text-muted-foreground">
@@ -461,8 +498,8 @@
 										/>
 									</svg>
 								{/if}
-							</button>
-						{/if}
+							{/if}
+						</button>
 					{/each}
 				{/if}
 			</div>
@@ -470,7 +507,7 @@
 	</div>
 
 	<!-- Inbox Section -->
-	<div class="border-t border-border px-3 py-2">
+	<div class="border-t border-border px-3 py-2 relative z-10">
 		<InboxPopover bind:open={inboxPopoverOpen}>
 			<button
 				class={cn(
@@ -514,7 +551,7 @@
 	</div>
 
 	<!-- Footer - User Profile -->
-	<div class="border-t border-border p-3">
+	<div class="border-t border-border p-3 relative z-10">
 		<DropdownMenu.Root bind:open={userMenuOpen}>
 			<DropdownMenu.Trigger asChild>
 				<button
@@ -599,6 +636,38 @@
 		</DropdownMenu.Root>
 	</div>
 </div>
+
+<!-- Popover for pinned groups (rendered outside sidebar to avoid clipping) -->
+{#if showPinnedPopover && pinnedGroups.length > 1 && collapsed}
+	<div
+		class="fixed bg-popover border border-border rounded-lg shadow-lg p-2 z-[100] min-w-[160px]"
+		style="top: {popoverPosition().top}px; left: {popoverPosition().left}px;"
+		onmouseenter={() => showPinnedPopover = true}
+		onmouseleave={() => showPinnedPopover = false}
+	>
+		<div class="text-xs font-medium text-muted-foreground mb-2 px-2">Pinned Groups</div>
+		<div class="flex flex-col gap-1">
+			{#each pinnedGroups as group (group.id)}
+				<button
+					onclick={() => {
+						handleSelectGroup(group.id);
+						showPinnedPopover = false;
+					}}
+					class={cn(
+						'flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted transition-colors text-left',
+						$selectedProjectGroupStore === group.id && 'bg-muted'
+					)}
+				>
+					<div
+						class="w-4 h-4 rounded flex-shrink-0"
+						style="background-color: {generateColorFromString(group.name)}"
+					></div>
+					<span class="text-sm text-foreground truncate">{group.name}</span>
+				</button>
+			{/each}
+		</div>
+	</div>
+{/if}
 
 <!-- Dialogs -->
 <CreateProjectDialog bind:open={createDialogOpen} />

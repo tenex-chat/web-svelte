@@ -17,6 +17,9 @@ class StreamingMessageStore {
 	// Use a reactive object instead of Map for proper Svelte reactivity
 	sessions = $state<Record<string, StreamingSession>>({});
 
+	// DIAGNOSTIC: Track session mutations
+	private sessionMutationCount = 0;
+
 	/**
 	 * Process a streaming event and return the current reconstructed content
 	 */
@@ -57,6 +60,12 @@ class StreamingMessageStore {
 			}
 
 			// Trigger reactivity
+			this.sessionMutationCount++;
+			console.log(`[DIAGNOSTIC-STORE] Session mutation #${this.sessionMutationCount} - Creating typing indicator`, {
+				pubkey: key.substring(0, 16),
+				syntheticId: session.syntheticId,
+				totalSessions: Object.keys(this.sessions).length + 1
+			});
 			this.sessions = { ...this.sessions, [key]: session };
 
 			return {
@@ -86,12 +95,27 @@ class StreamingMessageStore {
 			});
 
 			// Trigger reactivity by reassigning the object
+			this.sessionMutationCount++;
+			console.log(`[DIAGNOSTIC-STORE] Session mutation #${this.sessionMutationCount} - Creating streaming session`, {
+				pubkey: key.substring(0, 16),
+				syntheticId,
+				totalSessions: Object.keys(this.sessions).length + 1,
+				contentLength: reconstructedContent?.length
+			});
 			this.sessions = { ...this.sessions, [key]: session };
 		} else {
 			// Update existing session
 			const updatedContent = session.accumulator.addEvent(event);
 
 			// Create a new session object to trigger reactivity
+			this.sessionMutationCount++;
+			console.log(`[DIAGNOSTIC-STORE] Session mutation #${this.sessionMutationCount} - Updating streaming session`, {
+				pubkey: key.substring(0, 16),
+				syntheticId: session.syntheticId,
+				totalSessions: Object.keys(this.sessions).length,
+				deltaCount: session.accumulator.getDeltaCount(),
+				contentLength: updatedContent?.length
+			});
 			this.sessions = {
 				...this.sessions,
 				[key]: {
@@ -122,6 +146,12 @@ class StreamingMessageStore {
 	 */
 	clearSession(pubkey: string): void {
 		if (this.sessions[pubkey]) {
+			this.sessionMutationCount++;
+			console.log(`[DIAGNOSTIC-STORE] Session mutation #${this.sessionMutationCount} - Clearing session`, {
+				pubkey: pubkey.substring(0, 16),
+				totalSessionsBefore: Object.keys(this.sessions).length,
+				totalSessionsAfter: Object.keys(this.sessions).length - 1
+			});
 			console.log('[StreamingStore] Clearing session for', pubkey);
 			// Create new object without the cleared session to trigger reactivity
 			const { [pubkey]: _, ...remainingSessions } = this.sessions;

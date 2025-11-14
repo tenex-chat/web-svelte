@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKKind } from '$lib/kinds';
 	import type { NDKProject } from '$lib/events/NDKProject';
@@ -14,6 +14,8 @@
 		calculateMessageProperties,
 		getUniquePubkeys
 	} from '$lib/utils/messageUtils';
+	import { processEventsToMessages } from '$lib/utils/messageProcessor';
+	import { streamingMessageStore } from '$lib/utils/streamingMessageStore.svelte';
 
 	interface Props {
 		eventId?: string;
@@ -51,8 +53,12 @@
 		message || (currentEvent ? { id: currentEvent.id, event: currentEvent } : null)
 	);
 
+	// Track processed streaming events for this component instance
+	let processedStreamingEvents = new Set<string>();
+
 	// Subscribe to direct replies to this event
 	// Uses NIP-22 threading: looks for events with 'e' tags matching this event's ID
+	// Now includes streaming kinds for proper support
 	const repliesSubscription = $derived(
 		currentEvent
 			? ndk.$subscribe(() => ({
@@ -61,6 +67,16 @@
 							kinds: [1111 as NDKKind], // Generic Reply
 							'#e': [currentEvent.id],
 							limit: 100
+						},
+						{
+							// Add streaming events with proper filtering
+							kinds: [
+								NDKKind.TenexStreamingResponse,
+								NDKKind.TenexAgentTypingStart,
+								NDKKind.TenexAgentTypingStop
+							],
+							'#e': [currentEvent.id], // Only streaming events for THIS message
+							limit: 5
 						}
 					],
 					closeOnEose: false
@@ -68,13 +84,94 @@
 			: null
 	);
 
+	// Process streaming events into the global store
+	$effect(() => {
+		if (!repliesSubscription) return;
+
+		const streamingEvents = repliesSubscription.events.filter(e =>
+			e.kind === NDKKind.TenexStreamingResponse ||
+			e.kind === NDKKind.TenexAgentTypingStart
+		);
+
+		for (const event of streamingEvents) {
+			if (!processedStreamingEvents.has(event.id)) {
+				streamingMessageStore.processStreamingEvent(event);
+				processedStreamingEvents.add(event.id);
+			}
+		}
+
+		// Handle typing stop events
+		const typingStopEvents = repliesSubscription.events.filter(e =>
+			e.kind === NDKKind.TenexAgentTypingStop
+		);
+		for (const event of typingStopEvents) {
+			streamingMessageStore.clearSession(event.pubkey);
+		}
+
+		// Clear streaming when final messages arrive
+		const finalMessages = repliesSubscription.events.filter(e =>
+			e.kind === NDKKind.GenericReply
+		);
+		for (const event of finalMessages) {
+			streamingMessageStore.clearSession(event.pubkey);
+			// Clear tracked streaming events for this pubkey
+			streamingEvents
+				.filter(e => e.pubkey === event.pubkey)
+				.forEach(e => processedStreamingEvents.delete(e.id));
+		}
+	});
+
 	const replies = $derived.by(() => {
 		if (!repliesSubscription) return [];
-		const events = repliesSubscription.events || [];
-		// Convert to Message objects and sort by created_at
-		return events
-			.map((event) => ({ id: event.id, event }))
-			.sort((a, b) => (a.event.created_at || 0) - (b.event.created_at || 0));
+
+		// Filter out streaming events from subscription - they're handled via global store
+		const nonStreamingEvents = repliesSubscription.events.filter(e =>
+			e.kind !== NDKKind.TenexStreamingResponse &&
+			e.kind !== NDKKind.TenexAgentTypingStart &&
+			e.kind !== NDKKind.TenexAgentTypingStop
+		);
+
+		// Process events through the unified processor
+		const processedMessages = processEventsToMessages(
+			nonStreamingEvents,
+			currentEvent, // Use current event as the root for this thread level
+			'threaded',
+			false, // isBrainstorm
+			false, // showAll
+			ndk.$currentUser?.pubkey
+		);
+
+		// Add streaming messages from global store that are replies to THIS event
+		const streamingSessions = Object.entries(streamingMessageStore.sessions);
+		const streamingMessages: MessageType[] = [];
+
+		for (const [key, session] of streamingSessions) {
+			// Check if this streaming session is a reply to the current event
+			const replyToTag = session.latestEvent.tags.find(t => t[0] === 'e');
+			if (replyToTag && replyToTag[1] === currentEvent.id) {
+				// Create synthetic event for this streaming reply
+				const syntheticEvent = new NDKEvent(ndk);
+				syntheticEvent.kind = NDKKind.TenexStreamingResponse;
+				syntheticEvent.pubkey = session.latestEvent.pubkey;
+				syntheticEvent.created_at = session.latestEvent.created_at;
+				syntheticEvent.tags = session.latestEvent.tags;
+				syntheticEvent.content = session.reconstructedContent;
+				syntheticEvent.id = session.latestEvent.id;
+				syntheticEvent.sig = session.latestEvent.sig;
+
+				streamingMessages.push({
+					id: session.syntheticId,
+					event: syntheticEvent
+				});
+			}
+		}
+
+		// Combine and sort all messages
+		const allMessages = [...processedMessages, ...streamingMessages].sort((a, b) =>
+			(a.event.created_at || 0) - (b.event.created_at || 0)
+		);
+
+		return allMessages;
 	});
 
 	// Calculate properties for replies

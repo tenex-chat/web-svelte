@@ -8,6 +8,7 @@
 	import { generateColorFromString } from '$lib/utils/colors';
 	import { MessageSquare, FileText, Bot, Hash, Rss, Settings as SettingsIcon, Filter, Clock, MoreVertical, MessageCircleQuestion, Plus } from 'lucide-svelte';
 	import * as DropdownMenu from './ui/dropdown-menu';
+	import { User } from "$lib/ndk/ui/user";
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKKind } from '$lib/kinds';
 	import { toastStore } from '$lib/stores/toast.svelte';
@@ -247,17 +248,17 @@
 				{:else}
 					<div>
 						{#each onlineAgents as agent (agent.pubkey)}
-							{#await import('@nostr-dev-kit/svelte') then { Avatar }}
+							<User.Root {ndk} pubkey={agent.pubkey}>
 								<button
 									onclick={() => windowManager.openAgent(project, agent.pubkey, agent.name)}
 									class="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border flex items-center gap-3"
 								>
 									<!-- Avatar -->
-									<Avatar.Avatar {ndk} pubkey={agent.pubkey} size={40} />
+									<User.Avatar size="lg" />
 
 									<!-- Agent Info -->
 									<div class="flex-1 min-w-0">
-										<div class="font-medium text-sm text-foreground">{agent.name}</div>
+										<div class="font-medium text-sm text-foreground"><User.Name /></div>
 										<div class="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
 											<span class="w-1.5 h-1.5 rounded-full bg-green-600 dark:bg-green-400"></span>
 											<span>Online</span>
@@ -269,7 +270,7 @@
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
 									</svg>
 								</button>
-							{/await}
+							</User.Root>
 						{/each}
 					</div>
 				{/if}

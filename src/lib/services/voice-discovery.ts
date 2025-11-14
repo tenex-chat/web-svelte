@@ -125,17 +125,36 @@ export class VoiceDiscovery {
 				age?: string;
 				gender?: string;
 				accent?: string;
+				description?: string;
+				use_case?: string;
 			};
 			preview_url?: string;
 		}
 
-		return data.voices.map((v: ElevenLabsVoice) => ({
-			id: v.voice_id,
-			name: v.name,
-			description: `${v.labels?.age || ''} ${v.labels?.gender || ''} ${v.labels?.accent || ''}`.trim(),
-			labels: v.labels,
-			previewUrl: v.preview_url
-		}));
+		return data.voices.map((v: ElevenLabsVoice) => {
+			const labels: Voice['labels'] = {};
+
+			// Extract labels from the ElevenLabs response
+			if (v.labels?.gender) labels.gender = v.labels.gender;
+			if (v.labels?.accent) labels.accent = v.labels.accent;
+			if (v.labels?.age) labels.age = v.labels.age;
+			if (v.labels?.use_case) labels.useCase = v.labels.use_case;
+
+			// Build description from labels
+			const descriptionParts = [];
+			if (v.labels?.age) descriptionParts.push(v.labels.age);
+			if (v.labels?.gender) descriptionParts.push(v.labels.gender);
+			if (v.labels?.accent) descriptionParts.push(v.labels.accent);
+			if (v.labels?.description) descriptionParts.push(v.labels.description);
+
+			return {
+				id: v.voice_id,
+				name: v.name,
+				description: descriptionParts.join(' ') || undefined,
+				labels: Object.keys(labels).length > 0 ? labels : undefined,
+				previewUrl: v.preview_url
+			};
+		});
 	}
 
 	/**

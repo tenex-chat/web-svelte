@@ -17,6 +17,7 @@ export const NDKKind = {
     AgentRequestList: 13199,
     AgentNudge: 4201,
     AgentDefinition: 4199,
+    AgentDefinitionPack: 34199,
 
     // Tenex custom kinds (2xxxx range)
     TenexStreamingResponse: 21111,

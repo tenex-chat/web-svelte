@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKKind } from '$lib/kinds';
+	import { NDKAgentLesson } from '$lib/events/NDKAgentLesson';
 	import { BookOpen } from 'lucide-svelte';
+	import LessonCard from './LessonCard.svelte';
 
 	interface Props {
 		pubkey: string;
@@ -21,7 +23,10 @@
 		closeOnEose: false
 	}));
 
-	const lessons = $derived(lessonsSubscription.events || []);
+	const lessons = $derived.by(() => {
+		const events = lessonsSubscription.events || [];
+		return events.map(event => NDKAgentLesson.from(event));
+	});
 </script>
 
 <div class="space-y-4">
@@ -35,21 +40,7 @@
 		</div>
 	{:else}
 		{#each lessons as lesson (lesson.id)}
-			<div
-				class="bg-card border border-border rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer"
-			>
-				<h3 class="font-semibold text-foreground mb-2">
-					{lesson.tagValue('title') || 'Untitled Lesson'}
-				</h3>
-				<p class="text-sm text-muted-foreground line-clamp-3">
-					{lesson.content}
-				</p>
-				<div class="mt-2 flex items-center gap-2">
-					<span class="text-xs text-muted-foreground">
-						{new Date((lesson.created_at || 0) * 1000).toLocaleDateString()}
-					</span>
-				</div>
-			</div>
+			<LessonCard {lesson} />
 		{/each}
 	{/if}
 </div>
