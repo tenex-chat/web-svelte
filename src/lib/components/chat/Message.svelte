@@ -7,7 +7,6 @@
 	import { NDKKind } from '$lib/kinds';
 	import { User } from '$lib/ndk/ui/user';
 	import { NDKProject } from '$lib/events/NDKProject';
-	import { createProfileFetcher } from '$lib/ndk/builders/profile';
 	import AIReasoningBlock from './AIReasoningBlock.svelte';
 	import ToolCallContent from './ToolCallContent.svelte';
 	import SuggestionButtons from './SuggestionButtons.svelte';
@@ -52,13 +51,6 @@
 		}
 	});
 
-	// Fetch profile
-	const profileFetcher = createProfileFetcher(() => ({ user: message.event.pubkey }), ndk);
-	const profile = $derived(profileFetcher.profile);
-
-	const authorName = $derived(
-		profile?.displayName || profile?.name || message.event.pubkey.slice(0, 8)
-	);
 
 	// Format timestamp
 	const timestamp = $derived.by(() => {
@@ -165,9 +157,17 @@
 
 		<!-- Message Content -->
 		<div class="flex-1 min-w-0">
+			<div class="text-xs text-muted-foreground font-mono mb-1">
+				<span class="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+					kind:{message.event.kind}
+				</span>
+				<span class="ml-2">id:{message.event.id.slice(0, 8)}</span>
+			</div>
 			{#if !isConsecutive}
 				<div class="flex items-center gap-2 mb-1">
-					<span class="font-semibold text-sm text-foreground">{authorName}</span>
+					<User.Root {ndk} pubkey={message.event.pubkey}>
+						<span class="font-semibold text-sm text-foreground"><User.Name /></span>
+					</User.Root>
 					<button
 						type="button"
 						onclick={() => {
@@ -274,7 +274,7 @@
 							{isLastMessage}
 						/>
 					{:else}
-						<div class="prose prose-sm max-w-none dark:prose-invert text-foreground">
+						<div class="prose prose-sm text-sm max-w-none dark:prose-invert text-foreground">
 							{@html renderedContent}
 							{#if isStreaming}
 								<span class="inline-block w-1.5 h-4 ml-0.5 bg-primary animate-pulse"></span>

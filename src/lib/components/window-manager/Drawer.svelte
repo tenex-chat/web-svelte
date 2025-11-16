@@ -6,13 +6,10 @@
 	import DocumentView from '../docs/DocumentView.svelte';
 	import CallView from '../call/CallView.svelte';
 	import AgentProfileTabs from '../agents/AgentProfileTabs.svelte';
+	import ChatHeaderActions from '../chat/ChatHeaderActions.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
-	import { ndk } from '$lib/ndk.svelte';
-	import { NDKKind } from '$lib/kinds';
-	import { createProfileFetcher } from '$lib/ndk/builders/profile';
 	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
 	import type { Message } from '$lib/utils/messageProcessor';
-	import CopyThreadMenu from '../chat/CopyThreadMenu.svelte';
 
 	interface Props {
 		window: WindowConfig;
@@ -35,62 +32,8 @@
 		window.project ? projectStatusStore.getOnlineAgents(window.project.tagId()) : []
 	);
 
-	// For agent windows, fetch agent definition and metadata
+	// For agent windows, get agent pubkey
 	const agentPubkey = $derived(window.type === 'agent' ? window.data?.agentPubkey : null);
-
-	const agentDefSubscription = $derived(
-		agentPubkey
-			? ndk.$subscribe(() => ({
-					filters: [
-						{
-							kinds: [NDKKind.AgentDefinition],
-							authors: [agentPubkey],
-							limit: 1
-						}
-					],
-					closeOnEose: false
-				}))
-			: null
-	);
-
-	const metadataSubscription = $derived(
-		agentPubkey
-			? ndk.$subscribe(() => ({
-					filters: [
-						{
-							kinds: [NDKKind.Metadata],
-							authors: [agentPubkey],
-							limit: 1
-						}
-					],
-					closeOnEose: false
-				}))
-			: null
-	);
-
-	const agentDef = $derived(agentDefSubscription?.events?.[0]);
-	const metadataEvent = $derived(metadataSubscription?.events?.[0]);
-
-	const profileFetcher = createProfileFetcher(() => ({ user: agentPubkey }), ndk);
-	const profile = $derived(profileFetcher.profile);
-
-	const agentMetadata = $derived.by(() => {
-		if (!metadataEvent) return null;
-		try {
-			const content = JSON.parse(metadataEvent.content);
-			if (
-				content.role ||
-				content.instructions ||
-				content.systemPrompt ||
-				content.useCriteria
-			) {
-				return content;
-			}
-		} catch {
-			return null;
-		}
-		return null;
-	});
 
 	$effect(() => {
 		if (typeof localStorage !== 'undefined') {
@@ -196,35 +139,12 @@
 		<!-- Actions -->
 		<div class="flex items-center gap-1">
 			{#if window.type === 'chat'}
-				<!-- Copy Thread Menu -->
-				<CopyThreadMenu {messages} rootEvent={window.data?.thread} />
-
-				<!-- View Mode Toggle -->
-				<button
-					onclick={toggleViewMode}
-					class="p-2 hover:bg-secondary rounded transition-colors"
-					title={viewMode === 'threaded' ? 'Switch to flat view' : 'Switch to threaded view'}
-				>
-					{#if viewMode === 'threaded'}
-						<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M4 6h16M4 12h16M4 18h7"
-							/>
-						</svg>
-					{:else}
-						<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M4 6h16M4 12h16M4 18h16"
-							/>
-						</svg>
-					{/if}
-				</button>
+				<ChatHeaderActions
+					rootEvent={window.data?.thread}
+					{messages}
+					{viewMode}
+					onToggleViewMode={toggleViewMode}
+				/>
 			{/if}
 
 			<!-- Detach button -->
@@ -264,9 +184,10 @@
 	<!-- Drawer Content -->
 	<div class="drawer-content flex-1 overflow-hidden">
 		{#if window.type === 'chat'}
+			{@const thread = window.data?.thread}
 			<ChatView
 				project={window.project}
-				rootEvent={window.data?.thread}
+				rootEvent={thread}
 				{onlineAgents}
 				onThreadCreated={(thread) => {
 					// Update the window data with the new thread
@@ -306,7 +227,7 @@
 				isEmbedded={true}
 			/>
 		{:else if window.type === 'agent' && agentPubkey}
-			<AgentProfileTabs pubkey={agentPubkey} {agentDef} {agentMetadata} {profile} />
+			<AgentProfileTabs pubkey={agentPubkey} />
 		{:else}
 			<div class="p-4">
 				<p class="text-sm text-muted-foreground">Unknown window type: {window.type}</p>

@@ -1,16 +1,34 @@
 <script lang="ts">
-	import type { NDKProject } from '$lib/events/NDKProject';
+	import { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
+	import { ndk } from '$lib/ndk.svelte';
 	import GeneralSettings from './GeneralSettings.svelte';
 	import AgentsSettings from './AgentsSettings.svelte';
 	import ToolsSettings from './ToolsSettings.svelte';
 
 	interface Props {
-		project: NDKProject;
+		project?: NDKProject;
+		projectId?: string;
 		onlineAgents?: ProjectAgent[];
 	}
 
-	let { project, onlineAgents = [] }: Props = $props();
+	let { project = $bindable(), projectId, onlineAgents = [] }: Props = $props();
+
+	// Fetch project if projectId provided but project not available
+	$effect(() => {
+		if (projectId && !project) {
+			ndk
+				.fetchEvent({
+					kinds: [31933],
+					'#d': [projectId]
+				})
+				.then((event) => {
+					if (event) {
+						project = new NDKProject(ndk, event.rawEvent());
+					}
+				});
+		}
+	});
 
 	type SettingsSection = 'general' | 'agents' | 'tools' | 'advanced' | 'danger';
 
@@ -73,7 +91,11 @@
 
 	<!-- Settings Content -->
 	<div class="flex-1 overflow-y-auto bg-muted">
-		{#if activeSection === 'general'}
+		{#if !project}
+			<div class="p-4">
+				<p class="text-sm text-muted-foreground">Loading project...</p>
+			</div>
+		{:else if activeSection === 'general'}
 			<GeneralSettings {project} />
 		{:else if activeSection === 'agents'}
 			<AgentsSettings {project} />

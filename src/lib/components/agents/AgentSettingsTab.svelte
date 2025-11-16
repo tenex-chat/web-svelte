@@ -1,11 +1,9 @@
 <script lang="ts">
-	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { Volume2, Settings2, Save } from 'lucide-svelte';
 	import { aiConfigStore } from '$lib/stores/aiConfig.svelte';
 
 	interface Props {
 		pubkey: string;
-		agentDef: NDKEvent | undefined;
 	}
 
 	let { pubkey }: Props = $props();

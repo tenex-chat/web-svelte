@@ -1,16 +1,19 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import type { NDKProject } from '$lib/events/NDKProject';
+	import { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
 	import type { Message } from '$lib/utils/messageProcessor';
+	import { ndk } from '$lib/ndk.svelte';
 	import MessageList from './MessageList.svelte';
 	import ChatInput from './ChatInput.svelte';
-	import CopyThreadMenu from './CopyThreadMenu.svelte';
+	import ChatHeader from './ChatHeader.svelte';
 
 	interface Props {
 		project?: NDKProject;
+		projectId?: string;
 		rootEvent?: NDKEvent | null;
+		threadId?: string;
 		onlineAgents?: ProjectAgent[];
 		onThreadCreated?: (thread: NDKEvent) => void;
 		viewMode?: ThreadViewMode;
@@ -18,7 +21,34 @@
 		messages?: Message[];
 	}
 
-	let { project, rootEvent = null, onlineAgents = [], onThreadCreated, viewMode = $bindable('threaded'), hideHeader = false, messages = $bindable([]) }: Props = $props();
+	let { project = $bindable(), projectId, rootEvent = $bindable(null), threadId, onlineAgents = [], onThreadCreated, viewMode = $bindable('threaded'), hideHeader = false, messages = $bindable([]) }: Props = $props();
+
+	// Fetch project if projectId provided but project not available
+	$effect(() => {
+		if (projectId && !project) {
+			ndk
+				.fetchEvent({
+					kinds: [31933],
+					'#d': [projectId]
+				})
+				.then((event) => {
+					if (event) {
+						project = new NDKProject(ndk, event.rawEvent());
+					}
+				});
+		}
+	});
+
+	// Fetch thread if threadId provided but rootEvent not available
+	$effect(() => {
+		if (threadId && !rootEvent) {
+			ndk.fetchEvent(threadId).then((event) => {
+				if (event) {
+					rootEvent = event;
+				}
+			});
+		}
+	});
 
 	let localRootEvent = $state<NDKEvent | null>(rootEvent);
 	let replyToEvent = $state<NDKEvent | null>(null);
@@ -79,19 +109,7 @@
 <div class="flex flex-col h-full">
 	{#if localRootEvent}
 		{#if !hideHeader}
-			<!-- Chat Header -->
-			<div class="border-b border-border px-4 py-3 bg-card">
-				<div class="flex items-center justify-between">
-					<span class="text-sm font-medium text-foreground">
-						{localRootEvent.tagValue('title') || 'Conversation'}
-					</span>
-
-					<div class="flex items-center gap-2">
-						<!-- Copy Thread Menu -->
-						<CopyThreadMenu {messages} rootEvent={localRootEvent} />
-					</div>
-				</div>
-			</div>
+			<ChatHeader rootEvent={localRootEvent} {messages} />
 		{/if}
 
 		<!-- Messages -->

@@ -3,7 +3,6 @@
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { User } from '$lib/ndk/ui/user';
 	import { ndk } from '$lib/ndk.svelte';
-	import { createProfileFetcher } from '$lib/ndk/builders/profile';
 	import { formatRelativeTime } from '$lib/utils/time';
 
 	interface Props {
@@ -13,14 +12,6 @@
 
 	let { event, onclick }: Props = $props();
 
-	// Fetch author profile using NDK's built-in utility
-	const profileFetcher = createProfileFetcher(() => ({ user: event.pubkey }), ndk);
-	const profile = $derived(profileFetcher.profile);
-
-	// Get author display name (fallback to truncated pubkey)
-	const authorName = $derived(
-		profile?.name || profile?.displayName || profile?.display_name || event.pubkey.slice(0, 8) + '...' + event.pubkey.slice(-4)
-	);
 
 	// Determine event type and rendering details based on actual kind
 	const eventDetails = $derived.by(() => {
@@ -95,7 +86,7 @@
 		<div class="flex-1 min-w-0">
 			<!-- Header -->
 			<div class="flex items-center gap-2 mb-1">
-				<span class="font-medium text-sm text-foreground">{authorName}</span>
+				<span class="font-medium text-sm text-foreground"><User.Name /></span>
 				{#if eventDetails}
 					{@const Icon = eventDetails.icon}
 					<div class="flex items-center gap-1.5 text-xs text-muted-foreground">

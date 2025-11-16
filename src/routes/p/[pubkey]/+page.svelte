@@ -187,7 +187,7 @@
 
 	<!-- Tabs Content -->
 	<div class="flex-1 overflow-hidden">
-		<AgentProfileTabs {pubkey} {agentDef} {agentMetadata} {profile} />
+		<AgentProfileTabs {pubkey} />
 	</div>
 </div>
 

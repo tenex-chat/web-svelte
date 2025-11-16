@@ -5,11 +5,12 @@
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
-	import { createProfileFetcher } from '$lib/ndk/builders/profile';
+	import { User } from '$lib/ndk/ui/user';
 	import AgentConfigDialog from './AgentConfigDialog.svelte';
 	import AgentSelector from './AgentSelector.svelte';
 	import NudgeSelector from './NudgeSelector.svelte';
 	import ActiveAgents from './ActiveAgents.svelte';
+	import NudgeAutocompleteItem from './NudgeAutocompleteItem.svelte';
 	import { Maximize2, Minimize2, Phone, X } from 'lucide-svelte';
 	import { nudgeStore } from '$lib/stores/nudges.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
@@ -153,16 +154,6 @@
 		return selectedAgent || defaultAgent;
 	});
 
-	// Fetch profile for reply-to user
-	const replyToProfileFetcher = createProfileFetcher(
-		() => ({ user: replyToEvent?.pubkey || null }),
-		ndk
-	);
-	const replyToProfile = $derived(replyToProfileFetcher.profile);
-
-	const replyToAuthorName = $derived(
-		replyToProfile?.displayName || replyToProfile?.name || replyToEvent?.pubkey.slice(0, 8)
-	);
 
 	// Automatically sync model with the selected/current agent from project status
 	const currentAgentModel = $derived.by(() => {
@@ -587,7 +578,9 @@
 				/>
 			</svg>
 			<div class="flex-1 min-w-0">
-				<div class="text-xs text-primary font-medium">Replying to {replyToAuthorName}</div>
+				<User.Root {ndk} pubkey={replyToEvent.pubkey}>
+					<div class="text-xs text-primary font-medium">Replying to <User.Name /></div>
+				</User.Root>
 				<div class="text-xs text-blue-800 truncate">
 					{replyToEvent.content.slice(0, 100)}{replyToEvent.content.length > 100 ? '...' : ''}
 				</div>
@@ -636,28 +629,13 @@
 					>
 						<div class="max-h-64 overflow-y-auto">
 							{#each filteredNudges as nudge, index (nudge.id)}
-								{@const title = nudge.tagValue('title') || 'Untitled'}
-								{@const description = nudge.tagValue('description') || ''}
-								{@const isActive = selectedNudges.includes(nudge.id)}
-								<button
-									type="button"
+								<NudgeAutocompleteItem
+									{nudge}
+									isActive={selectedNudges.includes(nudge.id)}
+									isSelected={index === selectedNudgeIndex}
 									onclick={() => selectNudge(nudge)}
 									onmouseenter={() => (selectedNudgeIndex = index)}
-									class="w-full px-3 py-2 text-left hover:bg-accent transition-colors {index ===
-									selectedNudgeIndex
-										? 'bg-accent'
-										: ''}"
-								>
-									<div class="flex items-center gap-2">
-										<div class="font-medium text-sm text-foreground">/{title}</div>
-										{#if isActive}
-											<span class="text-xs px-1.5 py-0.5 bg-primary/20 text-primary rounded">Active</span>
-										{/if}
-									</div>
-									{#if description}
-										<div class="text-xs text-muted-foreground mt-0.5">{description}</div>
-									{/if}
-								</button>
+								/>
 							{/each}
 						</div>
 						<div class="px-3 py-1 bg-muted/50 backdrop-blur-sm border-t border-border/50 text-xs text-muted-foreground">

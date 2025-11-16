@@ -1,14 +1,74 @@
 <script lang="ts">
-	import type { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { ndk } from '$lib/ndk.svelte';
+	import { NDKKind } from '$lib/kinds';
 	import { Sparkles } from 'lucide-svelte';
+	import { createProfileFetcher } from '$lib/ndk/builders/profile';
 
 	interface Props {
-		agentDef: NDKEvent | undefined;
-		agentMetadata: any;
-		profile: any;
+		pubkey: string;
 	}
 
-	let { agentDef, agentMetadata, profile }: Props = $props();
+	let { pubkey }: Props = $props();
+
+	// Subscribe to AgentDefinition (kind 4199)
+	const agentDefSubscription = ndk.$subscribe(() =>
+		pubkey
+			? {
+					filters: [
+						{
+							kinds: [NDKKind.AgentDefinition],
+							authors: [pubkey],
+							limit: 1
+						}
+					],
+					closeOnEose: false
+				}
+			: undefined
+	);
+
+	const agentDef = $derived(agentDefSubscription.events?.[0]);
+
+	// Subscribe to kind:0 metadata
+	const metadataSubscription = ndk.$subscribe(() =>
+		pubkey
+			? {
+					filters: [
+						{
+							kinds: [NDKKind.Metadata],
+							authors: [pubkey],
+							limit: 1
+						}
+					],
+					closeOnEose: false
+				}
+			: undefined
+	);
+
+	const metadataEvent = $derived(metadataSubscription.events?.[0]);
+
+	// Parse agent metadata from kind:0 event
+	const agentMetadata = $derived.by(() => {
+		if (!metadataEvent) return null;
+		try {
+			const content = JSON.parse(metadataEvent.content);
+			// Check if it has agent-specific fields
+			if (
+				content.role ||
+				content.instructions ||
+				content.systemPrompt ||
+				content.useCriteria
+			) {
+				return content;
+			}
+		} catch {
+			return null;
+		}
+		return null;
+	});
+
+	// Fetch user profile
+	const profileFetcher = createProfileFetcher(() => ({ user: pubkey }), ndk);
+	const profile = $derived(profileFetcher.profile);
 
 	const description = $derived(
 		agentDef?.content || agentMetadata?.about || profile?.about || 'No description provided'
@@ -22,7 +82,7 @@
 
 	const useCriteria = $derived.by(() => {
 		if (agentDef) {
-			return agentDef.tags.filter((t) => t[0] === 'use-criteria').map((t) => t[1]);
+			return agentDef.tags.filter((t: string[]) => t[0] === 'use-criteria').map((t: string[]) => t[1]);
 		}
 		return agentMetadata?.useCriteria || [];
 	});

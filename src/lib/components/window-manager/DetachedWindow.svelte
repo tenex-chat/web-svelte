@@ -7,9 +7,6 @@
 	import CallView from '../call/CallView.svelte';
 	import AgentProfileTabs from '../agents/AgentProfileTabs.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
-	import { ndk } from '$lib/ndk.svelte';
-	import { NDKKind } from '$lib/kinds';
-	import { createProfileFetcher } from '$lib/ndk/builders/profile';
 	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
 	import type { Message } from '$lib/utils/messageProcessor';
 	import CopyThreadMenu from '../chat/CopyThreadMenu.svelte';
@@ -27,62 +24,8 @@
 		window.project ? projectStatusStore.getOnlineAgents(window.project.tagId()) : []
 	);
 
-	// For agent windows, fetch agent definition and metadata
+	// For agent windows, get agent pubkey
 	const agentPubkey = $derived(window.type === 'agent' ? window.data?.agentPubkey : null);
-
-	const agentDefSubscription = $derived(
-		agentPubkey
-			? ndk.$subscribe(() => ({
-					filters: [
-						{
-							kinds: [NDKKind.AgentDefinition],
-							authors: [agentPubkey],
-							limit: 1
-						}
-					],
-					closeOnEose: false
-				}))
-			: null
-	);
-
-	const metadataSubscription = $derived(
-		agentPubkey
-			? ndk.$subscribe(() => ({
-					filters: [
-						{
-							kinds: [NDKKind.Metadata],
-							authors: [agentPubkey],
-							limit: 1
-						}
-					],
-					closeOnEose: false
-				}))
-			: null
-	);
-
-	const agentDef = $derived(agentDefSubscription?.events?.[0]);
-	const metadataEvent = $derived(metadataSubscription?.events?.[0]);
-
-	const profileFetcher = createProfileFetcher(() => ({ user: agentPubkey }), ndk);
-	const profile = $derived(profileFetcher.profile);
-
-	const agentMetadata = $derived.by(() => {
-		if (!metadataEvent) return null;
-		try {
-			const content = JSON.parse(metadataEvent.content);
-			if (
-				content.role ||
-				content.instructions ||
-				content.systemPrompt ||
-				content.useCriteria
-			) {
-				return content;
-			}
-		} catch {
-			return null;
-		}
-		return null;
-	});
 
 	let isDragging = $state(false);
 	let isResizing = $state(false);
@@ -307,7 +250,7 @@
 				isEmbedded={true}
 			/>
 		{:else if window.type === 'agent' && agentPubkey}
-			<AgentProfileTabs pubkey={agentPubkey} {agentDef} {agentMetadata} {profile} />
+			<AgentProfileTabs pubkey={agentPubkey} />
 		{:else}
 			<div class="p-4">
 				<p class="text-sm text-muted-foreground">Unknown window type: {window.type}</p>

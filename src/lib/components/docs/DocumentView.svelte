@@ -5,7 +5,6 @@
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import { User } from '$lib/ndk/ui/user';
-	import { createProfileFetcher } from '$lib/ndk/builders/profile';
 	import { Clock, Hash, ArrowLeft, Copy } from 'lucide-svelte';
 	import { formatRelativeTime } from '$lib/utils/time';
 
@@ -17,15 +16,6 @@
 
 	let { document, project, onBack }: Props = $props();
 
-	// Fetch author profile
-	const profileFetcher = createProfileFetcher(() => ({ user: document.pubkey }), ndk);
-	const profile = $derived(profileFetcher.profile);
-
-	const authorName = $derived(
-		profile?.displayName ||
-			profile?.name ||
-			document.pubkey.slice(0, 8) + '...' + document.pubkey.slice(-4)
-	);
 
 	// Get document metadata
 	const title = $derived(document.tagValue('title') || 'Untitled');
@@ -110,7 +100,7 @@
 					<div class="flex items-center gap-3 mb-3">
 						<User.Avatar class="w-10 h-10" />
 						<div>
-							<div class="font-medium text-sm">{authorName}</div>
+							<div class="font-medium text-sm"><User.Name /></div>
 							<div class="flex items-center gap-2 text-xs text-muted-foreground">
 								<Clock class="h-3 w-3" />
 								<span>{formatRelativeTime(document.created_at || 0)} · {readingTime}</span>

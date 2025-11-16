@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { cn } from '$lib/utils/cn';
 	import AgentFeedTab from './AgentFeedTab.svelte';
 	import AgentDetailsTab from './AgentDetailsTab.svelte';
@@ -8,12 +7,9 @@
 
 	interface Props {
 		pubkey: string;
-		agentDef: NDKEvent | undefined;
-		agentMetadata: any;
-		profile: any;
 	}
 
-	let { pubkey, agentDef, agentMetadata, profile }: Props = $props();
+	let { pubkey }: Props = $props();
 
 	type TabType = 'feed' | 'details' | 'lessons' | 'settings';
 
@@ -60,11 +56,11 @@
 			{#if activeTab === 'feed'}
 				<AgentFeedTab {pubkey} />
 			{:else if activeTab === 'details'}
-				<AgentDetailsTab {agentDef} {agentMetadata} {profile} />
+				<AgentDetailsTab {pubkey} />
 			{:else if activeTab === 'lessons'}
 				<AgentLessonsTab {pubkey} />
 			{:else if activeTab === 'settings'}
-				<AgentSettingsTab {pubkey} {agentDef} />
+				<AgentSettingsTab {pubkey} />
 			{/if}
 		</div>
 	</div>
