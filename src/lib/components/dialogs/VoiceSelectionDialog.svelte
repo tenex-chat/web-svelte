@@ -133,7 +133,7 @@
 				return;
 			}
 
-			const voices = await voiceDiscovery.fetchVoices(provider, apiKey);
+			const voices = await voiceDiscovery.fetchVoices(provider, apiKey || '');
 			availableVoices = voices;
 		} catch (error) {
 			console.error('Failed to fetch voices:', error);
@@ -158,7 +158,7 @@
 				? `Hi, I'm ${voice.name}${voice.description ? ` -- the ${voice.description}` : ''}`
 				: 'Hello, this is a preview of this voice.';
 
-			const audioBlob = await voiceDiscovery.previewVoice(provider, voiceId, previewText, apiKey);
+			const audioBlob = await voiceDiscovery.previewVoice(provider, voiceId, previewText, apiKey || '');
 
 			// Play the audio
 			const audioUrl = URL.createObjectURL(audioBlob);
@@ -234,7 +234,7 @@
 
 {#if open}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-overlay/60 backdrop-blur-sm"
 		onclick={handleClose}
 		onkeydown={handleKeydown}
 		role="presentation"
@@ -390,7 +390,7 @@
 						<div class="flex justify-end">
 							<button
 								onclick={clearFilters}
-								class="px-3 py-1 text-xs rounded-full bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all"
+								class="px-3 py-1 text-xs rounded-full bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-all"
 							>
 								Clear All Filters
 							</button>
@@ -407,8 +407,8 @@
 						<span class="ml-3 text-muted-foreground">Loading voices...</span>
 					</div>
 				{:else if fetchError}
-					<div class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-						<p class="text-sm text-red-800 dark:text-red-300">{fetchError}</p>
+					<div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+						<p class="text-sm text-red-800">{fetchError}</p>
 					</div>
 				{:else if filteredVoices().length > 0}
 					<div>
@@ -435,8 +435,8 @@
 									class={cn(
 										'group relative p-4 border rounded-lg transition-all cursor-pointer hover:shadow-md',
 										selectedVoices.includes(voice.id)
-											? 'bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500 dark:border-blue-400 ring-2 ring-blue-500/20'
-											: 'bg-card border-border hover:border-blue-300 dark:hover:border-blue-700 hover:bg-gradient-to-br hover:from-gray-50/50 hover:to-gray-100/50 dark:hover:from-zinc-800/50 dark:hover:to-zinc-700/50'
+											? 'bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500 ring-2 ring-blue-500/20'
+											: 'bg-card border-border hover:border-blue-300 hover:bg-gradient-to-br hover:from-gray-50/50 hover:to-gray-100/50 dark:hover:from-zinc-800/50 dark:hover:to-zinc-700/50'
 									)}
 								>
 									<!-- Selection Indicator -->
@@ -460,11 +460,11 @@
 													{#each Object.entries(voice.labels) as [key, value]}
 														<span class={cn(
 															'text-[10px] px-2 py-0.5 rounded-full font-medium',
-															key === 'gender' && 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
-															key === 'accent' && 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
-															key === 'age' && 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
-															key === 'useCase' && 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
-															!['gender', 'accent', 'age', 'useCase'].includes(key) && 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+															key === 'gender' && 'bg-blue-100 text-blue-700',
+															key === 'accent' && 'bg-purple-100 text-purple-700',
+															key === 'age' && 'bg-green-100 text-green-700',
+															key === 'useCase' && 'bg-orange-100 text-orange-700',
+															!['gender', 'accent', 'age', 'useCase'].includes(key) && 'bg-gray-100 text-gray-700'
 														)}>
 															{value}
 														</span>
@@ -504,7 +504,7 @@
 						<p class="text-muted-foreground">No voices match your filters</p>
 						<button
 							onclick={clearFilters}
-							class="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+							class="mt-2 text-sm text-blue-600 hover:underline"
 						>
 							Clear filters
 						</button>
@@ -513,7 +513,7 @@
 
 				<!-- Selected Voices (for multi-select) -->
 				{#if multiSelect && selectedVoices.length > 0}
-					<div class="mt-4 p-4 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
+					<div class="mt-4 p-4 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-lg border border-blue-200/50">
 						<h3 class="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
 							<svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
 								<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
@@ -523,11 +523,11 @@
 						<div class="flex flex-wrap gap-2">
 							{#each selectedVoices as voiceId (voiceId)}
 								{@const voice = availableVoices.find(v => v.id === voiceId)}
-								<div class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-800 border border-blue-300 dark:border-blue-700 rounded-full">
-									<span class="text-sm font-medium text-foreground">{voice?.name || voiceId}</span>
+								<div class="flex items-center gap-2 px-3 py-1.5 bg-accent border border-border rounded-full">
+									<span class="text-sm font-medium text-accent-foreground">{voice?.name || voiceId}</span>
 									<button
 										onclick={() => removeVoice(voiceId)}
-										class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+										class="text-destructive hover:text-destructive/80 transition-colors"
 										aria-label="Remove voice"
 									>
 										<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

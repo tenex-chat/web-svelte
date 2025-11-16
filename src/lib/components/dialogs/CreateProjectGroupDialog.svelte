@@ -122,7 +122,7 @@
 
 {#if open}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50"
 		onclick={handleClose}
 		onkeydown={handleKeydown}
 		role="presentation"
@@ -292,7 +292,7 @@
 			<!-- Delete Confirmation Overlay -->
 			{#if showDeleteConfirm}
 				<div
-					class="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center z-10"
+					class="absolute inset-0 bg-overlay/60 rounded-lg flex items-center justify-center z-10"
 					onclick={cancelDelete}
 				>
 					<div

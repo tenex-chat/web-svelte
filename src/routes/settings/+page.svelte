@@ -63,7 +63,7 @@
 							'px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2',
 							activeTab === tab.value
 								? 'border-blue-600 text-primary'
-								: 'border-transparent text-muted-foreground hover:text-foreground dark:hover:text-foreground hover:border-border dark:hover:border-gray-500'
+								: 'border-transparent text-muted-foreground hover:text-foreground dark:hover:text-foreground hover:border-border'
 						)}
 					>
 						{tab.label}

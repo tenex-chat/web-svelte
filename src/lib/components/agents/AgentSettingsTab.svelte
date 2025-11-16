@@ -97,7 +97,7 @@
 				<Volume2 class="w-5 h-5 text-foreground" />
 				<h3 class="font-semibold text-foreground">Voice Settings</h3>
 				{#if voiceId}
-					<span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded">
+					<span class="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded">
 						Custom
 					</span>
 				{/if}
@@ -177,7 +177,7 @@
 		<button
 			onclick={handleSaveSettings}
 			disabled={isSaving}
-			class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+			class="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 		>
 			<Save class="w-4 h-4 inline-block mr-2" />
 			{isSaving ? 'Saving...' : 'Save Settings'}

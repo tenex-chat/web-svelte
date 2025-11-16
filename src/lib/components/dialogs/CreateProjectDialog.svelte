@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
+	import { NDKKind } from '$lib/kinds';
 	import { NDKProject } from '$lib/events/NDKProject';
 	import { NDKAgentDefinition } from '$lib/events/NDKAgentDefinition';
 	import { NDKAgentDefinitionPack } from '$lib/events/NDKAgentDefinitionPack';
@@ -31,8 +32,8 @@
 	let creating = $state(false);
 
 	// Selected items
-	let selectedAgents: SvelteSet<string> = new SvelteSet();
-	let selectedTools: SvelteSet<string> = new SvelteSet();
+	let selectedAgents = $state(new SvelteSet<string>());
+	let selectedTools = $state(new SvelteSet<string>());
 
 	// Available items
 	let availableAgents = $state<NDKAgentDefinition[]>([]);
@@ -85,7 +86,7 @@
 		isLoadingAgents = true;
 		try {
 			const events = await ndk.fetchEvents({
-				kinds: [NDKAgentDefinition.kind],
+				kinds: [NDKKind.AgentDefinition as number],
 				limit: 100
 			});
 
@@ -147,7 +148,7 @@
 		isLoadingTools = true;
 		try {
 			const events = await ndk.fetchEvents({
-				kinds: [NDKMCPTool.kind],
+				kinds: [NDKKind.MCPTool as number],
 				limit: 100
 			});
 
@@ -170,7 +171,7 @@
 		isLoadingPacks = true;
 		try {
 			const events = await ndk.fetchEvents({
-				kinds: [34199],
+				kinds: [34199 as number],
 				limit: 50
 			});
 
@@ -340,17 +341,22 @@
 
 {#if open}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50"
 		onclick={handleClose}
 		onkeydown={handleKeydown}
 		role="presentation"
-		tabindex="0"
 	>
 		<div
 			class="relative w-full max-w-2xl max-h-[90vh] bg-card rounded-lg shadow-xl flex flex-col"
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.stopPropagation();
+				}
+			}}
 			role="dialog"
 			aria-modal="true"
+			tabindex="-1"
 		>
 			<!-- Close Button -->
 			<button

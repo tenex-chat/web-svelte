@@ -8,9 +8,13 @@
 
 	const toolId = $derived($page.params.id);
 
-	const toolEventSub = ndk.$subscribe(
-		() => (toolId ? { ids: [toolId], kinds: [NDKMCPTool.kind] } : undefined),
-		{ closeOnEose: true }
+	const toolEventSub = ndk.$subscribe(() =>
+		toolId
+			? {
+					filters: [{ ids: [toolId], kinds: [NDKMCPTool.kind] }],
+					closeOnEose: true
+				}
+			: undefined
 	);
 
 	const tool = $derived.by(() => {

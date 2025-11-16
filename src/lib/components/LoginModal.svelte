@@ -85,7 +85,7 @@
 
 {#if loginModal.show}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50 backdrop-blur-sm p-4"
 		onclick={() => loginModal.close()}
 		onkeydown={(e) => {
 			if (e.key === 'Escape') loginModal.close();
@@ -95,6 +95,11 @@
 		<div
 			class="bg-card rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.stopPropagation();
+				}
+			}}
 			role="dialog"
 			aria-modal="true"
 			tabindex="0"
@@ -216,7 +221,7 @@
 						<button
 							onclick={loginWithNip07}
 							disabled={isLoggingIn || !hasNip07}
-							class="w-full py-3 bg-primary hover:bg-primary/90 disabled:bg-secondary disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
+							class="w-full py-3 bg-primary hover:bg-primary/90 disabled:bg-secondary disabled:cursor-not-allowed text-primary-foreground rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
 						>
 							{#if isLoggingIn}
 								<svg
@@ -289,7 +294,7 @@
 						<button
 							onclick={loginWithNsec}
 							disabled={isLoggingIn || !nsecInput.trim()}
-							class="w-full py-3 bg-primary hover:bg-primary/90 disabled:bg-secondary disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
+							class="w-full py-3 bg-primary hover:bg-primary/90 disabled:bg-secondary disabled:cursor-not-allowed text-primary-foreground rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
 						>
 							{#if isLoggingIn}
 								<svg

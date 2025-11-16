@@ -17800,7 +17800,7 @@ https://github.com/browserify/crypto-browserify`);
 
 // ../node_modules/sql.js/dist/sql-wasm.js
 var require_sql_wasm = __commonJS((exports, module) => {
-  var __dirname = "/Users/pablofernandez/projects/NDK-nhlteu/node_modules/sql.js/dist";
+  var __dirname = "/Users/pablofernandez/tenex/NDK-nhlteu/node_modules/sql.js/dist";
   var initSqlJsPromise = undefined;
   var initSqlJs = function(moduleConfig) {
     if (initSqlJsPromise) {
@@ -21756,8 +21756,8 @@ var require_lib2 = __commonJS((exports) => {
   function chain2(...args) {
     const wrap = (a, b) => (c) => a(b(c));
     const encode = Array.from(args).reverse().reduce((acc, i3) => acc ? wrap(acc, i3.encode) : i3.encode, undefined);
-    const decode3 = args.reduce((acc, i3) => acc ? wrap(acc, i3.decode) : i3.decode, undefined);
-    return { encode, decode: decode3 };
+    const decode2 = args.reduce((acc, i3) => acc ? wrap(acc, i3.decode) : i3.decode, undefined);
+    return { encode, decode: decode2 };
   }
   function alphabet2(alphabet3) {
     return {
@@ -22078,7 +22078,7 @@ var require_lib2 = __commonJS((exports) => {
       prefix = prefix.toLowerCase();
       return `${prefix}1${BECH_ALPHABET2.encode(words)}${bechChecksum2(prefix, words, ENCODING_CONST)}`;
     }
-    function decode3(str, limit2 = 90) {
+    function decode2(str, limit2 = 90) {
       if (typeof str !== "string")
         throw new Error(`bech32.decode input should be string, not ${typeof str}`);
       if (str.length < 8 || limit2 !== false && str.length > limit2)
@@ -22100,12 +22100,12 @@ var require_lib2 = __commonJS((exports) => {
         throw new Error(`Invalid checksum in ${str}: expected "${sum}"`);
       return { prefix, words };
     }
-    const decodeUnsafe = unsafeWrapper2(decode3);
+    const decodeUnsafe = unsafeWrapper2(decode2);
     function decodeToBytes(str) {
-      const { prefix, words } = decode3(str, false);
+      const { prefix, words } = decode2(str, false);
       return { prefix, words, bytes: fromWords(words) };
     }
-    return { encode, decode: decode3, decodeToBytes, decodeUnsafe, fromWords, fromWordsUnsafe, toWords };
+    return { encode, decode: decode2, decodeToBytes, decodeUnsafe, fromWords, fromWordsUnsafe, toWords };
   }
   exports.bech32 = genBech322("bech32");
   exports.bech32m = genBech322("bech32m");
@@ -22315,7 +22315,7 @@ var require_bolt11 = __commonJS((exports, module) => {
     }
     return outputString ? millisatoshisBN.toString() : millisatoshisBN;
   }
-  function decode3(paymentRequest, network) {
+  function decode2(paymentRequest, network) {
     if (typeof paymentRequest !== "string")
       throw new Error("Lightning Payment Request must be string");
     if (paymentRequest.slice(0, 2).toLowerCase() !== "ln")
@@ -22453,7 +22453,7 @@ var require_bolt11 = __commonJS((exports, module) => {
     }
   }
   module.exports = {
-    decode: decode3,
+    decode: decode2,
     hrpToMillisat
   };
 });
@@ -22519,23 +22519,20 @@ var SCHEMA = {
             content TEXT,
             sig TEXT,
             raw TEXT,
-            deleted INTEGER DEFAULT 0
+            deleted INTEGER DEFAULT 0,
+            relay_url TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_events_pubkey ON events(pubkey);
         CREATE INDEX IF NOT EXISTS idx_events_kind ON events(kind);
         CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at);
+        CREATE INDEX IF NOT EXISTS idx_events_kind_created_at ON events(kind, created_at);
+        CREATE INDEX IF NOT EXISTS idx_events_pubkey_created_at ON events(pubkey, created_at);
     `,
   profiles: `
         CREATE TABLE IF NOT EXISTS profiles (
             pubkey TEXT PRIMARY KEY,
             profile TEXT,
             updated_at INTEGER
-        );
-    `,
-  nutzap_monitor_state: `
-        CREATE TABLE IF NOT EXISTS nutzap_monitor_state (
-            id TEXT PRIMARY KEY,
-            state TEXT
         );
     `,
   decrypted_events: `
@@ -22561,6 +22558,7 @@ var SCHEMA = {
         );
         CREATE INDEX IF NOT EXISTS idx_event_tags_event_id ON event_tags(event_id);
         CREATE INDEX IF NOT EXISTS idx_event_tags_tag ON event_tags(tag);
+        CREATE INDEX IF NOT EXISTS idx_event_tags_tag_value ON event_tags(tag, value);
     `,
   cache_data: `
         CREATE TABLE IF NOT EXISTS cache_data (
@@ -22572,15 +22570,6 @@ var SCHEMA = {
         );
         CREATE INDEX IF NOT EXISTS idx_cache_data_namespace ON cache_data(namespace);
     `,
-  event_relays: `
-        CREATE TABLE IF NOT EXISTS event_relays (
-            event_id TEXT NOT NULL,
-            relay_url TEXT NOT NULL,
-            seen_at INTEGER NOT NULL,
-            PRIMARY KEY (event_id, relay_url)
-        );
-        CREATE INDEX IF NOT EXISTS idx_event_relays_event_id ON event_relays(event_id);
-    `,
   nip05: `
         CREATE TABLE IF NOT EXISTS nip05 (
             nip05 TEXT PRIMARY KEY,
@@ -22591,7 +22580,7 @@ var SCHEMA = {
 };
 
 // src/db/migrations.ts
-var CURRENT_VERSION = 2;
+var CURRENT_VERSION = 5;
 function getCurrentVersion(db) {
   try {
     const result = db.exec("SELECT version FROM schema_version LIMIT 1");
@@ -22611,17 +22600,40 @@ async function runMigrations(db) {
   try {
     db.exec(SCHEMA.events);
     db.exec(SCHEMA.profiles);
-    db.exec(SCHEMA.nutzap_monitor_state);
     db.exec(SCHEMA.decrypted_events);
     db.exec(SCHEMA.unpublished_events);
     db.exec(SCHEMA.event_tags);
     db.exec(SCHEMA.cache_data);
-    db.exec(SCHEMA.event_relays);
     if (currentVersion < 1) {
       db.exec(SCHEMA.nip05);
     }
     if (currentVersion < 2) {
       db.exec(SCHEMA.nip05);
+    }
+    if (currentVersion < 3) {
+      try {
+        db.exec("ALTER TABLE events ADD COLUMN relay_url TEXT");
+      } catch (e) {}
+      try {
+        db.exec("DROP TABLE IF EXISTS event_relays");
+        db.exec("DROP INDEX IF EXISTS idx_event_relays_event_id");
+      } catch (e) {}
+    }
+    if (currentVersion < 4) {
+      db.exec("CREATE INDEX IF NOT EXISTS idx_events_kind_created_at ON events(kind, created_at)");
+      db.exec("CREATE INDEX IF NOT EXISTS idx_events_pubkey_created_at ON events(pubkey, created_at)");
+      db.exec("CREATE INDEX IF NOT EXISTS idx_event_tags_tag_value ON event_tags(tag, value)");
+    }
+    if (currentVersion < 5) {
+      try {
+        const tableInfo = db.exec("PRAGMA table_info(events)");
+        const columns = tableInfo[0]?.values?.map((row) => row[1]) || [];
+        if (!columns.includes("raw")) {
+          db.exec("ALTER TABLE events ADD COLUMN raw TEXT");
+        }
+      } catch (e) {
+        console.error("[NDK Cache] Failed to add raw column:", e);
+      }
     }
     setVersion(db, CURRENT_VERSION);
     try {
@@ -22636,40 +22648,6 @@ async function runMigrations(db) {
     console.error("[NDK Cache] Migration failed:", error);
     throw error;
   }
-}
-
-// src/functions/getCacheStats.ts
-function getCacheStatsSync(db) {
-  const eventsByKindResult = db.exec(`
-        SELECT kind, COUNT(*) as count
-        FROM events
-        WHERE deleted = 0
-        GROUP BY kind
-        ORDER BY kind
-    `);
-  const eventsByKind = {};
-  if (eventsByKindResult[0]) {
-    for (const row of eventsByKindResult[0].values) {
-      eventsByKind[row[0]] = row[1];
-    }
-  }
-  const totalEventsResult = db.exec(`SELECT COUNT(*) FROM events WHERE deleted = 0`);
-  const totalProfilesResult = db.exec(`SELECT COUNT(*) FROM profiles`);
-  const totalEventTagsResult = db.exec(`SELECT COUNT(*) FROM event_tags`);
-  const totalDecryptedEventsResult = db.exec(`SELECT COUNT(*) FROM decrypted_events`);
-  const totalUnpublishedEventsResult = db.exec(`SELECT COUNT(*) FROM unpublished_events`);
-  const cacheDataResult = db.exec(`SELECT COUNT(*) FROM cache_data`);
-  const eventRelaysResult = db.exec(`SELECT COUNT(*) FROM event_relays`);
-  return {
-    eventsByKind,
-    totalEvents: totalEventsResult[0]?.values[0]?.[0] || 0,
-    totalProfiles: totalProfilesResult[0]?.values[0]?.[0] || 0,
-    totalEventTags: totalEventTagsResult[0]?.values[0]?.[0] || 0,
-    totalDecryptedEvents: totalDecryptedEventsResult[0]?.values[0]?.[0] || 0,
-    totalUnpublishedEvents: totalUnpublishedEventsResult[0]?.values[0]?.[0] || 0,
-    cacheData: cacheDataResult[0]?.values[0]?.[0] || 0,
-    eventRelays: eventRelaysResult[0]?.values[0]?.[0] || 0
-  };
 }
 
 // ../core/dist/index.mjs
@@ -26873,7 +26851,7 @@ function validateEvent(event) {
     if (!Array.isArray(tag))
       return false;
     for (let j = 0;j < tag.length; j++) {
-      if (typeof tag[j] === "object")
+      if (typeof tag[j] !== "string")
         return false;
     }
   }
@@ -26884,6 +26862,8 @@ __export2(utils_exports, {
   Queue: () => Queue,
   QueueNode: () => QueueNode,
   binarySearch: () => binarySearch,
+  bytesToHex: () => bytesToHex2,
+  hexToBytes: () => hexToBytes2,
   insertEventIntoAscendingList: () => insertEventIntoAscendingList,
   insertEventIntoDescendingList: () => insertEventIntoDescendingList,
   normalizeURL: () => normalizeURL,
@@ -26893,17 +26873,21 @@ __export2(utils_exports, {
 var utf8Decoder = new TextDecoder("utf-8");
 var utf8Encoder = new TextEncoder;
 function normalizeURL(url) {
-  if (url.indexOf("://") === -1)
-    url = "wss://" + url;
-  let p = new URL(url);
-  p.pathname = p.pathname.replace(/\/+/g, "/");
-  if (p.pathname.endsWith("/"))
-    p.pathname = p.pathname.slice(0, -1);
-  if (p.port === "80" && p.protocol === "ws:" || p.port === "443" && p.protocol === "wss:")
-    p.port = "";
-  p.searchParams.sort();
-  p.hash = "";
-  return p.toString();
+  try {
+    if (url.indexOf("://") === -1)
+      url = "wss://" + url;
+    let p = new URL(url);
+    p.pathname = p.pathname.replace(/\/+/g, "/");
+    if (p.pathname.endsWith("/"))
+      p.pathname = p.pathname.slice(0, -1);
+    if (p.port === "80" && p.protocol === "ws:" || p.port === "443" && p.protocol === "wss:")
+      p.port = "";
+    p.searchParams.sort();
+    p.hash = "";
+    return p.toString();
+  } catch (e) {
+    throw new Error(`Invalid URL: ${url}`);
+  }
 }
 function insertEventIntoDescendingList(sortedArray, event) {
   const [idx, found] = binarySearch(sortedArray, (b) => {
@@ -26990,6 +26974,9 @@ var Queue = class {
     }
     const target = this.first;
     this.first = target.next;
+    if (this.first) {
+      this.first.prev = null;
+    }
     return target.value;
   }
 };
@@ -27065,17 +27052,18 @@ __export2(kinds_exports, {
   CreateOrUpdateStall: () => CreateOrUpdateStall,
   Curationsets: () => Curationsets,
   Date: () => Date2,
+  DirectMessageRelaysList: () => DirectMessageRelaysList,
   DraftClassifiedListing: () => DraftClassifiedListing,
   DraftLong: () => DraftLong,
   Emojisets: () => Emojisets,
   EncryptedDirectMessage: () => EncryptedDirectMessage,
-  EncryptedDirectMessages: () => EncryptedDirectMessages,
   EventDeletion: () => EventDeletion,
   FileMetadata: () => FileMetadata,
   FileServerPreference: () => FileServerPreference,
   Followsets: () => Followsets,
   GenericRepost: () => GenericRepost,
   Genericlists: () => Genericlists,
+  GiftWrap: () => GiftWrap,
   HTTPAuth: () => HTTPAuth,
   Handlerinformation: () => Handlerinformation,
   Handlerrecommendation: () => Handlerrecommendation,
@@ -27098,6 +27086,7 @@ __export2(kinds_exports, {
   NostrConnect: () => NostrConnect,
   OpenTimestamps: () => OpenTimestamps,
   Pinlist: () => Pinlist,
+  PrivateDirectMessage: () => PrivateDirectMessage,
   ProblemTracker: () => ProblemTracker,
   ProfileBadges: () => ProfileBadges,
   PublicChatsList: () => PublicChatsList,
@@ -27108,6 +27097,7 @@ __export2(kinds_exports, {
   Report: () => Report,
   Reporting: () => Reporting,
   Repost: () => Repost,
+  Seal: () => Seal,
   SearchRelaysList: () => SearchRelaysList,
   ShortTextNote: () => ShortTextNote,
   Time: () => Time,
@@ -27117,8 +27107,9 @@ __export2(kinds_exports, {
   ZapGoal: () => ZapGoal,
   ZapRequest: () => ZapRequest,
   classifyKind: () => classifyKind,
+  isAddressableKind: () => isAddressableKind,
   isEphemeralKind: () => isEphemeralKind,
-  isParameterizedReplaceableKind: () => isParameterizedReplaceableKind,
+  isKind: () => isKind,
   isRegularKind: () => isRegularKind,
   isReplaceableKind: () => isReplaceableKind
 });
@@ -27131,7 +27122,7 @@ function isReplaceableKind(kind) {
 function isEphemeralKind(kind) {
   return 20000 <= kind && kind < 30000;
 }
-function isParameterizedReplaceableKind(kind) {
+function isAddressableKind(kind) {
   return 30000 <= kind && kind < 40000;
 }
 function classifyKind(kind) {
@@ -27141,20 +27132,25 @@ function classifyKind(kind) {
     return "replaceable";
   if (isEphemeralKind(kind))
     return "ephemeral";
-  if (isParameterizedReplaceableKind(kind))
+  if (isAddressableKind(kind))
     return "parameterized";
   return "unknown";
+}
+function isKind(event, kind) {
+  const kindAsArray = kind instanceof Array ? kind : [kind];
+  return validateEvent(event) && kindAsArray.includes(event.kind) || false;
 }
 var Metadata = 0;
 var ShortTextNote = 1;
 var RecommendRelay = 2;
 var Contacts = 3;
 var EncryptedDirectMessage = 4;
-var EncryptedDirectMessages = 4;
 var EventDeletion = 5;
 var Repost = 6;
 var Reaction = 7;
 var BadgeAward = 8;
+var Seal = 13;
+var PrivateDirectMessage = 14;
 var GenericRepost = 16;
 var ChannelCreation = 40;
 var ChannelMetadata = 41;
@@ -27162,6 +27158,7 @@ var ChannelMessage = 42;
 var ChannelHideMessage = 43;
 var ChannelMuteUser = 44;
 var OpenTimestamps = 1040;
+var GiftWrap = 1059;
 var FileMetadata = 1063;
 var LiveChatMessage = 1311;
 var ProblemTracker = 1971;
@@ -27186,6 +27183,7 @@ var BlockedRelaysList = 10006;
 var SearchRelaysList = 10007;
 var InterestsList = 10015;
 var UserEmojiList = 10030;
+var DirectMessageRelaysList = 10050;
 var FileServerPreference = 10096;
 var NWCWalletInfo = 13194;
 var LightningPubRPC = 21000;
@@ -27323,16 +27321,31 @@ async function yieldThread() {
     ch.port1.start();
   });
 }
+var SendingOnClosedConnection = class extends Error {
+  constructor(message, relay) {
+    super(`Tried to send message '${message} on a closed connection to ${relay}.`);
+    this.name = "SendingOnClosedConnection";
+  }
+};
 var AbstractRelay = class {
   url;
   _connected = false;
   onclose = null;
   onnotice = (msg) => console.debug(`NOTICE from ${this.url}: ${msg}`);
-  _onauth = null;
   baseEoseTimeout = 4400;
   connectionTimeout = 4400;
+  publishTimeout = 4400;
+  pingFrequency = 20000;
+  pingTimeout = 20000;
+  resubscribeBackoff = [1e4, 1e4, 1e4, 20000, 20000, 30000, 60000];
   openSubs = /* @__PURE__ */ new Map;
+  enablePing;
+  enableReconnect;
   connectionTimeoutHandle;
+  reconnectTimeoutHandle;
+  pingTimeoutHandle;
+  reconnectAttempts = 0;
+  closedIntentionally = false;
   connectionPromise;
   openCountRequests = /* @__PURE__ */ new Map;
   openEventPublishes = /* @__PURE__ */ new Map;
@@ -27340,6 +27353,7 @@ var AbstractRelay = class {
   incomingMessageQueue = new Queue;
   queueRunning = false;
   challenge;
+  authPromise;
   serial = 0;
   verifyEvent;
   _WebSocket;
@@ -27347,6 +27361,8 @@ var AbstractRelay = class {
     this.url = normalizeURL(url);
     this.verifyEvent = opts.verifyEvent;
     this._WebSocket = opts.websocketImplementation || WebSocket;
+    this.enablePing = opts.enablePing;
+    this.enableReconnect = opts.enableReconnect || false;
   }
   static async connect(url, opts) {
     const relay = new AbstractRelay(url, opts);
@@ -27370,10 +27386,36 @@ var AbstractRelay = class {
   get connected() {
     return this._connected;
   }
+  async reconnect() {
+    const backoff = this.resubscribeBackoff[Math.min(this.reconnectAttempts, this.resubscribeBackoff.length - 1)];
+    this.reconnectAttempts++;
+    this.reconnectTimeoutHandle = setTimeout(async () => {
+      try {
+        await this.connect();
+      } catch (err) {}
+    }, backoff);
+  }
+  handleHardClose(reason) {
+    if (this.pingTimeoutHandle) {
+      clearTimeout(this.pingTimeoutHandle);
+      this.pingTimeoutHandle = undefined;
+    }
+    this._connected = false;
+    this.connectionPromise = undefined;
+    const wasIntentional = this.closedIntentionally;
+    this.closedIntentionally = false;
+    this.onclose?.();
+    if (this.enableReconnect && !wasIntentional) {
+      this.reconnect();
+    } else {
+      this.closeAllSubscriptions(reason);
+    }
+  }
   async connect() {
     if (this.connectionPromise)
       return this.connectionPromise;
     this.challenge = undefined;
+    this.authPromise = undefined;
     this.connectionPromise = new Promise((resolve2, reject) => {
       this.connectionTimeoutHandle = setTimeout(() => {
         reject("connection timed out");
@@ -27384,34 +27426,75 @@ var AbstractRelay = class {
       try {
         this.ws = new this._WebSocket(this.url);
       } catch (err) {
+        clearTimeout(this.connectionTimeoutHandle);
         reject(err);
         return;
       }
       this.ws.onopen = () => {
+        if (this.reconnectTimeoutHandle) {
+          clearTimeout(this.reconnectTimeoutHandle);
+          this.reconnectTimeoutHandle = undefined;
+        }
         clearTimeout(this.connectionTimeoutHandle);
         this._connected = true;
+        this.reconnectAttempts = 0;
+        for (const sub of this.openSubs.values()) {
+          sub.eosed = false;
+          if (typeof this.enableReconnect === "function") {
+            sub.filters = this.enableReconnect(sub.filters);
+          }
+          sub.fire();
+        }
+        if (this.enablePing) {
+          this.pingpong();
+        }
         resolve2();
       };
       this.ws.onerror = (ev) => {
+        clearTimeout(this.connectionTimeoutHandle);
         reject(ev.message || "websocket error");
-        if (this._connected) {
-          this._connected = false;
-          this.connectionPromise = undefined;
-          this.onclose?.();
-          this.closeAllSubscriptions("relay connection errored");
-        }
+        this.handleHardClose("relay connection errored");
       };
-      this.ws.onclose = async () => {
-        if (this._connected) {
-          this._connected = false;
-          this.connectionPromise = undefined;
-          this.onclose?.();
-          this.closeAllSubscriptions("relay connection closed");
-        }
+      this.ws.onclose = (ev) => {
+        clearTimeout(this.connectionTimeoutHandle);
+        reject(ev.message || "websocket closed");
+        this.handleHardClose("relay connection closed");
       };
       this.ws.onmessage = this._onmessage.bind(this);
     });
     return this.connectionPromise;
+  }
+  waitForPingPong() {
+    return new Promise((resolve2) => {
+      this.ws.once("pong", () => resolve2(true));
+      this.ws.ping();
+    });
+  }
+  async waitForDummyReq() {
+    return new Promise((resolve2, _) => {
+      const sub = this.subscribe([{ ids: ["a".repeat(64)] }], {
+        oneose: () => {
+          sub.close();
+          resolve2(true);
+        },
+        eoseTimeout: this.pingTimeout + 1000
+      });
+    });
+  }
+  async pingpong() {
+    if (this.ws?.readyState === 1) {
+      const result = await Promise.any([
+        this.ws && this.ws.ping && this.ws.once ? this.waitForPingPong() : this.waitForDummyReq(),
+        new Promise((res) => setTimeout(() => res(false), this.pingTimeout))
+      ]);
+      if (result) {
+        this.pingTimeoutHandle = setTimeout(() => this.pingpong(), this.pingFrequency);
+      } else {
+        if (this.ws?.readyState === this._WebSocket.OPEN) {
+          this.ws?.close();
+        }
+      }
+    }
   }
   async runQueue() {
     this.queueRunning = true;
@@ -27474,11 +27557,14 @@ var AbstractRelay = class {
           const ok = data[2];
           const reason = data[3];
           const ep = this.openEventPublishes.get(id);
-          if (ok)
-            ep.resolve(reason);
-          else
-            ep.reject(new Error(reason));
-          this.openEventPublishes.delete(id);
+          if (ep) {
+            clearTimeout(ep.timeout);
+            if (ok)
+              ep.resolve(reason);
+            else
+              ep.reject(new Error(reason));
+            this.openEventPublishes.delete(id);
+          }
           return;
         }
         case "CLOSED": {
@@ -27495,7 +27581,6 @@ var AbstractRelay = class {
           return;
         case "AUTH": {
           this.challenge = data[1];
-          this._onauth?.(data[1]);
           return;
         }
       }
@@ -27505,24 +27590,45 @@ var AbstractRelay = class {
   }
   async send(message) {
     if (!this.connectionPromise)
-      throw new Error("sending on closed connection");
+      throw new SendingOnClosedConnection(message, this.url);
     this.connectionPromise.then(() => {
       this.ws?.send(message);
     });
   }
   async auth(signAuthEvent) {
-    if (!this.challenge)
+    const challenge2 = this.challenge;
+    if (!challenge2)
       throw new Error("can't perform auth, no challenge was received");
-    const evt = await signAuthEvent(makeAuthEvent(this.url, this.challenge));
-    const ret = new Promise((resolve2, reject) => {
-      this.openEventPublishes.set(evt.id, { resolve: resolve2, reject });
+    if (this.authPromise)
+      return this.authPromise;
+    this.authPromise = new Promise(async (resolve2, reject) => {
+      try {
+        let evt = await signAuthEvent(makeAuthEvent(this.url, challenge2));
+        let timeout = setTimeout(() => {
+          let ep = this.openEventPublishes.get(evt.id);
+          if (ep) {
+            ep.reject(new Error("auth timed out"));
+            this.openEventPublishes.delete(evt.id);
+          }
+        }, this.publishTimeout);
+        this.openEventPublishes.set(evt.id, { resolve: resolve2, reject, timeout });
+        this.send('["AUTH",' + JSON.stringify(evt) + "]");
+      } catch (err) {
+        console.warn("subscribe auth function failed:", err);
+      }
     });
-    this.send('["AUTH",' + JSON.stringify(evt) + "]");
-    return ret;
+    return this.authPromise;
   }
   async publish(event) {
     const ret = new Promise((resolve2, reject) => {
-      this.openEventPublishes.set(event.id, { resolve: resolve2, reject });
+      const timeout = setTimeout(() => {
+        const ep = this.openEventPublishes.get(event.id);
+        if (ep) {
+          ep.reject(new Error("publish timed out"));
+          this.openEventPublishes.delete(event.id);
+        }
+      }, this.publishTimeout);
+      this.openEventPublishes.set(event.id, { resolve: resolve2, reject, timeout });
     });
     this.send('["EVENT",' + JSON.stringify(event) + "]");
     return ret;
@@ -27543,15 +27649,27 @@ var AbstractRelay = class {
   }
   prepareSubscription(filters, params) {
     this.serial++;
-    const id = params.id || "sub:" + this.serial;
+    const id = params.id || (params.label ? params.label + ":" : "sub:") + this.serial;
     const subscription = new Subscription(this, id, filters, params);
     this.openSubs.set(id, subscription);
     return subscription;
   }
   close() {
+    this.closedIntentionally = true;
+    if (this.reconnectTimeoutHandle) {
+      clearTimeout(this.reconnectTimeoutHandle);
+      this.reconnectTimeoutHandle = undefined;
+    }
+    if (this.pingTimeoutHandle) {
+      clearTimeout(this.pingTimeoutHandle);
+      this.pingTimeoutHandle = undefined;
+    }
     this.closeAllSubscriptions("relay connection closed by us");
     this._connected = false;
-    this.ws?.close();
+    this.onclose?.();
+    if (this.ws?.readyState === this._WebSocket.OPEN) {
+      this.ws?.close();
+    }
   }
   _onmessage(ev) {
     this.incomingMessageQueue.enqueue(ev.data);
@@ -27599,7 +27717,13 @@ var Subscription = class {
   }
   close(reason = "closed by caller") {
     if (!this.closed && this.relay.connected) {
-      this.relay.send('["CLOSE",' + JSON.stringify(this.id) + "]");
+      try {
+        this.relay.send('["CLOSE",' + JSON.stringify(this.id) + "]");
+      } catch (err) {
+        if (err instanceof SendingOnClosedConnection) {} else {
+          throw err;
+        }
+      }
       this.closed = true;
     }
     this.relay.openSubs.delete(this.id);
@@ -27618,16 +27742,26 @@ var nip19_exports = {};
 __export2(nip19_exports, {
   BECH32_REGEX: () => BECH32_REGEX,
   Bech32MaxSize: () => Bech32MaxSize,
+  NostrTypeGuard: () => NostrTypeGuard,
   decode: () => decode,
+  decodeNostrURI: () => decodeNostrURI,
   encodeBytes: () => encodeBytes,
   naddrEncode: () => naddrEncode,
   neventEncode: () => neventEncode,
   noteEncode: () => noteEncode,
   nprofileEncode: () => nprofileEncode,
   npubEncode: () => npubEncode,
-  nrelayEncode: () => nrelayEncode,
   nsecEncode: () => nsecEncode
 });
+var NostrTypeGuard = {
+  isNProfile: (value) => /^nprofile1[a-z\d]+$/.test(value || ""),
+  isNEvent: (value) => /^nevent1[a-z\d]+$/.test(value || ""),
+  isNAddr: (value) => /^naddr1[a-z\d]+$/.test(value || ""),
+  isNSec: (value) => /^nsec1[a-z\d]{58}$/.test(value || ""),
+  isNPub: (value) => /^npub1[a-z\d]{58}$/.test(value || ""),
+  isNote: (value) => /^note1[a-z\d]+$/.test(value || ""),
+  isNcryptsec: (value) => /^ncryptsec1[a-z\d]+$/.test(value || "")
+};
 var Bech32MaxSize = 5000;
 var BECH32_REGEX = /[\x21-\x7E]{1,83}1[023456789acdefghjklmnpqrstuvwxyz]{6,}/;
 function integerToUint8Array(number4) {
@@ -27638,8 +27772,17 @@ function integerToUint8Array(number4) {
   uint8Array[3] = number4 & 255;
   return uint8Array;
 }
-function decode(nip19) {
-  let { prefix, words } = bech32.decode(nip19, Bech32MaxSize);
+function decodeNostrURI(nip19code) {
+  try {
+    if (nip19code.startsWith("nostr:"))
+      nip19code = nip19code.substring(6);
+    return decode(nip19code);
+  } catch (_err) {
+    return { type: "invalid", data: null };
+  }
+}
+function decode(code2) {
+  let { prefix, words } = bech32.decode(code2, Bech32MaxSize);
   let data = new Uint8Array(bech32.fromWords(words));
   switch (prefix) {
     case "nprofile": {
@@ -27696,15 +27839,6 @@ function decode(nip19) {
           kind: parseInt(bytesToHex2(tlv[3][0]), 16),
           relays: tlv[1] ? tlv[1].map((d) => utf8Decoder.decode(d)) : []
         }
-      };
-    }
-    case "nrelay": {
-      let tlv = parseTLV(data);
-      if (!tlv[0]?.[0])
-        throw new Error("missing TLV 0 for nrelay");
-      return {
-        type: "nrelay",
-        data: utf8Decoder.decode(tlv[0][0])
       };
     }
     case "nsec":
@@ -27778,12 +27912,6 @@ function naddrEncode(addr) {
   });
   return encodeBech32("naddr", data);
 }
-function nrelayEncode(url) {
-  let data = encodeTLV({
-    0: [utf8Encoder.encode(url)]
-  });
-  return encodeBech32("nrelay", data);
-}
 function encodeTLV(tlv) {
   let entries = [];
   Object.entries(tlv).reverse().forEach(([t, vs]) => {
@@ -27802,7 +27930,7 @@ __export2(nip04_exports, {
   decrypt: () => decrypt2,
   encrypt: () => encrypt2
 });
-async function encrypt2(secretKey, pubkey, text) {
+function encrypt2(secretKey, pubkey, text) {
   const privkey = secretKey instanceof Uint8Array ? bytesToHex2(secretKey) : secretKey;
   const key = secp256k1.getSharedSecret(privkey, "02" + pubkey);
   const normalizedKey = getNormalizedX(key);
@@ -27813,7 +27941,7 @@ async function encrypt2(secretKey, pubkey, text) {
   let ivb64 = base64.encode(new Uint8Array(iv.buffer));
   return `${ctb64}?iv=${ivb64}`;
 }
-async function decrypt2(secretKey, pubkey, data) {
+function decrypt2(secretKey, pubkey, data) {
   const privkey = secretKey instanceof Uint8Array ? bytesToHex2(secretKey) : secretKey;
   let [ctb64, ivb64] = data.split("?iv=");
   let key = secp256k1.getSharedSecret(privkey, "02" + pubkey);
@@ -27829,23 +27957,28 @@ function getNormalizedX(key) {
 var nip05_exports = {};
 __export2(nip05_exports, {
   NIP05_REGEX: () => NIP05_REGEX,
+  isNip05: () => isNip05,
   isValid: () => isValid,
   queryProfile: () => queryProfile,
   searchDomain: () => searchDomain,
   useFetchImplementation: () => useFetchImplementation
 });
 var NIP05_REGEX = /^(?:([\w.+-]+)@)?([\w_-]+(\.[\w_-]+)+)$/;
+var isNip05 = (value) => NIP05_REGEX.test(value || "");
 var _fetch;
 try {
   _fetch = fetch;
-} catch {}
+} catch (_) {}
 function useFetchImplementation(fetchImplementation) {
   _fetch = fetchImplementation;
 }
 async function searchDomain(domain, query = "") {
   try {
     const url = `https://${domain}/.well-known/nostr.json?name=${query}`;
-    const res = await _fetch(url, { redirect: "error" });
+    const res = await _fetch(url, { redirect: "manual" });
+    if (res.status !== 200) {
+      throw Error("Wrong response code");
+    }
     const json = await res.json();
     return json.names;
   } catch (_) {
@@ -27856,18 +27989,22 @@ async function queryProfile(fullname) {
   const match = fullname.match(NIP05_REGEX);
   if (!match)
     return null;
-  const [_, name = "_", domain] = match;
+  const [, name = "_", domain] = match;
   try {
     const url = `https://${domain}/.well-known/nostr.json?name=${name}`;
-    const res = await (await _fetch(url, { redirect: "error" })).json();
-    let pubkey = res.names[name];
-    return pubkey ? { pubkey, relays: res.relays?.[pubkey] } : null;
+    const res = await _fetch(url, { redirect: "manual" });
+    if (res.status !== 200) {
+      throw Error("Wrong response code");
+    }
+    const json = await res.json();
+    const pubkey = json.names[name];
+    return pubkey ? { pubkey, relays: json.relays?.[pubkey] } : null;
   } catch (_e) {
     return null;
   }
 }
 async function isValid(pubkey, nip05) {
-  let res = await queryProfile(nip05);
+  const res = await queryProfile(nip05);
   return res ? res.pubkey === pubkey : false;
 }
 var nip10_exports = {};
@@ -27879,51 +28016,97 @@ function parse2(event) {
     reply: undefined,
     root: undefined,
     mentions: [],
-    profiles: []
+    profiles: [],
+    quotes: []
   };
-  const eTags = [];
-  for (const tag of event.tags) {
+  let maybeParent;
+  let maybeRoot;
+  for (let i22 = event.tags.length - 1;i22 >= 0; i22--) {
+    const tag = event.tags[i22];
     if (tag[0] === "e" && tag[1]) {
-      eTags.push(tag);
+      const [_, eTagEventId, eTagRelayUrl, eTagMarker, eTagAuthor] = tag;
+      const eventPointer = {
+        id: eTagEventId,
+        relays: eTagRelayUrl ? [eTagRelayUrl] : [],
+        author: eTagAuthor
+      };
+      if (eTagMarker === "root") {
+        result.root = eventPointer;
+        continue;
+      }
+      if (eTagMarker === "reply") {
+        result.reply = eventPointer;
+        continue;
+      }
+      if (eTagMarker === "mention") {
+        result.mentions.push(eventPointer);
+        continue;
+      }
+      if (!maybeParent) {
+        maybeParent = eventPointer;
+      } else {
+        maybeRoot = eventPointer;
+      }
+      result.mentions.push(eventPointer);
+      continue;
+    }
+    if (tag[0] === "q" && tag[1]) {
+      const [_, eTagEventId, eTagRelayUrl] = tag;
+      result.quotes.push({
+        id: eTagEventId,
+        relays: eTagRelayUrl ? [eTagRelayUrl] : []
+      });
     }
     if (tag[0] === "p" && tag[1]) {
       result.profiles.push({
         pubkey: tag[1],
         relays: tag[2] ? [tag[2]] : []
       });
+      continue;
     }
   }
-  for (let eTagIndex = 0;eTagIndex < eTags.length; eTagIndex++) {
-    const eTag = eTags[eTagIndex];
-    const [_, eTagEventId, eTagRelayUrl, eTagMarker] = eTag;
-    const eventPointer = {
-      id: eTagEventId,
-      relays: eTagRelayUrl ? [eTagRelayUrl] : []
-    };
-    const isFirstETag = eTagIndex === 0;
-    const isLastETag = eTagIndex === eTags.length - 1;
-    if (eTagMarker === "root") {
-      result.root = eventPointer;
-      continue;
-    }
-    if (eTagMarker === "reply") {
-      result.reply = eventPointer;
-      continue;
-    }
-    if (eTagMarker === "mention") {
-      result.mentions.push(eventPointer);
-      continue;
-    }
-    if (isFirstETag) {
-      result.root = eventPointer;
-      continue;
-    }
-    if (isLastETag) {
-      result.reply = eventPointer;
-      continue;
-    }
-    result.mentions.push(eventPointer);
+  if (!result.root) {
+    result.root = maybeRoot || maybeParent || result.reply;
   }
+  if (!result.reply) {
+    result.reply = maybeParent || result.root;
+  }
+  [result.reply, result.root].forEach((ref) => {
+    if (!ref)
+      return;
+    let idx = result.mentions.indexOf(ref);
+    if (idx !== -1) {
+      result.mentions.splice(idx, 1);
+    }
+    if (ref.author) {
+      let author = result.profiles.find((p) => p.pubkey === ref.author);
+      if (author && author.relays) {
+        if (!ref.relays) {
+          ref.relays = [];
+        }
+        author.relays.forEach((url) => {
+          if (ref.relays?.indexOf(url) === -1)
+            ref.relays.push(url);
+        });
+        author.relays = ref.relays;
+      }
+    }
+  });
+  result.mentions.forEach((ref) => {
+    if (ref.author) {
+      let author = result.profiles.find((p) => p.pubkey === ref.author);
+      if (author && author.relays) {
+        if (!ref.relays) {
+          ref.relays = [];
+        }
+        author.relays.forEach((url) => {
+          if (ref.relays.indexOf(url) === -1)
+            ref.relays.push(url);
+        });
+        author.relays = ref.relays;
+      }
+    }
+  });
   return result;
 }
 var nip11_exports = {};
@@ -27945,17 +28128,18 @@ async function fetchRelayInformation(url) {
 }
 var nip13_exports = {};
 __export2(nip13_exports, {
+  fastEventHash: () => fastEventHash,
   getPow: () => getPow,
   minePow: () => minePow
 });
 function getPow(hex2) {
   let count = 0;
-  for (let i22 = 0;i22 < hex2.length; i22++) {
-    const nibble = parseInt(hex2[i22], 16);
+  for (let i22 = 0;i22 < 64; i22 += 8) {
+    const nibble = parseInt(hex2.substring(i22, i22 + 8), 16);
     if (nibble === 0) {
-      count += 4;
+      count += 32;
     } else {
-      count += Math.clz32(nibble) - 28;
+      count += Math.clz32(nibble);
       break;
     }
   }
@@ -27967,302 +28151,39 @@ function minePow(unsigned, difficulty) {
   const tag = ["nonce", count.toString(), difficulty.toString()];
   event.tags.push(tag);
   while (true) {
-    const now = Math.floor(new Date().getTime() / 1000);
-    if (now !== event.created_at) {
+    const now2 = Math.floor(new Date().getTime() / 1000);
+    if (now2 !== event.created_at) {
       count = 0;
-      event.created_at = now;
+      event.created_at = now2;
     }
     tag[1] = (++count).toString();
-    event.id = getEventHash(event);
+    event.id = fastEventHash(event);
     if (getPow(event.id) >= difficulty) {
       break;
     }
   }
   return event;
 }
-var nip18_exports = {};
-__export2(nip18_exports, {
-  finishRepostEvent: () => finishRepostEvent,
-  getRepostedEvent: () => getRepostedEvent,
-  getRepostedEventPointer: () => getRepostedEventPointer
+function fastEventHash(evt) {
+  return bytesToHex2(sha2562(utf8Encoder.encode(JSON.stringify([0, evt.pubkey, evt.created_at, evt.kind, evt.tags, evt.content]))));
+}
+var nip17_exports = {};
+__export2(nip17_exports, {
+  unwrapEvent: () => unwrapEvent2,
+  unwrapManyEvents: () => unwrapManyEvents2,
+  wrapEvent: () => wrapEvent2,
+  wrapManyEvents: () => wrapManyEvents2
 });
-function finishRepostEvent(t, reposted, relayUrl, privateKey) {
-  return finalizeEvent({
-    kind: Repost,
-    tags: [...t.tags ?? [], ["e", reposted.id, relayUrl], ["p", reposted.pubkey]],
-    content: t.content === "" ? "" : JSON.stringify(reposted),
-    created_at: t.created_at
-  }, privateKey);
-}
-function getRepostedEventPointer(event) {
-  if (event.kind !== Repost) {
-    return;
-  }
-  let lastETag;
-  let lastPTag;
-  for (let i22 = event.tags.length - 1;i22 >= 0 && (lastETag === undefined || lastPTag === undefined); i22--) {
-    const tag = event.tags[i22];
-    if (tag.length >= 2) {
-      if (tag[0] === "e" && lastETag === undefined) {
-        lastETag = tag;
-      } else if (tag[0] === "p" && lastPTag === undefined) {
-        lastPTag = tag;
-      }
-    }
-  }
-  if (lastETag === undefined) {
-    return;
-  }
-  return {
-    id: lastETag[1],
-    relays: [lastETag[2], lastPTag?.[2]].filter((x) => typeof x === "string"),
-    author: lastPTag?.[1]
-  };
-}
-function getRepostedEvent(event, { skipVerification } = {}) {
-  const pointer = getRepostedEventPointer(event);
-  if (pointer === undefined || event.content === "") {
-    return;
-  }
-  let repostedEvent;
-  try {
-    repostedEvent = JSON.parse(event.content);
-  } catch (error) {
-    return;
-  }
-  if (repostedEvent.id !== pointer.id) {
-    return;
-  }
-  if (!skipVerification && !verifyEvent(repostedEvent)) {
-    return;
-  }
-  return repostedEvent;
-}
-var nip21_exports = {};
-__export2(nip21_exports, {
-  NOSTR_URI_REGEX: () => NOSTR_URI_REGEX,
-  parse: () => parse22,
-  test: () => test
+var nip59_exports = {};
+__export2(nip59_exports, {
+  createRumor: () => createRumor,
+  createSeal: () => createSeal,
+  createWrap: () => createWrap,
+  unwrapEvent: () => unwrapEvent,
+  unwrapManyEvents: () => unwrapManyEvents,
+  wrapEvent: () => wrapEvent,
+  wrapManyEvents: () => wrapManyEvents
 });
-var NOSTR_URI_REGEX = new RegExp(`nostr:(${BECH32_REGEX.source})`);
-function test(value) {
-  return typeof value === "string" && new RegExp(`^${NOSTR_URI_REGEX.source}$`).test(value);
-}
-function parse22(uri) {
-  const match = uri.match(new RegExp(`^${NOSTR_URI_REGEX.source}$`));
-  if (!match)
-    throw new Error(`Invalid Nostr URI: ${uri}`);
-  return {
-    uri: match[0],
-    value: match[1],
-    decoded: decode(match[1])
-  };
-}
-var nip25_exports = {};
-__export2(nip25_exports, {
-  finishReactionEvent: () => finishReactionEvent,
-  getReactedEventPointer: () => getReactedEventPointer
-});
-function finishReactionEvent(t, reacted, privateKey) {
-  const inheritedTags = reacted.tags.filter((tag) => tag.length >= 2 && (tag[0] === "e" || tag[0] === "p"));
-  return finalizeEvent({
-    ...t,
-    kind: Reaction,
-    tags: [...t.tags ?? [], ...inheritedTags, ["e", reacted.id], ["p", reacted.pubkey]],
-    content: t.content ?? "+"
-  }, privateKey);
-}
-function getReactedEventPointer(event) {
-  if (event.kind !== Reaction) {
-    return;
-  }
-  let lastETag;
-  let lastPTag;
-  for (let i22 = event.tags.length - 1;i22 >= 0 && (lastETag === undefined || lastPTag === undefined); i22--) {
-    const tag = event.tags[i22];
-    if (tag.length >= 2) {
-      if (tag[0] === "e" && lastETag === undefined) {
-        lastETag = tag;
-      } else if (tag[0] === "p" && lastPTag === undefined) {
-        lastPTag = tag;
-      }
-    }
-  }
-  if (lastETag === undefined || lastPTag === undefined) {
-    return;
-  }
-  return {
-    id: lastETag[1],
-    relays: [lastETag[2], lastPTag[2]].filter((x) => x !== undefined),
-    author: lastPTag[1]
-  };
-}
-var nip27_exports = {};
-__export2(nip27_exports, {
-  matchAll: () => matchAll,
-  regex: () => regex,
-  replaceAll: () => replaceAll
-});
-var regex = () => new RegExp(`\\b${NOSTR_URI_REGEX.source}\\b`, "g");
-function* matchAll(content) {
-  const matches = content.matchAll(regex());
-  for (const match of matches) {
-    try {
-      const [uri, value] = match;
-      yield {
-        uri,
-        value,
-        decoded: decode(value),
-        start: match.index,
-        end: match.index + uri.length
-      };
-    } catch (_e) {}
-  }
-}
-function replaceAll(content, replacer) {
-  return content.replaceAll(regex(), (uri, value) => {
-    return replacer({
-      uri,
-      value,
-      decoded: decode(value)
-    });
-  });
-}
-var nip28_exports = {};
-__export2(nip28_exports, {
-  channelCreateEvent: () => channelCreateEvent,
-  channelHideMessageEvent: () => channelHideMessageEvent,
-  channelMessageEvent: () => channelMessageEvent,
-  channelMetadataEvent: () => channelMetadataEvent,
-  channelMuteUserEvent: () => channelMuteUserEvent
-});
-var channelCreateEvent = (t, privateKey) => {
-  let content;
-  if (typeof t.content === "object") {
-    content = JSON.stringify(t.content);
-  } else if (typeof t.content === "string") {
-    content = t.content;
-  } else {
-    return;
-  }
-  return finalizeEvent({
-    kind: ChannelCreation,
-    tags: [...t.tags ?? []],
-    content,
-    created_at: t.created_at
-  }, privateKey);
-};
-var channelMetadataEvent = (t, privateKey) => {
-  let content;
-  if (typeof t.content === "object") {
-    content = JSON.stringify(t.content);
-  } else if (typeof t.content === "string") {
-    content = t.content;
-  } else {
-    return;
-  }
-  return finalizeEvent({
-    kind: ChannelMetadata,
-    tags: [["e", t.channel_create_event_id], ...t.tags ?? []],
-    content,
-    created_at: t.created_at
-  }, privateKey);
-};
-var channelMessageEvent = (t, privateKey) => {
-  const tags = [["e", t.channel_create_event_id, t.relay_url, "root"]];
-  if (t.reply_to_channel_message_event_id) {
-    tags.push(["e", t.reply_to_channel_message_event_id, t.relay_url, "reply"]);
-  }
-  return finalizeEvent({
-    kind: ChannelMessage,
-    tags: [...tags, ...t.tags ?? []],
-    content: t.content,
-    created_at: t.created_at
-  }, privateKey);
-};
-var channelHideMessageEvent = (t, privateKey) => {
-  let content;
-  if (typeof t.content === "object") {
-    content = JSON.stringify(t.content);
-  } else if (typeof t.content === "string") {
-    content = t.content;
-  } else {
-    return;
-  }
-  return finalizeEvent({
-    kind: ChannelHideMessage,
-    tags: [["e", t.channel_message_event_id], ...t.tags ?? []],
-    content,
-    created_at: t.created_at
-  }, privateKey);
-};
-var channelMuteUserEvent = (t, privateKey) => {
-  let content;
-  if (typeof t.content === "object") {
-    content = JSON.stringify(t.content);
-  } else if (typeof t.content === "string") {
-    content = t.content;
-  } else {
-    return;
-  }
-  return finalizeEvent({
-    kind: ChannelMuteUser,
-    tags: [["p", t.pubkey_to_mute], ...t.tags ?? []],
-    content,
-    created_at: t.created_at
-  }, privateKey);
-};
-var nip30_exports = {};
-__export2(nip30_exports, {
-  EMOJI_SHORTCODE_REGEX: () => EMOJI_SHORTCODE_REGEX,
-  matchAll: () => matchAll2,
-  regex: () => regex2,
-  replaceAll: () => replaceAll2
-});
-var EMOJI_SHORTCODE_REGEX = /:(\w+):/;
-var regex2 = () => new RegExp(`\\B${EMOJI_SHORTCODE_REGEX.source}\\B`, "g");
-function* matchAll2(content) {
-  const matches = content.matchAll(regex2());
-  for (const match of matches) {
-    try {
-      const [shortcode, name] = match;
-      yield {
-        shortcode,
-        name,
-        start: match.index,
-        end: match.index + shortcode.length
-      };
-    } catch (_e) {}
-  }
-}
-function replaceAll2(content, replacer) {
-  return content.replaceAll(regex2(), (shortcode, name) => {
-    return replacer({
-      shortcode,
-      name
-    });
-  });
-}
-var nip39_exports = {};
-__export2(nip39_exports, {
-  useFetchImplementation: () => useFetchImplementation3,
-  validateGithub: () => validateGithub
-});
-var _fetch3;
-try {
-  _fetch3 = fetch;
-} catch {}
-function useFetchImplementation3(fetchImplementation) {
-  _fetch3 = fetchImplementation;
-}
-async function validateGithub(pubkey, username, proof) {
-  try {
-    let res = await (await _fetch3(`https://gist.github.com/${username}/${proof}/raw`)).text();
-    return res === `Verifying that I control the following Nostr public key: ${pubkey}`;
-  } catch (_) {
-    return false;
-  }
-}
 var nip44_exports = {};
 __export2(nip44_exports, {
   decrypt: () => decrypt22,
@@ -28370,14 +28291,478 @@ var v2 = {
   encrypt: encrypt22,
   decrypt: decrypt22
 };
+var TWO_DAYS = 2 * 24 * 60 * 60;
+var now = () => Math.round(Date.now() / 1000);
+var randomNow = () => Math.round(now() - Math.random() * TWO_DAYS);
+var nip44ConversationKey = (privateKey, publicKey) => getConversationKey(privateKey, publicKey);
+var nip44Encrypt = (data, privateKey, publicKey) => encrypt22(JSON.stringify(data), nip44ConversationKey(privateKey, publicKey));
+var nip44Decrypt = (data, privateKey) => JSON.parse(decrypt22(data.content, nip44ConversationKey(privateKey, data.pubkey)));
+function createRumor(event, privateKey) {
+  const rumor = {
+    created_at: now(),
+    content: "",
+    tags: [],
+    ...event,
+    pubkey: getPublicKey(privateKey)
+  };
+  rumor.id = getEventHash(rumor);
+  return rumor;
+}
+function createSeal(rumor, privateKey, recipientPublicKey) {
+  return finalizeEvent({
+    kind: Seal,
+    content: nip44Encrypt(rumor, privateKey, recipientPublicKey),
+    created_at: randomNow(),
+    tags: []
+  }, privateKey);
+}
+function createWrap(seal, recipientPublicKey) {
+  const randomKey = generateSecretKey();
+  return finalizeEvent({
+    kind: GiftWrap,
+    content: nip44Encrypt(seal, randomKey, recipientPublicKey),
+    created_at: randomNow(),
+    tags: [["p", recipientPublicKey]]
+  }, randomKey);
+}
+function wrapEvent(event, senderPrivateKey, recipientPublicKey) {
+  const rumor = createRumor(event, senderPrivateKey);
+  const seal = createSeal(rumor, senderPrivateKey, recipientPublicKey);
+  return createWrap(seal, recipientPublicKey);
+}
+function wrapManyEvents(event, senderPrivateKey, recipientsPublicKeys) {
+  if (!recipientsPublicKeys || recipientsPublicKeys.length === 0) {
+    throw new Error("At least one recipient is required.");
+  }
+  const senderPublicKey = getPublicKey(senderPrivateKey);
+  const wrappeds = [wrapEvent(event, senderPrivateKey, senderPublicKey)];
+  recipientsPublicKeys.forEach((recipientPublicKey) => {
+    wrappeds.push(wrapEvent(event, senderPrivateKey, recipientPublicKey));
+  });
+  return wrappeds;
+}
+function unwrapEvent(wrap, recipientPrivateKey) {
+  const unwrappedSeal = nip44Decrypt(wrap, recipientPrivateKey);
+  return nip44Decrypt(unwrappedSeal, recipientPrivateKey);
+}
+function unwrapManyEvents(wrappedEvents, recipientPrivateKey) {
+  let unwrappedEvents = [];
+  wrappedEvents.forEach((e) => {
+    unwrappedEvents.push(unwrapEvent(e, recipientPrivateKey));
+  });
+  unwrappedEvents.sort((a, b) => a.created_at - b.created_at);
+  return unwrappedEvents;
+}
+function createEvent(recipients, message, conversationTitle, replyTo) {
+  const baseEvent = {
+    created_at: Math.ceil(Date.now() / 1000),
+    kind: PrivateDirectMessage,
+    tags: [],
+    content: message
+  };
+  const recipientsArray = Array.isArray(recipients) ? recipients : [recipients];
+  recipientsArray.forEach(({ publicKey, relayUrl }) => {
+    baseEvent.tags.push(relayUrl ? ["p", publicKey, relayUrl] : ["p", publicKey]);
+  });
+  if (replyTo) {
+    baseEvent.tags.push(["e", replyTo.eventId, replyTo.relayUrl || "", "reply"]);
+  }
+  if (conversationTitle) {
+    baseEvent.tags.push(["subject", conversationTitle]);
+  }
+  return baseEvent;
+}
+function wrapEvent2(senderPrivateKey, recipient, message, conversationTitle, replyTo) {
+  const event = createEvent(recipient, message, conversationTitle, replyTo);
+  return wrapEvent(event, senderPrivateKey, recipient.publicKey);
+}
+function wrapManyEvents2(senderPrivateKey, recipients, message, conversationTitle, replyTo) {
+  if (!recipients || recipients.length === 0) {
+    throw new Error("At least one recipient is required.");
+  }
+  const senderPublicKey = getPublicKey(senderPrivateKey);
+  return [{ publicKey: senderPublicKey }, ...recipients].map((recipient) => wrapEvent2(senderPrivateKey, recipient, message, conversationTitle, replyTo));
+}
+var unwrapEvent2 = unwrapEvent;
+var unwrapManyEvents2 = unwrapManyEvents;
+var nip18_exports = {};
+__export2(nip18_exports, {
+  finishRepostEvent: () => finishRepostEvent,
+  getRepostedEvent: () => getRepostedEvent,
+  getRepostedEventPointer: () => getRepostedEventPointer
+});
+function finishRepostEvent(t, reposted, relayUrl, privateKey) {
+  let kind;
+  const tags = [...t.tags ?? [], ["e", reposted.id, relayUrl], ["p", reposted.pubkey]];
+  if (reposted.kind === ShortTextNote) {
+    kind = Repost;
+  } else {
+    kind = GenericRepost;
+    tags.push(["k", String(reposted.kind)]);
+  }
+  return finalizeEvent({
+    kind,
+    tags,
+    content: t.content === "" || reposted.tags?.find((tag) => tag[0] === "-") ? "" : JSON.stringify(reposted),
+    created_at: t.created_at
+  }, privateKey);
+}
+function getRepostedEventPointer(event) {
+  if (![Repost, GenericRepost].includes(event.kind)) {
+    return;
+  }
+  let lastETag;
+  let lastPTag;
+  for (let i22 = event.tags.length - 1;i22 >= 0 && (lastETag === undefined || lastPTag === undefined); i22--) {
+    const tag = event.tags[i22];
+    if (tag.length >= 2) {
+      if (tag[0] === "e" && lastETag === undefined) {
+        lastETag = tag;
+      } else if (tag[0] === "p" && lastPTag === undefined) {
+        lastPTag = tag;
+      }
+    }
+  }
+  if (lastETag === undefined) {
+    return;
+  }
+  return {
+    id: lastETag[1],
+    relays: [lastETag[2], lastPTag?.[2]].filter((x) => typeof x === "string"),
+    author: lastPTag?.[1]
+  };
+}
+function getRepostedEvent(event, { skipVerification } = {}) {
+  const pointer = getRepostedEventPointer(event);
+  if (pointer === undefined || event.content === "") {
+    return;
+  }
+  let repostedEvent;
+  try {
+    repostedEvent = JSON.parse(event.content);
+  } catch (error) {
+    return;
+  }
+  if (repostedEvent.id !== pointer.id) {
+    return;
+  }
+  if (!skipVerification && !verifyEvent(repostedEvent)) {
+    return;
+  }
+  return repostedEvent;
+}
+var nip21_exports = {};
+__export2(nip21_exports, {
+  NOSTR_URI_REGEX: () => NOSTR_URI_REGEX,
+  parse: () => parse22,
+  test: () => test
+});
+var NOSTR_URI_REGEX = new RegExp(`nostr:(${BECH32_REGEX.source})`);
+function test(value) {
+  return typeof value === "string" && new RegExp(`^${NOSTR_URI_REGEX.source}$`).test(value);
+}
+function parse22(uri) {
+  const match = uri.match(new RegExp(`^${NOSTR_URI_REGEX.source}$`));
+  if (!match)
+    throw new Error(`Invalid Nostr URI: ${uri}`);
+  return {
+    uri: match[0],
+    value: match[1],
+    decoded: decode(match[1])
+  };
+}
+var nip25_exports = {};
+__export2(nip25_exports, {
+  finishReactionEvent: () => finishReactionEvent,
+  getReactedEventPointer: () => getReactedEventPointer
+});
+function finishReactionEvent(t, reacted, privateKey) {
+  const inheritedTags = reacted.tags.filter((tag) => tag.length >= 2 && (tag[0] === "e" || tag[0] === "p"));
+  return finalizeEvent({
+    ...t,
+    kind: Reaction,
+    tags: [...t.tags ?? [], ...inheritedTags, ["e", reacted.id], ["p", reacted.pubkey]],
+    content: t.content ?? "+"
+  }, privateKey);
+}
+function getReactedEventPointer(event) {
+  if (event.kind !== Reaction) {
+    return;
+  }
+  let lastETag;
+  let lastPTag;
+  for (let i22 = event.tags.length - 1;i22 >= 0 && (lastETag === undefined || lastPTag === undefined); i22--) {
+    const tag = event.tags[i22];
+    if (tag.length >= 2) {
+      if (tag[0] === "e" && lastETag === undefined) {
+        lastETag = tag;
+      } else if (tag[0] === "p" && lastPTag === undefined) {
+        lastPTag = tag;
+      }
+    }
+  }
+  if (lastETag === undefined || lastPTag === undefined) {
+    return;
+  }
+  return {
+    id: lastETag[1],
+    relays: [lastETag[2], lastPTag[2]].filter((x) => x !== undefined),
+    author: lastPTag[1]
+  };
+}
+var nip27_exports = {};
+__export2(nip27_exports, {
+  parse: () => parse3
+});
+var noCharacter = /\W/m;
+var noURLCharacter = /\W |\W$|$|,| /m;
+function* parse3(content) {
+  const max = content.length;
+  let prevIndex = 0;
+  let index = 0;
+  while (index < max) {
+    let u = content.indexOf(":", index);
+    if (u === -1) {
+      break;
+    }
+    if (content.substring(u - 5, u) === "nostr") {
+      const m = content.substring(u + 60).match(noCharacter);
+      const end = m ? u + 60 + m.index : max;
+      try {
+        let pointer;
+        let { data, type } = decode(content.substring(u + 1, end));
+        switch (type) {
+          case "npub":
+            pointer = { pubkey: data };
+            break;
+          case "nsec":
+          case "note":
+            index = end + 1;
+            continue;
+          default:
+            pointer = data;
+        }
+        if (prevIndex !== u - 5) {
+          yield { type: "text", text: content.substring(prevIndex, u - 5) };
+        }
+        yield { type: "reference", pointer };
+        index = end;
+        prevIndex = index;
+        continue;
+      } catch (_err) {
+        index = u + 1;
+        continue;
+      }
+    } else if (content.substring(u - 5, u) === "https" || content.substring(u - 4, u) === "http") {
+      const m = content.substring(u + 4).match(noURLCharacter);
+      const end = m ? u + 4 + m.index : max;
+      const prefixLen = content[u - 1] === "s" ? 5 : 4;
+      try {
+        let url = new URL(content.substring(u - prefixLen, end));
+        if (url.hostname.indexOf(".") === -1) {
+          throw new Error("invalid url");
+        }
+        if (prevIndex !== u - prefixLen) {
+          yield { type: "text", text: content.substring(prevIndex, u - prefixLen) };
+        }
+        if (/\.(png|jpe?g|gif|webp)$/i.test(url.pathname)) {
+          yield { type: "image", url: url.toString() };
+          index = end;
+          prevIndex = index;
+          continue;
+        }
+        if (/\.(mp4|avi|webm|mkv)$/i.test(url.pathname)) {
+          yield { type: "video", url: url.toString() };
+          index = end;
+          prevIndex = index;
+          continue;
+        }
+        if (/\.(mp3|aac|ogg|opus)$/i.test(url.pathname)) {
+          yield { type: "audio", url: url.toString() };
+          index = end;
+          prevIndex = index;
+          continue;
+        }
+        yield { type: "url", url: url.toString() };
+        index = end;
+        prevIndex = index;
+        continue;
+      } catch (_err) {
+        index = end + 1;
+        continue;
+      }
+    } else if (content.substring(u - 3, u) === "wss" || content.substring(u - 2, u) === "ws") {
+      const m = content.substring(u + 4).match(noURLCharacter);
+      const end = m ? u + 4 + m.index : max;
+      const prefixLen = content[u - 1] === "s" ? 3 : 2;
+      try {
+        let url = new URL(content.substring(u - prefixLen, end));
+        if (url.hostname.indexOf(".") === -1) {
+          throw new Error("invalid ws url");
+        }
+        if (prevIndex !== u - prefixLen) {
+          yield { type: "text", text: content.substring(prevIndex, u - prefixLen) };
+        }
+        yield { type: "relay", url: url.toString() };
+        index = end;
+        prevIndex = index;
+        continue;
+      } catch (_err) {
+        index = end + 1;
+        continue;
+      }
+    } else {
+      index = u + 1;
+      continue;
+    }
+  }
+  if (prevIndex !== max) {
+    yield { type: "text", text: content.substring(prevIndex) };
+  }
+}
+var nip28_exports = {};
+__export2(nip28_exports, {
+  channelCreateEvent: () => channelCreateEvent,
+  channelHideMessageEvent: () => channelHideMessageEvent,
+  channelMessageEvent: () => channelMessageEvent,
+  channelMetadataEvent: () => channelMetadataEvent,
+  channelMuteUserEvent: () => channelMuteUserEvent
+});
+var channelCreateEvent = (t, privateKey) => {
+  let content;
+  if (typeof t.content === "object") {
+    content = JSON.stringify(t.content);
+  } else if (typeof t.content === "string") {
+    content = t.content;
+  } else {
+    return;
+  }
+  return finalizeEvent({
+    kind: ChannelCreation,
+    tags: [...t.tags ?? []],
+    content,
+    created_at: t.created_at
+  }, privateKey);
+};
+var channelMetadataEvent = (t, privateKey) => {
+  let content;
+  if (typeof t.content === "object") {
+    content = JSON.stringify(t.content);
+  } else if (typeof t.content === "string") {
+    content = t.content;
+  } else {
+    return;
+  }
+  return finalizeEvent({
+    kind: ChannelMetadata,
+    tags: [["e", t.channel_create_event_id], ...t.tags ?? []],
+    content,
+    created_at: t.created_at
+  }, privateKey);
+};
+var channelMessageEvent = (t, privateKey) => {
+  const tags = [["e", t.channel_create_event_id, t.relay_url, "root"]];
+  if (t.reply_to_channel_message_event_id) {
+    tags.push(["e", t.reply_to_channel_message_event_id, t.relay_url, "reply"]);
+  }
+  return finalizeEvent({
+    kind: ChannelMessage,
+    tags: [...tags, ...t.tags ?? []],
+    content: t.content,
+    created_at: t.created_at
+  }, privateKey);
+};
+var channelHideMessageEvent = (t, privateKey) => {
+  let content;
+  if (typeof t.content === "object") {
+    content = JSON.stringify(t.content);
+  } else if (typeof t.content === "string") {
+    content = t.content;
+  } else {
+    return;
+  }
+  return finalizeEvent({
+    kind: ChannelHideMessage,
+    tags: [["e", t.channel_message_event_id], ...t.tags ?? []],
+    content,
+    created_at: t.created_at
+  }, privateKey);
+};
+var channelMuteUserEvent = (t, privateKey) => {
+  let content;
+  if (typeof t.content === "object") {
+    content = JSON.stringify(t.content);
+  } else if (typeof t.content === "string") {
+    content = t.content;
+  } else {
+    return;
+  }
+  return finalizeEvent({
+    kind: ChannelMuteUser,
+    tags: [["p", t.pubkey_to_mute], ...t.tags ?? []],
+    content,
+    created_at: t.created_at
+  }, privateKey);
+};
+var nip30_exports = {};
+__export2(nip30_exports, {
+  EMOJI_SHORTCODE_REGEX: () => EMOJI_SHORTCODE_REGEX,
+  matchAll: () => matchAll,
+  regex: () => regex,
+  replaceAll: () => replaceAll
+});
+var EMOJI_SHORTCODE_REGEX = /:(\w+):/;
+var regex = () => new RegExp(`\\B${EMOJI_SHORTCODE_REGEX.source}\\B`, "g");
+function* matchAll(content) {
+  const matches = content.matchAll(regex());
+  for (const match of matches) {
+    try {
+      const [shortcode, name] = match;
+      yield {
+        shortcode,
+        name,
+        start: match.index,
+        end: match.index + shortcode.length
+      };
+    } catch (_e) {}
+  }
+}
+function replaceAll(content, replacer) {
+  return content.replaceAll(regex(), (shortcode, name) => {
+    return replacer({
+      shortcode,
+      name
+    });
+  });
+}
+var nip39_exports = {};
+__export2(nip39_exports, {
+  useFetchImplementation: () => useFetchImplementation3,
+  validateGithub: () => validateGithub
+});
+var _fetch3;
+try {
+  _fetch3 = fetch;
+} catch {}
+function useFetchImplementation3(fetchImplementation) {
+  _fetch3 = fetchImplementation;
+}
+async function validateGithub(pubkey, username, proof) {
+  try {
+    let res = await (await _fetch3(`https://gist.github.com/${username}/${proof}/raw`)).text();
+    return res === `Verifying that I control the following Nostr public key: ${pubkey}`;
+  } catch (_) {
+    return false;
+  }
+}
 var nip47_exports = {};
 __export2(nip47_exports, {
   makeNwcRequestEvent: () => makeNwcRequestEvent,
   parseConnectionString: () => parseConnectionString
 });
 function parseConnectionString(connectionString) {
-  const { pathname, searchParams } = new URL(connectionString);
-  const pubkey = pathname;
+  const { host, pathname, searchParams } = new URL(connectionString);
+  const pubkey = pathname || host;
   const relay = searchParams.get("relay");
   const secret = searchParams.get("secret");
   if (!pubkey || !relay || !secret) {
@@ -28392,7 +28777,7 @@ async function makeNwcRequestEvent(pubkey, secretKey, invoice) {
       invoice
     }
   };
-  const encryptedContent = await encrypt2(secretKey, pubkey, JSON.stringify(content));
+  const encryptedContent = encrypt2(secretKey, pubkey, JSON.stringify(content));
   const eventTemplate = {
     kind: NWCWalletRequest,
     created_at: Math.round(Date.now() / 1000),
@@ -28401,8 +28786,23 @@ async function makeNwcRequestEvent(pubkey, secretKey, invoice) {
   };
   return finalizeEvent(eventTemplate, secretKey);
 }
+var nip54_exports = {};
+__export2(nip54_exports, {
+  normalizeIdentifier: () => normalizeIdentifier
+});
+function normalizeIdentifier(name) {
+  name = name.trim().toLowerCase();
+  name = name.normalize("NFKC");
+  return Array.from(name).map((char) => {
+    if (/\p{Letter}/u.test(char) || /\p{Number}/u.test(char)) {
+      return char;
+    }
+    return "-";
+  }).join("");
+}
 var nip57_exports = {};
 __export2(nip57_exports, {
+  getSatoshisAmountFromBolt11: () => getSatoshisAmountFromBolt11,
   getZapEndpoint: () => getZapEndpoint,
   makeZapReceipt: () => makeZapReceipt,
   makeZapRequest: () => makeZapRequest,
@@ -28420,13 +28820,13 @@ async function getZapEndpoint(metadata) {
   try {
     let lnurl = "";
     let { lud06, lud16 } = JSON.parse(metadata.content);
-    if (lud06) {
+    if (lud16) {
+      let [name, domain] = lud16.split("@");
+      lnurl = new URL(`/.well-known/lnurlp/${name}`, `https://${domain}`).toString();
+    } else if (lud06) {
       let { words } = bech32.decode(lud06, 1000);
       let data = bech32.fromWords(words);
       lnurl = utf8Decoder.decode(data);
-    } else if (lud16) {
-      let [name, domain] = lud16.split("@");
-      lnurl = new URL(`/.well-known/lnurlp/${name}`, `https://${domain}`).toString();
     } else {
       return null;
     }
@@ -28438,29 +28838,30 @@ async function getZapEndpoint(metadata) {
   } catch (err) {}
   return null;
 }
-function makeZapRequest({
-  profile,
-  event,
-  amount,
-  relays,
-  comment = ""
-}) {
-  if (!amount)
-    throw new Error("amount not given");
-  if (!profile)
-    throw new Error("profile not given");
+function makeZapRequest(params) {
   let zr = {
     kind: 9734,
     created_at: Math.round(Date.now() / 1000),
-    content: comment,
+    content: params.comment || "",
     tags: [
-      ["p", profile],
-      ["amount", amount.toString()],
-      ["relays", ...relays]
+      ["p", "pubkey" in params ? params.pubkey : params.event.pubkey],
+      ["amount", params.amount.toString()],
+      ["relays", ...params.relays]
     ]
   };
-  if (event) {
-    zr.tags.push(["e", event]);
+  if ("event" in params) {
+    zr.tags.push(["e", params.event.id]);
+    if (isReplaceableKind(params.event.kind)) {
+      const a = ["a", `${params.event.kind}:${params.event.pubkey}:`];
+      zr.tags.push(a);
+    } else if (isAddressableKind(params.event.kind)) {
+      let d = params.event.tags.find(([t, v]) => t === "d" && v);
+      if (!d)
+        throw new Error("d tag not found or is empty");
+      const a = ["a", `${params.event.kind}:${params.event.pubkey}:${d[1]}`];
+      zr.tags.push(a);
+    }
+    zr.tags.push(["k", params.event.kind.toString()]);
   }
   return zr;
 }
@@ -28506,6 +28907,47 @@ function makeZapReceipt({
     zap.tags.push(["preimage", preimage]);
   }
   return zap;
+}
+function getSatoshisAmountFromBolt11(bolt11) {
+  if (bolt11.length < 50) {
+    return 0;
+  }
+  bolt11 = bolt11.substring(0, 50);
+  const idx = bolt11.lastIndexOf("1");
+  if (idx === -1) {
+    return 0;
+  }
+  const hrp = bolt11.substring(0, idx);
+  if (!hrp.startsWith("lnbc")) {
+    return 0;
+  }
+  const amount = hrp.substring(4);
+  if (amount.length < 1) {
+    return 0;
+  }
+  const char = amount[amount.length - 1];
+  const digit = char.charCodeAt(0) - 48;
+  const isDigit = digit >= 0 && digit <= 9;
+  let cutPoint = amount.length - 1;
+  if (isDigit) {
+    cutPoint++;
+  }
+  if (cutPoint < 1) {
+    return 0;
+  }
+  const num = parseInt(amount.substring(0, cutPoint));
+  switch (char) {
+    case "m":
+      return num * 1e5;
+    case "u":
+      return num * 100;
+    case "n":
+      return num / 10;
+    case "p":
+      return num / 1e4;
+    default:
+      return num * 1e8;
+  }
 }
 var nip98_exports = {};
 __export2(nip98_exports, {
@@ -31221,6 +31663,7 @@ var import_tseep4 = __toESM(require_lib(), 1);
 var import_debug4 = __toESM(require_browser4(), 1);
 var import_debug5 = __toESM(require_browser4(), 1);
 var import_debug6 = __toESM(require_browser4(), 1);
+var import_light_bolt11_decoder = __toESM(require_bolt11(), 1);
 var import_debug7 = __toESM(require_browser4(), 1);
 var import_tseep5 = __toESM(require_lib(), 1);
 var import_tseep6 = __toESM(require_lib(), 1);
@@ -31232,19 +31675,29 @@ var import_debug8 = __toESM(require_browser4(), 1);
 var exports_nip19 = {};
 __export(exports_nip19, {
   nsecEncode: () => nsecEncode2,
-  nrelayEncode: () => nrelayEncode2,
   npubEncode: () => npubEncode2,
   nprofileEncode: () => nprofileEncode2,
   noteEncode: () => noteEncode2,
   neventEncode: () => neventEncode2,
   naddrEncode: () => naddrEncode2,
   encodeBytes: () => encodeBytes3,
+  decodeNostrURI: () => decodeNostrURI2,
   decode: () => decode2,
+  NostrTypeGuard: () => NostrTypeGuard2,
   Bech32MaxSize: () => Bech32MaxSize3,
   BECH32_REGEX: () => BECH32_REGEX2
 });
 var utf8Decoder2 = new TextDecoder("utf-8");
 var utf8Encoder2 = new TextEncoder;
+var NostrTypeGuard2 = {
+  isNProfile: (value) => /^nprofile1[a-z\d]+$/.test(value || ""),
+  isNEvent: (value) => /^nevent1[a-z\d]+$/.test(value || ""),
+  isNAddr: (value) => /^naddr1[a-z\d]+$/.test(value || ""),
+  isNSec: (value) => /^nsec1[a-z\d]{58}$/.test(value || ""),
+  isNPub: (value) => /^npub1[a-z\d]{58}$/.test(value || ""),
+  isNote: (value) => /^note1[a-z\d]+$/.test(value || ""),
+  isNcryptsec: (value) => /^ncryptsec1[a-z\d]+$/.test(value || "")
+};
 var Bech32MaxSize3 = 5000;
 var BECH32_REGEX2 = /[\x21-\x7E]{1,83}1[023456789acdefghjklmnpqrstuvwxyz]{6,}/;
 function integerToUint8Array2(number4) {
@@ -31255,8 +31708,17 @@ function integerToUint8Array2(number4) {
   uint8Array[3] = number4 & 255;
   return uint8Array;
 }
-function decode2(nip19) {
-  let { prefix, words } = bech32.decode(nip19, Bech32MaxSize3);
+function decodeNostrURI2(nip19code) {
+  try {
+    if (nip19code.startsWith("nostr:"))
+      nip19code = nip19code.substring(6);
+    return decode2(nip19code);
+  } catch (_err) {
+    return { type: "invalid", data: null };
+  }
+}
+function decode2(code2) {
+  let { prefix, words } = bech32.decode(code2, Bech32MaxSize3);
   let data = new Uint8Array(bech32.fromWords(words));
   switch (prefix) {
     case "nprofile": {
@@ -31313,15 +31775,6 @@ function decode2(nip19) {
           kind: parseInt(bytesToHex2(tlv[3][0]), 16),
           relays: tlv[1] ? tlv[1].map((d) => utf8Decoder2.decode(d)) : []
         }
-      };
-    }
-    case "nrelay": {
-      let tlv = parseTLV2(data);
-      if (!tlv[0]?.[0])
-        throw new Error("missing TLV 0 for nrelay");
-      return {
-        type: "nrelay",
-        data: utf8Decoder2.decode(tlv[0][0])
       };
     }
     case "nsec":
@@ -31395,12 +31848,6 @@ function naddrEncode2(addr) {
   });
   return encodeBech323("naddr", data);
 }
-function nrelayEncode2(url) {
-  let data = encodeTLV2({
-    0: [utf8Encoder2.encode(url)]
-  });
-  return encodeBech323("nrelay", data);
-}
 function encodeTLV2(tlv) {
   let entries = [];
   Object.entries(tlv).reverse().forEach(([t, vs]) => {
@@ -31420,7 +31867,6 @@ var import_debug9 = __toESM(require_browser4(), 1);
 var import_debug10 = __toESM(require_browser4(), 1);
 var import_tseep7 = __toESM(require_lib(), 1);
 var import_tseep8 = __toESM(require_lib(), 1);
-var import_light_bolt11_decoder = __toESM(require_bolt11(), 1);
 var import_debug11 = __toESM(require_browser4(), 1);
 var import_tseep9 = __toESM(require_lib(), 1);
 var import_debug12 = __toESM(require_browser4(), 1);
@@ -31468,6 +31914,8 @@ var NDKKind = /* @__PURE__ */ ((NDKKind2) => {
   NDKKind2[NDKKind2["WikiMergeRequest"] = 818] = "WikiMergeRequest";
   NDKKind2[NDKKind2["GenericReply"] = 1111] = "GenericReply";
   NDKKind2[NDKKind2["Media"] = 1063] = "Media";
+  NDKKind2[NDKKind2["VoiceMessage"] = 1222] = "VoiceMessage";
+  NDKKind2[NDKKind2["VoiceReply"] = 1244] = "VoiceReply";
   NDKKind2[NDKKind2["DraftCheckpoint"] = 1234] = "DraftCheckpoint";
   NDKKind2[NDKKind2["Task"] = 1934] = "Task";
   NDKKind2[NDKKind2["Report"] = 1984] = "Report";
@@ -31505,6 +31953,7 @@ var NDKKind = /* @__PURE__ */ ((NDKKind2) => {
   NDKKind2[NDKKind2["BlockRelayList"] = 10006] = "BlockRelayList";
   NDKKind2[NDKKind2["SearchRelayList"] = 10007] = "SearchRelayList";
   NDKKind2[NDKKind2["SimpleGroupList"] = 10009] = "SimpleGroupList";
+  NDKKind2[NDKKind2["RelayFeedList"] = 10012] = "RelayFeedList";
   NDKKind2[NDKKind2["InterestList"] = 10015] = "InterestList";
   NDKKind2[NDKKind2["CashuMintList"] = 10019] = "CashuMintList";
   NDKKind2[NDKKind2["EmojiList"] = 10030] = "EmojiList";
@@ -32037,13 +32486,13 @@ var NDKRelayConnectivity = class {
       }
     }, 5000);
     this.sleepDetector = setInterval(() => {
-      const now = Date.now();
-      const elapsed = now - this.lastSleepCheck;
+      const now2 = Date.now();
+      const elapsed = now2 - this.lastSleepCheck;
       if (elapsed > 15000) {
         this.debug(`Detected possible sleep/wake (${elapsed}ms gap)`);
         this.handlePossibleWake();
       }
-      this.lastSleepCheck = now;
+      this.lastSleepCheck = now2;
     }, 1e4);
   }
   handleStaleConnection() {
@@ -32718,14 +33167,6 @@ var NDKRelaySubscription = class {
     this.subIdParts.add(part);
   }
   addItem(subscription, filters) {
-    this.debug("Adding item", {
-      filters: formatFilters(filters),
-      internalId: subscription.internalId,
-      status: this.status,
-      fingerprint: this.fingerprint,
-      id: this.subId,
-      itemsSize: this.items.size
-    });
     if (this.items.has(subscription.internalId)) {
       return;
     }
@@ -32759,6 +33200,11 @@ var NDKRelaySubscription = class {
   removeItem(subscription) {
     this.items.delete(subscription.internalId);
     if (this.items.size === 0) {
+      if (this.status === 0 || this.status === 1) {
+        this.status = 4;
+        this.cleanup();
+        return;
+      }
       if (!this.eosed)
         return;
       this.close();
@@ -32850,7 +33296,9 @@ var NDKRelaySubscription = class {
     const currentTime = Date.now();
     this.fireTime = currentTime + delay;
     this.delayType = delayType;
-    const timer = setTimeout(this.execute.bind(this), delay);
+    const timer = setTimeout(() => {
+      this.execute();
+    }, delay);
     if (delayType === "at-least") {
       this.executionTimer = timer;
     }
@@ -32945,13 +33393,6 @@ var NDKRelaySubscription = class {
     for (const { subscription } of this.items.values()) {
       subscription.eoseReceived(this.relay);
       if (subscription.closeOnEose) {
-        this.debug("Removing item because of EOSE", {
-          filters: formatFilters(subscription.filters),
-          internalId: subscription.internalId,
-          status: this.status,
-          fingerprint: this.fingerprint,
-          itemsSize: this.items.size
-        });
         this.removeItem(subscription);
       }
     }
@@ -33771,30 +34212,36 @@ function getKind(event) {
   }
   return 16;
 }
+function getEventDetails(event) {
+  if ("inspect" in event && typeof event.inspect === "string") {
+    return event.inspect;
+  }
+  return JSON.stringify(event);
+}
 function validateForSerialization(event) {
   if (typeof event.kind !== "number") {
-    throw new Error(`Can't serialize event with invalid properties: kind (must be number, got ${typeof event.kind}). Event: ${JSON.stringify(event)}`);
+    throw new Error(`Can't serialize event with invalid properties: kind (must be number, got ${typeof event.kind}). Event: ${getEventDetails(event)}`);
   }
   if (typeof event.content !== "string") {
-    throw new Error(`Can't serialize event with invalid properties: content (must be string, got ${typeof event.content}). Event: ${JSON.stringify(event)}`);
+    throw new Error(`Can't serialize event with invalid properties: content (must be string, got ${typeof event.content}). Event: ${getEventDetails(event)}`);
   }
   if (typeof event.created_at !== "number") {
-    throw new Error(`Can't serialize event with invalid properties: created_at (must be number, got ${typeof event.created_at}). Event: ${JSON.stringify(event)}`);
+    throw new Error(`Can't serialize event with invalid properties: created_at (must be number, got ${typeof event.created_at}). Event: ${getEventDetails(event)}`);
   }
   if (typeof event.pubkey !== "string") {
-    throw new Error(`Can't serialize event with invalid properties: pubkey (must be string, got ${typeof event.pubkey}). Event: ${JSON.stringify(event)}`);
+    throw new Error(`Can't serialize event with invalid properties: pubkey (must be string, got ${typeof event.pubkey}). Event: ${getEventDetails(event)}`);
   }
   if (!Array.isArray(event.tags)) {
-    throw new Error(`Can't serialize event with invalid properties: tags (must be array, got ${typeof event.tags}). Event: ${JSON.stringify(event)}`);
+    throw new Error(`Can't serialize event with invalid properties: tags (must be array, got ${typeof event.tags}). Event: ${getEventDetails(event)}`);
   }
   for (let i3 = 0;i3 < event.tags.length; i3++) {
     const tag = event.tags[i3];
     if (!Array.isArray(tag)) {
-      throw new Error(`Can't serialize event with invalid properties: tags[${i3}] (must be array, got ${typeof tag}). Event: ${JSON.stringify(event)}`);
+      throw new Error(`Can't serialize event with invalid properties: tags[${i3}] (must be array, got ${typeof tag}). Event: ${getEventDetails(event)}`);
     }
     for (let j = 0;j < tag.length; j++) {
       if (typeof tag[j] !== "string") {
-        throw new Error(`Can't serialize event with invalid properties: tags[${i3}][${j}] (must be string, got ${typeof tag[j]}). Event: ${JSON.stringify(event)}`);
+        throw new Error(`Can't serialize event with invalid properties: tags[${i3}][${j}] (must be string, got ${typeof tag[j]}). Event: ${getEventDetails(event)}`);
       }
     }
   }
@@ -34242,6 +34689,7 @@ var NDKEvent = class _NDKEvent extends import_tseep.EventEmitter {
       await this.sign(undefined, opts);
     if (!this.ndk)
       throw new Error("NDKEvent must be associated with an NDK instance to publish");
+    this.ndk.aiGuardrails?.event?.publishing(this);
     if (!relaySet || relaySet.size === 0) {
       relaySet = this.ndk.devWriteRelaySet || await calculateRelaySetFromEvent(this.ndk, this, requiredRelayCount);
     }
@@ -34768,20 +35216,20 @@ var NDKPool = class extends import_tseep3.EventEmitter {
     }
   }
   recordDisconnection(relay) {
-    const now = Date.now();
-    this.disconnectionTimes.set(relay.url, now);
+    const now2 = Date.now();
+    this.disconnectionTimes.set(relay.url, now2);
     for (const [url, time] of this.disconnectionTimes.entries()) {
-      if (now - time > 1e4) {
+      if (now2 - time > 1e4) {
         this.disconnectionTimes.delete(url);
       }
     }
     this.checkForSystemWideDisconnection();
   }
   checkForSystemWideDisconnection() {
-    const now = Date.now();
+    const now2 = Date.now();
     const recentDisconnections = [];
     for (const time of this.disconnectionTimes.values()) {
-      if (now - time < 5000) {
+      if (now2 - time < 5000) {
         recentDisconnections.push(time);
       }
     }
@@ -34859,6 +35307,7 @@ var NDKPool = class extends import_tseep3.EventEmitter {
   }
 };
 var NDKDVMJobFeedback = class _NDKDVMJobFeedback extends NDKEvent {
+  static kind = 7000;
   static kinds = [7000];
   constructor(ndk, event) {
     super(ndk, event);
@@ -35017,6 +35466,7 @@ var NDKArticle = class _NDKArticle extends NDKEvent {
   }
 };
 var NDKBlossomList = class _NDKBlossomList extends NDKEvent {
+  static kind = 10063;
   static kinds = [10063];
   constructor(ndk, rawEvent) {
     super(ndk, rawEvent);
@@ -35241,6 +35691,7 @@ var NDKMintRecommendation = class _NDKMintRecommendation extends NDKEvent {
   }
 };
 var NDKClassified = class _NDKClassified extends NDKEvent {
+  static kind = 30402;
   static kinds = [30402];
   constructor(ndk, rawEvent) {
     super(ndk, rawEvent);
@@ -35379,7 +35830,7 @@ var NDKDraft = class _NDKDraft extends NDKEvent {
         user = new NDKUser({ pubkey: counterpartyPubkey ?? ownPubkey });
         await this.decrypt(user, signer);
         const payload = JSON.parse(this.content);
-        this._event = await wrapEvent(new NDKEvent(this.ndk, payload));
+        this._event = await wrapEvent3(new NDKEvent(this.ndk, payload));
         return this._event;
       } catch (e) {
         console.error(e);
@@ -35619,6 +36070,7 @@ var NDKImage = class _NDKImage extends NDKEvent {
 };
 var NDKList = class _NDKList extends NDKEvent {
   _encryptedTags;
+  static kind = 30001;
   static kinds = [
     30001,
     10004,
@@ -35629,7 +36081,8 @@ var NDKList = class _NDKList extends NDKEvent {
     10002,
     10007,
     10006,
-    10003
+    10003,
+    10012
   ];
   encryptedTagsLength;
   constructor(ndk, rawEvent) {
@@ -35672,6 +36125,9 @@ var NDKList = class _NDKList extends NDKEvent {
     }
     if (this.kind === 10050) {
       return "Direct Message Receive Relays";
+    }
+    if (this.kind === 10012) {
+      return "Relay Feeds";
     }
     if (this.kind === 10015) {
       return "Interests";
@@ -35883,6 +36339,7 @@ var NDKList = class _NDKList extends NDKEvent {
 };
 var NDKAppHandlerEvent = class _NDKAppHandlerEvent extends NDKEvent {
   profile;
+  static kind = 31990;
   static kinds = [31990];
   constructor(ndk, rawEvent) {
     super(ndk, rawEvent);
@@ -35932,6 +36389,44 @@ var NDKAppHandlerEvent = class _NDKAppHandlerEvent extends NDKEvent {
     });
   }
 };
+var SEVERITY_MAP = {
+  ["NO_PROOFS"]: "ERROR",
+  ["INVALID_PROOF_COUNT"]: "ERROR",
+  ["MULTIPLE_RECIPIENTS"]: "ERROR",
+  ["NO_RECIPIENT"]: "ERROR",
+  ["MULTIPLE_MINTS"]: "ERROR",
+  ["NO_MINT"]: "ERROR",
+  ["MULTIPLE_EVENT_TAGS"]: "ERROR",
+  ["MALFORMED_PROOF_SECRET"]: "ERROR",
+  ["MISSING_EVENT_TAG_IN_PROOF"]: "WARNING",
+  ["MISMATCHED_EVENT_TAG_IN_PROOF"]: "WARNING",
+  ["MISSING_SENDER_TAG_IN_PROOF"]: "WARNING",
+  ["MISMATCHED_SENDER_TAG_IN_PROOF"]: "WARNING",
+  ["NO_EVENT_TAG_IN_EVENT"]: "WARNING"
+};
+var ERROR_MESSAGES = {
+  ["NO_PROOFS"]: "Nutzap must contain at least one proof",
+  ["INVALID_PROOF_COUNT"]: "Invalid proof count",
+  ["MULTIPLE_RECIPIENTS"]: "Nutzap must have exactly one recipient (p tag)",
+  ["NO_RECIPIENT"]: "Nutzap must have a recipient (p tag)",
+  ["MULTIPLE_MINTS"]: "Nutzap must specify exactly one mint (u tag)",
+  ["NO_MINT"]: "Nutzap must specify a mint (u tag)",
+  ["MULTIPLE_EVENT_TAGS"]: "Nutzap must have at most one event tag (e tag)",
+  ["MALFORMED_PROOF_SECRET"]: "Proof secret is malformed and cannot be parsed",
+  ["MISSING_EVENT_TAG_IN_PROOF"]: "Proof secret missing 'e' tag for replay protection",
+  ["MISMATCHED_EVENT_TAG_IN_PROOF"]: "Proof secret 'e' tag does not match event being zapped",
+  ["MISSING_SENDER_TAG_IN_PROOF"]: "Proof secret missing 'P' tag for sender verification",
+  ["MISMATCHED_SENDER_TAG_IN_PROOF"]: "Proof secret 'P' tag does not match sender pubkey",
+  ["NO_EVENT_TAG_IN_EVENT"]: "Nutzap event missing 'e' tag (recommended for replay protection)"
+};
+function createValidationIssue(code2, proofIndex) {
+  return {
+    code: code2,
+    severity: SEVERITY_MAP[code2],
+    message: ERROR_MESSAGES[code2],
+    proofIndex
+  };
+}
 var NDKNutzap = class _NDKNutzap extends NDKEvent {
   debug;
   _proofs = [];
@@ -36061,6 +36556,11 @@ var NDKNutzap = class _NDKNutzap extends NDKEvent {
     return event;
   }
   get isValid() {
+    const result = this.validateNIP61();
+    return result.valid;
+  }
+  validateNIP61() {
+    const issues = [];
     let eTagCount = 0;
     let pTagCount = 0;
     let mintTagCount = 0;
@@ -36072,7 +36572,66 @@ var NDKNutzap = class _NDKNutzap extends NDKEvent {
       if (tag[0] === "u")
         mintTagCount++;
     }
-    return pTagCount === 1 && mintTagCount === 1 && eTagCount <= 1 && this.proofs.length > 0;
+    if (this.proofs.length === 0) {
+      issues.push(createValidationIssue("NO_PROOFS"));
+    }
+    if (pTagCount === 0) {
+      issues.push(createValidationIssue("NO_RECIPIENT"));
+    } else if (pTagCount > 1) {
+      issues.push(createValidationIssue("MULTIPLE_RECIPIENTS"));
+    }
+    if (mintTagCount === 0) {
+      issues.push(createValidationIssue("NO_MINT"));
+    } else if (mintTagCount > 1) {
+      issues.push(createValidationIssue("MULTIPLE_MINTS"));
+    }
+    if (eTagCount > 1) {
+      issues.push(createValidationIssue("MULTIPLE_EVENT_TAGS"));
+    }
+    const eventId = this.tagValue("e");
+    const senderPubkey = this.pubkey;
+    for (let i3 = 0;i3 < this.proofs.length; i3++) {
+      const proof = this.proofs[i3];
+      try {
+        const secret = JSON.parse(proof.secret);
+        const payload = typeof secret === "string" ? JSON.parse(secret) : secret;
+        if (Array.isArray(payload) && payload[0] === "P2PK" && payload[1]) {
+          const tags = payload[1].tags;
+          if (eventId) {
+            if (!tags) {
+              issues.push(createValidationIssue("MISSING_EVENT_TAG_IN_PROOF", i3));
+            } else {
+              const eTag = tags.find((t) => t[0] === "e");
+              if (!eTag) {
+                issues.push(createValidationIssue("MISSING_EVENT_TAG_IN_PROOF", i3));
+              } else if (eTag[1] !== eventId) {
+                issues.push(createValidationIssue("MISMATCHED_EVENT_TAG_IN_PROOF", i3));
+              }
+            }
+          }
+          if (!tags) {
+            issues.push(createValidationIssue("MISSING_SENDER_TAG_IN_PROOF", i3));
+          } else {
+            const PTag = tags.find((t) => t[0] === "P");
+            if (!PTag) {
+              issues.push(createValidationIssue("MISSING_SENDER_TAG_IN_PROOF", i3));
+            } else if (PTag[1] !== senderPubkey) {
+              issues.push(createValidationIssue("MISMATCHED_SENDER_TAG_IN_PROOF", i3));
+            }
+          }
+        }
+      } catch {
+        issues.push(createValidationIssue("MALFORMED_PROOF_SECRET", i3));
+      }
+    }
+    if (!eventId && this.proofs.length > 0) {
+      issues.push(createValidationIssue("NO_EVENT_TAG_IN_EVENT"));
+    }
+    const hasErrors = issues.some((issue) => issue.severity === "ERROR");
+    return {
+      valid: !hasErrors,
+      issues
+    };
   }
 };
 var NDKProject = class _NDKProject extends NDKEvent {
@@ -36249,6 +36808,7 @@ var NDKProjectTemplate = class _NDKProjectTemplate extends NDKEvent {
 var READ_MARKER = "read";
 var WRITE_MARKER = "write";
 var NDKRelayList = class _NDKRelayList extends NDKEvent {
+  static kind = 10002;
   static kinds = [10002];
   constructor(ndk, rawEvent) {
     super(ndk, rawEvent);
@@ -36319,8 +36879,46 @@ function relayListFromKind3(ndk, contactList) {
   } catch {}
   return;
 }
+var NDKRelayFeedList = class _NDKRelayFeedList extends NDKList {
+  static kind = 10012;
+  static kinds = [10012];
+  constructor(ndk, rawEvent) {
+    super(ndk, rawEvent);
+    if (!rawEvent?.kind) {
+      this.kind = 10012;
+    }
+  }
+  static from(ndkEvent) {
+    return new _NDKRelayFeedList(ndkEvent.ndk, ndkEvent);
+  }
+  get relayUrls() {
+    return this.getMatchingTags("relay").map((tag) => tag[1]);
+  }
+  get relaySets() {
+    return this.getMatchingTags("a").map((tag) => tag[1]);
+  }
+  async addRelay(relayUrl, mark, encrypted = false, position = "bottom") {
+    const tag = ["relay", relayUrl];
+    if (mark)
+      tag.push(mark);
+    await this.addItem(tag, undefined, encrypted, position);
+  }
+  async addRelaySet(relaySetNaddr, mark, encrypted = false, position = "bottom") {
+    const tag = ["a", relaySetNaddr];
+    if (mark)
+      tag.push(mark);
+    await this.addItem(tag, undefined, encrypted, position);
+  }
+  async removeRelay(relayUrl, publish = true) {
+    await this.removeItemByValue(relayUrl, publish);
+  }
+  async removeRelaySet(relaySetNaddr, publish = true) {
+    await this.removeItemByValue(relaySetNaddr, publish);
+  }
+};
 var NDKRepost = class _NDKRepost extends NDKEvent {
   _repostedEvents;
+  static kind = 6;
   static kinds = [6, 16];
   static from(event) {
     return new _NDKRepost(event.ndk, event.rawEvent());
@@ -36657,6 +37255,7 @@ var coordinates = (position) => `${position.x},${position.y}`;
 var dimension = (dimension2) => `${dimension2.width}x${dimension2.height}`;
 var NDKSubscriptionReceipt = class _NDKSubscriptionReceipt extends NDKEvent {
   debug;
+  static kind = 7003;
   static kinds = [7003];
   constructor(ndk, rawEvent) {
     super(ndk, rawEvent);
@@ -36829,6 +37428,7 @@ var NDKSubscriptionTier = class _NDKSubscriptionTier extends NDKArticle {
 };
 var NDKSubscriptionStart = class _NDKSubscriptionStart extends NDKEvent {
   debug;
+  static kind = 7001;
   static kinds = [7001];
   constructor(ndk, rawEvent) {
     super(ndk, rawEvent);
@@ -37059,6 +37659,7 @@ var NDKWiki = class _NDKWiki extends NDKArticle {
   }
 };
 var NDKWikiMergeRequest = class _NDKWikiMergeRequest extends NDKEvent {
+  static kind = 818;
   static kinds = [818];
   static from(event) {
     return new _NDKWikiMergeRequest(event.ndk, event.rawEvent());
@@ -37084,7 +37685,7 @@ var NDKWikiMergeRequest = class _NDKWikiMergeRequest extends NDKEvent {
   }
 };
 var registeredEventClasses = /* @__PURE__ */ new Set;
-function wrapEvent(event) {
+function wrapEvent3(event) {
   const eventWrappingMap = /* @__PURE__ */ new Map;
   const builtInClasses = [
     NDKImage,
@@ -37106,6 +37707,7 @@ function wrapEvent(event) {
     NDKSubscriptionReceipt,
     NDKList,
     NDKRelayList,
+    NDKRelayFeedList,
     NDKStory,
     NDKBlossomList,
     NDKFollowPack,
@@ -37253,6 +37855,36 @@ Hashtag tags should NOT include the # symbol.`, `Remove the # prefix from hashta
     }
   });
 }
+function checkReplaceableWithOldTimestamp(event, warn) {
+  if (event.kind === undefined || event.kind === null || !event.created_at)
+    return;
+  if (!event.isReplaceable())
+    return;
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const ageSeconds = nowSeconds - event.created_at;
+  const TEN_SECONDS = 10;
+  if (ageSeconds > TEN_SECONDS) {
+    const ageMinutes = Math.floor(ageSeconds / 60);
+    const ageDescription = ageMinutes > 0 ? `${ageMinutes} minute${ageMinutes !== 1 ? "s" : ""}` : `${ageSeconds} seconds`;
+    warn("event-replaceable-old-timestamp", `Publishing a replaceable event with an old created_at timestamp.
+
+\uD83D\uDCE6 Event details:
+   • kind: ${event.kind} (replaceable)
+   • created_at: ${event.created_at}
+   • age: ${ageDescription} old
+   • current time: ${nowSeconds}
+
+⚠️  This is wrong and will be rejected by relays.`, `For replaceable events, use publishReplaceable():
+
+   ✅ CORRECT:
+   await event.publishReplaceable();
+   // Automatically updates created_at to now
+
+   ❌ WRONG:
+   await event.publish();
+   // Uses old created_at`);
+  }
+}
 function signing(event, error, warn, replyEvents) {
   checkMissingKind(event, error);
   checkContentIsObject(event, error);
@@ -37262,19 +37894,15 @@ function signing(event, error, warn, replyEvents) {
   checkHashtagsWithPrefix(event, error);
   checkManualReplyMarkers(event, warn, replyEvents);
 }
+function publishing(event, warn) {
+  checkReplaceableWithOldTimestamp(event, warn);
+}
 function isNip33Pattern(filters) {
   const filterArray = Array.isArray(filters) ? filters : [filters];
   if (filterArray.length !== 1)
     return false;
   const filter = filterArray[0];
   return filter.kinds && Array.isArray(filter.kinds) && filter.kinds.length === 1 && filter.authors && Array.isArray(filter.authors) && filter.authors.length === 1 && filter["#d"] && Array.isArray(filter["#d"]) && filter["#d"].length === 1;
-}
-function isSingleIdLookup(filters) {
-  const filterArray = Array.isArray(filters) ? filters : [filters];
-  if (filterArray.length !== 1)
-    return false;
-  const filter = filterArray[0];
-  return filter.ids && Array.isArray(filter.ids) && filter.ids.length === 1;
 }
 function isReplaceableEventFilter(filters) {
   const filterArray = Array.isArray(filters) ? filters : [filters];
@@ -37330,22 +37958,6 @@ function fetchingEvents(filters, opts, warn, shouldWarnRatio, incrementCount) {
   ✅ GOOD: const event = await ndk.fetchEvent('naddr1...');
 
 fetchEvent() handles naddr decoding automatically and returns the event directly.`);
-  } else if (isSingleIdLookup(filters)) {
-    const filter = filterArray[0];
-    const eventId = filter.ids?.[0];
-    warn("fetch-events-usage", `For fetching a single event, use fetchEvent() instead.
-
-\uD83D\uDCE6 Your filter:
-   ` + formattedFilters + `
-
-\uD83D\uDCA1 Looking for event: ` + eventId + `
-
-  ❌ BAD:  const events = await ndk.fetchEvents({ ids: [eventId] });
-  ✅ GOOD: const event = await ndk.fetchEvent(eventId);
-  ✅ GOOD: const event = await ndk.fetchEvent('note1...');
-  ✅ GOOD: const event = await ndk.fetchEvent('nevent1...');
-
-fetchEvent() is optimized for single event lookups and returns the event directly.`);
   } else if (isReplaceableEventFilter(filters)) {
     return;
   } else {
@@ -37569,9 +38181,10 @@ var AIGuardrails = class {
         return;
       signing(event, this.error.bind(this), this.warn.bind(this), this._replyEvents);
     },
-    publishing: (_event) => {
+    publishing: (event) => {
       if (!this.enabled)
         return;
+      publishing(event, this.warn.bind(this));
     },
     received: (_event, _relay) => {
       if (!this.enabled)
@@ -37953,7 +38566,7 @@ var defaultOpts = {
   cacheUsage: "CACHE_FIRST",
   dontSaveToCache: false,
   groupable: true,
-  groupableDelay: 100,
+  groupableDelay: 10,
   groupableDelayType: "at-most",
   cacheUnconstrainFilter: ["limit", "since", "until"],
   includeMuted: false
@@ -38055,14 +38668,32 @@ var NDKSubscription = class extends import_tseep4.EventEmitter {
   start(emitCachedEvents = true) {
     let cacheResult;
     const updateStateFromCacheResults = (events) => {
-      for (const event of events) {
-        if (event.created_at && (!this.mostRecentCacheEventTimestamp || event.created_at > this.mostRecentCacheEventTimestamp)) {
-          this.mostRecentCacheEventTimestamp = event.created_at;
-        }
-        this.eventReceived(event, undefined, true, false);
+      if (events.length === 0) {
+        if (!emitCachedEvents)
+          cacheResult = events;
+        return;
       }
       if (!emitCachedEvents) {
+        let maxTimestamp2 = this.mostRecentCacheEventTimestamp || 0;
+        for (const event of events) {
+          event.ndk = this.ndk;
+          if (event.created_at && event.created_at > maxTimestamp2) {
+            maxTimestamp2 = event.created_at;
+          }
+        }
+        this.mostRecentCacheEventTimestamp = maxTimestamp2;
         cacheResult = events;
+        return;
+      }
+      let maxTimestamp = this.mostRecentCacheEventTimestamp || 0;
+      for (const event of events) {
+        if (event.created_at && event.created_at > maxTimestamp) {
+          maxTimestamp = event.created_at;
+        }
+      }
+      this.mostRecentCacheEventTimestamp = maxTimestamp;
+      for (const event of events) {
+        this.eventReceived(event, undefined, true, false);
       }
     };
     const loadFromRelays = () => {
@@ -38078,7 +38709,19 @@ var NDKSubscription = class extends import_tseep4.EventEmitter {
       if (cacheResult instanceof Promise) {
         if (this.shouldWaitForCache()) {
           cacheResult.then((events) => {
-            updateStateFromCacheResults(events);
+            if (this.opts.onEvents) {
+              let maxTimestamp = this.mostRecentCacheEventTimestamp || 0;
+              for (const event of events) {
+                event.ndk = this.ndk;
+                if (event.created_at && event.created_at > maxTimestamp) {
+                  maxTimestamp = event.created_at;
+                }
+              }
+              this.mostRecentCacheEventTimestamp = maxTimestamp;
+              this.opts.onEvents(events);
+            } else {
+              updateStateFromCacheResults(events);
+            }
             if (queryFullyFilled(this)) {
               this.emit("eose", this);
               return;
@@ -38088,7 +38731,19 @@ var NDKSubscription = class extends import_tseep4.EventEmitter {
           return null;
         }
         cacheResult.then((events) => {
-          updateStateFromCacheResults(events);
+          if (this.opts.onEvents) {
+            let maxTimestamp = this.mostRecentCacheEventTimestamp || 0;
+            for (const event of events) {
+              event.ndk = this.ndk;
+              if (event.created_at && event.created_at > maxTimestamp) {
+                maxTimestamp = event.created_at;
+              }
+            }
+            this.mostRecentCacheEventTimestamp = maxTimestamp;
+            this.opts.onEvents(events);
+          } else {
+            updateStateFromCacheResults(events);
+          }
           if (!this.shouldQueryRelays()) {
             this.emit("eose", this);
           }
@@ -38179,6 +38834,14 @@ var NDKSubscription = class extends import_tseep4.EventEmitter {
     if (event instanceof NDKEvent)
       ndkEvent = event;
     if (!eventAlreadySeen) {
+      if (this.ndk.futureTimestampGrace !== undefined && event.created_at) {
+        const currentTime = Math.floor(Date.now() / 1000);
+        const timeDifference = event.created_at - currentTime;
+        if (timeDifference > this.ndk.futureTimestampGrace) {
+          this.debug("Event discarded: timestamp %d is %d seconds in the future (grace: %d seconds)", event.created_at, timeDifference, this.ndk.futureTimestampGrace);
+          return;
+        }
+      }
       ndkEvent ??= new NDKEvent(this.ndk, event);
       ndkEvent.ndk = this.ndk;
       ndkEvent.relay = relay;
@@ -38244,7 +38907,7 @@ var NDKSubscription = class extends import_tseep4.EventEmitter {
     this.lastEventReceivedAt = Date.now();
   }
   emitEvent(wrap, evt, relay, fromCache, optimisticPublish) {
-    const wrapped = wrap ? wrapEvent(evt) : evt;
+    const wrapped = wrap ? wrapEvent3(evt) : evt;
     if (wrapped instanceof Promise) {
       wrapped.then((e) => this.emitEvent(false, e, relay, fromCache, optimisticPublish));
     } else if (wrapped) {
@@ -38257,13 +38920,11 @@ var NDKSubscription = class extends import_tseep4.EventEmitter {
   eoseTimeout;
   eosed = false;
   eoseReceived(relay) {
-    this.debug("EOSE received from %s", relay.url);
     this.eosesSeen.add(relay);
     let lastEventSeen = this.lastEventReceivedAt ? Date.now() - this.lastEventReceivedAt : undefined;
     const hasSeenAllEoses = this.eosesSeen.size === this.relayFilters?.size;
     const queryFilled = queryFullyFilled(this);
     const performEose = (reason) => {
-      this.debug("Performing EOSE: %s %d", reason, this.eosed);
       if (this.eosed)
         return;
       if (this.eoseTimeout)
@@ -38284,12 +38945,6 @@ var NDKSubscription = class extends import_tseep4.EventEmitter {
         return;
       }
       const percentageOfRelaysThatHaveSentEose = this.eosesSeen.size / connectedRelaysWithFilters.length;
-      this.debug("Percentage of relays that have sent EOSE", {
-        subId: this.subId,
-        percentageOfRelaysThatHaveSentEose,
-        seen: this.eosesSeen.size,
-        total: connectedRelaysWithFilters.length
-      });
       if (this.eosesSeen.size >= 2 && percentageOfRelaysThatHaveSentEose >= 0.5) {
         timeToWaitForNextEose = timeToWaitForNextEose * (1 - percentageOfRelaysThatHaveSentEose);
         if (timeToWaitForNextEose === 0) {
@@ -38637,7 +39292,7 @@ var NDKUser = class _NDKUser {
     opts.cacheUsage ??= "ONLY_RELAY";
     opts.closeOnEose ??= true;
     opts.groupable ??= true;
-    opts.groupableDelay ??= 250;
+    opts.groupableDelay ??= 25;
     if (!setMetadataEvent) {
       setMetadataEvent = await this.ndk.fetchEvent({ kinds: [0], authors: [this.pubkey] }, opts);
     }
@@ -38683,13 +39338,26 @@ var NDKUser = class _NDKUser {
     if (!currentFollowList) {
       currentFollowList = await this.follows(undefined, undefined, kind);
     }
-    if (currentFollowList.has(newFollow)) {
+    const followsToAdd = Array.isArray(newFollow) ? newFollow : [newFollow];
+    let anyAdded = false;
+    for (const follow of followsToAdd) {
+      const followPubkey = typeof follow === "string" ? follow : follow.pubkey;
+      const isAlreadyFollowing = Array.from(currentFollowList).some((item) => typeof item === "string" ? item === followPubkey : item.pubkey === followPubkey);
+      if (!isAlreadyFollowing) {
+        currentFollowList.add(follow);
+        anyAdded = true;
+      }
+    }
+    if (!anyAdded) {
       return false;
     }
-    currentFollowList.add(newFollow);
     const event = new NDKEvent(this.ndk, { kind });
     for (const follow of currentFollowList) {
-      event.tag(follow);
+      if (typeof follow === "string") {
+        event.tags.push(["p", follow]);
+      } else {
+        event.tag(follow);
+      }
     }
     await event.publish();
     return true;
@@ -38701,20 +39369,27 @@ var NDKUser = class _NDKUser {
     if (!currentFollowList) {
       currentFollowList = await this.follows(undefined, undefined, kind);
     }
+    const usersToUnfollow = Array.isArray(user) ? user : [user];
+    const unfollowPubkeys = new Set(usersToUnfollow.map((u) => typeof u === "string" ? u : u.pubkey));
     const newUserFollowList = /* @__PURE__ */ new Set;
-    let foundUser = false;
+    let foundAny = false;
     for (const follow of currentFollowList) {
-      if (follow.pubkey !== user.pubkey) {
+      const followPubkey = typeof follow === "string" ? follow : follow.pubkey;
+      if (!unfollowPubkeys.has(followPubkey)) {
         newUserFollowList.add(follow);
       } else {
-        foundUser = true;
+        foundAny = true;
       }
     }
-    if (!foundUser)
+    if (!foundAny)
       return false;
     const event = new NDKEvent(this.ndk, { kind });
     for (const follow of newUserFollowList) {
-      event.tag(follow);
+      if (typeof follow === "string") {
+        event.tags.push(["p", follow]);
+      } else {
+        event.tag(follow);
+      }
     }
     return await event.publish();
   }
@@ -39341,6 +40016,7 @@ var NDK = class extends import_tseep5.EventEmitter {
   filterValidationMode = "validate";
   subManager;
   aiGuardrails;
+  futureTimestampGrace;
   _signatureVerificationFunction;
   _signatureVerificationWorker;
   signatureVerificationTimeMs = 0;
@@ -39350,6 +40026,7 @@ var NDK = class extends import_tseep5.EventEmitter {
   httpFetch;
   netDebug;
   autoConnectUserRelays = true;
+  _wallet;
   walletConfig;
   constructor(opts = {}) {
     super();
@@ -39405,6 +40082,7 @@ var NDK = class extends import_tseep5.EventEmitter {
     this.validationRatioFn = opts.validationRatioFn || this.defaultValidationRatioFn;
     this.filterValidationMode = opts.filterValidationMode || "validate";
     this.aiGuardrails = new AIGuardrails(opts.aiGuardrails || false);
+    this.futureTimestampGrace = opts.futureTimestampGrace;
     this.aiGuardrails.ndkInstantiated(this);
     try {
       this.httpFetch = fetch;
@@ -39562,7 +40240,6 @@ var NDK = class extends import_tseep5.EventEmitter {
     } else if (typeof autoStartOrRelaySet === "boolean" || typeof autoStartOrRelaySet === "object") {
       autoStart = autoStartOrRelaySet;
     }
-    let eventsHandler;
     const finalOpts = { relaySet: _relaySet, ...opts };
     if (autoStart && typeof autoStart === "object") {
       if (autoStart.onEvent)
@@ -39572,7 +40249,7 @@ var NDK = class extends import_tseep5.EventEmitter {
       if (autoStart.onClose)
         finalOpts.onClose = autoStart.onClose;
       if (autoStart.onEvents)
-        eventsHandler = autoStart.onEvents;
+        finalOpts.onEvents = autoStart.onEvents;
     }
     const subscription = new NDKSubscription(this, filters, finalOpts);
     this.subManager.add(subscription);
@@ -39592,9 +40269,7 @@ var NDK = class extends import_tseep5.EventEmitter {
         if (this.cacheAdapter?.initializeAsync && !this.cacheAdapter.ready) {
           await this.cacheAdapter.initializeAsync(this);
         }
-        const cachedEvents = subscription.start(!eventsHandler);
-        if (cachedEvents && cachedEvents.length > 0 && !!eventsHandler)
-          eventsHandler(cachedEvents);
+        subscription.start();
       }, 0);
     }
     return subscription;
@@ -39649,47 +40324,50 @@ var NDK = class extends import_tseep5.EventEmitter {
     }
     return new Promise((resolve2, reject) => {
       let fetchedEvent = null;
+      const processEvent = (event) => {
+        event.ndk = this;
+        if (!event.isReplaceable()) {
+          clearTimeout(t2);
+          s?.stop();
+          this.aiGuardrails["_nextCallDisabled"] = null;
+          resolve2(event);
+        } else if (!fetchedEvent || fetchedEvent.created_at < event.created_at) {
+          fetchedEvent = event;
+        }
+      };
       const subscribeOpts = {
         ...opts || {},
-        closeOnEose: true
-      };
-      if (relaySet)
-        subscribeOpts.relaySet = relaySet;
-      const t2 = setTimeout(() => {
-        s.stop();
-        this.aiGuardrails["_nextCallDisabled"] = null;
-        resolve2(fetchedEvent);
-      }, 1e4);
-      const s = this.subscribe(filters, subscribeOpts, {
-        onEvent: (event) => {
-          event.ndk = this;
-          if (!event.isReplaceable()) {
-            clearTimeout(t2);
-            this.aiGuardrails["_nextCallDisabled"] = null;
-            resolve2(event);
-          } else if (!fetchedEvent || fetchedEvent.created_at < event.created_at) {
-            fetchedEvent = event;
+        closeOnEose: true,
+        onEvents: (cachedEvents) => {
+          for (const event of cachedEvents) {
+            processEvent(event);
           }
+        },
+        onEvent: (event) => {
+          processEvent(event);
         },
         onEose: () => {
           clearTimeout(t2);
           this.aiGuardrails["_nextCallDisabled"] = null;
           resolve2(fetchedEvent);
         }
-      });
+      };
+      if (relaySet)
+        subscribeOpts.relaySet = relaySet;
+      let s;
+      const t2 = setTimeout(() => {
+        s.stop();
+        this.aiGuardrails["_nextCallDisabled"] = null;
+        resolve2(fetchedEvent);
+      }, 1e4);
+      s = this.subscribe(filters, subscribeOpts);
     });
   }
   async fetchEvents(filters, opts, relaySet) {
     this.aiGuardrails?.ndk?.fetchingEvents(filters, opts);
     return new Promise((resolve2) => {
       const events = /* @__PURE__ */ new Map;
-      const subscribeOpts = {
-        ...opts || {},
-        closeOnEose: true
-      };
-      if (relaySet)
-        subscribeOpts.relaySet = relaySet;
-      const onEvent = (event) => {
+      const processEvent = (event) => {
         let _event;
         if (!(event instanceof NDKEvent))
           _event = new NDKEvent(undefined, event);
@@ -39703,14 +40381,23 @@ var NDK = class extends import_tseep5.EventEmitter {
         _event.ndk = this;
         events.set(dedupKey, _event);
       };
-      const _relaySetSubscription = this.subscribe(filters, {
-        ...subscribeOpts,
-        onEvent,
+      const subscribeOpts = {
+        ...opts || {},
+        closeOnEose: true,
+        onEvents: (cachedEvents) => {
+          for (const event of cachedEvents) {
+            processEvent(event);
+          }
+        },
+        onEvent: processEvent,
         onEose: () => {
           this.aiGuardrails["_nextCallDisabled"] = null;
           resolve2(new Set(events.values()));
         }
-      });
+      };
+      if (relaySet)
+        subscribeOpts.relaySet = relaySet;
+      const _relaySetSubscription = this.subscribe(filters, subscribeOpts);
     });
   }
   assertSigner() {
@@ -39732,12 +40419,17 @@ var NDK = class extends import_tseep5.EventEmitter {
   }
   set wallet(wallet) {
     if (!wallet) {
+      this._wallet = undefined;
       this.walletConfig = undefined;
       return;
     }
+    this._wallet = wallet;
     this.walletConfig ??= {};
     this.walletConfig.lnPay = wallet?.lnPay?.bind(wallet);
     this.walletConfig.cashuPay = wallet?.cashuPay?.bind(wallet);
+  }
+  get wallet() {
+    return this._wallet;
   }
 };
 var nip19_exports2 = {};
@@ -39990,7 +40682,7 @@ var NDKNostrRpc = class extends import_tseep7.EventEmitter {
   signer;
   relaySet;
   debug;
-  encryptionType = "nip04";
+  encryptionType = "nip44";
   pool;
   constructor(ndk, signer, debug9, relayUrls) {
     super();
@@ -40644,7 +41336,7 @@ function normalizeDbRows(queryResults) {
     return obj;
   });
 }
-function querySync(db, filters) {
+function querySync(db, filters, subId) {
   const allRecords = [];
   for (const filter of filters) {
     const hasHashtagFilter = Object.keys(filter).some((key) => key.startsWith("#") && key.length === 2);
@@ -40654,10 +41346,11 @@ function querySync(db, filters) {
           const tagValues = Array.isArray(filter[key]) ? filter[key] : [];
           const placeholders = tagValues.map(() => "?").join(",");
           const sql = `
-                        SELECT * FROM events
+                        SELECT events.*
+                        FROM events
                         INNER JOIN event_tags ON events.id = event_tags.event_id
                         WHERE events.deleted = 0 AND event_tags.tag = ? AND event_tags.value IN (${placeholders})
-                        ORDER BY created_at DESC
+                        ORDER BY events.created_at DESC
                     `;
           const params = [key[1], ...tagValues];
           const events = db.exec(sql, params);
@@ -40668,11 +41361,12 @@ function querySync(db, filters) {
       }
     } else if (filter.authors && filter.kinds) {
       const sql = `
-                SELECT * FROM events
-                WHERE deleted = 0
-                AND pubkey IN (${filter.authors.map(() => "?").join(",")})
-                AND kind IN (${filter.kinds.map(() => "?").join(",")})
-                ORDER BY created_at DESC
+                SELECT events.*
+                FROM events
+                WHERE events.deleted = 0
+                AND events.pubkey IN (${filter.authors.map(() => "?").join(",")})
+                AND events.kind IN (${filter.kinds.map(() => "?").join(",")})
+                ORDER BY events.created_at DESC
             `;
       const params = [...filter.authors, ...filter.kinds];
       const events = db.exec(sql, params);
@@ -40680,10 +41374,11 @@ function querySync(db, filters) {
       allRecords.push(...normalizedEvents);
     } else if (filter.authors) {
       const sql = `
-                SELECT * FROM events
-                WHERE deleted = 0
-                AND pubkey IN (${filter.authors.map(() => "?").join(",")})
-                ORDER BY created_at DESC
+                SELECT events.*
+                FROM events
+                WHERE events.deleted = 0
+                AND events.pubkey IN (${filter.authors.map(() => "?").join(",")})
+                ORDER BY events.created_at DESC
             `;
       const params = filter.authors;
       const events = db.exec(sql, params);
@@ -40691,10 +41386,11 @@ function querySync(db, filters) {
       allRecords.push(...normalizedEvents);
     } else if (filter.kinds) {
       const sql = `
-                SELECT * FROM events
-                WHERE deleted = 0
-                AND kind IN (${filter.kinds.map(() => "?").join(",")})
-                ORDER BY created_at DESC
+                SELECT events.*
+                FROM events
+                WHERE events.deleted = 0
+                AND events.kind IN (${filter.kinds.map(() => "?").join(",")})
+                ORDER BY events.created_at DESC
             `;
       const params = filter.kinds;
       const events = db.exec(sql, params);
@@ -40702,10 +41398,11 @@ function querySync(db, filters) {
       allRecords.push(...normalizedEvents);
     } else if (filter.ids) {
       const sql = `
-                SELECT * FROM events
-                WHERE deleted = 0
-                AND id IN (${filter.ids.map(() => "?").join(",")})
-                ORDER BY created_at DESC
+                SELECT events.*
+                FROM events
+                WHERE events.deleted = 0
+                AND events.id IN (${filter.ids.map(() => "?").join(",")})
+                ORDER BY events.created_at DESC
             `;
       const params = filter.ids;
       const events = db.exec(sql, params);
@@ -40720,8 +41417,8 @@ function querySync(db, filters) {
 function setEventSync(db, event, relay) {
   const stmt = `
         INSERT OR REPLACE INTO events (
-            id, pubkey, created_at, kind, tags, content, sig, raw, deleted
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            id, pubkey, created_at, kind, tags, content, sig, raw, deleted, relay_url
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
   const tags = JSON.stringify(event.tags ?? []);
   const raw = JSON.stringify([
@@ -40742,24 +41439,30 @@ function setEventSync(db, event, relay) {
     event.content ?? "",
     event.sig ?? "",
     raw,
-    0
+    0,
+    relay?.url ?? null
   ];
   db.run(stmt, values);
-  if (relay?.url) {
-    db.run("INSERT OR IGNORE INTO event_relays (event_id, relay_url, seen_at) VALUES (?, ?, ?)", [
-      event.id,
-      relay.url,
-      Date.now()
-    ]);
-  }
+  const seenKeys = new Set;
   if (event.tags && event.tags.length > 0) {
     for (const tag of event.tags) {
       if (tag.length >= 2 && tag[0].length === 1) {
-        db.run("INSERT OR IGNORE INTO event_tags (event_id, tag, value) VALUES (?, ?, ?)", [
-          event.id,
-          tag[0],
-          tag[1] || null
-        ]);
+        const tagName = tag[0];
+        const tagValue = tag[1] || null;
+        const key = `${event.id}:${tagName}:${tagValue}`;
+        if (seenKeys.has(key)) {
+          continue;
+        }
+        seenKeys.add(key);
+        try {
+          db.run("INSERT OR IGNORE INTO event_tags (event_id, tag, value) VALUES (?, ?, ?)", [
+            event.id,
+            tagName,
+            tagValue
+          ]);
+        } catch (e) {
+          console.error("[setEventSync] Failed to insert tag:", tag, e);
+        }
       }
     }
   }
@@ -40777,53 +41480,210 @@ function setEventSync(db, event, relay) {
   }
 }
 
-// src/functions/setEventDup.ts
-function setEventDupSync(db, event, relay) {
-  if (relay?.url) {
-    db.run("INSERT OR IGNORE INTO event_relays (event_id, relay_url, seen_at) VALUES (?, ?, ?)", [
-      event.id,
-      relay.url,
-      Date.now()
-    ]);
+// src/binary/encoder.ts
+var MAGIC_NUMBER = 1313821524;
+var VERSION = 1;
+function hexToBytes4(hex2) {
+  if (hex2.length % 2 !== 0) {
+    throw new Error("Hex string must have even length");
   }
+  const bytes4 = new Uint8Array(hex2.length / 2);
+  for (let i3 = 0;i3 < hex2.length; i3 += 2) {
+    bytes4[i3 / 2] = parseInt(hex2.substring(i3, i3 + 2), 16);
+  }
+  return bytes4;
+}
+function encodeString(str) {
+  return new TextEncoder().encode(str);
+}
+function calculateEventSize(event) {
+  let size = 4;
+  size += 32;
+  size += 32;
+  size += 4;
+  size += 2;
+  size += 64;
+  const contentBytes = encodeString(event.content);
+  size += 4;
+  size += contentBytes.length;
+  size += 2;
+  for (const tag of event.tags) {
+    size += 1;
+    for (const item of tag) {
+      const itemBytes = encodeString(item);
+      size += 2;
+      size += itemBytes.length;
+    }
+  }
+  size += 1;
+  if (event.relay_url) {
+    const relayBytes = encodeString(event.relay_url);
+    size += 2;
+    size += relayBytes.length;
+  }
+  return size;
+}
+function encodeEvent(event, buffer, offset) {
+  const view = new DataView(buffer);
+  const uint8 = new Uint8Array(buffer);
+  let pos = offset;
+  const eventSize = calculateEventSize(event);
+  view.setUint32(pos, eventSize, true);
+  pos += 4;
+  const idBytes = hexToBytes4(event.id);
+  uint8.set(idBytes, pos);
+  pos += 32;
+  const pubkeyBytes = hexToBytes4(event.pubkey);
+  uint8.set(pubkeyBytes, pos);
+  pos += 32;
+  view.setUint32(pos, event.created_at, true);
+  pos += 4;
+  view.setUint16(pos, event.kind, true);
+  pos += 2;
+  const sigBytes = hexToBytes4(event.sig);
+  uint8.set(sigBytes, pos);
+  pos += 64;
+  const contentBytes = encodeString(event.content);
+  view.setUint32(pos, contentBytes.length, true);
+  pos += 4;
+  uint8.set(contentBytes, pos);
+  pos += contentBytes.length;
+  view.setUint16(pos, event.tags.length, true);
+  pos += 2;
+  for (const tag of event.tags) {
+    view.setUint8(pos, tag.length);
+    pos += 1;
+    for (const item of tag) {
+      const itemBytes = encodeString(item);
+      view.setUint16(pos, itemBytes.length, true);
+      pos += 2;
+      uint8.set(itemBytes, pos);
+      pos += itemBytes.length;
+    }
+  }
+  if (event.relay_url) {
+    view.setUint8(pos, 1);
+    pos += 1;
+    const relayBytes = encodeString(event.relay_url);
+    view.setUint16(pos, relayBytes.length, true);
+    pos += 2;
+    uint8.set(relayBytes, pos);
+    pos += relayBytes.length;
+  } else {
+    view.setUint8(pos, 0);
+    pos += 1;
+  }
+  return pos;
+}
+function encodeEvents(events) {
+  let totalSize = 4 + 1 + 4;
+  for (const event of events) {
+    const eventSize = calculateEventSize(event);
+    totalSize += eventSize;
+  }
+  const buffer = new ArrayBuffer(totalSize);
+  const view = new DataView(buffer);
+  let offset = 0;
+  view.setUint32(offset, MAGIC_NUMBER, true);
+  offset += 4;
+  view.setUint8(offset, VERSION);
+  offset += 1;
+  view.setUint32(offset, events.length, true);
+  offset += 4;
+  for (let i3 = 0;i3 < events.length; i3++) {
+    offset = encodeEvent(events[i3], buffer, offset);
+  }
+  return buffer;
 }
 
-// src/worker.ts
-var PROTOCOL_VERSION = "0.8.1";
+// src/version.ts
+var PACKAGE_VERSION = "0.8.2";
 var PROTOCOL_NAME = "ndk-cache-sqlite";
+
+// src/worker.ts
+function getCacheStatsSync(db) {
+  const eventsByKindResult = db.exec(`
+        SELECT kind, COUNT(*) as count
+        FROM events
+        WHERE deleted = 0
+        GROUP BY kind
+        ORDER BY kind
+    `);
+  const eventsByKind = {};
+  if (eventsByKindResult[0]) {
+    for (const row of eventsByKindResult[0].values) {
+      eventsByKind[row[0]] = row[1];
+    }
+  }
+  const totalEventsResult = db.exec(`SELECT COUNT(*) FROM events WHERE deleted = 0`);
+  const totalProfilesResult = db.exec(`SELECT COUNT(*) FROM profiles`);
+  const totalEventTagsResult = db.exec(`SELECT COUNT(*) FROM event_tags`);
+  const totalDecryptedEventsResult = db.exec(`SELECT COUNT(*) FROM decrypted_events`);
+  const totalUnpublishedEventsResult = db.exec(`SELECT COUNT(*) FROM unpublished_events`);
+  const cacheDataResult = db.exec(`SELECT COUNT(*) FROM cache_data`);
+  return {
+    eventsByKind,
+    totalEvents: totalEventsResult[0]?.values[0]?.[0] || 0,
+    totalProfiles: totalProfilesResult[0]?.values[0]?.[0] || 0,
+    totalEventTags: totalEventTagsResult[0]?.values[0]?.[0] || 0,
+    totalDecryptedEvents: totalDecryptedEventsResult[0]?.values[0]?.[0] || 0,
+    totalUnpublishedEvents: totalUnpublishedEventsResult[0]?.values[0]?.[0] || 0,
+    cacheData: cacheDataResult[0]?.values[0]?.[0] || 0
+  };
+}
 var db = null;
 var SQL = null;
 var dbName = "ndk-cache";
 var saveTimeout = null;
-var SAVE_DEBOUNCE_MS = 500;
+var SAVE_DEBOUNCE_MS = 5000;
+var DISABLE_AUTOSAVE = false;
 function scheduleSave() {
+  if (DISABLE_AUTOSAVE) {
+    return;
+  }
   if (saveTimeout !== null) {
     clearTimeout(saveTimeout);
   }
-  saveTimeout = setTimeout(() => {
+  saveTimeout = setTimeout(async () => {
     if (db && dbName) {
+      const startTime = performance.now();
       const data = db.export();
-      saveToIndexedDB(dbName, data).catch((err) => {
-        console.error("Worker: Failed to save DB to IndexedDB", err);
-      });
+      const exportTime = performance.now() - startTime;
+      const dbSizeMB = (data.byteLength / (1024 * 1024)).toFixed(2);
+      console.log(`[Worker] DB export: ${dbSizeMB}MB in ${exportTime.toFixed(0)}ms`);
+      try {
+        const saveStartTime = performance.now();
+        await saveToIndexedDB(dbName, data);
+        const saveTime = performance.now() - saveStartTime;
+        console.log(`[Worker] DB save to IndexedDB: ${saveTime.toFixed(0)}ms`);
+      } catch (err) {
+        console.error("[Worker Persistence] Failed to save DB to IndexedDB", err);
+      }
     }
   }, SAVE_DEBOUNCE_MS);
 }
 function patchDbPersistence(database) {
-  const origRun = database.run;
+  const origRun = database.run.bind(database);
   database.run = function(sql, params) {
-    const result = origRun.call(this, sql, params);
+    const result = origRun(sql, params);
     scheduleSave();
     return result;
   };
 }
 async function initializeDatabase(config) {
   dbName = config.dbName || "ndk-cache";
+  if (config.saveDebounceMs !== undefined) {
+    SAVE_DEBOUNCE_MS = config.saveDebounceMs;
+  }
+  if (config.disableAutosave !== undefined) {
+    DISABLE_AUTOSAVE = config.disableAutosave;
+  }
+  console.log(`[Worker] Persistence config: debounce=${SAVE_DEBOUNCE_MS}ms, autosave=${!DISABLE_AUTOSAVE}`);
   try {
     const sqlJsConfig = {};
     if (config.wasmUrl) {
       sqlJsConfig.locateFile = () => config.wasmUrl;
-    } else {}
+    }
     SQL = await import_sql.default(sqlJsConfig);
     const savedData = await loadFromIndexedDB(dbName);
     if (savedData) {
@@ -40834,9 +41694,39 @@ async function initializeDatabase(config) {
     patchDbPersistence(db);
     await runMigrations(db);
     scheduleSave();
+    warmupProfileCache(db);
   } catch (error) {
     console.error("Worker: Database initialization failed", error);
     throw error;
+  }
+}
+function warmupProfileCache(database) {
+  try {
+    const stmt = database.prepare(`
+            SELECT pubkey, profile, updated_at
+            FROM profiles
+            ORDER BY updated_at DESC
+            LIMIT 500
+        `);
+    const profiles = [];
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      try {
+        profiles.push({
+          pubkey: row.pubkey,
+          profile: JSON.parse(row.profile)
+        });
+      } catch (e) {}
+    }
+    stmt.free();
+    if (profiles.length > 0) {
+      self.postMessage({
+        type: "warmupProfiles",
+        profiles
+      });
+    }
+  } catch (error) {
+    console.error("[Worker] Profile LRU warmup failed:", error);
   }
 }
 self.onmessage = async (event) => {
@@ -40844,7 +41734,8 @@ self.onmessage = async (event) => {
   try {
     if (type === "init") {
       await initializeDatabase(payload);
-      self.postMessage({ id, result: "initialized" });
+      const initResponse = { id, result: "initialized" };
+      self.postMessage(initResponse);
       return;
     }
     if (!db) {
@@ -40852,15 +41743,15 @@ self.onmessage = async (event) => {
     }
     let result;
     switch (type) {
-      case "run":
-        db.run(payload.sql, payload.params);
+      case "saveProfile": {
+        const { pubkey, profile, updatedAt } = payload;
+        db.run("INSERT OR REPLACE INTO profiles (pubkey, profile, updated_at) VALUES (?, ?, ?)", [pubkey, profile, updatedAt]);
         result = undefined;
         break;
-      case "exec":
-        result = db.exec(payload.sql, payload.params);
-        break;
-      case "get": {
-        const stmt = db.prepare(payload.sql, payload.params);
+      }
+      case "fetchProfile": {
+        const { pubkey } = payload;
+        const stmt = db.prepare("SELECT profile, updated_at FROM profiles WHERE pubkey = ? LIMIT 1", [pubkey]);
         if (stmt.step()) {
           result = stmt.getAsObject();
         } else {
@@ -40869,13 +41760,95 @@ self.onmessage = async (event) => {
         stmt.free();
         break;
       }
-      case "all": {
-        const stmtAll = db.prepare(payload.sql, payload.params);
-        result = [];
-        while (stmtAll.step()) {
-          result.push(stmtAll.getAsObject());
+      case "saveNip05": {
+        const { nip05, profile, fetchedAt } = payload;
+        db.run("INSERT OR REPLACE INTO nip05 (nip05, profile, fetched_at) VALUES (?, ?, ?)", [nip05, profile, fetchedAt]);
+        result = undefined;
+        break;
+      }
+      case "loadNip05": {
+        const { nip05 } = payload;
+        const stmt = db.prepare("SELECT profile, fetched_at FROM nip05 WHERE nip05 = ? LIMIT 1", [nip05]);
+        if (stmt.step()) {
+          result = stmt.getAsObject();
+        } else {
+          result = null;
         }
-        stmtAll.free();
+        stmt.free();
+        break;
+      }
+      case "getEvent": {
+        const { id: id2 } = payload;
+        const stmt = db.prepare("SELECT raw FROM events WHERE id = ? AND deleted = 0 LIMIT 1", [id2]);
+        if (stmt.step()) {
+          result = stmt.getAsObject();
+        } else {
+          result = null;
+        }
+        stmt.free();
+        break;
+      }
+      case "addDecryptedEvent": {
+        const { wrapperId, serialized } = payload;
+        db.run("INSERT OR REPLACE INTO decrypted_events (id, event) VALUES (?, ?)", [wrapperId, serialized]);
+        result = undefined;
+        break;
+      }
+      case "getDecryptedEvent": {
+        const { wrapperId } = payload;
+        const stmt = db.prepare("SELECT event FROM decrypted_events WHERE id = ? LIMIT 1", [wrapperId]);
+        if (stmt.step()) {
+          result = stmt.getAsObject();
+        } else {
+          result = null;
+        }
+        stmt.free();
+        break;
+      }
+      case "discardUnpublishedEvent": {
+        const { id: id2 } = payload;
+        db.run("DELETE FROM unpublished_events WHERE id = ?", [id2]);
+        result = undefined;
+        break;
+      }
+      case "getUnpublishedEvents": {
+        const stmt = db.prepare("SELECT event, relays FROM unpublished_events");
+        result = [];
+        while (stmt.step()) {
+          result.push(stmt.getAsObject());
+        }
+        stmt.free();
+        break;
+      }
+      case "addUnpublishedEvent": {
+        const { id: id2, event: event2, relays } = payload;
+        db.run("INSERT OR REPLACE INTO unpublished_events (id, event, relays) VALUES (?, ?, ?)", [id2, event2, relays]);
+        try {
+          const ndkEvent = new NDKEvent(undefined, JSON.parse(event2));
+          setEventSync(db, ndkEvent, undefined);
+        } catch (e) {
+          console.error("[addUnpublishedEvent] Failed to store event in main table:", e);
+        }
+        result = undefined;
+        break;
+      }
+      case "getRelayStatus": {
+        const { relayUrl } = payload;
+        db.run("CREATE TABLE IF NOT EXISTS relay_status (url TEXT PRIMARY KEY, info TEXT)");
+        const stmt = db.prepare("SELECT info FROM relay_status WHERE url = ? LIMIT 1", [relayUrl]);
+        if (stmt.step()) {
+          result = stmt.getAsObject();
+        } else {
+          result = null;
+        }
+        stmt.free();
+        break;
+      }
+      case "updateRelayStatus": {
+        const { relayUrl, info } = payload;
+        db.run("CREATE TABLE IF NOT EXISTS relay_status (url TEXT PRIMARY KEY, info TEXT)");
+        db.run("INSERT OR REPLACE INTO relay_status (url, info) VALUES (?, ?)", [relayUrl, info]);
+        result = undefined;
         break;
       }
       case "getProfiles": {
@@ -40919,36 +41892,142 @@ self.onmessage = async (event) => {
         result = undefined;
         break;
       }
-      case "setEventDup": {
-        const { eventId, relayUrl } = payload;
-        const event2 = { id: eventId };
-        const relay = relayUrl ? { url: relayUrl } : undefined;
-        setEventDupSync(db, event2, relay);
+      case "setEventBatch": {
+        const { events } = payload;
+        for (const item of events) {
+          const relayObj = item.relay ? { url: item.relay } : undefined;
+          setEventSync(db, item.event, relayObj);
+        }
         result = undefined;
         break;
       }
       case "query": {
-        const { filters } = payload;
-        result = querySync(db, filters);
+        const { filters, subId } = payload;
+        const queryResult = querySync(db, filters, subId);
+        if (queryResult.length > 0) {
+          const eventsForEncoding = queryResult.map((row) => {
+            let eventData;
+            if (typeof row.raw === "string") {
+              try {
+                const parsed = JSON.parse(row.raw);
+                eventData = {
+                  id: parsed[0] || row.id,
+                  pubkey: parsed[1] || row.pubkey,
+                  created_at: parsed[2] || row.created_at,
+                  kind: parsed[3] || row.kind,
+                  tags: parsed[4] || (typeof row.tags === "string" ? JSON.parse(row.tags || "[]") : row.tags || []),
+                  content: parsed[5] || row.content,
+                  sig: parsed[6] || row.sig
+                };
+              } catch {
+                eventData = {
+                  id: row.id,
+                  pubkey: row.pubkey,
+                  created_at: row.created_at,
+                  kind: row.kind,
+                  tags: typeof row.tags === "string" ? JSON.parse(row.tags || "[]") : row.tags || [],
+                  content: row.content,
+                  sig: row.sig
+                };
+              }
+            } else {
+              eventData = {
+                id: row.id,
+                pubkey: row.pubkey,
+                created_at: row.created_at,
+                kind: row.kind,
+                tags: typeof row.tags === "string" ? JSON.parse(row.tags || "[]") : row.tags || [],
+                content: row.content,
+                sig: row.sig
+              };
+            }
+            return {
+              id: eventData.id || "",
+              pubkey: eventData.pubkey || "",
+              created_at: eventData.created_at || 0,
+              kind: eventData.kind || 0,
+              sig: eventData.sig || "",
+              content: eventData.content || "",
+              tags: Array.isArray(eventData.tags) ? eventData.tags : [],
+              relay_url: row.relay_url || null
+            };
+          });
+          const buffer = encodeEvents(eventsForEncoding);
+          result = {
+            type: "binary",
+            buffer,
+            eventCount: eventsForEncoding.length
+          };
+        } else {
+          result = {
+            type: "binary",
+            buffer: new ArrayBuffer(0),
+            eventCount: 0
+          };
+        }
+        break;
+      }
+      case "getCacheData": {
+        const { namespace, key, maxAgeInSecs } = payload;
+        const now2 = Math.floor(Date.now() / 1000);
+        const stmt = db.prepare("SELECT data, cached_at FROM cache_data WHERE namespace = ? AND key = ?");
+        stmt.bind([namespace, key]);
+        if (stmt.step()) {
+          const row = stmt.getAsObject();
+          const cachedAt = row.cached_at;
+          if (maxAgeInSecs && now2 - cachedAt > maxAgeInSecs) {
+            stmt.free();
+            result = undefined;
+            break;
+          }
+          result = JSON.parse(row.data);
+          stmt.free();
+        } else {
+          result = undefined;
+          stmt.free();
+        }
+        break;
+      }
+      case "setCacheData": {
+        const { namespace, key, data } = payload;
+        const now2 = Math.floor(Date.now() / 1000);
+        const dataJson = JSON.stringify(data);
+        db.run("INSERT OR REPLACE INTO cache_data (namespace, key, data, cached_at) VALUES (?, ?, ?, ?)", [
+          namespace,
+          key,
+          dataJson,
+          now2
+        ]);
+        result = undefined;
         break;
       }
       default:
         throw new Error(`Unknown command type: ${type}`);
     }
-    self.postMessage({
+    const response = {
       _protocol: PROTOCOL_NAME,
-      _version: PROTOCOL_VERSION,
+      _version: PACKAGE_VERSION,
       id,
       result
-    });
+    };
+    const transferables = [];
+    if (result && result.type === "binary" && result.buffer) {
+      transferables.push(result.buffer);
+    }
+    if (transferables.length > 0) {
+      self.postMessage(response, transferables);
+    } else {
+      self.postMessage(response);
+    }
   } catch (error) {
     console.error(`Worker: Error processing command ${id} (${type}):`, error);
-    self.postMessage({
+    const errorResponse = {
       _protocol: PROTOCOL_NAME,
-      _version: PROTOCOL_VERSION,
+      _version: PACKAGE_VERSION,
       id,
       error: { message: error.message, stack: error.stack }
-    });
+    };
+    self.postMessage(errorResponse);
   }
 };
 self.addEventListener("error", (event) => {

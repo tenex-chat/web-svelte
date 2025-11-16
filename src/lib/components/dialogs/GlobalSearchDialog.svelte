@@ -71,7 +71,7 @@
 
 {#if open}
 	<div
-		class="fixed inset-0 z-50 flex items-start justify-center pt-[20vh] bg-black/50"
+		class="fixed inset-0 z-50 flex items-start justify-center pt-[20vh] bg-overlay/50"
 		onclick={handleClose}
 		role="presentation"
 		tabindex="0"

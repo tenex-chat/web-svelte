@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Clock, Hash } from 'lucide-svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { Avatar } from '@nostr-dev-kit/svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import { ndk } from '$lib/ndk.svelte';
 	import { formatRelativeTime } from '$lib/utils/time';
 
@@ -38,14 +38,15 @@
 
 <button
 	type="button"
-	class="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-muted dark:hover:bg-zinc-800 cursor-pointer transition-colors border-b text-left"
+	class="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-muted cursor-pointer transition-colors border-b text-left"
 	onclick={onclick}
 >
-	<!-- Author Avatar -->
-	<Avatar {ndk} pubkey={document.pubkey} size={32} class="shrink-0" />
+	<User.Root {ndk} pubkey={document.pubkey}>
+		<!-- Author Avatar -->
+		<User.Avatar class="w-8 h-8 shrink-0" />
 
-	<!-- Content -->
-	<div class="flex-1 min-w-0">
+		<!-- Content -->
+		<div class="flex-1 min-w-0">
 		<!-- Title -->
 		<div class="font-medium text-sm truncate">
 			{title}
@@ -79,5 +80,6 @@
 				{formatRelativeTime(document.created_at || 0)} · {readingTime}
 			</span>
 		</div>
-	</div>
+		</div>
+	</User.Root>
 </button>

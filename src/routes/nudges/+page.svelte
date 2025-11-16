@@ -5,7 +5,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { Trash2, Plus, ArrowLeft, Search, Star, X } from 'lucide-svelte';
-	import { Avatar, Name } from '@nostr-dev-kit/svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import Portal from 'svelte-portal';
 
 	let nudges = $state<NDKEvent[]>([]);
@@ -41,7 +41,7 @@
 		loading = true;
 		try {
 			const nudgeEvents = await ndk.fetchEvents({
-				kinds: [NDKKind.AgentNudge]
+				kinds: [NDKKind.AgentNudge as number]
 			});
 
 			nudges = Array.from(nudgeEvents).sort((a, b) => {
@@ -75,7 +75,7 @@
 		creating = true;
 		try {
 			const event = new NDKEvent(ndk);
-			event.kind = NDKKind.AgentNudge;
+			event.kind = NDKKind.AgentNudge as number;
 			event.content = newNudge.content.trim();
 
 			event.tags.push(['title', newNudge.title.trim()]);
@@ -120,7 +120,7 @@
 
 		try {
 			const deletionEvent = new NDKEvent(ndk);
-			deletionEvent.kind = 5 as NDKKind;
+			deletionEvent.kind = NDKKind.EventDeletion;
 			deletionEvent.content = 'Deleted nudge';
 			deletionEvent.tags.push(['e', nudge.id]);
 			deletionEvent.tags.push(['k', '4201']);
@@ -261,10 +261,12 @@
 									onchange={() => toggleAuthorFilter(author)}
 									class="cursor-pointer"
 								/>
-								<div class="flex items-center gap-2 flex-1 min-w-0">
-									<Avatar {ndk} pubkey={author} size={20} />
-									<Name {ndk} pubkey={author} class="truncate text-foreground" />
-								</div>
+								<User.Root {ndk} pubkey={author}>
+									<div class="flex items-center gap-2 flex-1 min-w-0">
+										<User.Avatar class="w-5 h-5" />
+										<User.Name class="truncate text-foreground" />
+									</div>
+								</User.Root>
 							</label>
 						{/each}
 					</div>
@@ -402,13 +404,15 @@
 								</div>
 
 								<!-- Author -->
-								<div class="flex items-center gap-2 mb-3 text-xs">
-									<Avatar {ndk} pubkey={nudge.pubkey} size={16} />
-									<Name {ndk} pubkey={nudge.pubkey} class="text-muted-foreground" />
-									{#if isMine}
-										<span class="text-primary">(you)</span>
-									{/if}
-								</div>
+								<User.Root {ndk} pubkey={nudge.pubkey}>
+									<div class="flex items-center gap-2 mb-3 text-xs">
+										<User.Avatar class="w-4 h-4" />
+										<User.Name class="text-muted-foreground" />
+										{#if isMine}
+											<span class="text-primary">(you)</span>
+										{/if}
+									</div>
+								</User.Root>
 
 								<!-- Content Preview -->
 								<div class="bg-muted/50 border border-border rounded-lg p-3 mb-3">
@@ -437,7 +441,7 @@
 	{#if showCreateModal}
 		<Portal>
 			<div
-				class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50"
+				class="fixed inset-0 z-[10000] flex items-center justify-center bg-overlay/50"
 				onclick={handleCloseModal}
 				onkeydown={handleModalKeydown}
 				role="presentation"

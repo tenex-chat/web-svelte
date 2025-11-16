@@ -112,7 +112,7 @@
 				>
 					<span
 						class={cn(
-							'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							uploadConfig.compressImages ? 'translate-x-6' : 'translate-x-1'
 						)}
 					/>
@@ -140,7 +140,7 @@
 				>
 					<span
 						class={cn(
-							'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							uploadConfig.stripExif ? 'translate-x-6' : 'translate-x-1'
 						)}
 					/>
@@ -163,7 +163,7 @@
 				</button>
 				<button
 					onclick={() => (showAddServer = !showAddServer)}
-					class="px-3 py-1 text-sm bg-primary text-white hover:bg-primary/90 rounded-md transition-colors"
+					class="px-3 py-1 text-sm bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
 				>
 					{showAddServer ? 'Cancel' : 'Add Server'}
 				</button>
@@ -201,7 +201,7 @@
 					onclick={addServer}
 					disabled={!serverUrl.trim()}
 					class={cn(
-						'w-full px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors',
+						'w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors',
 						!serverUrl.trim() && 'opacity-50 cursor-not-allowed'
 					)}
 				>

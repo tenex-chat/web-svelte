@@ -19,6 +19,10 @@ interface StreamingSession {
 	reconstructedContent: string;
 }
 
+// Track which streaming events have been finalized globally
+// This prevents reprocessing of streaming events after their final message arrives
+const finalizedStreamingIds = new Set<string>();
+
 /**
  * Sorts events by creation time and kind
  */
@@ -39,7 +43,7 @@ export function sortEvents(events: NDKEvent[]): NDKEvent[] {
 }
 
 /**
- * Processes a single event and updates streaming sessions
+ * Processes a single event and updates streaming sessions (for non-streaming events)
  */
 export function processEvent(
 	event: NDKEvent,
@@ -82,83 +86,13 @@ export function processEvent(
 		}
 	}
 
-	// Handle streaming responses
-	if (event.kind === NDKKind.TenexStreamingResponse) {
-		console.log('[MessageProcessor] Processing streaming event (21111)', {
-			eventId: event.id,
-			pubkey: event.pubkey,
-			content: event.content?.substring(0, 100) + '...',
-			timestamp: event.created_at
-		});
-
-		let session = streamingSessions.get(event.pubkey);
-
-		if (!session) {
-			const accumulator = new DeltaContentAccumulator();
-			const reconstructedContent = accumulator.addEvent(event);
-
-			// Use pubkey only for synthetic ID since we key sessions by pubkey
-			// This ensures the ID remains stable across all deltas for the same stream
-			const syntheticId = `streaming-${event.pubkey}`;
-
-			console.log('[MessageProcessor] Creating new streaming session', {
-				pubkey: event.pubkey,
-				syntheticId,
-				reconstructedContent: reconstructedContent?.substring(0, 100) + '...'
-			});
-
-			session = {
-				syntheticId,
-				latestEvent: event,
-				accumulator,
-				reconstructedContent
-			};
-			streamingSessions.set(event.pubkey, session);
-		} else {
-			// Update existing session but keep the same synthetic ID
-			const currentId = session.syntheticId;
-			session.reconstructedContent = session.accumulator.addEvent(event);
-			session.latestEvent = event;
-
-			console.log('[MessageProcessor] Updating streaming session', {
-				pubkey: event.pubkey,
-				syntheticId: currentId,
-				reconstructedContent: session.reconstructedContent?.substring(0, 100) + '...'
-			});
-		}
-	} else if (event.kind === NDKKind.TenexAgentTypingStart) {
-		let session = streamingSessions.get(event.pubkey);
-
-		if (!session) {
-			// For typing indicators, use pubkey as part of ID since they don't have accumulated content
-			const syntheticId = `typing-${event.pubkey}`;
-			session = {
-				syntheticId,
-				latestEvent: event,
-				accumulator: new DeltaContentAccumulator(),
-				reconstructedContent: event.content
-			};
-			streamingSessions.set(event.pubkey, session);
-		} else {
-			// Keep the same synthetic ID for consistency
-			session.latestEvent = event;
-			session.reconstructedContent = event.content;
-		}
-	} else if (event.kind === NDKKind.TenexAgentTypingStop) {
-		const session = streamingSessions.get(event.pubkey);
-		if (session?.latestEvent?.kind === NDKKind.TenexAgentTypingStart) {
-			streamingSessions.delete(event.pubkey);
-		}
-	} else {
+	// For all other events, add them as final messages
+	// Note: streaming, typing, and final reply events are handled in processEventsToMessages
+	if (event.kind !== NDKKind.TenexStreamingResponse &&
+	    event.kind !== NDKKind.TenexAgentTypingStart &&
+	    event.kind !== NDKKind.TenexAgentTypingStop &&
+	    event.kind !== NDKKind.GenericReply) {
 		finalMessages.push({ id: event.id, event });
-		if (event.kind === NDKKind.GenericReply) {
-			console.log('[MessageProcessor] Received final message (1111), clearing streaming session', {
-				eventId: event.id,
-				pubkey: event.pubkey,
-				hadStreamingSession: streamingSessions.has(event.pubkey)
-			});
-			streamingSessions.delete(event.pubkey);
-		}
 	}
 }
 
@@ -261,7 +195,7 @@ function shouldShowInBrainstormMode(
 }
 
 /**
- * Processes all events into UI-ready messages
+ * Processes all events into UI-ready messages with conversation-scoped streaming
  */
 export function processEventsToMessages(
 	events: NDKEvent[],
@@ -293,8 +227,9 @@ export function processEventsToMessages(
 	}
 	const hasModeratorSelections = selectedEventIds.size > 0;
 
-	// Process each event
+	// Process each event chronologically
 	for (const event of sortedEvents) {
+		// Apply brainstorm filtering if needed
 		if (isBrainstorm) {
 			if (!showAll) {
 				const shouldShow = shouldShowInBrainstormMode(
@@ -311,25 +246,134 @@ export function processEventsToMessages(
 					continue;
 				}
 			} else {
-				// Show all: still hide kind:7 and streaming
-				if (event.kind === 7 || event.kind === NDKKind.TenexStreamingResponse) {
+				// Show all: still hide kind:7 moderation events
+				if (event.kind === 7) {
 					continue;
 				}
 			}
-			processEvent(event, streamingSessions, finalMessages);
-		} else {
-			if (viewMode === 'flattened') {
-				processEvent(event, streamingSessions, finalMessages);
-			} else {
-				// Threaded: only direct replies to root
-				if (isDirectReplyToRoot(event, rootEvent)) {
-					processEvent(event, streamingSessions, finalMessages);
-				}
+		}
+
+		// Apply view mode filtering for non-brainstorm
+		if (!isBrainstorm && viewMode === 'threaded') {
+			if (!isDirectReplyToRoot(event, rootEvent)) {
+				continue;
 			}
+		}
+
+		// Handle different event types
+		if (event.kind === NDKKind.GenericReply) {
+			// Final message (1111) - mark all prior streaming from this pubkey as finalized
+			sortedEvents
+				.filter(e =>
+					e.kind === NDKKind.TenexStreamingResponse &&
+					e.pubkey === event.pubkey &&
+					e.created_at! < event.created_at!
+				)
+				.forEach(e => {
+					finalizedStreamingIds.add(e.id);
+					console.log('[MessageProcessor] Marking streaming event as finalized', {
+						streamingId: e.id,
+						pubkey: e.pubkey,
+						finalMessageId: event.id
+					});
+				});
+
+			// Clear any active streaming session for this pubkey
+			if (streamingSessions.has(event.pubkey)) {
+				console.log('[MessageProcessor] Clearing streaming session due to final message', {
+					pubkey: event.pubkey,
+					finalMessageId: event.id
+				});
+				streamingSessions.delete(event.pubkey);
+			}
+
+			// Add the final message
+			finalMessages.push({ id: event.id, event });
+
+		} else if (event.kind === NDKKind.TenexStreamingResponse) {
+			// Streaming response (21111) - only process if not finalized
+			if (finalizedStreamingIds.has(event.id)) {
+				console.log('[MessageProcessor] Skipping finalized streaming event', {
+					eventId: event.id,
+					pubkey: event.pubkey
+				});
+				continue;
+			}
+
+			let session = streamingSessions.get(event.pubkey);
+			if (!session) {
+				// Create new streaming session
+				const accumulator = new DeltaContentAccumulator();
+				const reconstructedContent = accumulator.addEvent(event);
+				const syntheticId = `streaming-${event.pubkey}-${event.created_at || Date.now()}`;
+
+				session = {
+					syntheticId,
+					accumulator,
+					latestEvent: event,
+					reconstructedContent
+				};
+				streamingSessions.set(event.pubkey, session);
+
+				console.log('[MessageProcessor] Created new streaming session', {
+					pubkey: event.pubkey,
+					syntheticId,
+					contentLength: reconstructedContent?.length
+				});
+			} else {
+				// Update existing session
+				session.reconstructedContent = session.accumulator.addEvent(event);
+				session.latestEvent = event;
+
+				console.log('[MessageProcessor] Updated streaming session', {
+					pubkey: event.pubkey,
+					syntheticId: session.syntheticId,
+					contentLength: session.reconstructedContent?.length
+				});
+			}
+
+		} else if (event.kind === NDKKind.TenexAgentTypingStart) {
+			// Typing indicator - create or update typing session
+			let session = streamingSessions.get(event.pubkey);
+
+			if (!session || session.syntheticId.startsWith('streaming-')) {
+				// Create new typing session (or replace streaming with typing)
+				const syntheticId = `typing-${event.pubkey}`;
+				session = {
+					syntheticId,
+					accumulator: new DeltaContentAccumulator(), // Not used for typing
+					latestEvent: event,
+					reconstructedContent: event.content || 'typing...'
+				};
+				streamingSessions.set(event.pubkey, session);
+
+				console.log('[MessageProcessor] Created typing indicator session', {
+					pubkey: event.pubkey,
+					syntheticId
+				});
+			} else {
+				// Update existing typing session
+				session.latestEvent = event;
+				session.reconstructedContent = event.content || 'typing...';
+			}
+
+		} else if (event.kind === NDKKind.TenexAgentTypingStop) {
+			// Stop typing - remove typing session
+			const session = streamingSessions.get(event.pubkey);
+			if (session?.syntheticId.startsWith('typing-')) {
+				console.log('[MessageProcessor] Removing typing indicator session', {
+					pubkey: event.pubkey
+				});
+				streamingSessions.delete(event.pubkey);
+			}
+
+		} else {
+			// All other event types - process normally
+			processEvent(event, streamingSessions, finalMessages);
 		}
 	}
 
-	// Add streaming sessions
+	// Convert active streaming sessions to synthetic messages
 	const streamingMessages = streamingSessionsToMessages(streamingSessions);
 
 	console.log('[MessageProcessor] Converting streaming sessions to messages', {
@@ -342,6 +386,7 @@ export function processEventsToMessages(
 		}))
 	});
 
+	// Apply brainstorm filtering to streaming messages if needed
 	if (isBrainstorm && !showAll) {
 		streamingMessages.forEach((msg) => {
 			if (
@@ -357,25 +402,10 @@ export function processEventsToMessages(
 			}
 		});
 	} else {
-		console.log('[MessageProcessor] Adding streaming messages to final messages', {
-			before: finalMessages.length,
-			adding: streamingMessages.length
-		});
 		finalMessages.push(...streamingMessages);
-		console.log('[MessageProcessor] After adding streaming messages', {
-			after: finalMessages.length
-		});
 	}
 
 	// Sort by timestamp with tag priority
-	const messagesWithoutTime = finalMessages.filter((msg) => msg.event.created_at === undefined);
-	if (messagesWithoutTime.length > 0) {
-		console.log('[MessageProcessor] Messages without created_at:', messagesWithoutTime.map(m => ({
-			id: m.id,
-			kind: m.event.kind
-		})));
-	}
-
 	const messagesWithTime = finalMessages
 		.filter((msg) => msg.event.created_at !== undefined)
 		.sort((a, b) => {
@@ -394,15 +424,6 @@ export function processEventsToMessages(
 			}
 			return timeDiff;
 		});
-
-	const streamingCount = messagesWithTime.filter(msg => msg.event.kind === NDKKind.TenexStreamingResponse).length;
-	if (streamingCount > 0) {
-		console.log('[MessageProcessor] Returning messages with streaming', {
-			totalMessages: messagesWithTime.length,
-			streamingMessages: streamingCount,
-			messageIds: messagesWithTime.map(m => ({ id: m.id, kind: m.event.kind }))
-		});
-	}
 
 	return messagesWithTime;
 }

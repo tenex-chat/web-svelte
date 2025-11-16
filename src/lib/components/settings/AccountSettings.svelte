@@ -5,7 +5,7 @@
 
 	function logout() {
 		if (currentUser?.pubkey) {
-			ndk.logout(currentUser.pubkey);
+			ndk.$sessions.logout(currentUser.pubkey);
 		}
 		window.location.href = '/';
 	}
@@ -96,7 +96,7 @@
 			{#if currentUser}
 				<button
 					onclick={logout}
-					class="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+					class="w-full px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"
 				>
 					Logout
 				</button>

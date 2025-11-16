@@ -7,10 +7,24 @@
 	import DOMPurify from 'dompurify';
 	import AIAssistedPromptEditor from './AIAssistedPromptEditor.svelte';
 
+	type ForkAgentData = Partial<AgentDefType> & {
+		id?: string;
+		name?: string;
+		description?: string;
+		role?: string;
+		instructions?: string;
+		useCriteria?: string[];
+		version?: string;
+		slug?: string;
+		tools?: any[];
+		mcpServers?: any[];
+		phases?: any[];
+	};
+
 	interface Props {
 		open?: boolean;
 		onOpenChange?: (open: boolean) => void;
-		forkAgent?: AgentDefType;
+		forkAgent?: ForkAgentData;
 		cloneMode?: boolean;
 	}
 
@@ -138,10 +152,10 @@
 			agent.mcpServers = mcpServers;
 			agent.phases = phases;
 
-			if (forkAgent && !cloneMode) {
+			if (forkAgent?.id && !cloneMode) {
 				agent.tags.push(['e', forkAgent.id]);
 			}
-			if (forkAgent && cloneMode) {
+			if (forkAgent?.id && cloneMode) {
 				agent.tags.push(['cloned-from', forkAgent.id]);
 			}
 
@@ -276,14 +290,14 @@
 	}
 
 	function renderMarkdown(content: string): string {
-		const rawHtml = marked(content, { breaks: true });
+		const rawHtml = marked.parse(content, { breaks: true }) as string;
 		return DOMPurify.sanitize(rawHtml);
 	}
 </script>
 
 {#if open}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50"
 		onclick={handleClose}
 		role="presentation"
 		tabindex="0"

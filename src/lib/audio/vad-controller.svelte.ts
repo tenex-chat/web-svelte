@@ -39,6 +39,13 @@ export class VADController {
 	constructor(private options: VADControllerOptions = {}) {}
 
 	/**
+	 * Get whether VAD is enabled
+	 */
+	get enabled(): boolean {
+		return this.options.enabled ?? false;
+	}
+
+	/**
 	 * Cleanup function
 	 */
 	private cleanup() {

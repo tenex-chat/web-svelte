@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKKind } from '$lib/kinds';
 	import { formatRelativeTime } from '$lib/utils/time';
 	import { cn } from '$lib/utils/cn';
 
@@ -11,21 +12,15 @@
 	let { event, onclick }: Props = $props();
 
 	const EVENT_KIND_NAMES: Record<number, string> = {
-		1: 'Note',
-		4128: 'Agent Definition',
-		4129: 'Lesson',
-		9905: 'Job Request',
-		9906: 'Job Accepted',
-		9907: 'Job Status',
-		9908: 'Job Feedback',
-		30078: 'Application Specific Data',
-		1111: 'Generic Reply',
-		30023: 'Long-form Article'
+		[NDKKind.Text]: 'Note',
+		[NDKKind.AgentLesson]: 'Lesson',
+		[NDKKind.GenericReply]: 'Generic Reply',
+		[NDKKind.Article]: 'Long-form Article'
 	};
 
 	function getEventKindName(kind: number | undefined): string {
 		if (!kind) return 'Unknown';
-		return EVENT_KIND_NAMES[kind as number] || `Kind ${kind}`;
+		return EVENT_KIND_NAMES[kind] || `Kind ${kind}`;
 	}
 
 	function getEventPreview(event: NDKEvent): string {
@@ -58,7 +53,7 @@
 		}
 	}
 
-	const kindName = $derived(getEventKindName(event.kind as number));
+	const kindName = $derived(getEventKindName(event.kind));
 	const preview = $derived(getEventPreview(event));
 	const timestamp = $derived(event.created_at || 0);
 	const eventId = $derived(event.id?.slice(0, 8) || 'unknown');
@@ -67,7 +62,7 @@
 <div
 	class={cn(
 		'bg-card border border-border rounded-lg transition-colors',
-		onclick && 'cursor-pointer hover:bg-muted dark:hover:bg-zinc-800'
+		onclick && 'cursor-pointer hover:bg-muted'
 	)}
 	role={onclick ? 'button' : undefined}
 	tabindex={onclick ? 0 : undefined}
@@ -84,7 +79,7 @@
 		<div class="flex items-start justify-between">
 			<div class="flex items-center gap-2">
 				<span
-					class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded"
+					class="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded"
 				>
 					{kindName}
 				</span>

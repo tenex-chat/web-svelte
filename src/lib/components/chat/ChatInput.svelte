@@ -5,6 +5,7 @@
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
+	import { createProfileFetcher } from '$lib/ndk/builders/profile';
 	import AgentConfigDialog from './AgentConfigDialog.svelte';
 	import AgentSelector from './AgentSelector.svelte';
 	import NudgeSelector from './NudgeSelector.svelte';
@@ -153,10 +154,11 @@
 	});
 
 	// Fetch profile for reply-to user
-	const replyToProfile = $derived.by(() => {
-		if (!replyToEvent) return null;
-		return ndk.$fetchProfile(() => replyToEvent.pubkey);
-	});
+	const replyToProfileFetcher = createProfileFetcher(
+		() => ({ user: replyToEvent?.pubkey || null }),
+		ndk
+	);
+	const replyToProfile = $derived(replyToProfileFetcher.profile);
 
 	const replyToAuthorName = $derived(
 		replyToProfile?.displayName || replyToProfile?.name || replyToEvent?.pubkey.slice(0, 8)
@@ -533,7 +535,7 @@
 	// Handle starting a voice call
 	function handleStartCall() {
 		if (project) {
-			windowManager.openCall(project, rootEvent);
+			windowManager.openCall(project, rootEvent ?? undefined);
 		}
 	}
 
@@ -549,7 +551,7 @@
 
 			// Create a kind 24020 event to update agent configuration
 			const changeEvent = new NDKEvent(ndk);
-			changeEvent.kind = 24020 as NDKKind;
+			changeEvent.kind = NDKKind.TenexAgentConfigUpdate;
 			changeEvent.content = '';
 			changeEvent.tags = [
 				['p', currentAgent], // Target agent

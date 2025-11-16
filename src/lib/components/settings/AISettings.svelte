@@ -6,7 +6,8 @@
 	import VoiceSelectionDialog from '../dialogs/VoiceSelectionDialog.svelte';
 
 	let showAddProvider = $state(false);
-	let showVoiceSelection = $state<boolean | 'multi'>(false);
+	let showVoiceSelection = $state(false);
+	let isMultiSelectVoice = $state(false);
 	let testingConnection = $state<string | null>(null);
 	let previewingVoice = $state(false);
 
@@ -144,7 +145,7 @@
 				<p class="text-sm text-muted-foreground">No LLM configurations added yet</p>
 				<button
 					onclick={() => (showAddProvider = true)}
-					class="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+					class="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
 				>
 					+ Add Your First Configuration
 				</button>
@@ -400,7 +401,10 @@
 							</p>
 							<div class="flex gap-2">
 								<button
-									onclick={() => (showVoiceSelection = 'multi')}
+									onclick={() => {
+									showVoiceSelection = true;
+									isMultiSelectVoice = true;
+								}}
 									class="px-4 py-2 border border-border rounded hover:bg-muted transition-colors"
 								>
 									👥 Select Voices
@@ -492,7 +496,7 @@
 	bind:open={showVoiceSelection}
 	provider={voiceSettings.provider}
 	currentVoiceIds={voiceSettings.voiceIds}
-	multiSelect={showVoiceSelection === 'multi'}
+	multiSelect={isMultiSelectVoice}
 	onSelect={(voiceId) => aiConfigStore.updateVoiceSettings({ voiceIds: [voiceId] })}
 	onMultiSelect={(voiceIds) => aiConfigStore.updateVoiceSettings({ voiceIds })}
 />

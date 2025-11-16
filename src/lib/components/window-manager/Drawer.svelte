@@ -9,6 +9,7 @@
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKKind } from '$lib/kinds';
+	import { createProfileFetcher } from '$lib/ndk/builders/profile';
 	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
 	import type { Message } from '$lib/utils/messageProcessor';
 	import CopyThreadMenu from '../chat/CopyThreadMenu.svelte';
@@ -70,7 +71,8 @@
 	const agentDef = $derived(agentDefSubscription?.events?.[0]);
 	const metadataEvent = $derived(metadataSubscription?.events?.[0]);
 
-	const profile = $derived(agentPubkey ? ndk.$fetchProfile(() => agentPubkey) : null);
+	const profileFetcher = createProfileFetcher(() => ({ user: agentPubkey }), ndk);
+	const profile = $derived(profileFetcher.profile);
 
 	const agentMetadata = $derived.by(() => {
 		if (!metadataEvent) return null;
@@ -169,12 +171,12 @@
 		aria-orientation="vertical"
 	></div>
 	<!-- Drawer Header -->
-	<div class="drawer-header flex items-center justify-between px-4 py-3 border-b border-border bg-muted dark:bg-zinc-800">
+	<div class="drawer-header flex items-center justify-between px-4 py-3 border-b border-border bg-muted">
 		<div class="flex items-center gap-3 flex-1 min-w-0">
 			<!-- Back/Close button -->
 			<button
 				onclick={handleClose}
-				class="p-1 hover:bg-secondary dark:hover:bg-zinc-700 rounded transition-colors"
+				class="p-1 hover:bg-secondary rounded transition-colors"
 				aria-label="Close"
 			>
 				<svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -200,7 +202,7 @@
 				<!-- View Mode Toggle -->
 				<button
 					onclick={toggleViewMode}
-					class="p-2 hover:bg-secondary dark:hover:bg-zinc-700 rounded transition-colors"
+					class="p-2 hover:bg-secondary rounded transition-colors"
 					title={viewMode === 'threaded' ? 'Switch to flat view' : 'Switch to threaded view'}
 				>
 					{#if viewMode === 'threaded'}
@@ -228,7 +230,7 @@
 			<!-- Detach button -->
 			<button
 				onclick={handleDetach}
-				class="p-2 hover:bg-secondary dark:hover:bg-zinc-700 rounded transition-colors"
+				class="p-2 hover:bg-secondary rounded transition-colors"
 				title="Open in window"
 			>
 				<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,7 +246,7 @@
 			<!-- Close button -->
 			<button
 				onclick={handleClose}
-				class="p-2 hover:bg-secondary dark:hover:bg-zinc-700 rounded transition-colors"
+				class="p-2 hover:bg-secondary rounded transition-colors"
 				title="Close"
 			>
 				<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">

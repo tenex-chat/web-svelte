@@ -3,11 +3,12 @@
 	import { goto } from '$app/navigation';
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKKind } from '$lib/kinds';
-	import { Avatar, Name } from '@nostr-dev-kit/svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import { ArrowLeft, Copy, CheckCircle2, Sparkles } from 'lucide-svelte';
 	import { cn } from '$lib/utils/cn';
 	import AgentProfileTabs from '$lib/components/agents/AgentProfileTabs.svelte';
 	import CreateAgentDialog from '$lib/components/dialogs/CreateAgentDialog.svelte';
+	import { createProfileFetcher } from '$lib/ndk/builders/profile';
 
 	// Get pubkey from route params
 	const pubkey = $derived($page.params.pubkey);
@@ -17,7 +18,8 @@
 	let convertDialogOpen = $state(false);
 
 	// Fetch agent profile
-	const profile = $derived(ndk.$fetchProfile(() => pubkey));
+	const profileFetcher = createProfileFetcher(() => ({ user: pubkey }), ndk);
+	const profile = $derived(profileFetcher.profile);
 
 	// Subscribe to NDKAgentDefinition events
 	const agentDefSubscription = ndk.$subscribe(() =>
@@ -32,7 +34,7 @@
 					],
 					closeOnEose: false
 				}
-			: false
+			: undefined
 	);
 
 	const agentDef = $derived(agentDefSubscription.events?.[0]);
@@ -50,7 +52,7 @@
 					],
 					closeOnEose: false
 				}
-			: false
+			: undefined
 	);
 
 	const metadataEvent = $derived(metadataSubscription.events?.[0]);
@@ -107,6 +109,7 @@
 	}
 
 	async function handleCopyPubkey() {
+		if (!pubkey) return;
 		try {
 			await navigator.clipboard.writeText(pubkey);
 			copiedPubkey = true;
@@ -121,29 +124,35 @@
 	}
 </script>
 
-<div class="flex flex-col h-screen bg-background">
-	<!-- Header -->
-	<div class="bg-card border-b border-border">
-		<div class="max-w-4xl mx-auto px-4 py-4">
-			<div class="flex items-center gap-4 mb-4">
-				<button
-					onclick={handleBack}
-					class="p-2 rounded-lg hover:bg-muted transition-colors"
-					aria-label="Go back"
-				>
-					<ArrowLeft class="w-5 h-5 text-foreground" />
-				</button>
+{#if !pubkey}
+	<div class="flex items-center justify-center h-screen">
+		<p class="text-muted-foreground">Invalid pubkey</p>
+	</div>
+{:else}
+	<div class="flex flex-col h-screen bg-background">
+		<!-- Header -->
+		<div class="bg-card border-b border-border">
+			<div class="max-w-4xl mx-auto px-4 py-4">
+				<div class="flex items-center gap-4 mb-4">
+					<button
+						onclick={handleBack}
+						class="p-2 rounded-lg hover:bg-muted transition-colors"
+						aria-label="Go back"
+					>
+						<ArrowLeft class="w-5 h-5 text-foreground" />
+					</button>
 
-				<Avatar {ndk} {pubkey} size={64} />
+					<User.Root {ndk} {pubkey}>
+					<User.Avatar class="w-16 h-16" />
 
 				<div class="flex-1">
 					<h1 class="text-2xl font-semibold text-foreground">
-						<Name {ndk} {pubkey} />
+						<User.Name />
 					</h1>
 					<div class="flex items-center gap-2 mt-1">
 						{#if role}
 							<span
-								class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded"
+								class="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded"
 							>
 								{role}
 							</span>
@@ -154,18 +163,19 @@
 						>
 							{pubkey.slice(0, 8)}...{pubkey.slice(-8)}
 							{#if copiedPubkey}
-								<CheckCircle2 class="w-3 h-3 text-green-500 dark:text-green-400" />
+								<CheckCircle2 class="w-3 h-3 text-green-500" />
 							{:else}
 								<Copy class="w-3 h-3" />
 							{/if}
 						</button>
 					</div>
 				</div>
+				</User.Root>
 
 				{#if showConversionButton}
 					<button
 						onclick={handleConvertToDefinition}
-						class="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-muted dark:hover:bg-zinc-800 transition-colors text-sm font-medium text-foreground"
+						class="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors text-sm font-medium text-foreground"
 					>
 						<Sparkles class="w-4 h-4" />
 						Convert to Agent Definition
@@ -181,11 +191,12 @@
 	</div>
 </div>
 
-<!-- Convert kind:0 metadata to Agent Definition dialog -->
-{#if conversionData}
-	<CreateAgentDialog
-		bind:open={convertDialogOpen}
-		forkAgent={conversionData}
-		cloneMode={false}
-	/>
+	<!-- Convert kind:0 metadata to Agent Definition dialog -->
+	{#if conversionData}
+		<CreateAgentDialog
+			bind:open={convertDialogOpen}
+			forkAgent={conversionData}
+			cloneMode={false}
+		/>
+	{/if}
 {/if}

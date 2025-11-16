@@ -151,7 +151,7 @@
 			<button
 				onclick={handleSave}
 				disabled={!hasChanges || isSaving}
-				class="px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-secondary disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
+				class="px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-secondary disabled:cursor-not-allowed text-primary-foreground rounded-lg transition-colors font-medium"
 			>
 				{#if isSaving}
 					<span class="flex items-center gap-2">

@@ -111,8 +111,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 
 			const result = await generateText({
 				model: provider(model),
-				prompt: metaPrompt,
-				maxSteps: 1
+				prompt: metaPrompt
 			});
 
 			generatedPrompt = result.text.trim();
@@ -152,7 +151,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 
 {#if open}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50"
 		onclick={handleClose}
 		role="presentation"
 		tabindex="0"
@@ -303,7 +302,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 						onclick={handleGenerate}
 						disabled={!selectedConfigId || !instructions.trim() || isGenerating || llmConfigs.length === 0}
 						class={cn(
-							'px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2',
+							'px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2',
 							(!selectedConfigId || !instructions.trim() || isGenerating || llmConfigs.length === 0) &&
 								'opacity-50 cursor-not-allowed'
 						)}
@@ -350,7 +349,7 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 					</button>
 					<button
 						onclick={handleApply}
-						class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+						class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
 					>
 						Apply Changes
 					</button>

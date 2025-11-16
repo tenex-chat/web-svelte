@@ -32,10 +32,10 @@
 	<!-- Metadata Warning Card -->
 	{#if !agentDef && agentMetadata}
 		<div
-			class="border border-orange-500/50 dark:border-orange-400/50 bg-orange-50/10 dark:bg-orange-900/10 rounded-lg p-4"
+			class="border border-orange-500/50 bg-orange-50/10 rounded-lg p-4"
 		>
 			<div class="flex items-center gap-2 mb-2">
-				<Sparkles class="w-5 h-5 text-orange-500 dark:text-orange-400" />
+				<Sparkles class="w-5 h-5 text-orange-500" />
 				<h3 class="font-semibold text-foreground">
 					Agent Metadata from Profile
 				</h3>

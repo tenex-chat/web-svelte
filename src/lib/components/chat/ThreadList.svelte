@@ -18,7 +18,7 @@
 	let { project, selectedThread, onThreadSelect, timeFilter = null }: Props = $props();
 
 	// Get current user from NDK sessions
-	const currentUser = $derived(ndk.$sessions?.[0]);
+	const currentUser = $derived(ndk.$sessions?.currentUser);
 
 	// Subscribe to all threads (kind:11) for this project
 	const threadsSubscription = ndk.$subscribe(() => ({

@@ -15,7 +15,7 @@
 	const lessonsSubscription = ndk.$subscribe(() => ({
 		filters: [
 			{
-				kinds: [4129 as NDKKind],
+				kinds: [NDKKind.AgentLesson],
 				authors: [pubkey],
 				limit: 50
 			}

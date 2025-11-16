@@ -241,11 +241,11 @@ export class VoiceDiscovery {
 		try {
 			const audioStream = await client.textToSpeech.stream(voiceId, {
 				text: text,
-				model_id: 'eleven_turbo_v2_5',
-				optimize_streaming_latency: 2,
-				voice_settings: {
+				modelId: 'eleven_turbo_v2_5',
+				optimizeStreamingLatency: 2,
+				voiceSettings: {
 					stability: 0.5,
-					similarity_boost: 0.5
+					similarityBoost: 0.5
 				}
 			});
 
@@ -262,7 +262,7 @@ export class VoiceDiscovery {
 				chunks.push(value);
 			}
 
-			return new Blob(chunks, { type: 'audio/mpeg' });
+			return new Blob(chunks as BlobPart[], { type: 'audio/mpeg' });
 		} catch (error) {
 			throw new Error(
 				`ElevenLabs TTS error: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -286,11 +286,11 @@ export class VoiceDiscovery {
 		try {
 			const audioStream = await client.textToSpeech.stream(voiceId, {
 				text: text,
-				model_id: 'eleven_turbo_v2_5',
-				optimize_streaming_latency: 3,
-				voice_settings: {
+				modelId: 'eleven_turbo_v2_5',
+				optimizeStreamingLatency: 3,
+				voiceSettings: {
 					stability: 0.5,
-					similarity_boost: 0.5
+					similarityBoost: 0.5
 				}
 			});
 
@@ -312,7 +312,7 @@ export class VoiceDiscovery {
 				}
 			}
 
-			return new Blob(chunks, { type: 'audio/mpeg' });
+			return new Blob(chunks as BlobPart[], { type: 'audio/mpeg' });
 		} catch (error) {
 			throw new Error(
 				`ElevenLabs streaming error: ${error instanceof Error ? error.message : 'Unknown error'}`

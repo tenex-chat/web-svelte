@@ -25,7 +25,7 @@ class NudgeStore {
 		this.loading = true;
 		try {
 			const nudgeEvents = await ndk.fetchEvents({
-				kinds: [NDKKind.AgentNudge]
+				kinds: [NDKKind.AgentNudge as number]
 			});
 			this.nudges = Array.from(nudgeEvents).sort((a, b) => {
 				const aTime = a.created_at || 0;

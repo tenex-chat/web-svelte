@@ -1,4 +1,4 @@
-import { NDKEvent, type NostrEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, type NostrEvent, type NDKFilter, NDKKind as BaseNDKKind } from '@nostr-dev-kit/ndk';
 import type NDK from '@nostr-dev-kit/ndk';
 import { slugify } from '$lib/utils/slugify';
 import { NDKKind } from '$lib/kinds';
@@ -223,7 +223,7 @@ export class NDKProject extends NDKEvent {
 	 * Create a filter for events related to this project
 	 * Returns a filter object that can be used with subscriptions
 	 */
-	filter(): Record<string, unknown> {
+	filter(): NDKFilter<BaseNDKKind> {
 		const projectRef = this.tagId();
 		if (!projectRef) return {};
 		return { '#a': [projectRef] };

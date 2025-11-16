@@ -5,8 +5,9 @@
 	import DOMPurify from 'dompurify';
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKKind } from '$lib/kinds';
-	import { Avatar } from '@nostr-dev-kit/svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import { NDKProject } from '$lib/events/NDKProject';
+	import { createProfileFetcher } from '$lib/ndk/builders/profile';
 	import AIReasoningBlock from './AIReasoningBlock.svelte';
 	import ToolCallContent from './ToolCallContent.svelte';
 	import SuggestionButtons from './SuggestionButtons.svelte';
@@ -52,7 +53,8 @@
 	});
 
 	// Fetch profile
-	const profile = ndk.$fetchProfile(() => message.event.pubkey);
+	const profileFetcher = createProfileFetcher(() => ({ user: message.event.pubkey }), ndk);
+	const profile = $derived(profileFetcher.profile);
 
 	const authorName = $derived(
 		profile?.displayName || profile?.name || message.event.pubkey.slice(0, 8)
@@ -69,7 +71,7 @@
 	const renderedContent = $derived.by(() => {
 		if (isTyping) return message.event.content;
 		try {
-			const rawHtml = marked(message.event.content || '');
+			const rawHtml = marked.parse(message.event.content || '') as string;
 			return DOMPurify.sanitize(rawHtml);
 		} catch {
 			return message.event.content || '';
@@ -138,18 +140,20 @@
 </script>
 
 <div
-	class="group px-4 py-1 hover:bg-muted dark:hover:bg-zinc-800/50 transition-colors"
+	class="group px-4 py-1 hover:bg-muted transition-colors"
 >
 	<div class="flex gap-3">
 		<!-- Avatar or consecutive indicator -->
 		{#if !isConsecutive}
-			<div class="flex-shrink-0 pt-0.5 relative">
-				<Avatar {ndk} pubkey={message.event.pubkey} size={36} class="rounded-md" />
+			<User.Root {ndk} pubkey={message.event.pubkey}>
+				<div class="flex-shrink-0 pt-0.5 relative">
+					<User.Avatar class="w-9 h-9 rounded-md" />
 				<!-- Line extending down from avatar if next message is consecutive -->
 				{#if hasNextConsecutive}
 					<div class="absolute left-1/2 -translate-x-1/2 top-9 bottom-0 border-l border-border/60"></div>
 				{/if}
-			</div>
+				</div>
+			</User.Root>
 		{:else}
 			<div class="w-9 flex-shrink-0 relative">
 				<!-- Border line on the left that extends the full height -->
@@ -181,9 +185,11 @@
 					{#if replyingTo.length > 0}
 						<div class="flex items-center -space-x-2">
 							{#each replyingTo as pubkey (pubkey)}
-								<div class="relative">
-									<Avatar {ndk} {pubkey} size={20} class="ring-2 ring-white dark:ring-zinc-900" />
-								</div>
+								<User.Root {ndk} {pubkey}>
+									<div class="relative">
+										<User.Avatar class="w-5 h-5 ring-2 ring-white dark:ring-zinc-900" />
+									</div>
+								</User.Root>
 							{/each}
 						</div>
 					{/if}
@@ -194,33 +200,31 @@
 							<svg class="w-3 h-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
 							</svg>
-							<span class="px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium uppercase text-[10px] tracking-wide">
+							<span class="px-2 py-0.5 rounded bg-green-100 text-green-700 font-medium uppercase text-[10px] tracking-wide">
 								{phaseInfo}
 							</span>
 						</div>
 					{/if}
 
 					{#if isStreaming}
-						<span class="text-xs text-primary dark:text-blue-300 flex items-center gap-1">
-							<span class="inline-block w-1.5 h-1.5 rounded-full bg-primary dark:bg-blue-300 animate-pulse"></span>
+						<span class="text-xs text-primary flex items-center gap-1">
+							<span class="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
 							streaming...
 						</span>
 					{/if}
 					{#if isTyping}
-						<TypingIndicator pubkey={message.event.pubkey} />
+						<TypingIndicator />
 					{/if}
 
 					<!-- Message Actions Dropdown -->
 					<div class="ml-auto transition-opacity" class:opacity-0={!dropdownOpen} class:opacity-100={dropdownOpen} class:group-hover:opacity-100={!dropdownOpen}>
 						<DropdownMenu.Root bind:open={dropdownOpen}>
-							<DropdownMenu.Trigger asChild>
-								<button
-									type="button"
-									class="p-1 rounded hover:bg-secondary dark:hover:bg-zinc-700 transition-colors"
-									aria-label="Message actions"
-								>
-									<MoreVertical class="w-4 h-4 text-muted-foreground" />
-								</button>
+							<DropdownMenu.Trigger
+								type="button"
+								class="p-1 rounded hover:bg-secondary transition-colors"
+								aria-label="Message actions"
+							>
+								<MoreVertical class="w-4 h-4 text-muted-foreground" />
 							</DropdownMenu.Trigger>
 							<DropdownMenu.Content align="end" class="w-48">
 								<DropdownMenu.Item onclick={() => onReply?.(message)}>
@@ -273,7 +277,7 @@
 						<div class="prose prose-sm max-w-none dark:prose-invert text-foreground">
 							{@html renderedContent}
 							{#if isStreaming}
-								<span class="inline-block w-1.5 h-4 ml-0.5 bg-primary dark:bg-blue-400 animate-pulse"></span>
+								<span class="inline-block w-1.5 h-4 ml-0.5 bg-primary animate-pulse"></span>
 							{/if}
 						</div>
 
@@ -304,14 +308,12 @@
 						<!-- Message Actions Dropdown -->
 						<div class="transition-opacity" class:opacity-0={!dropdownOpen} class:opacity-100={dropdownOpen} class:group-hover:opacity-100={!dropdownOpen}>
 							<DropdownMenu.Root bind:open={dropdownOpen}>
-								<DropdownMenu.Trigger asChild>
-									<button
-										type="button"
-										class="p-1 rounded hover:bg-secondary dark:hover:bg-zinc-700 transition-colors"
-										aria-label="Message actions"
-									>
-										<MoreVertical class="w-4 h-4 text-muted-foreground" />
-									</button>
+								<DropdownMenu.Trigger
+									type="button"
+									class="p-1 rounded hover:bg-secondary transition-colors"
+									aria-label="Message actions"
+								>
+									<MoreVertical class="w-4 h-4 text-muted-foreground" />
 								</DropdownMenu.Trigger>
 								<DropdownMenu.Content align="end" class="w-48">
 									<DropdownMenu.Item onclick={() => onReply?.(message)}>
@@ -354,7 +356,7 @@
 <!-- Raw Event Dialog -->
 {#if showRawEvent}
 	<div
-		class="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50"
+		class="fixed inset-0 bg-overlay/50 dark:bg-overlay/70 flex items-center justify-center z-50"
 		onclick={closeRawEventDialog}
 		onkeydown={(e) => {
 			if (e.key === 'Escape') closeRawEventDialog();
@@ -388,7 +390,7 @@
 			</div>
 			<div class="flex-1 overflow-y-auto p-4">
 				<pre
-					class="text-xs bg-muted dark:bg-zinc-800 text-foreground rounded p-4 overflow-x-auto">{JSON.stringify(message.event.rawEvent(), null, 2)}</pre>
+					class="text-xs bg-muted text-foreground rounded p-4 overflow-x-auto">{JSON.stringify(message.event.rawEvent(), null, 2)}</pre>
 			</div>
 			<div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-border">
 				<button
@@ -396,7 +398,7 @@
 					onclick={() => {
 						navigator.clipboard.writeText(JSON.stringify(message.event.rawEvent(), null, 2));
 					}}
-					class="px-3 py-2 text-sm bg-primary dark:bg-blue-500 text-white rounded hover:bg-primary/90 dark:hover:bg-primary transition-colors"
+					class="px-3 py-2 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 dark:hover:bg-primary transition-colors"
 				>
 					Copy JSON
 				</button>

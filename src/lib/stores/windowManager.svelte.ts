@@ -45,7 +45,7 @@ class WindowManager {
 			const detachedWindows = this.windowsArray.filter((w) => w.isDetached);
 			localStorage.setItem('tenex-windows', JSON.stringify(detachedWindows));
 		} catch (e) {
-			console.error('Failed to save windows to storage:', e.messge);
+			console.error('Failed to save windows to storage:', e instanceof Error ? e.message : String(e));
 		}
 	}
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
+	import { NDKKind } from '$lib/kinds';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { NDKMCPTool } from '$lib/events/NDKMCPTool';
 	import MCPToolItem from './MCPToolItem.svelte';
@@ -43,7 +44,7 @@
 
 	// Get all available MCP tool definitions
 	const allToolsSubscription = ndk.$subscribe<NDKMCPTool>(() => ({
-		kinds: [4200],
+		kinds: [NDKKind.MCPTool as number],
 	}));
 
 	const availableTools = $derived.by(() => {
@@ -123,7 +124,7 @@
 		<button
 			onclick={() => (showAddDialog = true)}
 			disabled={isSaving}
-			class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2"
+			class="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2"
 		>
 			<Plus class="w-4 h-4" />
 			Add Tool
@@ -161,7 +162,7 @@
 			<button
 				onclick={handleSave}
 				disabled={isSaving}
-				class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+				class="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
 			>
 				{isSaving ? 'Saving...' : 'Save Changes'}
 			</button>
@@ -172,7 +173,7 @@
 <!-- Add Tool Dialog -->
 {#if showAddDialog}
 	<div
-		class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+		class="fixed inset-0 bg-overlay/50 z-50 flex items-center justify-center p-4"
 		onclick={(e) => {
 			if (e.target === e.currentTarget) closeAddDialog();
 		}}

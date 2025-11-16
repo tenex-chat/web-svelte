@@ -87,7 +87,7 @@
 </script>
 
 <div
-		class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+		class="fixed inset-0 bg-overlay/50 flex items-center justify-center z-50"
 		onclick={onClose}
 		onkeydown={(e) => {
 			if (e.key === 'Escape') onClose();
@@ -140,7 +140,7 @@
 									<div class="flex items-center gap-2 mb-3">
 										<svelte:component
 											this={category.icon}
-											class="w-4 h-4 text-primary dark:text-blue-400"
+											class="w-4 h-4 text-primary"
 										/>
 										<h4 class="font-medium text-sm text-foreground">
 											{category.title}
@@ -171,7 +171,7 @@
 					<button
 						type="button"
 						onclick={copyMetadata}
-						class="px-3 py-2 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+						class="px-3 py-2 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
 					>
 						Copy JSON
 					</button>

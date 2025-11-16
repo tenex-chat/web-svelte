@@ -44,7 +44,7 @@
 
 		const filtered = [...feedSubscription.events]
 			.filter((event) => {
-				const kind = event.kind as number;
+				const kind = event.kind;
 				// Filter out ephemeral events (20000-29999)
 				if (kind >= 20000 && kind <= 29999) return false;
 				// Filter out operations status and stop request events
@@ -71,7 +71,7 @@
 		</div>
 		<div class="flex-1 overflow-auto space-y-2 px-4">
 			{#each sortedEvents.slice(0, 10) as event (event.id)}
-				{@const kind = event.kind as number}
+				{@const kind = event.kind}
 
 				<!-- Debug: log each render attempt -->
 				{console.log('[AgentFeedTab] Rendering event:', event.id, 'kind:', kind)}

@@ -45,7 +45,7 @@
 
 		// When finalized, parse markdown
 		try {
-			const rawHtml = marked(reasoningContent);
+			const rawHtml = marked.parse(reasoningContent) as string;
 			return DOMPurify.sanitize(rawHtml);
 		} catch (error) {
 			// Log error in dev mode and fallback to escaped plain-text

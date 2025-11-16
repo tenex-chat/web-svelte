@@ -30,7 +30,7 @@ export function createOperationsSubscription(eventId: string | undefined, projec
   });
 
   // Return a function that processes events when called inside $derived
-  return () => {
+  return (): string[] => {
     const events = subscription.events;
 
     // Process all events and find the latest snapshot
@@ -38,7 +38,7 @@ export function createOperationsSubscription(eventId: string | undefined, projec
     let latestCreatedAt = 0;
 
     events.forEach((event: NDKEvent) => {
-      const snapshot = parseKind24133(event);
+      const snapshot: Kind24133Snapshot | null = parseKind24133(event);
       if (!snapshot || snapshot.eId !== eventId) return;
       if (snapshot.projectId !== projectId) return;
 
@@ -55,6 +55,6 @@ export function createOperationsSubscription(eventId: string | undefined, projec
     });
 
     // Return array of agent pubkeys that are currently active
-    return latestSnapshot?.agentPubkeys || [];
+    return (latestSnapshot as Kind24133Snapshot | null)?.agentPubkeys ?? [];
   };
 }

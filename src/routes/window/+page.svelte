@@ -8,6 +8,7 @@
 	import DocumentView from '$lib/components/docs/DocumentView.svelte';
 	import AgentProfileTabs from '$lib/components/agents/AgentProfileTabs.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
+	import { createProfileFetcher } from '$lib/ndk/builders/profile';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 
 	const params = $derived($page.url.searchParams);
@@ -57,7 +58,8 @@
 	const agentDef = $derived(agentDefSubscription?.events?.[0]);
 	const metadataEvent = $derived(metadataSubscription?.events?.[0]);
 
-	const profile = $derived(agentPubkey ? ndk.$fetchProfile(() => agentPubkey) : null);
+	const profileFetcher = createProfileFetcher(() => ({ user: agentPubkey }), ndk);
+	const profile = $derived(profileFetcher.profile);
 
 	const agentMetadata = $derived.by(() => {
 		if (!metadataEvent) return null;

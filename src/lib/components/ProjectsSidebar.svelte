@@ -3,7 +3,7 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
-	import { Avatar, Name } from '@nostr-dev-kit/svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import { openProjects } from '$lib/stores/openProjects.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { sidebarCollapsedStore } from '$lib/stores/sidebarCollapsed.svelte';
@@ -196,8 +196,8 @@
 
 	// User menu handlers
 	function handleLogout() {
-		if (ndk.$ndk.$currentUser) {
-			ndk.logout(ndk.$ndk.$currentUser.pubkey);
+		if (ndk.$currentUser) {
+			ndk.$sessions.logout(ndk.$currentUser.pubkey);
 		}
 		window.location.href = '/';
 	}
@@ -346,13 +346,11 @@
 				<div class="flex items-center justify-between px-2 py-1 mb-1">
 					<!-- Project Group Dropdown -->
 					<DropdownMenu.Root bind:open={projectGroupMenuOpen}>
-						<DropdownMenu.Trigger asChild>
-							<button
-								class="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-							>
-								{currentGroupName}
-								<ChevronDown class="w-3 h-3" />
-							</button>
+						<DropdownMenu.Trigger
+							class="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+						>
+							{currentGroupName}
+							<ChevronDown class="w-3 h-3" />
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Content align="start" class="w-64">
 							<DropdownMenu.Item onclick={() => handleSelectGroup(null)}>
@@ -527,7 +525,7 @@
 					</svg>
 					{#if inboxStore.unreadCount > 0}
 						<div
-							class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg animate-pulse"
+							class="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg animate-pulse"
 						>
 							{inboxStore.unreadCount > 9 ? '9+' : inboxStore.unreadCount}
 						</div>
@@ -553,24 +551,24 @@
 	<!-- Footer - User Profile -->
 	<div class="border-t border-border p-3 relative z-10">
 		<DropdownMenu.Root bind:open={userMenuOpen}>
-			<DropdownMenu.Trigger asChild>
-				<button
-					class={cn(
-						'flex items-center rounded hover:bg-muted transition-colors',
-						collapsed ? 'w-10 h-10 justify-center' : 'w-full gap-2 px-2 py-2'
-					)}
-				>
-					{#if ndk.$currentUser?.pubkey}
-						<Avatar {ndk} pubkey={ndk.$currentUser.pubkey} size={32} />
-					{/if}
-					{#if !collapsed}
-						<div class="flex-1 text-left min-w-0">
-							<div class="text-sm font-medium truncate text-foreground">
-								<Name {ndk} pubkey={ndk.$currentUser.pubkey} />
+			<DropdownMenu.Trigger
+				class={cn(
+					'flex items-center rounded hover:bg-muted transition-colors',
+					collapsed ? 'w-10 h-10 justify-center' : 'w-full gap-2 px-2 py-2'
+				)}
+			>
+				{#if ndk.$currentUser?.pubkey}
+					<User.Root {ndk} pubkey={ndk.$currentUser.pubkey}>
+						<User.Avatar class="w-8 h-8" />
+						{#if !collapsed}
+							<div class="flex-1 text-left min-w-0">
+								<div class="text-sm font-medium truncate text-foreground">
+									<User.Name />
+								</div>
 							</div>
-						</div>
-					{/if}
-				</button>
+						{/if}
+					</User.Root>
+				{/if}
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="start" side="top" class="w-56">
 				<DropdownMenu.Item onclick={() => (createDialogOpen = true)}>

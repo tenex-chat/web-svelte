@@ -20,13 +20,13 @@
 	function getColorClasses(type: Toast['type']): string {
 		switch (type) {
 			case 'success':
-				return 'bg-green-500/90 text-white';
+				return 'bg-success/90 text-success-foreground';
 			case 'warning':
-				return 'bg-yellow-500/90 text-white';
+				return 'bg-warning/90 text-warning-foreground';
 			case 'error':
-				return 'bg-red-500/90 text-white';
+				return 'bg-destructive/90 text-destructive-foreground';
 			default:
-				return 'bg-blue-500/90 text-white';
+				return 'bg-info/90 text-info-foreground';
 		}
 	}
 </script>

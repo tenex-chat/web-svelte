@@ -16,7 +16,7 @@
 
 		try {
 			const agentEvents = await ndk.fetchEvents({
-				kinds: [4199],
+				kinds: [4199 as number],
 				authors: [currentUser.pubkey]
 			});
 
@@ -54,7 +54,7 @@
 		{:else}
 			<div class="space-y-3">
 				{#each agents as agent (agent.id)}
-					<div class="p-4 border border-border rounded-lg hover:bg-muted dark:hover:bg-zinc-800">
+					<div class="p-4 border border-border rounded-lg hover:bg-muted">
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
 								<h4 class="text-sm font-medium text-foreground">
@@ -64,7 +64,7 @@
 									<p class="text-xs text-muted-foreground mt-1">{agent.description}</p>
 								{/if}
 								<div class="flex gap-2 mt-2">
-									<span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
+									<span class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
 										Kind {agent.kind}
 									</span>
 									{#if agent.created_at}
@@ -82,9 +82,9 @@
 	</div>
 
 	<!-- Agent Info Section -->
-	<div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-4">
-		<p class="text-xs text-blue-900 dark:text-blue-100 font-medium mb-1">About Agents</p>
-		<p class="text-xs text-blue-700 dark:text-blue-300">
+	<div class="bg-blue-50 rounded-lg p-4">
+		<p class="text-xs text-blue-900 font-medium mb-1">About Agents</p>
+		<p class="text-xs text-blue-700">
 			Agents are autonomous AI assistants that can perform tasks, respond to events, and interact
 			with your projects. They are defined using NIP-4199 and stored on the Nostr network.
 		</p>

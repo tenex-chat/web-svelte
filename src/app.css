@@ -20,6 +20,13 @@
 	--color-popover-foreground: hsl(var(--popover-foreground));
 	--color-card: hsl(var(--card));
 	--color-card-foreground: hsl(var(--card-foreground));
+	--color-overlay: hsl(var(--overlay));
+	--color-success: hsl(var(--success));
+	--color-success-foreground: hsl(var(--success-foreground));
+	--color-warning: hsl(var(--warning));
+	--color-warning-foreground: hsl(var(--warning-foreground));
+	--color-info: hsl(var(--info));
+	--color-info-foreground: hsl(var(--info-foreground));
 	--radius-lg: var(--radius);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-sm: calc(var(--radius) - 4px);
@@ -55,6 +62,13 @@
 		--border: 0 0% 90%;                 /* Light gray borders */
 		--input: 0 0% 90%;                  /* Light gray input bg */
 		--ring: 217 91% 60%;                /* Blue focus ring */
+		--overlay: 0 0% 0%;                 /* Black overlay with opacity */
+		--success: 142 71% 45%;             /* Green success */
+		--success-foreground: 0 0% 100%;    /* White text on success */
+		--warning: 38 92% 50%;              /* Yellow/orange warning */
+		--warning-foreground: 0 0% 100%;    /* White text on warning */
+		--info: 199 89% 48%;                /* Blue info */
+		--info-foreground: 0 0% 100%;       /* White text on info */
 		--radius: 0.5rem;
 	}
 
@@ -79,6 +93,13 @@
 		--border: 240 4% 20%;               /* zinc-700 - borders */
 		--input: 240 4% 16%;                /* zinc-800 - input bg */
 		--ring: 217 91% 60%;                /* Blue focus ring */
+		--overlay: 0 0% 0%;                 /* Black overlay with opacity */
+		--success: 142 71% 45%;             /* Green success */
+		--success-foreground: 0 0% 100%;    /* White text on success */
+		--warning: 38 92% 50%;              /* Yellow/orange warning */
+		--warning-foreground: 0 0% 100%;    /* White text on warning */
+		--info: 199 89% 48%;                /* Blue info */
+		--info-foreground: 0 0% 100%;       /* White text on info */
 	}
 
 	/* Enhanced markdown/prose styling */

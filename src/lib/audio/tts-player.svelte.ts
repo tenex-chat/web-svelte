@@ -34,9 +34,13 @@ export class TTSPlayer {
 	progressPercentage = $derived(
 		this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0
 	);
-	hasTTS = $derived(this.options.voiceSettings.enabled);
 
 	constructor(private options: TTSPlayerOptions) {}
+
+	// Getter for hasTTS to avoid initialization order issues
+	get hasTTS() {
+		return this.options.voiceSettings.enabled;
+	}
 
 	/**
 	 * Play text-to-speech

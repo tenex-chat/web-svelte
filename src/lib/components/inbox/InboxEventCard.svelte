@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { Avatar, Name } from '@nostr-dev-kit/svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import { ndk } from '$lib/ndk.svelte';
 	import { formatRelativeTime } from '$lib/utils/time';
 	import { cn } from '$lib/utils/cn';
@@ -82,18 +82,19 @@
 	{/if}
 
 	<!-- Avatar -->
-	<div class={cn('flex-shrink-0', isUnread && 'ml-3')}>
-		<Avatar {ndk} pubkey={event.pubkey} class="w-10 h-10 rounded-full" />
-	</div>
+	<User.Root {ndk} pubkey={event.pubkey}>
+		<div class={cn('flex-shrink-0', isUnread && 'ml-3')}>
+			<User.Avatar class="w-10 h-10 rounded-full" />
+		</div>
 
-	<!-- Main content -->
-	<div class="flex-1 min-w-0">
-		<!-- Header -->
-		<div class="flex items-start justify-between mb-1">
-			<div class="flex items-center gap-2 flex-wrap">
-				<div class="flex items-center gap-1">
-					<Name {ndk} pubkey={event.pubkey} class="font-medium text-sm" />
-				</div>
+		<!-- Main content -->
+		<div class="flex-1 min-w-0">
+			<!-- Header -->
+			<div class="flex items-start justify-between mb-1">
+				<div class="flex items-center gap-2 flex-wrap">
+					<div class="flex items-center gap-1">
+						<User.Name class="font-medium text-sm" />
+					</div>
 				{#snippet iconBadge()}
 					{@const Icon = eventTypeInfo.icon}
 					<Icon class="h-3 w-3" />
@@ -153,4 +154,5 @@
 			</button>
 		</div>
 	</div>
+	</User.Root>
 </div>

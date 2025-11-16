@@ -44,10 +44,10 @@
 	<!-- End call button -->
 	<button
 		onclick={onEndCall}
-		class="h-16 w-16 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 active:scale-95 transition-all"
+		class="h-16 w-16 rounded-full bg-destructive flex items-center justify-center hover:bg-destructive/90 active:scale-95 transition-all"
 		aria-label="End call"
 	>
-		<PhoneOff class="h-7 w-7 text-white" />
+		<PhoneOff class="h-7 w-7 text-destructive-foreground" />
 	</button>
 
 	<!-- Mic toggle button -->
@@ -99,7 +99,7 @@
 		disabled={!hasTranscript || isProcessing}
 		class="h-16 w-16 rounded-full flex items-center justify-center active:scale-95 transition-all {hasTranscript &&
 		!isProcessing
-			? 'bg-green-500 hover:bg-green-600 text-white'
+			? 'bg-success hover:bg-success/90 text-success-foreground'
 			: 'bg-muted text-muted-foreground cursor-not-allowed'}"
 		aria-label="Send message"
 	>

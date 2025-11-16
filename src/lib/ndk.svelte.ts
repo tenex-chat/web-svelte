@@ -1,5 +1,5 @@
 import NDKCacheSqliteWasm from '@nostr-dev-kit/cache-sqlite-wasm';
-import { NDKSvelte } from '@nostr-dev-kit/svelte';
+import { createNDK } from '@nostr-dev-kit/svelte';
 import { LocalStorage } from '@nostr-dev-kit/sessions';
 import { browser } from '$app/environment';
 import { registerEventClass } from '@nostr-dev-kit/ndk';
@@ -17,7 +17,6 @@ const DEFAULT_RELAYS = ['wss://tenex.chat'];
 const cacheAdapter = browser
 	? new NDKCacheSqliteWasm({
 			dbName: 'tenex-cache',
-			useWorker: true,
 			wasmUrl: '/sql-wasm.wasm',
 			workerUrl: '/worker.js'
 		})
@@ -26,24 +25,24 @@ const cacheAdapter = browser
 // Initialize signature verification worker (only in browser)
 let sigVerifyWorker: Worker | undefined;
 
-export const ndk =new NDKSvelte({
-			explicitRelayUrls: DEFAULT_RELAYS,
-			autoConnectUserRelays: false,
-			cacheAdapter,
-			signatureVerificationWorker: sigVerifyWorker,
-			initialValidationRatio: 1.0,
-			lowestValidationRatio: 0.1,
-			session: {
-				storage: new LocalStorage(),
-				autoSave: true,
-				fetches: {
-					follows: true,
-					mutes: true,
-					wallet: false,
-					relayList: true
-				}
-			}
-		})
+export const ndk = createNDK({
+	explicitRelayUrls: DEFAULT_RELAYS,
+	autoConnectUserRelays: false,
+	cacheAdapter,
+	signatureVerificationWorker: sigVerifyWorker,
+	initialValidationRatio: 1.0,
+	lowestValidationRatio: 0.1,
+	session: {
+		storage: new LocalStorage(),
+		autoSave: true,
+		fetches: {
+			follows: true,
+			mutes: true,
+			wallet: false,
+			relayList: true
+		}
+	}
+})
 
 // Register custom event classes (only in browser)
 if (browser) {

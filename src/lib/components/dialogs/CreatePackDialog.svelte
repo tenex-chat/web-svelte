@@ -130,7 +130,7 @@
 </script>
 
 {#if open}
-	<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+	<div class="fixed inset-0 bg-overlay/50 flex items-center justify-center z-50 p-4">
 		<div class="bg-card rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col border border-border">
 			<!-- Header -->
 			<div class="flex items-center justify-between p-6 border-b border-border">

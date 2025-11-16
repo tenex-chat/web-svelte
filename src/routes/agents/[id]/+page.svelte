@@ -12,7 +12,8 @@
 
 	const agentId = $derived($page.params.id);
 
-	const agentEvent = ndk.$fetchEvent(() => agentId);
+	const agentEvents = ndk.$fetchEvents(() => agentId ? { ids: [agentId] } : undefined);
+	const agentEvent = $derived(agentEvents[0]);
 	console.log('agent definition', (agentEvent as NDKAgentDefinition)?.description);
 
 	const agent = $derived.by(() => {
@@ -73,7 +74,7 @@
 	}
 
 	function renderMarkdown(content: string): string {
-		const rawHtml = marked(content, { breaks: true });
+		const rawHtml = marked.parse(content, { breaks: true }) as string;
 		return DOMPurify.sanitize(rawHtml);
 	}
 </script>
@@ -87,7 +88,7 @@
 				<p class="text-sm text-muted-foreground mb-4">This agent definition could not be found.</p>
 				<button
 					onclick={() => goto('/agents')}
-					class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+					class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
 				>
 					Back to Agent Definitions
 				</button>
@@ -138,7 +139,7 @@
 					<div class="relative">
 						<button
 							onclick={() => (actionsOpen = !actionsOpen)}
-							class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2"
+							class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2"
 						>
 							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -259,7 +260,7 @@
 							{#if agent.tools.length > 0}
 								<div class="flex flex-wrap gap-2">
 									{#each agent.tools as tool}
-										<span class="px-2 py-1 text-xs bg-muted text-foreground rounded border border-border dark:border-zinc-600">
+										<span class="px-2 py-1 text-xs bg-muted text-foreground rounded border border-border">
 											{tool}
 										</span>
 									{/each}
@@ -285,7 +286,7 @@
 							{#if mcpTools.length > 0}
 								<div class="space-y-2">
 									{#each mcpTools as mcp}
-										<div class="border border-border dark:border-zinc-600 rounded-lg p-3 bg-muted dark:bg-zinc-800/50">
+										<div class="border border-border rounded-lg p-3 bg-muted">
 											<h4 class="font-medium text-sm text-foreground">
 												{mcp.name || 'Unnamed MCP Server'}
 											</h4>
@@ -338,7 +339,7 @@
 						{#each agent.phases as phase, index}
 							<div class="bg-card rounded-lg border border-border p-6">
 								<div class="flex items-center gap-2 mb-2">
-									<span class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">Phase {index + 1}</span>
+									<span class="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">Phase {index + 1}</span>
 									<h3 class="font-semibold text-foreground">{phase.name}</h3>
 								</div>
 								<div class="prose prose-sm max-w-none dark:prose-invert">

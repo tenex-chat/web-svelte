@@ -159,21 +159,24 @@
 
 					<!-- Activity Filter Button (only for conversations tab) -->
 					<DropdownMenu.Root bind:open={filterDropdownOpen}>
-						<DropdownMenu.Trigger asChild>
-							<button
-								class={cn(
-									'h-6 w-6 p-0 flex items-center justify-center text-muted-foreground hover:text-foreground dark:hover:text-foreground rounded hover:bg-muted transition-colors',
-									timeFilter && 'text-primary dark:text-blue-400'
-								)}
-								title="Activity filters"
-								aria-label="Activity filters"
-							>
-								{#if timeFilter}
-									<Filter class="h-3.5 w-3.5" />
-								{:else}
-									<MoreVertical class="h-3.5 w-3.5" />
-								{/if}
-							</button>
+						<DropdownMenu.Trigger>
+							{#snippet child({ props })}
+								<button
+									{...props}
+									class={cn(
+										'h-6 w-6 p-0 flex items-center justify-center text-muted-foreground hover:text-foreground dark:hover:text-foreground rounded hover:bg-muted transition-colors',
+										timeFilter && 'text-primary'
+									)}
+									title="Activity filters"
+									aria-label="Activity filters"
+								>
+									{#if timeFilter}
+										<Filter class="h-3.5 w-3.5" />
+									{:else}
+										<MoreVertical class="h-3.5 w-3.5" />
+									{/if}
+								</button>
+							{/snippet}
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Content align="end" class="w-56">
 							<DropdownMenu.Item onclick={() => setTimeFilter(null)}>
@@ -254,13 +257,13 @@
 									class="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border flex items-center gap-3"
 								>
 									<!-- Avatar -->
-									<User.Avatar size="lg" />
+									<User.Avatar class="w-6 h-6" />
 
 									<!-- Agent Info -->
 									<div class="flex-1 min-w-0">
 										<div class="font-medium text-sm text-foreground"><User.Name /></div>
-										<div class="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
-											<span class="w-1.5 h-1.5 rounded-full bg-green-600 dark:bg-green-400"></span>
+										<div class="flex items-center gap-1.5 text-xs text-green-600">
+											<span class="w-1.5 h-1.5 rounded-full bg-green-600"></span>
 											<span>Online</span>
 										</div>
 									</div>

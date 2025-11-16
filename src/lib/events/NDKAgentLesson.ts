@@ -1,13 +1,14 @@
 import { NDKEvent, type NostrEvent } from '@nostr-dev-kit/ndk';
 import type NDK from '@nostr-dev-kit/ndk';
+import { NDKKind } from '$lib/kinds';
 
 export class NDKAgentLesson extends NDKEvent {
-	static kind = 4129;
-	static kinds = [4129];
+	static kind = NDKKind.AgentLesson;
+	static kinds = [NDKKind.AgentLesson];
 
 	constructor(ndk?: NDK, event?: NDKEvent | NostrEvent) {
 		super(ndk, event);
-		this.kind ??= 4129;
+		this.kind ??= NDKKind.AgentLesson;
 	}
 
 	static from(event: NDKEvent): NDKAgentLesson {

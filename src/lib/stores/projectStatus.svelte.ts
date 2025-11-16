@@ -49,8 +49,7 @@ class ProjectStatusStore {
           wrap: true,
           closeOnEose: false,
         };
-      },
-      { bufferMs: 100 },
+      }
     );
 
     // Update map when events arrive

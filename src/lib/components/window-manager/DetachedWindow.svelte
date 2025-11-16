@@ -9,6 +9,7 @@
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKKind } from '$lib/kinds';
+	import { createProfileFetcher } from '$lib/ndk/builders/profile';
 	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
 	import type { Message } from '$lib/utils/messageProcessor';
 	import CopyThreadMenu from '../chat/CopyThreadMenu.svelte';
@@ -62,7 +63,8 @@
 	const agentDef = $derived(agentDefSubscription?.events?.[0]);
 	const metadataEvent = $derived(metadataSubscription?.events?.[0]);
 
-	const profile = $derived(agentPubkey ? ndk.$fetchProfile(() => agentPubkey) : null);
+	const profileFetcher = createProfileFetcher(() => ({ user: agentPubkey }), ndk);
+	const profile = $derived(profileFetcher.profile);
 
 	const agentMetadata = $derived.by(() => {
 		if (!metadataEvent) return null;
@@ -160,7 +162,7 @@
 </script>
 
 <div
-	class="detached-window fixed bg-card rounded-lg shadow-2xl border border-border dark:border-zinc-700 flex flex-col overflow-hidden"
+	class="detached-window fixed bg-card rounded-lg shadow-2xl border border-border flex flex-col overflow-hidden"
 	style="
 		left: {window.position?.x ?? 0}px;
 		top: {window.position?.y ?? 0}px;
@@ -177,7 +179,7 @@
 	<!-- Window Header (hidden for call windows) -->
 	{#if window.type !== 'call'}
 	<div
-		class="window-header flex items-center justify-between px-4 py-2 border-b border-border bg-muted dark:bg-zinc-800"
+		class="window-header flex items-center justify-between px-4 py-2 border-b border-border bg-muted"
 		onmousedown={handleMouseDownDrag}
 		style="cursor: {isDragging ? 'grabbing' : 'grab'}"
 	>
@@ -200,7 +202,7 @@
 				<!-- View Mode Toggle -->
 				<button
 					onclick={toggleViewMode}
-					class="p-2 hover:bg-secondary dark:hover:bg-zinc-700 rounded transition-colors"
+					class="p-2 hover:bg-secondary rounded transition-colors"
 					title={viewMode === 'threaded' ? 'Switch to flat view' : 'Switch to threaded view'}
 				>
 					{#if viewMode === 'threaded'}
@@ -228,7 +230,7 @@
 			<!-- Re-attach button -->
 			<button
 				onclick={handleAttach}
-				class="p-2 hover:bg-secondary dark:hover:bg-zinc-700 rounded transition-colors"
+				class="p-2 hover:bg-secondary rounded transition-colors"
 				title="Dock to sidebar"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,7 +246,7 @@
 			<!-- Close button -->
 			<button
 				onclick={handleClose}
-				class="p-2 hover:bg-secondary dark:hover:bg-zinc-700 rounded transition-colors"
+				class="p-2 hover:bg-secondary rounded transition-colors"
 				title="Close"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

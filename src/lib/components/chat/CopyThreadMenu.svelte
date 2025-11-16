@@ -25,7 +25,7 @@
 					],
 					closeOnEose: false
 			  }
-			: false
+			: undefined
 	);
 
 	let isOpen = $state(false);

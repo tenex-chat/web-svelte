@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import { ndk } from '$lib/ndk.svelte';
-	import { Avatar } from '@nostr-dev-kit/svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import { ChevronDown, Settings } from 'lucide-svelte';
 	import { clickOutside } from '$lib/utils/clickOutside';
 	import Portal from 'svelte-portal';
@@ -64,11 +64,13 @@
 		class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm min-w-0"
 	>
 		{#if displayAgent}
-			<!-- Avatar -->
-			<Avatar {ndk} pubkey={displayAgent.pubkey} size={20} />
+			<User.Root {ndk} pubkey={displayAgent.pubkey}>
+				<!-- Avatar -->
+				<User.Avatar class="w-5 h-5" />
 
-			<!-- Agent Name -->
-			<span class="font-medium text-sm text-foreground truncate">{displayAgent.name}</span>
+				<!-- Agent Name -->
+				<span class="font-medium text-sm text-foreground truncate">{displayAgent.name}</span>
+			</User.Root>
 		{/if}
 
 		<!-- Dropdown Icon -->
@@ -94,13 +96,15 @@
 									: ''}"
 							>
 								{#if agents[0]}
-									<Avatar {ndk} pubkey={agents[0].pubkey} size={32} />
-									<div class="flex-1 min-w-0">
-										<div class="font-medium text-sm text-foreground truncate">{agents[0].name}</div>
-										{#if agents[0].model}
-											<div class="text-xs text-muted-foreground truncate">{agents[0].model}</div>
-										{/if}
-									</div>
+									<User.Root {ndk} pubkey={agents[0].pubkey}>
+										<User.Avatar class="w-8 h-8" />
+										<div class="flex-1 min-w-0">
+											<div class="font-medium text-sm text-foreground truncate">{agents[0].name}</div>
+											{#if agents[0].model}
+												<div class="text-xs text-muted-foreground truncate">{agents[0].model}</div>
+											{/if}
+										</div>
+									</User.Root>
 								{/if}
 								{#if !selectedAgent && defaultAgent === agents[0]?.pubkey}
 									<svg class="w-4 h-4 text-primary flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -141,13 +145,15 @@
 										? 'bg-primary/10'
 										: ''}"
 								>
-									<Avatar {ndk} pubkey={agent.pubkey} size={32} />
-									<div class="flex-1 min-w-0">
-										<div class="font-medium text-sm text-foreground truncate">{agent.name}</div>
-										{#if agent.model}
-											<div class="text-xs text-muted-foreground truncate">{agent.model}</div>
-										{/if}
-									</div>
+									<User.Root {ndk} pubkey={agent.pubkey}>
+										<User.Avatar class="w-8 h-8" />
+										<div class="flex-1 min-w-0">
+											<div class="font-medium text-sm text-foreground truncate">{agent.name}</div>
+											{#if agent.model}
+												<div class="text-xs text-muted-foreground truncate">{agent.model}</div>
+											{/if}
+										</div>
+									</User.Root>
 									{#if isActive}
 										<svg class="w-4 h-4 text-primary flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
 											<path

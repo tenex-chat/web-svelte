@@ -21,8 +21,8 @@
 	let isPublishing = $state(false);
 	let draftLoaded = $state(false);
 
-	let titleTextarea: HTMLTextAreaElement;
-	let contentTextarea: HTMLTextAreaElement;
+	let titleTextarea = $state<HTMLTextAreaElement>();
+	let contentTextarea = $state<HTMLTextAreaElement>();
 
 	const draftKey = $derived(`doc-draft-${project.dTag}`);
 
@@ -102,7 +102,7 @@
 
 		try {
 			const article = new NDKEvent(ndk);
-			article.kind = 30023 as NDKKind;
+			article.kind = NDKKind.Article;
 
 			// Auto-generate summary from content (first 160 chars)
 			const summary =
@@ -149,12 +149,24 @@
 
 {#if open}
 	<div
-		class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
+		class="fixed inset-0 z-50 bg-overlay/80 flex items-center justify-center"
 		onclick={handleClose}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') handleClose();
+		}}
+		role="presentation"
 	>
 		<div
 			class="w-full h-full bg-card flex flex-col"
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.stopPropagation();
+				}
+			}}
+			role="dialog"
+			aria-modal="true"
+			tabindex="-1"
 		>
 			<!-- Header -->
 			<div

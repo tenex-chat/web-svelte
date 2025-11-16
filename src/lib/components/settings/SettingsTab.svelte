@@ -76,7 +76,7 @@
 		{#if activeSection === 'general'}
 			<GeneralSettings {project} />
 		{:else if activeSection === 'agents'}
-			<AgentsSettings {project} {onlineAgents} />
+			<AgentsSettings {project} />
 		{:else if activeSection === 'tools'}
 			<ToolsSettings {project} />
 		{:else if activeSection === 'advanced'}
@@ -94,7 +94,7 @@
 						event to Nostr.
 					</p>
 					<button
-						class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors text-sm font-medium"
+						class="px-4 py-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded transition-colors text-sm font-medium"
 					>
 						Delete Project
 					</button>

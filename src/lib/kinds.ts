@@ -8,34 +8,37 @@
 
 import { NDKKind as BaseNDKKind } from "@nostr-dev-kit/ndk";
 
-// Re-export all base NDK kinds
-export const NDKKind = {
-    ...BaseNDKKind,
-
+// Custom kind values not in base NDK
+export const CustomKinds = {
     // Standard NIP kinds not in NDK
-    AgentRequest: 3199,
-    AgentRequestList: 13199,
-    AgentNudge: 4201,
-    AgentDefinition: 4199,
-    AgentDefinitionPack: 34199,
+    AgentRequest: 3199 as const,
+    AgentRequestList: 13199 as const,
+    AgentLesson: 4129 as const,
+    AgentDefinition: 4199 as const,
+    AgentNudge: 4201 as const,
+    AgentDefinitionPack: 34199 as const,
+    MCPTool: 4200 as const,
 
     // Tenex custom kinds (2xxxx range)
-    TenexStreamingResponse: 21111,
-    TenexProjectStatus: 24010,
-    TenexAgentConfigUpdate: 24020,
-    TenexAgentTypingStart: 24111,
-    TenexAgentTypingStop: 24112,
-    TenexOperationsStatus: 24133,
-    TenexStopCommand: 24134,
-    TenexProjectStart: 24000,
-    TenexLLMConfigChange: 24101,
-    TenexConversationMetadata: 513,
+    TenexStreamingResponse: 21111 as const,
+    TenexProjectStatus: 24010 as const,
+    ProjectStatus: 24010 as const, // Alias for TenexProjectStatus
+    TenexAgentConfigUpdate: 24020 as const,
+    TenexAgentTypingStart: 24111 as const,
+    TenexAgentTypingStop: 24112 as const,
+    TenexOperationsStatus: 24133 as const,
+    TenexStopCommand: 24134 as const,
+    TenexProjectStart: 24000 as const,
+    TenexLLMConfigChange: 24101 as const,
+    TenexConversationMetadata: 513 as const,
+};
 
-    // NIP-33 replaceable events
-    Project: 31933,
-    Task: 1934,
-    MCPTool: 4200,
-    ProjectStatus: 24010,
-} as const;
+// Re-export all base NDK kinds merged with our custom kinds
+export const NDKKind = {
+    ...BaseNDKKind,
+    ...CustomKinds
+};
 
-export type NDKKind = typeof NDKKind[keyof typeof NDKKind];
+// The type should accept any number since event kinds are just numbers
+// This maintains compatibility with NDK's NDKFilter<K extends number> generic
+export type NDKKind = number;

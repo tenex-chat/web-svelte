@@ -1,4 +1,4 @@
-import type { VADOptions, MicVAD as MicVADInstance } from '@ricky0123/vad-web';
+import type { RealTimeVADOptions, MicVAD as MicVADInstance } from '@ricky0123/vad-web';
 import { audioResourceManager } from './audio-resource-manager';
 import { AUDIO_CONFIG } from './audio-config';
 
@@ -58,7 +58,7 @@ export class VADService {
 
 	private async _doInitialize(deviceId?: string): Promise<void> {
 		try {
-			const vadOptions: VADOptions = {
+			const vadOptions: Partial<RealTimeVADOptions> = {
 				onSpeechStart: () => {
 					console.log(`[${performance.now().toFixed(2)}ms] [VAD-SERVICE] onSpeechStart triggered`);
 					this.options.onSpeechStart?.();
@@ -127,9 +127,10 @@ export class VADService {
 			const { MicVAD: MicVADClass } = await import('@ricky0123/vad-web');
 			this.vad = await MicVADClass.new({
 				...vadOptions,
-				// Configure paths to WASM files - model at root, others in /vad/
-				workletURL: '/vad/vad.worklet.bundle.min.js',
-				onnxWASMBasePath: '/vad/'
+				// Configure paths to WASM files and model files
+				baseAssetPath: '/vad/',
+				onnxWASMBasePath: '/vad/',
+				workletOptions: {}
 			});
 
 			// If we didn't provide a stream, MicVAD created its own

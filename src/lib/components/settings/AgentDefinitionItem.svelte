@@ -13,7 +13,8 @@
 
 	let { eventId, isPM, disabled, onSetPM, onRemove }: Props = $props();
 
-	const agentDefinition = ndk.$fetchEvent<NDKAgentDefinition>(() => eventId, { wrap: false });
+	const agentDefinitionEvents = ndk.$fetchEvents<NDKAgentDefinition>(() => eventId ? { ids: [eventId] } : undefined);
+	const agentDefinition = $derived(agentDefinitionEvents[0]);
 	console.log('fetched agent definition:', agentDefinition);
 </script>
 
@@ -24,7 +25,7 @@
 		<!-- PM Badge and Controls -->
 		<div class="flex items-center justify-between mt-2 px-2">
 			{#if isPM}
-				<span class="inline-flex items-center px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded font-medium">
+				<span class="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded font-medium">
 					<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"

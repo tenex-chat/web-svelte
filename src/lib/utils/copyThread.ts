@@ -1,4 +1,5 @@
-import type { NDK, NDKEvent } from '@nostr-dev-kit/ndk';
+import type NDK from '@nostr-dev-kit/ndk';
+import type { NDKEvent } from '@nostr-dev-kit/ndk';
 import type { Message } from '$lib/utils/messageProcessor';
 
 interface JSONMessage {

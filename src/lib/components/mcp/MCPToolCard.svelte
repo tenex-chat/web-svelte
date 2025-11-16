@@ -52,7 +52,7 @@
 </script>
 
 <div
-	class="bg-card border border-border rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
+	class="bg-card border border-border rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer"
 	onclick={handleCardClick}
 	role="button"
 	tabindex="0"
@@ -67,7 +67,7 @@
 					{tool.name || 'Unnamed Tool'}
 				</h3>
 				{#if isOwner}
-					<span class="text-xs text-primary dark:text-blue-400 font-medium">You</span>
+					<span class="text-xs text-primary font-medium">You</span>
 				{/if}
 			</div>
 		</div>
@@ -77,14 +77,14 @@
 			<div class="flex gap-1">
 				<button
 					onclick={handleEdit}
-					class="p-1.5 text-muted-foreground hover:text-primary dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+					class="p-1.5 text-muted-foreground hover:text-primary hover:bg-blue-50 rounded transition-colors"
 					aria-label="Edit tool"
 				>
 					<Pencil class="w-4 h-4" />
 				</button>
 				<button
 					onclick={handleDelete}
-					class="p-1.5 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+					class="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors"
 					aria-label="Delete tool"
 				>
 					<Trash class="w-4 h-4" />
@@ -111,7 +111,7 @@
 	{#if tool.capabilities.length > 0}
 		<div class="flex flex-wrap gap-1">
 			{#each tool.capabilities.slice(0, 3) as capability}
-				<span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+				<span class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
 					{capability}
 				</span>
 			{/each}

@@ -17,6 +17,7 @@ interface UISettings {
 	fontSize: FontSize;
 	compactMode: boolean;
 	animationsEnabled: boolean;
+	streamingResponsesEnabled: boolean;
 	colorScheme: string;
 	notifications: NotificationSettings;
 }
@@ -28,6 +29,7 @@ const defaultSettings: UISettings = {
 	fontSize: 'medium',
 	compactMode: false,
 	animationsEnabled: true,
+	streamingResponsesEnabled: true,
 	colorScheme: 'default',
 	notifications: {
 		projectUpdates: true,
@@ -136,6 +138,11 @@ class UISettingsStore {
 	setAnimationsEnabled(enabled: boolean) {
 		this.settings.animationsEnabled = enabled;
 		this.applySettings();
+		this.save();
+	}
+
+	setStreamingResponsesEnabled(enabled: boolean) {
+		this.settings.streamingResponsesEnabled = enabled;
 		this.save();
 	}
 

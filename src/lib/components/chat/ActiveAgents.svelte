@@ -3,7 +3,7 @@
 	import { createOperationsSubscription } from '$lib/stores/activeOperations.svelte';
 	import { stopAgentOperation, stopConversation } from '$lib/ndk-events/operations';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
-	import { Avatar } from '@nostr-dev-kit/svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import { X, StopCircle } from 'lucide-svelte';
 
 	interface Props {
@@ -41,18 +41,20 @@
 {#if activeAgents.length > 0}
 	<div class="flex items-center gap-1">
 		{#each activeAgents as agent (agent.pubkey)}
-			<button
-				onclick={() => handleStopAgent(agent.pubkey)}
-				class="group relative w-7 h-7 rounded-full"
-				title="Click to stop {agent.name || 'Agent'}"
-			>
-				<Avatar pubkey={agent.pubkey} {ndk} class="!w-7 !h-7" />
+			<User.Root {ndk} pubkey={agent.pubkey}>
+				<button
+					onclick={() => handleStopAgent(agent.pubkey)}
+					class="group relative w-7 h-7 rounded-full"
+					title="Click to stop {agent.name || 'Agent'}"
+				>
+					<User.Avatar class="!w-7 !h-7" />
 
-				<!-- Simple X overlay on hover -->
-				<div class="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-					<X class="w-4 h-4 text-white" />
-				</div>
-			</button>
+					<!-- Simple X overlay on hover -->
+					<div class="absolute inset-0 rounded-full bg-overlay/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+						<X class="w-4 h-4 text-white" />
+					</div>
+				</button>
+			</User.Root>
 		{/each}
 
 		<!-- Simple stop all button if multiple agents -->

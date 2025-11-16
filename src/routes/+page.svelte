@@ -68,7 +68,7 @@
 			<p class="text-xl text-muted-foreground mb-8">Orchestrate AI Agents on Nostr</p>
 			<button
 				onclick={() => loginModal.open()}
-				class="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors"
+				class="px-8 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-colors"
 			>
 				Get Started
 			</button>

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
-	import { Avatar } from '@nostr-dev-kit/svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import { ndk } from '$lib/ndk.svelte';
 
 	interface Props {
@@ -45,22 +45,26 @@
 		{/if}
 
 		<!-- Avatar -->
-		<div
-			class="relative rounded-full overflow-hidden transition-all duration-300"
-			class:ring-4={isActive}
-			class:ring-opacity-50={isActive}
-			style:box-shadow={isActive ? `0 0 30px ${agentColor}80` : 'none'}
-			style:border-color={agentColor}
-		>
-			<Avatar {ndk} pubkey={agent.pubkey} {size} />
-		</div>
+		<User.Root {ndk} pubkey={agent.pubkey}>
+			<div
+				class="relative rounded-full overflow-hidden transition-all duration-300"
+				class:ring-4={isActive}
+				class:ring-opacity-50={isActive}
+				style:box-shadow={isActive ? `0 0 30px ${agentColor}80` : 'none'}
+				style:border-color={agentColor}
+				style:width="{size}px"
+				style:height="{size}px"
+			>
+				<User.Avatar class="w-full h-full" />
+			</div>
+		</User.Root>
 	</div>
 
 	<!-- Agent name -->
 	<div class="text-center">
-		<div class="text-white font-medium">{agent.name}</div>
+		<div class="text-foreground font-medium">{agent.name}</div>
 		{#if agent.model}
-			<div class="text-white/60 text-sm">{agent.model}</div>
+			<div class="text-muted-foreground text-sm">{agent.model}</div>
 		{/if}
 	</div>
 </div>

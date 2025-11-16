@@ -202,7 +202,7 @@
 	{#if showCreateModal}
 		<Portal>
 			<div
-				class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50"
+				class="fixed inset-0 z-[10000] flex items-center justify-center bg-overlay/50"
 				onclick={handleCloseModal}
 				onkeydown={handleModalKeydown}
 				role="presentation"

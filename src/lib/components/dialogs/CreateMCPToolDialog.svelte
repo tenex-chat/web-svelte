@@ -100,7 +100,7 @@
 
 {#if open}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50"
 		onclick={handleClose}
 		onkeydown={handleKeydown}
 		role="presentation"
@@ -131,7 +131,7 @@
 			<!-- Header -->
 			<div class="px-6 pt-6 pb-4">
 				<h2 class="text-xl font-semibold text-foreground flex items-center gap-2">
-					<svg class="w-5 h-5 text-primary dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"
 							stroke-linejoin="round"
@@ -215,7 +215,7 @@
 							onclick={addCapability}
 							disabled={!newCapability.trim()}
 							class={cn(
-								'px-4 py-2 border border-border rounded-md hover:bg-muted dark:hover:bg-zinc-800 text-foreground transition-colors',
+								'px-4 py-2 border border-border rounded-md hover:bg-muted text-foreground transition-colors',
 								!newCapability.trim() && 'opacity-50 cursor-not-allowed'
 							)}
 						>
@@ -226,13 +226,13 @@
 						<div class="flex flex-wrap gap-2">
 							{#each capabilities as cap}
 								<span
-									class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-sm"
+									class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm"
 								>
 									{cap}
 									<button
 										type="button"
 										onclick={() => removeCapability(cap)}
-										class="hover:text-blue-900 dark:hover:text-blue-100"
+										class="hover:text-blue-900"
 										aria-label="Remove capability"
 									>
 										×
@@ -250,7 +250,7 @@
 			<div class="px-6 py-4 border-t border-border flex justify-end gap-2">
 				<button
 					onclick={handleClose}
-					class="px-4 py-2 border border-border rounded-md hover:bg-muted dark:hover:bg-zinc-800 text-foreground transition-colors"
+					class="px-4 py-2 border border-border rounded-md hover:bg-muted text-foreground transition-colors"
 				>
 					Cancel
 				</button>
@@ -258,7 +258,7 @@
 					onclick={handleSave}
 					disabled={!name.trim() || !command.trim() || saving}
 					class={cn(
-						'px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2',
+						'px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2',
 						(!name.trim() || !command.trim() || saving) && 'opacity-50 cursor-not-allowed'
 					)}
 				>

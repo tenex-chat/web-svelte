@@ -12,9 +12,10 @@
 
 	const packId = $derived($page.params.id);
 
-	const packEvent = ndk.$fetchEvent(() => packId);
+	const packEvents = ndk.$fetchEvents(() => (packId ? { ids: [packId] } : undefined));
 
 	const pack = $derived.by(() => {
+		const packEvent = packEvents[0];
 		if (!packEvent) return null;
 		return NDKAgentDefinitionPack.from(packEvent);
 	});
@@ -50,8 +51,8 @@
 		goto(`/agents/${agent.encode()}`);
 	}
 
-	function renderMarkdown(content: string): string {
-		const rawHtml = marked(content, { breaks: true });
+	async function renderMarkdown(content: string): Promise<string> {
+		const rawHtml = await marked(content, { breaks: true });
 		return DOMPurify.sanitize(rawHtml);
 	}
 
@@ -70,7 +71,7 @@
 				<p class="text-sm text-muted-foreground mb-4">This agent pack could not be found.</p>
 				<button
 					onclick={() => goto('/packs')}
-					class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+					class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
 				>
 					Back to Packs
 				</button>
@@ -126,7 +127,7 @@
 					{#if ndk.$currentUser}
 						<button
 							onclick={handleAddToProject}
-							class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+							class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
 						>
 							Add to Project
 						</button>

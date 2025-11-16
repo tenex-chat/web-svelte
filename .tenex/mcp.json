@@ -1,0 +1,31 @@
+{
+  "servers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "eventId": "5072ce19f839a1c6415973026bf9dec18f9a287eefc7a730d1c30598970dafad"
+    },
+    "repomix": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "repomix@latest",
+        "--mcp"
+      ],
+      "eventId": "236a64bc2d6639527e25171f2b28ab418f283aad114c4c3610d7a7ccffc35642"
+    },
+    "nostrbook": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@nostrbook/mcp@latest"
+      ],
+      "description": "Access to all nostr nips",
+      "eventId": "9287cf575441f14683008d510baae6a53c0534550f349d0079c288fcf2d98dc5"
+    }
+  },
+  "enabled": true
+}

@@ -149,7 +149,7 @@
 
 {#if open}
 	<div
-		class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+		class="fixed inset-0 bg-overlay/50 flex items-center justify-center z-50 p-4"
 		onclick={onClose}
 		onkeydown={(e) => {
 			if (e.key === 'Escape') onClose();
@@ -295,7 +295,7 @@
 				<button
 					type="button"
 					onclick={handleSave}
-					class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors"
+					class="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-colors"
 				>
 					Save Changes
 				</button>

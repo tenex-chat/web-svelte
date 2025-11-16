@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { MessageSquare, FileText, Hash, Bot, Phone } from 'lucide-svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { Avatar } from '@nostr-dev-kit/svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import { ndk } from '$lib/ndk.svelte';
+	import { createProfileFetcher } from '$lib/ndk/builders/profile';
 	import { formatRelativeTime } from '$lib/utils/time';
 
 	interface Props {
@@ -13,7 +14,8 @@
 	let { event, onclick }: Props = $props();
 
 	// Fetch author profile using NDK's built-in utility
-	const profile = ndk.$fetchProfile(() => event.pubkey);
+	const profileFetcher = createProfileFetcher(() => ({ user: event.pubkey }), ndk);
+	const profile = $derived(profileFetcher.profile);
 
 	// Get author display name (fallback to truncated pubkey)
 	const authorName = $derived(
@@ -84,21 +86,25 @@
 	class="w-full px-3 py-3 hover:bg-muted cursor-pointer transition-colors border-b border-border text-left"
 	onclick={onclick}
 >
-	<div class="flex gap-3">
-		<!-- Author Avatar -->
-		<Avatar {ndk} pubkey={event.pubkey} size={36} />
+	<User.Root {ndk} pubkey={event.pubkey}>
+		<div class="flex gap-3">
+			<!-- Author Avatar -->
+			<User.Avatar class="w-9 h-9" />
 
-		<!-- Content -->
+			<!-- Content -->
 		<div class="flex-1 min-w-0">
 			<!-- Header -->
 			<div class="flex items-center gap-2 mb-1">
 				<span class="font-medium text-sm text-foreground">{authorName}</span>
-				<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-					<svelte:component this={eventDetails.icon} class="h-3.5 w-3.5" />
-					<span>{eventDetails.label}</span>
-					<span>·</span>
-					<span>{formatRelativeTime(event.created_at || 0)}</span>
-				</div>
+				{#if eventDetails}
+					{@const Icon = eventDetails.icon}
+					<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+						<Icon class="h-3.5 w-3.5" />
+						<span>{eventDetails.label}</span>
+						<span>·</span>
+						<span>{formatRelativeTime(event.created_at || 0)}</span>
+					</div>
+				{/if}
 			</div>
 
 			<!-- Title/Preview - Shows actual event content -->
@@ -118,5 +124,6 @@
 				</div>
 			{/if}
 		</div>
-	</div>
+		</div>
+	</User.Root>
 </button>

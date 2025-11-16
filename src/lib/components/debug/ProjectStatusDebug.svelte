@@ -10,7 +10,7 @@
 		open?: boolean;
 	}
 
-	let { open = true }: Props = $props();
+	let { open = $bindable(true) }: Props = $props();
 
 	const projects = $derived(openProjects.projects);
 	const projectStatusMap = $derived(projectStatusStore.allStatus);
@@ -38,20 +38,20 @@
 
 	// Subscribe to wire feed
 	$effect(() => {
-		if (!ndk.$currentUser?.pubkey) return;
+		const currentUser = ndk.$currentUser;
+		if (!currentUser?.pubkey) return;
 
 		const subscription = ndk.$subscribe(
 			() => ({
 				filters: [
 					{
 						kinds: [24010],
-						'#p': [ndk.$currentUser.pubkey],
+						'#p': [currentUser.pubkey],
 						since: oneMinuteAgo
 					}
 				],
 				closeOnEose: false,
-			}),
-			{ subId: 'debug-wire-feed', bufferMs: 100 }
+			})
 		);
 
 		$effect(() => {
@@ -123,7 +123,7 @@
 
 {#if open}
 	<div
-		class="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center p-4"
+		class="fixed inset-0 z-[9999] bg-overlay/50 flex items-center justify-center p-4"
 		onclick={(e) => {
 			if (e.target === e.currentTarget) open = false;
 		}}

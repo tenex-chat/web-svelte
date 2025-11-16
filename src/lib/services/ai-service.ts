@@ -91,8 +91,8 @@ class AIService {
 			// Use the ElevenLabs SDK for transcription
 			const result = await client.speechToText.convert({
 				file: file,
-				model_id: 'scribe_v1',
-				tag_audio_events: false,
+				modelId: 'scribe_v1',
+				tagAudioEvents: false,
 				diarize: false
 			});
 

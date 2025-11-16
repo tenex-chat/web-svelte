@@ -120,7 +120,7 @@
 
 {#if open}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50"
 		onclick={handleClose}
 		onkeydown={handleKeydown}
 		role="presentation"
@@ -292,7 +292,7 @@
 					onclick={handleSave}
 					disabled={!name.trim() || !model.trim() || !apiKey.trim() || saving}
 					class={cn(
-						'flex-1 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors',
+						'flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors',
 						(!name.trim() || !model.trim() || !apiKey.trim() || saving) &&
 							'opacity-50 cursor-not-allowed'
 					)}

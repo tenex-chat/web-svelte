@@ -3,10 +3,10 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKThread, NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKKind } from '$lib/kinds';
+	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { processEventsToMessages } from '$lib/utils/messageProcessor';
-	import { streamingMessageStore } from '$lib/utils/streamingMessageStore.svelte';
 	import { CallStore, type CallStoreOptions, type CallState } from '$lib/stores/call-store.svelte';
 	import VoiceVisualizer from './VoiceVisualizer.svelte';
 	import AudioControls from './AudioControls.svelte';
@@ -38,7 +38,7 @@
 	const onlineAgents = $derived(projectId ? projectStatusStore.getOnlineAgents(projectId) : []);
 
 	// Local thread state
-	let localRootEvent = $state<NDKEvent | null>(initialRootEvent);
+	let localRootEvent = $state<NDKEvent | null>(initialRootEvent ?? null);
 	let selectedAgentPubkey: string | null = $state(null);
 
 	// Compute default agent based on recent messages (same logic as ChatInput)
@@ -77,106 +77,48 @@
 		};
 	});
 
-	// Subscribe to messages in the thread
-	// Need to explicitly include kind 21111 for streaming responses
-	const messagesSubscription = ndk.$subscribe(() =>
-		localRootEvent ? {
+	// SIMPLIFIED: Subscribe to messages including streaming
+	const messagesSubscription = ndk.$subscribe(() => {
+		if (!localRootEvent) return undefined;
+
+		const streamingKinds: number[] = [
+			NDKKind.TenexAgentTypingStart,
+			NDKKind.TenexAgentTypingStop
+		];
+		if (uiSettingsStore.settings.streamingResponsesEnabled) {
+			streamingKinds.push(NDKKind.TenexStreamingResponse);
+		}
+
+		return {
 			filters: [
-				{ kinds: [11, 1111, 7, 21111, 513], ...localRootEvent.filter() },
-				{ kinds: [11, 1111, 7, 21111, 513], ...localRootEvent.nip22Filter() }
+				{ kinds: [11, 1111, 7, 513], ...localRootEvent.filter() },
+				{ kinds: [11, 1111, 7, 513], ...localRootEvent.nip22Filter() },
+				// Include streaming and typing events
+				{ kinds: streamingKinds, limit: 100, ...localRootEvent.nip22Filter() }
 			],
 			closeOnEose: false,
 			bufferMs: 30
-		} : false
-	);
-
-	// Track processed events to avoid reprocessing
-	let processedStreamingEvents = new Set<string>();
-	let processedFinalEvents = new Set<string>();
-
-	// Process streaming events separately for immediate updates
-	$effect(() => {
-		const streamingEvents = messagesSubscription.events.filter(e => e.kind === NDKKind.TenexStreamingResponse);
-
-		// Process only new streaming events
-		for (const event of streamingEvents) {
-			if (!processedStreamingEvents.has(event.id)) {
-				streamingMessageStore.processStreamingEvent(event);
-				processedStreamingEvents.add(event.id);
-			}
-		}
-
-		// Clear sessions when final messages arrive
-		const finalMessages = messagesSubscription.events.filter(e => e.kind === NDKKind.GenericReply);
-		for (const event of finalMessages) {
-			if (!processedFinalEvents.has(event.id)) {
-				streamingMessageStore.clearSession(event.pubkey);
-				processedFinalEvents.add(event.id);
-				// Also clear the streaming events for this pubkey from our tracking
-				streamingEvents
-					.filter(e => e.pubkey === event.pubkey)
-					.forEach(e => processedStreamingEvents.delete(e.id));
-			}
-		}
+		};
 	});
 
-	// Process messages for TTS queue
+	// SIMPLIFIED: Process messages for TTS queue - processEventsToMessages now handles streaming
 	const messages = $derived.by(() => {
 		if (!localRootEvent) return [];
 
-		const allEvents = messagesSubscription.events.some(e => e.id === localRootEvent.id)
+		const rootEvent = localRootEvent;
+		const allEvents = messagesSubscription.events.some(e => e.id === rootEvent.id)
 			? messagesSubscription.events
-			: [localRootEvent, ...messagesSubscription.events];
+			: [rootEvent, ...messagesSubscription.events];
 
-		// Filter out streaming events - we handle them separately via the global store
-		// Also filter out typing indicators as they're handled by streaming store
-		const nonStreamingEvents = allEvents.filter(e =>
-			e.kind !== NDKKind.TenexStreamingResponse &&
-			e.kind !== NDKKind.TenexAgentTypingStart &&
-			e.kind !== NDKKind.TenexAgentTypingStop
-		);
-
-		// Get base messages - processEventsToMessages will NOT handle streaming
-		// since we filtered them out above
-		const baseMessages = processEventsToMessages(
-			nonStreamingEvents,
+		// Process everything in one pass - messageProcessor now handles all streaming logic
+		return processEventsToMessages(
+			allEvents,
 			localRootEvent,
 			'flattened',
 			false, // not brainstorm
 			false, // showAll
 			ndk.$currentUser?.pubkey
 		);
-
-		// Add active streaming sessions as synthetic messages from the GLOBAL store
-		// Access sessions directly as a reactive property, not via getAllSessions()
-		const streamingSessions = Object.entries(streamingMessageStore.sessions);
-		const streamingMessages = [];
-
-		streamingSessions.forEach(([key, session]) => {
-			// Create synthetic event for the streaming message
-			const syntheticEvent = new NDKEvent(ndk);
-			syntheticEvent.kind = NDKKind.TenexStreamingResponse;
-			syntheticEvent.pubkey = session.latestEvent.pubkey;
-			syntheticEvent.created_at = session.latestEvent.created_at;
-			syntheticEvent.tags = session.latestEvent.tags;
-			syntheticEvent.content = session.reconstructedContent;
-			syntheticEvent.id = session.latestEvent.id;
-			syntheticEvent.sig = session.latestEvent.sig;
-
-			streamingMessages.push({
-				id: session.syntheticId,
-				event: syntheticEvent
-			});
-		});
-
-		// Combine and sort all messages
-		const allMessages = [...baseMessages, ...streamingMessages].sort((a, b) => {
-			const timeA = a.event.created_at || 0;
-			const timeB = b.event.created_at || 0;
-			return timeA - timeB;
-		});
-
-		return allMessages;
 	});
 
 	// Thread management functions matching MessagingController interface
@@ -275,13 +217,10 @@
 
 	// Local state for UI
 	let callState: CallState = $state('initializing');
-	let vadModeDisplay = $derived(
-		callStore
-			? callStore.vad.options.enabled
-				? 'Auto-detect'
-				: 'Push-to-talk'
-			: 'Manual'
-	);
+	let vadModeDisplay = $derived.by(() => {
+		if (!callStore) return 'Manual';
+		return callStore.vad.enabled ? 'Auto-detect' : 'Push-to-talk';
+	});
 
 	// Initialize call store on mount
 	onMount(async () => {
@@ -370,55 +309,17 @@
 	}
 
 	// Handle agent configuration
-	async function handleAgentConfigure(config?: { model: string; tools: string[] }) {
-		if (!ndk || !ndk.$currentUser || !project || !activeAgent) {
-			console.error('[CallView] Missing required data for agent configuration');
-			return;
-		}
-
-		// If no config provided, just log (dialog would need to be implemented)
-		if (!config) {
-			console.log('[CallView] Agent configuration dialog not yet implemented');
-			return;
-		}
-
-		try {
-			const projectTagId = project.tagId();
-			if (!projectTagId) {
-				console.error('[CallView] Project tag ID not found');
-				return;
-			}
-
-			// Create a kind 24020 event to update agent configuration
-			const changeEvent = new NDKEvent(ndk);
-			changeEvent.kind = 24020 as NDKKind;
-			changeEvent.content = '';
-			changeEvent.tags = [
-				['p', activeAgent.pubkey], // Target agent
-				['model', config.model], // New model slug
-				['a', projectTagId] // Project reference
-			];
-
-			// Add tool tags - one tag per tool
-			config.tools.forEach((tool) => {
-				changeEvent.tags.push(['tool', tool]);
-			});
-
-			await changeEvent.sign();
-			await changeEvent.publish();
-
-			console.log('[CallView] Agent settings updated successfully');
-		} catch (error) {
-			console.error('[CallView] Failed to update agent settings:', error);
-		}
+	function handleAgentConfigure(pubkey: string) {
+		// TODO: Implement agent configuration dialog
+		console.log('[CallView] Agent configuration requested for:', pubkey);
 	}
 </script>
 
-<div class="flex flex-col bg-black {isEmbedded ? 'h-full' : 'fixed inset-0 z-50'}">
+<div class="flex flex-col bg-background {isEmbedded ? 'h-full' : 'fixed inset-0 z-50'}">
 	<!-- Header -->
 	<div class="flex items-center justify-between p-4">
 		<div class="flex items-center gap-3">
-			<h2 class="text-lg font-medium text-white">{project?.title || 'Voice Call'}</h2>
+			<h2 class="text-lg font-medium text-foreground">{project?.title || 'Voice Call'}</h2>
 			{#if onlineAgents.length > 0}
 				<AgentSelector
 					agents={onlineAgents}
@@ -430,7 +331,7 @@
 				/>
 			{/if}
 		</div>
-		<div class="text-sm text-white/60">
+		<div class="text-sm text-muted-foreground">
 			{vadModeDisplay}
 		</div>
 	</div>
@@ -441,10 +342,10 @@
 		{#if activeProjectAgent}
 			<AgentAvatar agent={activeProjectAgent} isActive={callState === 'playing'} />
 		{:else}
-			<div class="h-20 w-20 rounded-full bg-white/10 flex items-center justify-center text-white">
+			<div class="h-20 w-20 rounded-full bg-muted flex items-center justify-center text-foreground">
 				{project?.title?.[0]?.toUpperCase() || 'P'}
 			</div>
-			<div class="mt-4 text-center text-white">
+			<div class="mt-4 text-center text-foreground">
 				{project?.title || 'Project'}
 			</div>
 		{/if}
@@ -462,7 +363,7 @@
 		<CallStatus
 			{callState}
 			transcript={callStore?.transcript || ''}
-			isVADEnabled={callStore?.vad.options.enabled || false}
+			isVADEnabled={callStore?.vad.enabled || false}
 		/>
 	</div>
 
@@ -472,7 +373,7 @@
 		isProcessing={callStore?.callState === 'processing' || callStore?.messaging.isProcessing || false}
 		hasTranscript={!!callStore?.transcript?.trim()}
 		audioLevel={callStore?.audioRecorder.audioLevel || 0}
-		isVADEnabled={callStore?.vad.options.enabled || false}
+		isVADEnabled={callStore?.vad.enabled || false}
 		isVADPaused={callStore?.vad.isPaused || false}
 		onEndCall={handleEndCall}
 		onMicToggle={handleMicToggle}

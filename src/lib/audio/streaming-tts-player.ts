@@ -131,11 +131,11 @@ export class StreamingTTSPlayer {
 			return;
 		}
 
-		try {
-			// Combine small chunks for better performance
-			let combinedSize = 0;
-			const chunksToAppend: Uint8Array[] = [];
+		// Combine small chunks for better performance
+		let combinedSize = 0;
+		const chunksToAppend: Uint8Array[] = [];
 
+		try {
 			while (
 				this.pendingChunks.length > 0 &&
 				combinedSize < AUDIO_CONFIG.STREAMING.CHUNK_COMBINE_THRESHOLD

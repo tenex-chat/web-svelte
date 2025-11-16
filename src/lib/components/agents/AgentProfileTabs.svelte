@@ -38,14 +38,14 @@
 						class={cn(
 							'px-4 py-3 text-sm font-medium transition-colors relative',
 							activeTab === tab.id
-								? 'text-primary dark:text-blue-400'
+								? 'text-primary'
 								: 'text-muted-foreground hover:text-foreground dark:hover:text-foreground'
 						)}
 					>
 						{tab.label}
 						{#if activeTab === tab.id}
 							<div
-								class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary dark:bg-blue-400"
+								class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
 							></div>
 						{/if}
 					</button>

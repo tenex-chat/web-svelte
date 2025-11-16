@@ -4,7 +4,8 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
-	import { Avatar } from '@nostr-dev-kit/svelte';
+	import { User } from '$lib/ndk/ui/user';
+	import { createProfileFetcher } from '$lib/ndk/builders/profile';
 	import { Clock, Hash, ArrowLeft, Copy } from 'lucide-svelte';
 	import { formatRelativeTime } from '$lib/utils/time';
 
@@ -17,7 +18,8 @@
 	let { document, project, onBack }: Props = $props();
 
 	// Fetch author profile
-	const profile = ndk.$fetchProfile(() => document.pubkey);
+	const profileFetcher = createProfileFetcher(() => ({ user: document.pubkey }), ndk);
+	const profile = $derived(profileFetcher.profile);
 
 	const authorName = $derived(
 		profile?.displayName ||
@@ -50,7 +52,7 @@
 	// Render markdown with sanitization
 	const renderedContent = $derived.by(() => {
 		try {
-			const rawHtml = marked(document.content || '');
+			const rawHtml = marked.parse(document.content || '') as string;
 			return DOMPurify.sanitize(rawHtml);
 		} catch {
 			return document.content || '';
@@ -104,16 +106,18 @@
 			<!-- Metadata Section -->
 			<div class="mb-6 pb-6 border-b border-border">
 				<!-- Author -->
-				<div class="flex items-center gap-3 mb-3">
-					<Avatar {ndk} pubkey={document.pubkey} size={40} />
-					<div>
-						<div class="font-medium text-sm">{authorName}</div>
-						<div class="flex items-center gap-2 text-xs text-muted-foreground">
-							<Clock class="h-3 w-3" />
-							<span>{formatRelativeTime(document.created_at || 0)} · {readingTime}</span>
+				<User.Root {ndk} pubkey={document.pubkey}>
+					<div class="flex items-center gap-3 mb-3">
+						<User.Avatar class="w-10 h-10" />
+						<div>
+							<div class="font-medium text-sm">{authorName}</div>
+							<div class="flex items-center gap-2 text-xs text-muted-foreground">
+								<Clock class="h-3 w-3" />
+								<span>{formatRelativeTime(document.created_at || 0)} · {readingTime}</span>
+							</div>
 						</div>
 					</div>
-				</div>
+				</User.Root>
 
 				<!-- Summary -->
 				{#if summary}

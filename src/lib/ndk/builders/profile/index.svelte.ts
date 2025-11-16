@@ -5,7 +5,7 @@
 import type { NDKUser, NDKUserProfile } from "@nostr-dev-kit/ndk";
 import { SvelteMap } from "svelte/reactivity";
 import type { NDKSvelte } from "@nostr-dev-kit/svelte";
-import { resolveNDK } from "../resolve-ndk/index.svelte.js";
+import { getNDK } from "../../utils/ndk/index.svelte.js";
 
 // Track in-flight profile fetch requests to prevent duplicate fetches
 const inFlightRequests = new SvelteMap<
@@ -53,7 +53,7 @@ export function createProfileFetcher(
 	config: () => ProfileFetcherConfig,
 	ndk?: NDKSvelte,
 ): ProfileFetcherState {
-	const resolvedNDK = resolveNDK(ndk);
+	const ndkInstance = getNDK(ndk);
 	const state = $state<{
 		profile: NDKUserProfile | null;
 		user: NDKUser | null;
@@ -70,7 +70,7 @@ export function createProfileFetcher(
 		try {
 			const ndkUser =
 				typeof payload === "string"
-					? await resolvedNDK.fetchUser(payload)
+					? await ndkInstance.fetchUser(payload)
 					: payload;
 
 			if (!ndkUser) {

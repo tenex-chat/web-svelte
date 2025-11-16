@@ -165,7 +165,7 @@
 				>
 					<span
 						class={cn(
-							'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							settings.compactMode ? 'translate-x-6' : 'translate-x-1'
 						)}
 					/>
@@ -192,8 +192,35 @@
 				>
 					<span
 						class={cn(
-							'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							settings.animationsEnabled ? 'translate-x-6' : 'translate-x-1'
+						)}
+					/>
+				</button>
+			</div>
+
+			<!-- Streaming Responses -->
+			<div class="flex items-center justify-between">
+				<div>
+					<label for="streaming-responses" class="text-sm font-medium text-foreground">
+						Streaming Responses
+					</label>
+					<p class="text-xs text-muted-foreground">Show responses as they're generated in real-time</p>
+				</div>
+				<button
+					id="streaming-responses"
+					onclick={() => uiSettingsStore.setStreamingResponsesEnabled(!settings.streamingResponsesEnabled)}
+					class={cn(
+						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+						settings.streamingResponsesEnabled ? 'bg-primary' : 'bg-secondary'
+					)}
+					role="switch"
+					aria-checked={settings.streamingResponsesEnabled}
+				>
+					<span
+						class={cn(
+							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
+							settings.streamingResponsesEnabled ? 'translate-x-6' : 'translate-x-1'
 						)}
 					/>
 				</button>

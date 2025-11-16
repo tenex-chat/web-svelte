@@ -5,9 +5,9 @@
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import EventItem from './EventItem.svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { Avatar } from '@nostr-dev-kit/svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import VirtualList from '@humanspeak/svelte-virtual-list';
+	import { User } from '$lib/ndk/ui/user';
 
 	interface Props {
 		project: NDKProject;
@@ -23,17 +23,14 @@
 
 
 	// Subscribe to project events
-	const subscription = ndk.$subscribe(
-		() => {
-			const filter = project.filter();
-			if (!filter || Object.keys(filter).length === 0) return null;
-			return {
-				filters: [filter],
-				closeOnEose: false
-			};
-		},
-		{ bufferMs: 100 }
-	);
+	const subscription = ndk.$subscribe(() => {
+		const filter = project.filter();
+		if (!filter || Object.keys(filter).length === 0) return undefined;
+		return {
+			filters: [filter],
+			closeOnEose: false
+		};
+	});
 
 	// Filter out ephemeral events and kind 0, then optionally group by E tag, then sort
 	const sortedEvents = $derived.by(() => {
@@ -203,19 +200,24 @@
 				<!-- Author Filter Dropdown -->
 				<div class="mt-1.5 mr-1.5">
 					<DropdownMenu.Root bind:open={filterDropdownOpen}>
-						<DropdownMenu.Trigger asChild>
-							<button
-								type="button"
-								class="h-9 w-9 p-0 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors"
-								class:bg-primary={selectedAuthor}
-								class:text-white={selectedAuthor}
-							>
-								{#if selectedAuthor}
-									<Avatar {ndk} pubkey={selectedAuthor} size={24} class="rounded-full" />
-								{:else}
-									<Filter class="h-3.5 w-3.5" />
-								{/if}
-							</button>
+						<DropdownMenu.Trigger>
+							{#snippet child({ props })}
+								<button
+									{...props}
+									type="button"
+									class="h-9 w-9 p-0 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors"
+									class:bg-primary={selectedAuthor}
+									class:text-white={selectedAuthor}
+								>
+									{#if selectedAuthor}
+										<User.Root {ndk} pubkey={selectedAuthor}>
+											<User.Avatar class="w-6 h-6 rounded-full" />
+										</User.Root>
+									{:else}
+										<Filter class="h-3.5 w-3.5" />
+									{/if}
+								</button>
+							{/snippet}
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Content align="end" class="w-[200px]">
 							<!-- Group threads checkbox -->
@@ -240,23 +242,24 @@
 								<!-- List all authors -->
 								{#each uniqueAuthors as pubkey (pubkey)}
 									{@const isCurrentUser = ndk.$currentUser?.pubkey === pubkey}
-									{@const profile = ndk.$fetchProfile(() => pubkey)}
 									<DropdownMenu.Item onclick={() => (selectedAuthor = pubkey)}>
-										<div class="flex items-center justify-between w-full">
-											<div class="flex items-center gap-2">
-												<Avatar {ndk} {pubkey} size={20} class="rounded-full flex-shrink-0" />
-												{#if isCurrentUser}
-													<span class="text-sm">You</span>
-												{:else}
-													<span class="text-sm">
-														{profile?.name || profile?.displayName || `${pubkey.slice(0, 8)}...`}
-													</span>
-												{/if}
+										<User.Root {ndk} {pubkey}>
+											<div class="flex items-center justify-between w-full">
+												<div class="flex items-center gap-2">
+													<User.Avatar class="w-5 h-5 rounded-full flex-shrink-0" />
+													{#if isCurrentUser}
+														<span class="text-sm">You</span>
+													{:else}
+														<span class="text-sm">
+															<User.Name />
+														</span>
+													{/if}
 											</div>
 											{#if selectedAuthor === pubkey}
 												<Check class="h-3.5 w-3.5" />
 											{/if}
-										</div>
+											</div>
+										</User.Root>
 									</DropdownMenu.Item>
 								{/each}
 							{/if}
@@ -289,7 +292,7 @@
 		</div>
 	{:else}
 		<div class="flex-1 overflow-auto">
-			<VirtualList items={filteredEvents} height="100%" itemHeight={80}>
+			<VirtualList items={filteredEvents}>
 				{#snippet renderItem(event)}
 					<EventItem {event} onclick={() => onEventClick?.(event)} />
 				{/snippet}

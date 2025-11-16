@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
+	import { NDKKind } from '$lib/kinds';
 	import { NDKMCPTool } from '$lib/events/NDKMCPTool';
 	import MCPToolCard from '$lib/components/mcp/MCPToolCard.svelte';
 	import CreateMCPToolDialog from '$lib/components/dialogs/CreateMCPToolDialog.svelte';
@@ -10,7 +11,7 @@
 	let showCreateDialog = $state(false);
 	let editingTool = $state<NDKMCPTool | null>(null);
 
-	const toolSubscription = ndk.$subscribe({ kinds: [NDKMCPTool.kind] });
+	const toolSubscription = ndk.$subscribe(() => ({ kinds: [NDKKind.MCPTool as number] }));
 	const allTools = $derived(
 		toolSubscription?.events?.map((event) => NDKMCPTool.from(event)) || []
 	);
@@ -84,8 +85,8 @@
 				onclick={() => (filterMode = 'all')}
 				class={`px-4 py-2 rounded-lg transition-colors ${
 					filterMode === 'all'
-						? 'bg-primary text-white'
-						: 'bg-muted dark:bg-zinc-900 text-foreground hover:bg-secondary dark:hover:bg-zinc-800'
+						? 'bg-primary text-primary-foreground'
+						: 'bg-muted text-foreground hover:bg-secondary'
 				}`}
 			>
 				All Tools ({allTools.length})
@@ -94,8 +95,8 @@
 				onclick={() => (filterMode = 'mine')}
 				class={`px-4 py-2 rounded-lg transition-colors ${
 					filterMode === 'mine'
-						? 'bg-primary text-white'
-						: 'bg-muted dark:bg-zinc-900 text-foreground hover:bg-secondary dark:hover:bg-zinc-800'
+						? 'bg-primary text-primary-foreground'
+						: 'bg-muted text-foreground hover:bg-secondary'
 				}`}
 			>
 				My Tools ({myToolsCount})
@@ -106,7 +107,7 @@
 		{#if ndk.$currentUser}
 			<button
 				onclick={handleCreateNew}
-				class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+				class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
 			>
 				<Plus class="w-5 h-5" />
 				New Tool
@@ -133,7 +134,7 @@
 			{#if ndk.$currentUser && filterMode === 'mine'}
 				<button
 					onclick={handleCreateNew}
-					class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+					class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
 				>
 					Create Your First Tool
 				</button>

@@ -43,7 +43,7 @@
 		</div>
 
 		{#if agent.version}
-			<span class="text-xs text-muted-foreground border border-border dark:border-zinc-600 px-2 py-0.5 rounded">
+			<span class="text-xs text-muted-foreground border border-border px-2 py-0.5 rounded">
 				v{agent.version}
 			</span>
 		{/if}
@@ -57,7 +57,7 @@
 	<!-- Phases indicator -->
 	{#if agent.phases && agent.phases.length > 0}
 		<div class="flex items-center gap-2">
-			<span class="inline-flex items-center px-2 py-1 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+			<span class="inline-flex items-center px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded">
 				<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
 						stroke-linecap="round"
@@ -72,7 +72,7 @@
 	{/if}
 
 	<!-- Author -->
-	<div class="pt-3 border-t border-gray-100 dark:border-zinc-700 flex items-center justify-between text-xs text-muted-foreground">
+	<div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-muted-foreground">
 		<span class="truncate">{agent.pubkey?.slice(0, 16)}...</span>
 		{#if agent.created_at}
 			<span>{new Date(agent.created_at * 1000).toLocaleDateString()}</span>

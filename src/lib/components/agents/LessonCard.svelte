@@ -25,7 +25,7 @@
 <div
 	class={cn(
 		'bg-card border border-border rounded-lg transition-colors',
-		onclick && 'cursor-pointer hover:border-blue-500 dark:hover:border-blue-400'
+		onclick && 'cursor-pointer hover:border-blue-500'
 	)}
 	role={onclick ? 'button' : undefined}
 	tabindex={onclick ? 0 : undefined}
@@ -49,12 +49,12 @@
 						{formatRelativeTime(timestamp)}
 					</span>
 					{#if category}
-						<span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded">
+						<span class="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded">
 							{category}
 						</span>
 					{/if}
 					{#if detailed}
-						<span class="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs font-medium rounded">
+						<span class="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs font-medium rounded">
 							Detailed
 						</span>
 					{/if}
