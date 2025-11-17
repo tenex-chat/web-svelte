@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
-	import { ChevronDown, ChevronRight, X } from 'lucide-svelte';
+	import { X } from 'lucide-svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+	import ToolGroupItem from './ToolGroupItem.svelte';
 
 	interface Props {
 		open: boolean;
@@ -201,82 +202,14 @@
 					<div class="border border-border rounded-lg overflow-hidden">
 						<div class="max-h-96 overflow-y-auto">
 							{#each toolGroups as group (group.name)}
-								{@const isExpanded = expandedGroups.has(group.name)}
-								{@const isFullySelected = isGroupFullySelected(group)}
-								{@const isPartiallySelected = isGroupPartiallySelected(group)}
-								{@const isMultiTool = group.tools.length > 1}
-
-								<div class="border-b border-border last:border-b-0">
-									<!-- Group Header -->
-									<div
-										class="flex items-center gap-2 px-4 py-2 hover:bg-accent transition-colors"
-									>
-										<!-- Expand/Collapse button (only for multi-tool groups) -->
-										{#if isMultiTool}
-											<button
-												type="button"
-												onclick={() => toggleGroup(group.name)}
-												class="p-1 hover:bg-accent rounded transition-colors"
-												aria-label="Toggle group"
-											>
-												{#if isExpanded}
-													<ChevronDown class="w-4 h-4 text-muted-foreground" />
-												{:else}
-													<ChevronRight class="w-4 h-4 text-muted-foreground" />
-												{/if}
-											</button>
-										{:else}
-											<div class="w-6"></div>
-										{/if}
-
-										<!-- Checkbox -->
-										<input
-											type="checkbox"
-											checked={isFullySelected}
-											indeterminate={isPartiallySelected}
-											onchange={(e) =>
-												toggleGroupAll(group, (e.target as HTMLInputElement).checked)}
-											class="w-4 h-4 text-primary rounded border-border focus:ring-blue-500 bg-input"
-										/>
-
-										<!-- Group Name -->
-										<div class="flex-1">
-											<div class="font-medium text-sm text-foreground">{group.name}</div>
-											{#if isMultiTool}
-												<div class="text-xs text-muted-foreground">
-													{group.tools.filter((t) => selectedTools.has(t)).length}/{group.tools
-														.length} selected
-												</div>
-											{/if}
-										</div>
-
-										<!-- Tool count badge -->
-										{#if isMultiTool}
-											<span
-												class="px-2 py-0.5 bg-muted text-muted-foreground text-xs font-medium rounded-full"
-											>
-												{group.tools.length}
-											</span>
-										{/if}
-									</div>
-
-									<!-- Expanded tools list -->
-									{#if isMultiTool && isExpanded}
-										<div class="bg-muted px-4 py-2 space-y-1">
-											{#each group.tools as tool (tool)}
-												<label class="flex items-center gap-2 p-2 hover:bg-accent rounded cursor-pointer">
-													<input
-														type="checkbox"
-														checked={selectedTools.has(tool)}
-														onchange={() => toggleTool(tool)}
-														class="w-4 h-4 text-primary rounded border-border focus:ring-blue-500 bg-input"
-													/>
-													<span class="text-sm font-mono text-foreground">{tool}</span>
-												</label>
-											{/each}
-										</div>
-									{/if}
-								</div>
+								<ToolGroupItem
+									{group}
+									{expandedGroups}
+									{selectedTools}
+									{toggleGroup}
+									{toggleGroupAll}
+									{toggleTool}
+								/>
 							{/each}
 						</div>
 					</div>

@@ -2,11 +2,9 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKThread, NDKEvent } from '@nostr-dev-kit/ndk';
-	import { NDKKind } from '$lib/kinds';
-	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
-	import { processEventsToMessages } from '$lib/utils/messageProcessor';
+	import { ConversationState } from '$lib/stores/conversation-state.svelte';
 	import { CallStore, type CallStoreOptions, type CallState } from '$lib/stores/call-store.svelte';
 	import VoiceVisualizer from './VoiceVisualizer.svelte';
 	import AudioControls from './AudioControls.svelte';
@@ -77,49 +75,51 @@
 		};
 	});
 
-	// SIMPLIFIED: Subscribe to messages including streaming
-	const messagesSubscription = ndk.$subscribe(() => {
-		if (!localRootEvent) return undefined;
+	// Track the actual localRootEvent ID to avoid unnecessary recreations
+	let currentLocalRootEventId = $state<string | null>(null);
+	let conversationState = $state<ConversationState | null>(null);
 
-		const streamingKinds: number[] = [
-			NDKKind.TenexAgentTypingStart,
-			NDKKind.TenexAgentTypingStop
-		];
-		if (uiSettingsStore.settings.streamingResponsesEnabled) {
-			streamingKinds.push(NDKKind.TenexStreamingResponse);
+	// Create/update ConversationState when localRootEvent changes
+	$effect(() => {
+		const newRootEventId = localRootEvent?.id || null;
+
+		// Only recreate if the event ID has actually changed
+		if (newRootEventId !== currentLocalRootEventId) {
+			// Destroy old state if it exists
+			if (conversationState) {
+				conversationState.destroy();
+				conversationState = null;
+			}
+
+			// Create new state with current localRootEvent
+			if (localRootEvent) {
+				conversationState = new ConversationState(ndk, localRootEvent, {
+					viewMode: 'flattened',
+					isBrainstorm: false,
+					currentUserPubkey: ndk.$currentUser?.pubkey,
+					debug: false // Disable debug logging
+				});
+
+				conversationState.start();
+			}
+
+			// Update the tracked ID
+			currentLocalRootEventId = newRootEventId;
 		}
+	});
 
-		return {
-			filters: [
-				{ kinds: [11, 1111, 7, 513], ...localRootEvent.filter() },
-				{ kinds: [11, 1111, 7, 513], ...localRootEvent.nip22Filter() },
-				// Include streaming and typing events
-				{ kinds: streamingKinds, limit: 100, ...localRootEvent.nip22Filter() }
-			],
-			closeOnEose: false,
-			bufferMs: 30
+	// Separate cleanup effect that only runs on unmount
+	$effect(() => {
+		return () => {
+			if (conversationState) {
+				conversationState.destroy();
+				conversationState = null;
+			}
 		};
 	});
 
-	// SIMPLIFIED: Process messages for TTS queue - processEventsToMessages now handles streaming
-	const messages = $derived.by(() => {
-		if (!localRootEvent) return [];
-
-		const rootEvent = localRootEvent;
-		const allEvents = messagesSubscription.events.some(e => e.id === rootEvent.id)
-			? messagesSubscription.events
-			: [rootEvent, ...messagesSubscription.events];
-
-		// Process everything in one pass - messageProcessor now handles all streaming logic
-		return processEventsToMessages(
-			allEvents,
-			localRootEvent,
-			'flattened',
-			false, // not brainstorm
-			false, // showAll
-			ndk.$currentUser?.pubkey
-		);
-	});
+	// Get messages from conversation state
+	const messages = $derived(conversationState?.displayMessages || []);
 
 	// Thread management functions matching MessagingController interface
 	async function createThread(

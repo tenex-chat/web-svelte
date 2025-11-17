@@ -1,21 +1,18 @@
 <script lang="ts">
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKKind } from '$lib/kinds';
-	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { ChevronDown, ChevronRight } from 'lucide-svelte';
 	import { cn } from '$lib/utils/cn';
 	import { User } from '$lib/ndk/ui/user';
 	import Message from './Message.svelte';
 	import ThreadedMessage from './ThreadedMessage.svelte';
-	import { expandedRepliesStore } from '$lib/stores/expandedReplies.svelte';
+	import { ConversationState } from '$lib/stores/conversation-state.svelte';
 	import {
 		type Message as MessageType,
 		calculateMessageProperties,
 		getUniquePubkeys
 	} from '$lib/utils/messageUtils';
-	import { processEventsToMessages } from '$lib/utils/messageProcessor';
 
 	interface Props {
 		eventId?: string;
@@ -53,52 +50,51 @@
 		message || (currentEvent ? { id: currentEvent.id, event: currentEvent } : { id: '', event: rootEvent })
 	);
 
-	// SIMPLIFIED: Subscribe to direct replies including streaming
-	const repliesSubscription = $derived(
-		currentEvent
-			? ndk.$subscribe(() => {
-					const streamingKinds: number[] = [
-						NDKKind.TenexAgentTypingStart,
-						NDKKind.TenexAgentTypingStop
-					];
-					if (uiSettingsStore.settings.streamingResponsesEnabled) {
-						streamingKinds.push(NDKKind.TenexStreamingResponse);
-					}
+	// Track the actual currentEvent ID to avoid unnecessary recreations
+	let currentEventId = $state<string | null>(null);
+	let repliesState = $state<ConversationState | null>(null);
 
-					return {
-						filters: [
-							{
-								kinds: [NDKKind.GenericReply], // Generic Reply
-								'#e': [currentEvent.id],
-								limit: 100
-							},
-							{
-								// Include streaming and typing events
-								kinds: streamingKinds,
-								'#e': [currentEvent.id], // Only streaming events for THIS message
-								limit: 100
-							}
-						],
-						closeOnEose: false
-					};
-				})
-			: null
-	);
+	// Create ConversationState only once when currentEvent is available
+	$effect(() => {
+		const newEventId = currentEvent?.id || null;
 
-	// SIMPLIFIED: Process replies - processEventsToMessages now handles streaming
-	const replies = $derived.by(() => {
-		if (!repliesSubscription) return [];
+		// Only recreate if the event ID has actually changed
+		if (newEventId !== currentEventId) {
+			// Destroy old state if it exists
+			if (repliesState) {
+				repliesState.destroy();
+				repliesState = null;
+			}
 
-		// Process everything in one pass - messageProcessor now handles all streaming logic
-		return processEventsToMessages(
-			repliesSubscription.events,
-			currentEvent, // Use current event as the root for this thread level
-			'threaded',
-			false, // isBrainstorm
-			false, // showAll
-			ndk.$currentUser?.pubkey
-		);
+			// Create new state with current event
+			if (currentEvent) {
+				repliesState = new ConversationState(ndk, currentEvent, {
+					viewMode: 'threaded',
+					isBrainstorm: false,
+					currentUserPubkey: ndk.$currentUser?.pubkey,
+					directRepliesOnly: true, // Only fetch direct replies to this event
+					debug: false // Disable debug logging
+				});
+
+				repliesState.start();
+			}
+
+			// Update the tracked ID
+			currentEventId = newEventId;
+		}
 	});
+
+	// Cleanup on unmount only - no dependencies
+	$effect(() => {
+		return () => {
+			if (repliesState) {
+				repliesState.destroy();
+			}
+		};
+	});
+
+	// Get replies from conversation state
+	const replies = $derived(repliesState?.displayMessages || []);
 
 	// Calculate properties for replies
 	const replyProperties = $derived(calculateMessageProperties(replies));
@@ -106,15 +102,11 @@
 	// Get unique author pubkeys for collapse button avatars
 	const uniquePubkeys = $derived(getUniquePubkeys(replies));
 
-	// Check if replies are expanded (only relevant for depth > 0)
-	const isExpanded = $derived(
-		currentEvent ? expandedRepliesStore.isExpanded(currentEvent.id) : false
-	);
+	// LOCAL COMPONENT STATE - each ThreadedMessage manages its own expansion
+	let isExpanded = $state(false);
 
 	function handleToggle() {
-		if (currentEvent) {
-			expandedRepliesStore.toggle(currentEvent.id);
-		}
+		isExpanded = !isExpanded;
 	}
 </script>
 

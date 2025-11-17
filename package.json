@@ -15,14 +15,16 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"test": "vitest",
+		"test:ui": "vitest --ui",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
 		"copy-wasm": "node scripts/copy-wasm.js"
 	},
 	"dependencies": {
 		"@ai-sdk/anthropic": "^2.0.44",
-		"@ai-sdk/google": "^2.0.31",
-		"@ai-sdk/openai": "^2.0.65",
+		"@ai-sdk/google": "^2.0.32",
+		"@ai-sdk/openai": "^2.0.67",
 		"@elevenlabs/elevenlabs-js": "^2.24.0",
 		"@humanspeak/svelte-virtual-list": "^0.3.6",
 		"@nostr-dev-kit/blossom": "8.0.0-beta.51",
@@ -32,7 +34,7 @@
 		"@nostr-dev-kit/svelte": "4.0.0-beta.51",
 		"@nostr-dev-kit/sync": "0.4.0-beta.51",
 		"@nostr-dev-kit/wallet": "0.8.11-beta.51",
-		"@openrouter/ai-sdk-provider": "^1.2.0",
+		"@openrouter/ai-sdk-provider": "^1.2.3",
 		"@ricky0123/vad-web": "^0.0.29",
 		"ai": "^5.0.93",
 		"dompurify": "^3.3.0",
@@ -53,6 +55,7 @@
 		"@tailwindcss/postcss": "^4.1.17",
 		"@tailwindcss/typography": "^0.5.19",
 		"@types/dompurify": "^3.2.0",
+		"@vitest/ui": "^4.0.9",
 		"autoprefixer": "^10.4.22",
 		"bits-ui": "^2.14.3",
 		"clsx": "^2.1.1",
@@ -62,6 +65,7 @@
 		"eslint": "^9.39.1",
 		"eslint-plugin-svelte": "^3.12.4",
 		"globals": "^16.4.0",
+		"jsdom": "^27.2.0",
 		"postcss": "^8.5.6",
 		"svelte": "^5.40.1",
 		"svelte-check": "^4.3.2",
@@ -69,6 +73,7 @@
 		"tailwindcss": "^4.1.17",
 		"typescript": "^5.9.2",
 		"typescript-eslint": "^8.46.4",
-		"vite": "^7.2.2"
+		"vite": "^7.2.2",
+		"vitest": "^4.0.9"
 	}
 }

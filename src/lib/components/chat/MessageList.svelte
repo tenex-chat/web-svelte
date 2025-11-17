@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { NDKKind } from '$lib/kinds';
-	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import Message from './Message.svelte';
 	import ThreadedMessage from './ThreadedMessage.svelte';
-	import { processEventsToMessages, type Message as MessageType } from '$lib/utils/messageProcessor';
+	import { ConversationState } from '$lib/stores/conversation-state.svelte';
+	import { type Message as MessageType } from '$lib/utils/messageProcessor';
 	import { calculateMessageProperties } from '$lib/utils/messageUtils';
 	import { ChevronDown } from 'lucide-svelte';
 
@@ -98,69 +97,55 @@
 		}, 100);
 	}
 
-	// SIMPLIFIED: Single subscription for ALL events including streaming
-	const messagesSubscription = ndk.$subscribe(() => {
-		const streamingKinds: number[] = [
-			NDKKind.TenexAgentTypingStart,
-			NDKKind.TenexAgentTypingStop
-		];
-		if (uiSettingsStore.settings.streamingResponsesEnabled) {
-			streamingKinds.push(NDKKind.TenexStreamingResponse);
-		}
+	// Track the actual rootEvent ID to avoid unnecessary recreations
+	let currentRootEventId = $state<string | null>(null);
+	let conversationState = $state<ConversationState | null>(null);
 
-		return {
-			filters: isBrainstorm
-				? [
-						{ kinds: [1111, 7], ...rootEvent.filter() },
-						{ kinds: [1111, 7], ...rootEvent.nip22Filter() }
-					]
-				: [
-						{ kinds: [11, 1111, 7, 513], ...rootEvent.filter() },
-						{ kinds: [11, 1111, 7, 513], ...rootEvent.nip22Filter() },
-						// Include streaming and typing events
-						{ kinds: streamingKinds, limit: 100, ...rootEvent.nip22Filter() }
-					],
-			subId: 'message-list',
-			closeOnEose: false,
-			bufferMs: 30
+	// Create/update ConversationState when rootEvent changes
+	$effect(() => {
+		const newRootEventId = rootEvent?.id || null;
+
+		// Only recreate if the event ID has actually changed
+		if (newRootEventId !== currentRootEventId) {
+			// Destroy old state if it exists
+			if (conversationState) {
+				conversationState.destroy();
+				conversationState = null;
+			}
+
+			// Create new state with current rootEvent
+			if (rootEvent) {
+				conversationState = new ConversationState(ndk, rootEvent, {
+					viewMode,
+					isBrainstorm,
+					currentUserPubkey: ndk.$currentUser?.pubkey,
+					debug: false // Disable debug logging now that issue is fixed
+				});
+
+				conversationState.start();
+			}
+
+			// Update the tracked ID
+			currentRootEventId = newRootEventId;
+		}
+	});
+
+	// Separate cleanup effect that only runs on unmount
+	$effect(() => {
+		return () => {
+			if (conversationState) {
+				conversationState.destroy();
+				conversationState = null;
+			}
 		};
 	});
 
-	// SIMPLIFIED: Single $derived.by that does ALL processing
-	const flatMessages = $derived.by(() => {
-		console.log('[MessageList] Processing messages', {
-			subscriptionEventCount: messagesSubscription.events.length
-		});
-
-		// Include root event if needed
-		const allEvents = messagesSubscription.events.some(e => e.id === rootEvent.id)
-			? messagesSubscription.events
-			: [rootEvent, ...messagesSubscription.events];
-
-		// Process everything in one pass - messageProcessor now handles all streaming logic
-		return processEventsToMessages(
-			allEvents,
-			rootEvent,
-			viewMode,
-			isBrainstorm,
-			false,
-			ndk.$currentUser?.pubkey
-		);
-	});
+	// Use reactive messages from ConversationState
+	const flatMessages = $derived(conversationState?.displayMessages || []);
 
 	// Sync to bindable messages prop
 	$effect(() => {
 		messages = flatMessages;
-
-		// Debug: Log the messages being rendered
-		const streamingMsgs = flatMessages.filter(m => m.event.kind === NDKKind.TenexStreamingResponse);
-		if (streamingMsgs.length > 0) {
-			console.log('[MessageList] Rendering messages with streaming', {
-				totalMessages: flatMessages.length,
-				streamingMessages: streamingMsgs.length,
-				streamingIds: streamingMsgs.map(m => m.id)
-			});
-		}
 	});
 
 	// Auto-scroll when new messages arrive (if user is at bottom AND not actively scrolling)

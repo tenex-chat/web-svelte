@@ -121,10 +121,10 @@
 
 		<!-- Project ID (Read-only) -->
 		<div>
-			<label class="block text-sm font-medium text-foreground mb-1"> Project ID (d-tag) </label>
+			<label class="block text-sm font-medium text-foreground mb-1">Project ID</label>
 			<input
 				type="text"
-				value={project.dTag || 'Not set'}
+				value={project.encode() || 'Not set'}
 				readonly
 				class="w-full px-3 py-2 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
 			/>

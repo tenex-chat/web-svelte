@@ -7,9 +7,6 @@ export type ThreadViewMode = 'threaded' | 'flattened';
 export interface Message {
 	id: string;
 	event: NDKEvent;
-	isReactComponent?: boolean;
-	reactComponentCode?: string;
-	reactComponentProps?: Record<string, any>;
 }
 
 interface StreamingSession {
@@ -59,31 +56,6 @@ export function processEvent(
 	if (event.kind === NDKKind.TenexConversationMetadata) {
 		finalMessages.push({ id: event.id, event });
 		return;
-	}
-
-	// Check for React component events
-	if (event.kind === NDKKind.GenericReply) {
-		const componentTag = event.tags.find((tag) => tag[0] === 'component' && tag[1] === 'react');
-		if (componentTag) {
-			const propsTag = event.tags.find((tag) => tag[0] === 'props')?.[1];
-			let reactComponentProps: Record<string, any> | undefined;
-			if (propsTag) {
-				try {
-					reactComponentProps = JSON.parse(propsTag);
-				} catch {
-					reactComponentProps = undefined;
-				}
-			}
-
-			finalMessages.push({
-				id: event.id,
-				event,
-				isReactComponent: true,
-				reactComponentCode: event.content,
-				reactComponentProps
-			});
-			return;
-		}
 	}
 
 	// For all other events, add them as final messages
@@ -267,7 +239,7 @@ export function processEventsToMessages(
 				.filter(e =>
 					e.kind === NDKKind.TenexStreamingResponse &&
 					e.pubkey === event.pubkey &&
-					e.created_at! < event.created_at!
+					e.created_at! <= event.created_at!
 				)
 				.forEach(e => {
 					finalizedStreamingIds.add(e.id);

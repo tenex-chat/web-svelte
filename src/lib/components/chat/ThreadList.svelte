@@ -3,10 +3,11 @@
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKKind } from '$lib/kinds';
 	import type { NDKProject } from '$lib/events/NDKProject';
-	import { formatRelativeTime } from '$lib/utils/time';
-	import { MessageSquare, Users } from 'lucide-svelte';
+	import { MessageSquare } from 'lucide-svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import VirtualList from '@humanspeak/svelte-virtual-list';
+	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
+	import ThreadListItem from './ThreadListItem.svelte';
 
 	interface Props {
 		project: NDKProject;
@@ -208,13 +209,15 @@
 		}
 
 		// Sort by most recent activity (either thread creation or latest reply)
-		return filteredThreads.sort((a, b) => {
+		const sorted = filteredThreads.sort((a, b) => {
 			const aMeta = threadMetadata.get(a.id);
 			const bMeta = threadMetadata.get(b.id);
 			const aTime = aMeta?.latestReply?.created_at || a.created_at || 0;
 			const bTime = bMeta?.latestReply?.created_at || b.created_at || 0;
 			return bTime - aTime;
 		});
+
+		return sorted;
 	});
 
 </script>
@@ -257,41 +260,14 @@
 			</div>
 		{:else}
 			<VirtualList items={sortedThreads}>
-				{#snippet renderItem(thread)}
-					{@const isSelected = selectedThread?.id === thread.id}
-					{@const title = thread.tagValue('title') || thread.content?.slice(0, 50) || 'Untitled'}
-					{@const meta = threadMetadata.get(thread.id)}
-					{@const latestReply = meta?.latestReply}
-					{@const replyCount = meta?.replyCount || 0}
-					{@const participantCount = meta?.participants.size || 0}
-					{@const displayTime = latestReply?.created_at || thread.created_at || 0}
-
-					<button
+				{#snippet renderItem(thread, index)}
+					<ThreadListItem
+						{thread}
+						isSelected={selectedThread?.id === thread.id}
+						{conversationMetadataStore}
+						{threadMetadata}
 						onclick={() => onThreadSelect?.(thread)}
-						class="w-full text-left px-3 py-3 hover:bg-muted transition-colors border-b border-border {isSelected
-							? 'bg-primary/10'
-							: ''}"
-					>
-						<div class="font-medium text-sm text-foreground truncate mb-1">
-							{title}
-						</div>
-						{#if latestReply}
-							<div class="text-xs text-muted-foreground truncate mb-2">
-								{latestReply.content.slice(0, 80)}{latestReply.content.length > 80 ? '...' : ''}
-							</div>
-						{/if}
-						<div class="flex items-center gap-3 text-xs text-muted-foreground">
-							<div class="flex items-center gap-1">
-								<MessageSquare class="w-3 h-3" />
-								<span>{replyCount}</span>
-							</div>
-							<div class="flex items-center gap-1">
-								<Users class="w-3 h-3" />
-								<span>{participantCount}</span>
-							</div>
-							<span class="ml-auto">{formatRelativeTime(displayTime)}</span>
-						</div>
-					</button>
+					/>
 				{/snippet}
 			</VirtualList>
 		{/if}

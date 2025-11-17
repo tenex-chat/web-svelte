@@ -62,10 +62,10 @@
 	<div class="my-2">
 		<div
 			class={cn(
-				'border rounded-lg transition-all',
+				'transition-all',
 				isStreaming
 					? 'border-blue-400 bg-blue-50/50'
-					: 'border-border bg-muted',
+					: '',
 				isOpen ? 'shadow-sm' : ''
 			)}
 		>

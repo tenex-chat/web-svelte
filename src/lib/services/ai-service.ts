@@ -5,6 +5,8 @@
 
 import { voiceDiscovery } from './voice-discovery';
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
+import { generateText } from 'ai';
+import { providerRegistry, type ProviderConfig } from './provider-registry';
 
 export type TTSProvider = 'openai' | 'elevenlabs';
 export type STTProvider = 'whisper' | 'elevenlabs';
@@ -110,6 +112,127 @@ class AIService {
 		} catch (error) {
 			console.error('ElevenLabs transcription error:', error);
 			throw error;
+		}
+	}
+
+	/**
+	 * Generate a concise title for a conversation
+	 */
+	async generateTitle(messages: string[], config?: ProviderConfig): Promise<string> {
+		if (!config) {
+			return messages[0]?.slice(0, 50) || 'Untitled Conversation';
+		}
+
+		try {
+			let provider = providerRegistry.getProvider(config.id);
+
+			if (!provider) {
+				provider = providerRegistry.createProvider(config);
+			}
+
+			const model = config.model || this.getDefaultModel(config.provider);
+			const conversationPreview = messages.slice(0, 5).join('\n---\n');
+
+			const { text: title } = await generateText({
+				model: provider(model),
+				prompt: `Generate a concise, descriptive title (max 50 characters) for this conversation. Return only the title, no quotes or additional text.
+
+Conversation:
+${conversationPreview}`,
+				temperature: 0.7
+			});
+
+			return title.trim().slice(0, 50);
+		} catch (error) {
+			console.error('Title generation error:', error);
+			return messages[0]?.slice(0, 50) || 'Untitled Conversation';
+		}
+	}
+
+	/**
+	 * Generate a comprehensive summary of a conversation
+	 */
+	async summarizeConversation(
+		messages: Array<{ author: string; content: string; timestamp?: number }>,
+		config?: ProviderConfig
+	): Promise<string> {
+		if (!config) {
+			throw new Error('No AI provider configured. Please configure an LLM in Settings.');
+		}
+
+		try {
+			let provider = providerRegistry.getProvider(config.id);
+
+			if (!provider) {
+				provider = providerRegistry.createProvider(config);
+			}
+
+			if (typeof provider !== 'function') {
+				throw new Error(
+					'AI provider not properly initialized. Please reconfigure your LLM settings.'
+				);
+			}
+
+			const model = config.model || this.getDefaultModel(config.provider);
+
+			// Format messages with author names and limit to ~12000 chars (~3000 tokens)
+			let conversationText = '';
+			let charCount = 0;
+			const maxChars = 12000;
+
+			for (let i = messages.length - 1; i >= 0 && charCount < maxChars; i--) {
+				const msg = messages[i];
+				const formatted = `${msg.author}: ${msg.content}\n\n`;
+				if (charCount + formatted.length > maxChars) {
+					break;
+				}
+				conversationText = formatted + conversationText;
+				charCount += formatted.length;
+			}
+
+			if (messages.length > 0 && charCount >= maxChars) {
+				conversationText = `[Earlier messages truncated]\n\n${conversationText}`;
+			}
+
+			const { text: summary } = await generateText({
+				model: provider(model),
+				prompt: `You are an expert at summarizing conversations. Create a comprehensive summary of the following conversation that captures the key points, decisions, and outcomes. Focus on the most important information and maintain clarity.
+
+The summary should:
+- Be concise but informative (aim for 2-4 paragraphs)
+- Highlight key topics discussed
+- Note any decisions made or action items
+- Capture the overall tone and purpose
+
+Conversation:
+${conversationText}
+
+Summary:`,
+				temperature: 0.5
+			});
+
+			return summary.trim();
+		} catch (error) {
+			console.error('Conversation summarization error:', error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Get default model for a provider
+	 */
+	private getDefaultModel(provider: string): string {
+		switch (provider) {
+			case 'openai':
+				return 'gpt-4o-mini';
+			case 'anthropic':
+				return 'claude-3-haiku-20240307';
+			case 'google':
+				return 'gemini-1.5-flash';
+			case 'openrouter':
+				return 'openai/gpt-4o-mini';
+			default:
+				return '';
 		}
 	}
 }

@@ -7,6 +7,7 @@
 	import CallView from '../call/CallView.svelte';
 	import AgentProfileTabs from '../agents/AgentProfileTabs.svelte';
 	import ChatHeaderActions from '../chat/ChatHeaderActions.svelte';
+	import ConversationMetadataDisplay from '../chat/ConversationMetadataDisplay.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
 	import type { Message } from '$lib/utils/messageProcessor';
@@ -130,6 +131,13 @@
 			<!-- Title -->
 			<div class="flex-1 min-w-0">
 				<h2 class="text-sm font-semibold text-foreground truncate">{window.title}</h2>
+				{#if window.type === 'chat' && window.data?.thread}
+					<ConversationMetadataDisplay
+						conversationId={window.data.thread.id}
+						showSummary={true}
+						summaryClass="text-xs text-muted-foreground italic truncate mt-1"
+					/>
+				{/if}
 				{#if window.project}
 					<p class="text-xs text-muted-foreground truncate">{window.project.title}</p>
 				{/if}
