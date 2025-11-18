@@ -316,6 +316,5 @@
 	<DocumentCreateDialog
 		bind:open={showCreateDocDialog}
 		{project}
-		onClose={() => showCreateDocDialog = false}
 	/>
 {/await}

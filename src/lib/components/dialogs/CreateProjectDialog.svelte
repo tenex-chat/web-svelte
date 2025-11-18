@@ -415,7 +415,6 @@
 											<span class="inline-block px-2 py-1 bg-muted rounded text-sm">
 												{agent.name}
 											</span>
-										{/if}
 									{/each}
 								</div>
 							</div>

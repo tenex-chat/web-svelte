@@ -132,7 +132,7 @@
 		onclick={handleClose}
 		onkeydown={handleKeydown}
 		role="presentation"
-		tabindex="0"
+		
 	>
 		<div
 			class="relative w-full max-w-lg max-h-[90vh] bg-card rounded-lg shadow-xl flex flex-col"
