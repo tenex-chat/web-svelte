@@ -40,7 +40,7 @@
 			const signer = new NDKNip07Signer();
 			await ndk.$sessions.login(signer);
 			loginModal.close();
-			goto('/projects');
+			goto('/');
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to login with extension';
 		} finally {
@@ -68,7 +68,7 @@
 			await ndk.$sessions.login(signer);
 			loginModal.close();
 			nsecInput = '';
-			goto('/projects');
+			goto('/');
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Invalid nsec';
 		} finally {

@@ -9,16 +9,15 @@
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import { ArrowLeft, Monitor, Copy, Check, GitFork, ClipboardCopy } from 'lucide-svelte';
+    import { createFetchEvent } from '@nostr-dev-kit/svelte';
 
 	const agentId = $derived($page.params.id);
 
-	const agentEvents = ndk.$fetchEvents(() => agentId ? { ids: [agentId] } : undefined);
-	const agentEvent = $derived(agentEvents[0]);
-	console.log('agent definition', (agentEvent as NDKAgentDefinition)?.description);
+	const agentEvent = createFetchEvent(() => ({ bech32: agentId }), ndk);
 
 	const agent = $derived.by(() => {
-		if (!agentEvent) return null;
-		return NDKAgentDefinition.from(agentEvent);
+		if (!agentEvent.event) return null;
+		return NDKAgentDefinition.from(agentEvent.event);
 	});
 
 	const mcpEventIds = $derived(agent?.mcpServers || []);
@@ -105,16 +104,6 @@
 					>
 						<ArrowLeft class="w-5 h-5 text-foreground" />
 					</button>
-					<div
-						class="w-16 h-16 rounded-full flex items-center justify-center text-white font-semibold text-xl flex-shrink-0"
-						style="background-color: {agentColor}"
-					>
-						{#if agent.picture}
-							<img src={agent.picture} alt={agent.name} class="w-full h-full rounded-full object-cover" />
-						{:else}
-							{initials}
-						{/if}
-					</div>
 					<div class="flex-1">
 						<h1 class="text-2xl font-semibold text-foreground">
 							{agent.name || 'Unnamed Agent Definition'}

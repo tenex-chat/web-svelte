@@ -6,7 +6,7 @@
 
 	onMount(() => {
 		if (ndk.$currentUser) {
-			goto('/projects');
+			goto('/');
 		} else {
 			loginModal.open();
 		}

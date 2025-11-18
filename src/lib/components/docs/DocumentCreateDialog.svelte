@@ -9,10 +9,9 @@
 	interface Props {
 		open: boolean;
 		project: NDKProject;
-		onClose: () => void;
 	}
 
-	let { open = $bindable(), project, onClose }: Props = $props();
+	let { open = $bindable(false), project }: Props = $props();
 
 	let title = $state('');
 	let content = $state('');
@@ -134,7 +133,7 @@
 
 			// Clear form and draft
 			clearDraft();
-			onClose();
+			open = false;
 		} catch (error) {
 			console.error('Failed to publish article:', error);
 		} finally {
@@ -143,7 +142,7 @@
 	}
 
 	function handleClose() {
-		onClose();
+		open = false;
 	}
 </script>
 

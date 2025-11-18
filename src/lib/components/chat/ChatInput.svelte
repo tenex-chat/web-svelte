@@ -53,6 +53,13 @@
 	let textareaElement: HTMLTextAreaElement | null = $state(null);
 	let configDialogOpen = $state(false);
 	let agentToConfigurePubkey = $state<string | null>(null);
+
+	// Clean up agent configuration state when dialog closes
+	$effect(() => {
+		if (!configDialogOpen) {
+			agentToConfigurePubkey = null;
+		}
+	});
 	let isExpanded = $state(false);
 	let hasManuallyToggled = $state(false);
 
@@ -530,38 +537,6 @@
 		}
 	}
 
-	async function handleAgentConfigSave(config: { model: string; tools: string[] }) {
-		if (!ndk || !ndk.$currentUser || !project || !currentAgent) return;
-
-		try {
-			const projectTagId = project.tagId();
-			if (!projectTagId) {
-				console.error('[ChatInput] Project tag ID not found');
-				return;
-			}
-
-			// Create a kind 24020 event to update agent configuration
-			const changeEvent = new NDKEvent(ndk);
-			changeEvent.kind = NDKKind.TenexAgentConfigUpdate;
-			changeEvent.content = '';
-			changeEvent.tags = [
-				['p', currentAgent], // Target agent
-				['model', config.model], // New model slug
-				['a', projectTagId] // Project reference
-			];
-
-			// Add tool tags - one tag per tool
-			config.tools.forEach((tool) => {
-				changeEvent.tags.push(['tool', tool]);
-			});
-
-			await changeEvent.sign();
-			await changeEvent.publish();
-
-			console.log('[ChatInput] Agent settings updated successfully');
-		} catch (error) {
-			console.error('[ChatInput] Failed to update agent settings:', error);
-		}
 	}
 </script>
 
@@ -821,14 +796,11 @@
 	{#if agentToConfig}
 		<AgentConfigDialog
 			bind:open={configDialogOpen}
+			project={project}
 			agent={agentToConfig}
 			availableModels={availableModels}
 			availableTools={availableTools}
-			onClose={() => {
-				configDialogOpen = false;
-				agentToConfigurePubkey = null;
-			}}
-			onSave={handleAgentConfigSave}
+		/>
 		/>
 	{/if}
 {/if}

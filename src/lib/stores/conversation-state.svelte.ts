@@ -29,6 +29,7 @@ export class ConversationState {
 	private messages = $state(new SvelteMap<string, Message>());
 	private streamingSessions = $state(new SvelteMap<string, StreamingSession>());
 	private typingIndicators = $state(new SvelteMap<string, NDKEvent>());
+	private metadataEvents = $state(new SvelteMap<string, NDKEvent>());
 
 	// Options
 	private rootEvent: NDKEvent | null;
@@ -132,6 +133,34 @@ export class ConversationState {
 		});
 
 		return allMessages;
+	});
+
+	// Combined messages and metadata events for rendering
+	displayEventsWithMetadata = $derived.by(() => {
+		const events: Array<{ type: 'message' | 'metadata'; data: Message | NDKEvent }> = [];
+
+		// Add all messages
+		for (const message of this.displayMessages) {
+			events.push({ type: 'message', data: message });
+		}
+
+		// Add all metadata events
+		for (const metadataEvent of this.metadataEvents.values()) {
+			events.push({ type: 'metadata', data: metadataEvent });
+		}
+
+		// Sort by timestamp
+		events.sort((a, b) => {
+			const timeA = a.type === 'message'
+				? (a.data as Message).event.created_at ?? 0
+				: (a.data as NDKEvent).created_at ?? 0;
+			const timeB = b.type === 'message'
+				? (b.data as Message).event.created_at ?? 0
+				: (b.data as NDKEvent).created_at ?? 0;
+			return timeA - timeB;
+		});
+
+		return events;
 	});
 
 	constructor(
@@ -398,13 +427,16 @@ export class ConversationState {
 		// Add to messages map (O(1))
 		this.messages.set(event.id, message);
 
-		// Clear any streaming session for this pubkey (O(1))
+		// Delay clearing streaming session for 1000ms to ignore late-arriving chunks
+		// This prevents late 21111 chunks from creating duplicate messages after finalization
 		if (this.streamingSessions.has(pubkey)) {
-			this.streamingSessions.delete(pubkey);
-			this.log('Cleared streaming session for pubkey', { pubkey });
+			setTimeout(() => {
+				this.streamingSessions.delete(pubkey);
+				this.log('Cleared streaming session for pubkey (delayed)', { pubkey });
+			}, 1000);
 		}
 
-		// Clear any typing indicator for this pubkey (O(1))
+		// Clear any typing indicator for this pubkey immediately (O(1))
 		if (this.typingIndicators.has(pubkey)) {
 			this.typingIndicators.delete(pubkey);
 			this.log('Cleared typing indicator for pubkey', { pubkey });
@@ -415,6 +447,22 @@ export class ConversationState {
 	 * Handle streaming event (kind 21111)
 	 */
 	private handleStreamingEvent(event: NDKEvent, pubkey: string): void {
+		// Check if we already have a finalized message from this pubkey with same created_at
+		// This catches late-arriving streaming chunks for already-finalized messages
+		for (const message of this.messages.values()) {
+			if (message.event.pubkey === pubkey &&
+				message.event.kind === NDKKind.GenericReply &&
+				message.event.created_at === event.created_at) {
+				this.log('Ignoring late streaming chunk, finalized message exists', {
+					streamingId: event.id.substring(0, 8),
+					finalizedId: message.event.id.substring(0, 8),
+					pubkey: pubkey.substring(0, 8),
+					created_at: event.created_at
+				});
+				return;
+			}
+		}
+
 		let session = this.streamingSessions.get(pubkey);
 
 		if (!session) {
@@ -505,6 +553,9 @@ export class ConversationState {
 			this.log('Metadata event missing conversation ID', { eventId: event.id });
 			return;
 		}
+
+		// Store the metadata event for rendering as a system message
+		this.metadataEvents.set(event.id, event);
 
 		const currentMetadata = conversationMetadataStore.getMetadata(conversationId);
 		const result = processConversationMetadataEvent(event, currentMetadata);

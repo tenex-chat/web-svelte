@@ -1,19 +1,21 @@
 <script lang="ts">
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
+	import { ndk } from '$lib/ndk.svelte';
+	import { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKKind } from '$lib/kinds';
+	import type { NDKProject } from '$lib/events/NDKProject';
 	import { X } from 'lucide-svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import ToolGroupItem from './ToolGroupItem.svelte';
 
 	interface Props {
-		open: boolean;
+		open?: boolean;
+		project: NDKProject;
 		agent: ProjectAgent;
 		availableModels: string[];
 		availableTools: string[];
-		onClose: () => void;
-		onSave: (config: { model: string; tools: string[] }) => void;
 	}
-
-	let { open = $bindable(), agent, availableModels, availableTools, onClose, onSave }: Props = $props();
+	let { open = $bindable(false), project, agent, availableModels, availableTools }: Props = $props();
 
 	// Local state for editing
 	let selectedModel = $state(agent.model || '');
@@ -133,12 +135,40 @@
 		return selected > 0 && selected < group.tools.length;
 	}
 
-	function handleSave() {
-		onSave({
-			model: selectedModel,
-			tools: Array.from(selectedTools)
-		});
-		onClose();
+	async function handleSave() {
+		if (!ndk || !ndk.$currentUser) return;
+
+		try {
+			const projectTagId = project.tagId();
+			if (!projectTagId) {
+				console.error('[AgentConfigDialog] Project tag ID not found');
+				return;
+			}
+
+			// Create a kind 24020 event to update agent configuration
+			const changeEvent = new NDKEvent(ndk);
+			changeEvent.kind = NDKKind.TenexAgentConfigUpdate;
+			changeEvent.content = '';
+			changeEvent.tags = [
+				['p', agent.pubkey], // Target agent
+				['model', selectedModel], // New model slug
+				['a', projectTagId] // Project reference
+			];
+
+			// Add tool tags - one tag per tool
+			for (const tool of Array.from(selectedTools)) {
+				changeEvent.tags.push(['tool', tool]);
+			}
+
+			await changeEvent.publish();
+			open = false;
+		} catch (error) {
+			console.error('[AgentConfigDialog] Failed to save agent config:', error);
+
+	function handleClose() {
+		open = false;
+	}
+		}
 	}
 
 	// Reset state when agent changes
@@ -151,9 +181,9 @@
 {#if open}
 	<div
 		class="fixed inset-0 bg-overlay/50 flex items-center justify-center z-50 p-4"
-		onclick={onClose}
+		onclick={handleClose}
 		onkeydown={(e) => {
-			if (e.key === 'Escape') onClose();
+			if (e.key === 'Escape') handleClose();
 		}}
 		role="dialog"
 		aria-modal="true"
@@ -172,7 +202,7 @@
 				</div>
 				<button
 					type="button"
-					onclick={onClose}
+					onclick={handleClose}
 					class="p-2 rounded-lg hover:bg-muted transition-colors"
 					aria-label="Close"
 				>
@@ -220,7 +250,7 @@
 			<div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-muted">
 				<button
 					type="button"
-					onclick={onClose}
+					onclick={handleClose}
 					class="px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-lg transition-colors"
 				>
 					Cancel

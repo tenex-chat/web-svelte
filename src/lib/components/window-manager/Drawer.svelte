@@ -22,9 +22,9 @@
 	let messages = $state<Message[]>([]);
 
 	const STORAGE_KEY = 'drawer-width-vw';
-	const DEFAULT_WIDTH_VW = 41.67; // ~800px at 1920px width
+	const DEFAULT_WIDTH_VW = 65;
 	const MIN_WIDTH_VW = 20;
-	const MAX_WIDTH_VW = 80;
+	const MAX_WIDTH_VW = 95;
 
 	let widthVw = $state(DEFAULT_WIDTH_VW);
 	let isResizing = $state(false);
@@ -63,9 +63,6 @@
 		windowManager.focus(window.id);
 	}
 
-	function toggleViewMode() {
-		viewMode = viewMode === 'threaded' ? 'flattened' : 'threaded';
-	}
 
 	function handleResizeStart(e: MouseEvent) {
 		e.preventDefault();
@@ -150,8 +147,7 @@
 				<ChatHeaderActions
 					rootEvent={window.data?.thread}
 					{messages}
-					{viewMode}
-					onToggleViewMode={toggleViewMode}
+					bind:viewMode
 				/>
 			{/if}
 

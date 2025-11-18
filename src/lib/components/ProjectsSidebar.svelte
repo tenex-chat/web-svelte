@@ -58,8 +58,6 @@
 	let debugDialogOpen = $state(false);
 	let userMenuOpen = $state(false);
 	let projectGroupMenuOpen = $state(false);
-	let longPressTimer: NodeJS.Timeout | null = null;
-	let longPressProjectId: string | null = null;
 	let editingGroup = $state<ProjectGroup | null>(null);
 	let showPinnedPopover = $state(false);
 	let popoverButtonRef: HTMLButtonElement | null = null;
@@ -110,6 +108,7 @@
 			return projects; // Show all projects
 		}
 
+
 		return projects.filter((project) => {
 			const projectId = project.dTag || project.id || '';
 			return currentGroup.projectIds.includes(projectId);
@@ -145,11 +144,6 @@
 		projectGroupMenuOpen = false;
 	}
 
-	function handleCreateGroup(groupName: string, projectIds: string[]) {
-		const newGroup = saveProjectGroup(groupName, projectIds);
-		// Optionally select the newly created group
-		handleSelectGroup(newGroup.id);
-	}
 
 	function handleOpenCreateGroupDialog() {
 		projectGroupMenuOpen = false;
@@ -164,31 +158,7 @@
 		createGroupDialogOpen = true;
 	}
 
-	function handleUpdateGroup(groupName: string, projectIds: string[]) {
-		if (!editingGroup) return;
 
-		updateProjectGroup(editingGroup.id, {
-			name: groupName,
-			projectIds
-		});
-
-		editingGroup = null;
-	}
-
-	function handleDeleteGroup() {
-		if (!editingGroup) return;
-
-		deleteProjectGroup(editingGroup.id);
-
-		// If the deleted group was selected, reset to showing all projects
-		if ($selectedProjectGroupStore === editingGroup.id) {
-			selectedProjectGroupStore.set(null);
-		}
-
-		// Close the dialog
-		editingGroup = null;
-		createGroupDialogOpen = false;
-	}
 
 	function handleTogglePin(groupId: string, event: Event) {
 		event.stopPropagation();
@@ -207,35 +177,6 @@
 		openProjects.toggle(project);
 	}
 
-	function handleProjectMouseDown(projectId: string, event: MouseEvent) {
-		event.preventDefault();
-		longPressProjectId = projectId;
-		longPressTimer = setTimeout(() => {
-			// Navigate to project detail page on long press
-			window.location.href = `/projects/${projectId}`;
-		}, 500);
-	}
-
-	function handleProjectMouseUp(project: NDKProject) {
-		if (longPressTimer) {
-			clearTimeout(longPressTimer);
-			longPressTimer = null;
-		}
-
-		// If it wasn't a long press, handle normal click
-		if (longPressProjectId === (project.dTag || project.id)) {
-			handleProjectClick(project);
-		}
-		longPressProjectId = null;
-	}
-
-	function handleProjectMouseLeave() {
-		if (longPressTimer) {
-			clearTimeout(longPressTimer);
-			longPressTimer = null;
-		}
-		longPressProjectId = null;
-	}
 </script>
 
 <div
@@ -450,10 +391,6 @@
 						<ProjectListItem
 							{project}
 							collapsed={collapsed}
-							onmousedown={(e) =>
-								handleProjectMouseDown(project.dTag || project.id || '', e)}
-							onmouseup={() => handleProjectMouseUp(project)}
-							onmouseleave={handleProjectMouseLeave}
 						/>
 					{/each}
 				{/if}
@@ -630,8 +567,6 @@
 	bind:open={createGroupDialogOpen}
 	{projects}
 	editingGroup={editingGroup}
-	onSave={editingGroup ? handleUpdateGroup : handleCreateGroup}
-	onDelete={handleDeleteGroup}
 />
 <GlobalSearchDialog bind:open={searchDialogOpen} />
 <ProjectStatusDebug bind:open={debugDialogOpen} />

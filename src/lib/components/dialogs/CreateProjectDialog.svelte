@@ -1,21 +1,19 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKKind } from '$lib/kinds';
 	import { NDKProject } from '$lib/events/NDKProject';
 	import { NDKAgentDefinition } from '$lib/events/NDKAgentDefinition';
-	import { NDKAgentDefinitionPack } from '$lib/events/NDKAgentDefinitionPack';
 	import { NDKMCPTool } from '$lib/events/NDKMCPTool';
 	import { cn } from '$lib/utils/cn';
-	import AgentDefinitionCard from '$lib/components/agents/AgentDefinitionCard.svelte';
-	import PackCard from '$lib/components/agents/PackCard.svelte';
-	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+	import AgentSelectionGrid from '$lib/components/agents/AgentSelectionGrid.svelte';
+	import ToolSelectionList from '$lib/components/tools/ToolSelectionList.svelte';
+	import PackSelectionGrid from '$lib/components/packs/PackSelectionGrid.svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
 		open?: boolean;
-		onOpenChange?: (open: boolean) => void;
 	}
 
-	let { open = $bindable(false), onOpenChange }: Props = $props();
+	let { open = $bindable(false) }: Props = $props();
 
 	type Step = 'details' | 'agents' | 'tools' | 'review';
 
@@ -31,18 +29,9 @@
 	let currentStep = $state<Step>('details');
 	let creating = $state(false);
 
-	// Selected items
-	let selectedAgents = $state(new SvelteSet<string>());
-	let selectedTools = $state(new SvelteSet<string>());
-
-	// Available items
-	let availableAgents = $state<NDKAgentDefinition[]>([]);
-	let availableTools = $state<NDKMCPTool[]>([]);
-	let availablePacks = $state<NDKAgentDefinitionPack[]>([]);
-	let isLoadingAgents = $state(true);
-	let isLoadingTools = $state(true);
-	let isLoadingPacks = $state(true);
-	let selectedPackId = $state<string | null>(null);
+	// Selected items (now binding actual objects, not IDs)
+	let selectedAgents = $state(new SvelteSet<NDKAgentDefinition>());
+	let selectedTools = $state(new SvelteSet<NDKMCPTool>());
 
 	// Tag input
 	let tagInput = $state('');
@@ -54,9 +43,6 @@
 	$effect(() => {
 		if (open) {
 			resetForm();
-			fetchAgents();
-			fetchTools();
-			fetchPacks();
 		}
 	});
 
@@ -77,132 +63,6 @@
 
 	function handleClose() {
 		open = false;
-		onOpenChange?.(false);
-	}
-
-	async function fetchAgents() {
-		if (!ndk) return;
-
-		isLoadingAgents = true;
-		try {
-			const events = await ndk.fetchEvents({
-				kinds: [NDKKind.AgentDefinition as number],
-				limit: 100
-			});
-
-			const allAgents = Array.from(events).map((event) => {
-				return new NDKAgentDefinition(ndk, event.rawEvent());
-			});
-
-			// Group agents by slug (d tag) or name if no slug
-			const agentGroups = new SvelteMap<string, NDKAgentDefinition[]>();
-
-			allAgents.forEach((agent) => {
-				const groupKey = agent.slug || agent.name || agent.id;
-
-				if (!agentGroups.has(groupKey)) {
-					agentGroups.set(groupKey, []);
-				}
-				const group = agentGroups.get(groupKey);
-				if (group) {
-					group.push(agent);
-				}
-			});
-
-			// For each group, keep only the latest version
-			const latestAgents: NDKAgentDefinition[] = [];
-
-			agentGroups.forEach((groupAgents) => {
-				if (groupAgents.length === 1) {
-					latestAgents.push(groupAgents[0]);
-				} else {
-					// Sort by created_at timestamp (newest first) and version number
-					const sorted = groupAgents.sort((a, b) => {
-						const timeA = a.created_at || 0;
-						const timeB = b.created_at || 0;
-						if (timeA !== timeB) {
-							return timeB - timeA;
-						}
-
-						const versionA = parseInt(a.version || '0');
-						const versionB = parseInt(b.version || '0');
-						return versionB - versionA;
-					});
-
-					latestAgents.push(sorted[0]);
-				}
-			});
-
-			availableAgents = latestAgents;
-		} catch (error) {
-			console.error('Failed to fetch agents:', error);
-			alert('Failed to load agents');
-		} finally {
-			isLoadingAgents = false;
-		}
-	}
-
-	async function fetchTools() {
-		if (!ndk) return;
-
-		isLoadingTools = true;
-		try {
-			const events = await ndk.fetchEvents({
-				kinds: [NDKKind.MCPTool as number],
-				limit: 100
-			});
-
-			const tools = Array.from(events).map((event) => {
-				return new NDKMCPTool(ndk, event.rawEvent());
-			});
-
-			availableTools = tools;
-		} catch (error) {
-			console.error('Failed to fetch tools:', error);
-			alert('Failed to load MCP tools');
-		} finally {
-			isLoadingTools = false;
-		}
-	}
-
-	async function fetchPacks() {
-		if (!ndk) return;
-
-		isLoadingPacks = true;
-		try {
-			const events = await ndk.fetchEvents({
-				kinds: [34199 as number],
-				limit: 50
-			});
-
-			const packs = Array.from(events).map((event) => {
-				return new NDKAgentDefinitionPack(ndk, event.rawEvent());
-			});
-
-			availablePacks = packs;
-		} catch (error) {
-			console.error('Failed to fetch packs:', error);
-		} finally {
-			isLoadingPacks = false;
-		}
-	}
-
-	function handleSelectPack(packId: string) {
-		if (selectedPackId === packId) {
-			selectedPackId = null;
-			return;
-		}
-
-		selectedPackId = packId;
-		const pack = availablePacks.find((p) => p.id === packId);
-		if (!pack) return;
-
-		const newSelected = new SvelteSet<string>();
-		pack.agentEventIds.forEach((agentId) => {
-			newSelected.add(agentId);
-		});
-
-		selectedAgents = newSelected;
 	}
 
 	function canProceed(): boolean {
@@ -245,26 +105,6 @@
 		projectData.tags = projectData.tags.filter((_, i) => i !== index);
 	}
 
-	function toggleAgent(agentId: string) {
-		const newSelected = new SvelteSet(selectedAgents);
-		if (newSelected.has(agentId)) {
-			newSelected.delete(agentId);
-		} else {
-			newSelected.add(agentId);
-		}
-		selectedAgents = newSelected;
-	}
-
-	function toggleTool(toolId: string) {
-		const newSelected = new SvelteSet(selectedTools);
-		if (newSelected.has(toolId)) {
-			newSelected.delete(toolId);
-		} else {
-			newSelected.add(toolId);
-		}
-		selectedTools = newSelected;
-	}
-
 	async function handleCreate() {
 		if (!ndk) return;
 
@@ -278,12 +118,11 @@
 			project.repoUrl = projectData.repoUrl || undefined;
 
 			// Add selected agents and their MCP servers
-			selectedAgents.forEach((agentId) => {
-				project.addAgent(agentId);
+			selectedAgents.forEach((agent) => {
+				project.addAgent(agent.id);
 
 				// Also add the MCP servers required by these agents
-				const agent = availableAgents.find((a) => a.id === agentId);
-				if (agent?.mcpServers) {
+				if (agent.mcpServers) {
 					agent.mcpServers.forEach((mcpId) => {
 						project.addMCPTool(mcpId);
 					});
@@ -291,8 +130,8 @@
 			});
 
 			// Add selected tools
-			selectedTools.forEach((toolId) => {
-				project.addMCPTool(toolId);
+			selectedTools.forEach((tool) => {
+				project.addMCPTool(tool.id);
 			});
 
 			await project.publish();
@@ -512,142 +351,26 @@
 							/>
 						</div>
 					</div>
-				{:else if currentStep === 'agents'}
-					<div class="space-y-4">
-						<!-- Pack Selection -->
-						{#if !isLoadingPacks && availablePacks.length > 0}
-							<div class="space-y-2">
-								<h3 class="text-sm font-medium">Quick Start: Select from a Pack</h3>
-								<p class="text-xs text-muted-foreground">
-									Choose a pre-configured pack of agents, or select individual agents below
-								</p>
-								<div class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-									{#each availablePacks.slice(0, 6) as pack (pack.id)}
-										<div class="transform scale-75 origin-top-left">
-											<PackCard
-												{pack}
-												selected={selectedPackId === pack.id}
-												onclick={() => handleSelectPack(pack.id)}
-											/>
-										</div>
-									{/each}
-								</div>
-							</div>
-							<div class="border-t border-border pt-4"></div>
-						{/if}
+			{:else if currentStep === 'agents'}
+				<div class="space-y-4">
+					<!-- Pack Selection -->
+					<PackSelectionGrid bind:selectedAgents />
 
-						<p class="text-sm text-muted-foreground">
-							{selectedPackId ? 'Agents from selected pack (you can modify the selection)' : 'Select individual agents to work on this project (optional)'}
-						</p>
+					<p class="text-sm text-muted-foreground">
+						Select individual agents to work on this project (optional)
+					</p>
 
-						<div class="border border-border rounded-lg p-4">
-							{#if isLoadingAgents}
-								<div class="flex items-center justify-center py-8">
-									<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-								</div>
-							{:else if availableAgents.length === 0}
-								<p class="text-center text-muted-foreground py-8">
-									No agents available
-								</p>
-							{:else}
-								<div class="grid gap-4 md:grid-cols-2">
-									{#each availableAgents as agent (agent.id)}
-										<div
-											class={cn(
-												'relative rounded-lg transition-all',
-												selectedAgents.has(agent.id) && 'ring-2 ring-primary'
-											)}
-										>
-											<AgentDefinitionCard {agent} onclick={() => toggleAgent(agent.id)} />
-											{#if selectedAgents.has(agent.id)}
-												<div class="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-													<svg
-														class="w-4 h-4 text-primary-foreground"
-														fill="none"
-														viewBox="0 0 24 24"
-														stroke="currentColor"
-														stroke-width="3"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															d="M5 13l4 4L19 7"
-														/>
-													</svg>
-												</div>
-											{/if}
-										</div>
-									{/each}
-								</div>
-							{/if}
-						</div>
-					</div>
-				{:else if currentStep === 'tools'}
-					<div class="space-y-4">
-						<p class="text-sm text-muted-foreground">
-							Select MCP tools to enable for this project (optional)
-						</p>
+					<!-- Agent Selection -->
+					<AgentSelectionGrid bind:selectedAgents />
+				</div>
+			{:else if currentStep === 'tools'}
+				<div class="space-y-4">
+					<p class="text-sm text-muted-foreground">
+						Select MCP tools to enable for this project (optional)
+					</p>
 
-						<div class="border border-border rounded-lg p-4">
-							{#if isLoadingTools}
-								<div class="flex items-center justify-center py-8">
-									<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-								</div>
-							{:else if availableTools.length === 0}
-								<p class="text-center text-muted-foreground py-8">
-									No MCP tools available
-								</p>
-							{:else}
-								<div class="space-y-2">
-									{#each availableTools as tool (tool.id)}
-										<button
-											onclick={() => toggleTool(tool.id)}
-											class={cn(
-												'w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left',
-												selectedTools.has(tool.id)
-													? 'bg-accent border-primary'
-													: 'border-border hover:bg-accent'
-											)}
-										>
-											<div class="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-												<svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d={getStepIcon('tools')}
-													/>
-												</svg>
-											</div>
-
-											<div class="flex-1 min-w-0">
-												<p class="font-medium">
-													{tool.name || 'Unnamed Tool'}
-												</p>
-												<p class="text-sm text-muted-foreground truncate">
-													{tool.description || 'No description'}
-												</p>
-												<code class="text-xs bg-muted px-1 py-0.5 rounded">
-													{tool.command}
-												</code>
-											</div>
-
-											{#if selectedTools.has(tool.id)}
-												<svg class="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M5 13l4 4L19 7"
-													/>
-												</svg>
-											{/if}
-										</button>
-									{/each}
-								</div>
-							{/if}
-						</div>
-					</div>
+					<ToolSelectionList bind:selectedTools />
+				</div>
 				{:else if currentStep === 'review'}
 					<div class="space-y-4">
 						<div>
@@ -688,9 +411,7 @@
 									Selected Agents ({selectedAgents.size})
 								</h4>
 								<div class="flex flex-wrap gap-2">
-									{#each Array.from(selectedAgents) as agentId}
-										{@const agent = availableAgents.find((a) => a.id === agentId)}
-										{#if agent}
+									{#each Array.from(selectedAgents) as agent}
 											<span class="inline-block px-2 py-1 bg-muted rounded text-sm">
 												{agent.name}
 											</span>
@@ -706,9 +427,7 @@
 									Selected Tools ({selectedTools.size})
 								</h4>
 								<div class="flex flex-wrap gap-2">
-									{#each Array.from(selectedTools) as toolId}
-										{@const tool = availableTools.find((t) => t.id === toolId)}
-										{#if tool}
+									{#each Array.from(selectedTools) as tool}
 											<span class="inline-block px-2 py-1 border border-border rounded text-sm">
 												{tool.name}
 											</span>

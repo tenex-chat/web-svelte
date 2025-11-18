@@ -9,17 +9,20 @@
 	// Subscribe to user's projects
 	const projectsSubscription = ndk.$subscribe(
 		() =>
-			ndk.$currentUser
+			ndk.$currentPubkey
 				? {
-						filters: [{ kinds: [31933], authors: [ndk.$currentUser.pubkey] }],
+						filters: [{ kinds: [31933], authors: [ndk.$currentPubkey] }],
 						closeOnEose: false,
 						wrap: true,
-						eventClass: NDKProject
 					}
 				: undefined
 	);
 
-	const projects = $derived(projectsSubscription.events as NDKProject[]);
+	const projects = $derived.by(() => projectsSubscription.events.map(NDKProject.from));
+
+	$effect(() => {
+		projects.forEach((p) => p.publish())
+	})
 
 	// Update open projects when projects load
 	$effect(() => {
@@ -29,7 +32,7 @@
 	});
 </script>
 
-{#if ndk.$currentUser}
+{#if ndk.$currentPubkey}
 	<div class="flex h-screen bg-background">
 		<!-- Sidebar -->
 		<ProjectsSidebar {projects} />

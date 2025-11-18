@@ -2,17 +2,15 @@
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { cn } from '$lib/utils/cn';
 	import { SvelteSet } from 'svelte/reactivity';
+	import { saveProjectGroup, updateProjectGroup, deleteProjectGroup } from '$lib/utils/projectGroups';
 
 	interface Props {
 		open?: boolean;
-		onOpenChange?: (open: boolean) => void;
 		projects: NDKProject[];
-		onSave?: (groupName: string, projectIds: string[]) => void;
-		onDelete?: () => void;
 		editingGroup?: { id: string; name: string; projectIds: string[] } | null;
 	}
 
-	let { open = $bindable(false), onOpenChange, projects, onSave, onDelete, editingGroup = null }: Props = $props();
+	let { open = $bindable(false), projects, editingGroup = null }: Props = $props();
 
 	// State
 	let groupName = $state('');
@@ -52,7 +50,6 @@
 
 	function handleClose() {
 		open = false;
-		onOpenChange?.(false);
 	}
 
 	function toggleProject(projectId: string) {
@@ -70,11 +67,18 @@
 
 		saving = true;
 		try {
-			onSave?.(groupName.trim(), Array.from(selectedProjects));
-			handleClose();
+			if (editingGroup) {
+				updateProjectGroup(editingGroup.id, {
+					name: groupName.trim(),
+					projectIds: Array.from(selectedProjects)
+				});
+			} else {
+				saveProjectGroup(groupName.trim(), Array.from(selectedProjects));
+			}
+			open = false;
 		} catch (error) {
 			console.error('Failed to save project group:', error);
-			alert('Failed to save project group. Please try again.');
+			alert('Failed to save project group.');
 		} finally {
 			saving = false;
 		}
@@ -89,8 +93,10 @@
 	}
 
 	function confirmDelete() {
-		onDelete?.();
+		if (!editingGroup) return;
+		deleteProjectGroup(editingGroup.id);
 		showDeleteConfirm = false;
+		open = false;
 	}
 
 	function cancelDelete() {

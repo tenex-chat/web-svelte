@@ -1,15 +1,15 @@
 <script lang="ts">
-	import type { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKEvent, NDKKind, NDKProject } from '@nostr-dev-kit/ndk';
 	import { cn } from '$lib/utils/cn';
+    import ndk from '$lib/ndk.svelte';
 
 	interface Props {
 		event: NDKEvent;
-		onSuggestionClick: (suggestion: string, index: number) => void;
 		class?: string;
 		isMobile?: boolean;
 	}
 
-	let { event, onSuggestionClick, class: className, isMobile = false }: Props = $props();
+	let { event, class: className, isMobile = false }: Props = $props();
 
 	// Extract suggestion tags from the event
 	const suggestions = $derived(
@@ -18,12 +18,52 @@
 			?.map((tag) => tag[1])
 			?.filter(Boolean) || []
 	);
+
+	async function handleSuggestionClick(suggestion: string) {
+		if (!ndk.$currentUser) {
+			alert("Unable to send response. Please ensure you are logged in.");
+			return;
+		}
+
+		try {
+			// Create a kind:1111 (GenericReply) event with the selected suggestion as content
+			const replyEvent = new NDKEvent(ndk);
+			replyEvent.kind = NDKKind.GenericReply;
+			replyEvent.content = suggestion;
+
+			// Add necessary tags for the reply
+			replyEvent.tags = [
+				["e", event.id], // Reply to the event with suggestions
+			];
+
+			// Add p-tag for the author of the original event
+			replyEvent.tags.push(["p", event.pubkey]);
+
+			// If this is in a project context, add the project tag
+			const projectTag = event.tags.find(
+				(tag) =>
+					tag[0] === "a" && tag[1]?.startsWith(NDKProject.kind.toString()),
+			);
+			if (projectTag) {
+				replyEvent.tags.push(projectTag);
+			}
+
+			// Sign and publish the event
+			await replyEvent.sign();
+			await replyEvent.publish();
+
+			console.log("Suggestion response sent:", suggestion);
+		} catch (error) {
+			console.error("Failed to send suggestion response:", error);
+			alert("Failed to send response. Please try again.");
+		}
+	}
 </script>
 
 {#if suggestions.length > 0}
 	<div
 		class={cn(
-			'flex flex-wrap gap-2 mt-3 p-3 bg-muted rounded-lg border border-border',
+			'flex flex-wrap gap-2',
 			isMobile && 'gap-1.5 p-2',
 			className
 		)}
@@ -42,9 +82,9 @@
 		{#each suggestions as suggestion, index (`${event.id}-suggestion-${index}`)}
 			<button
 				type="button"
-				onclick={() => onSuggestionClick(suggestion, index)}
+				onclick={() => handleSuggestionClick(suggestion, index)}
 				class={cn(
-					'group relative transition-all hover:bg-blue-50 hover:border-blue-500',
+					'group relative transition-all hover:border-muted-foreground text-sm',
 					'flex items-center gap-2 px-3 py-2 border border-border rounded-md',
 					isMobile && 'text-xs px-2.5 py-1.5'
 				)}

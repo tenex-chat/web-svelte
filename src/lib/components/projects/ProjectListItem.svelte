@@ -4,27 +4,53 @@
 	import { generateColorFromString } from '$lib/utils/colors';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { openProjects } from '$lib/stores/openProjects.svelte';
+	import { goto } from '$app/navigation';
 
 	interface Props {
 		project: NDKProject;
 		collapsed: boolean;
-		onmousedown: (e: MouseEvent) => void;
-		onmouseup: () => void;
-		onmouseleave: () => void;
 	}
 
-	const { project, collapsed, onmousedown, onmouseup, onmouseleave }: Props = $props();
+	const { project, collapsed }: Props = $props();
 
 	const projectId = $derived(project.tagId());
 	const isOnline = $derived(projectStatusStore.isProjectOnline(projectId));
 	const isOpen = $derived(openProjects.isOpen(project));
 	const projectColor = $derived(generateColorFromString(project.dTag || ''));
+
+	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function handleMouseDown(event: MouseEvent) {
+		event.preventDefault();
+		longPressTimer = setTimeout(() => {
+			// Navigate to project detail page on long press
+			const projectPath = `/projects/${project.dTag || project.id}`;
+			goto(projectPath);
+		}, 500);
+	}
+
+	function handleMouseUp() {
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+
+			// Normal click - toggle project
+			openProjects.toggle(project);
+		}
+	}
+
+	function handleMouseLeave() {
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
+	}
 </script>
 
 <button
-	{onmousedown}
-	{onmouseup}
-	{onmouseleave}
+	onmousedown={handleMouseDown}
+	onmouseup={handleMouseUp}
+	onmouseleave={handleMouseLeave}
 	class={cn(
 		'w-full text-left px-3 py-2 rounded-lg transition-all flex items-center gap-2',
 		isOpen ? 'bg-primary/10 border border-primary/20 text-primary' : 'hover:bg-muted text-foreground',
@@ -52,7 +78,7 @@
 		<div class="flex-1 min-w-0">
 			<div class="font-medium text-sm truncate">{project.title || 'Untitled'}</div>
 			<div class="text-xs text-muted-foreground">
-				{project.agents.length} agents
+				{project.agents?.length} agents
 			</div>
 		</div>
 

@@ -89,50 +89,10 @@
 	function closeRawEventDialog() {
 		showRawEvent = false;
 	}
-
-	// Handle suggestion click - create kind:1111 reply
-	async function handleSuggestionClick(suggestion: string) {
-		if (!ndk.$currentUser) {
-			alert('Unable to send response. Please ensure you are logged in.');
-			return;
-		}
-
-		try {
-			// Create a kind:1111 (GenericReply) event with the selected suggestion as content
-			const replyEvent = new NDKEvent(ndk);
-			replyEvent.kind = NDKKind.GenericReply;
-			replyEvent.content = suggestion;
-
-			// Add necessary tags for the reply
-			replyEvent.tags = [
-				['e', message.event.id] // Reply to the event with suggestions
-			];
-
-			// Add p-tag for the author of the original event
-			replyEvent.tags.push(['p', message.event.pubkey]);
-
-			// If this is in a project context, add the project tag
-			const projectTag = message.event.tags.find(
-				(tag) => tag[0] === 'a' && tag[1]?.startsWith(NDKProject.kind.toString())
-			);
-			if (projectTag) {
-				replyEvent.tags.push(projectTag);
-			}
-
-			// Sign and publish the event
-			await replyEvent.sign();
-			await replyEvent.publish();
-
-			console.log('Suggestion response sent:', suggestion);
-		} catch (error) {
-			console.error('Failed to send suggestion response:', error);
-			alert('Failed to send response. Please try again.');
-		}
-	}
 </script>
 
 <div
-	class="group px-4 py-1 hover:bg-muted transition-colors"
+	class="group px-4 py-1 hover:bg-muted/10 transition-colors"
 >
 	<div class="flex gap-3">
 		<!-- Avatar or consecutive indicator -->
@@ -283,10 +243,7 @@
 
 						<!-- Render suggestion buttons if they exist -->
 						{#if hasSuggestions}
-							<SuggestionButtons
-								event={message.event}
-								onSuggestionClick={handleSuggestionClick}
-							/>
+							<SuggestionButtons event={message.event} />
 						{/if}
 					{/if}
 				</div>
@@ -408,6 +365,4 @@
 {/if}
 
 <!-- LLM Metadata Dialog -->
-{#if showLLMMetadata}
-	<LLMMetadataDialog event={message.event} onClose={() => (showLLMMetadata = false)} />
-{/if}
+<LLMMetadataDialog bind:open={showLLMMetadata} event={message.event} />

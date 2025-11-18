@@ -2,6 +2,7 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import Message from './Message.svelte';
+	import SystemMessage from './SystemMessage.svelte';
 	import ThreadedMessage from './ThreadedMessage.svelte';
 	import { ConversationState } from '$lib/stores/conversation-state.svelte';
 	import { type Message as MessageType } from '$lib/utils/messageProcessor';
@@ -142,6 +143,7 @@
 
 	// Use reactive messages from ConversationState
 	const flatMessages = $derived(conversationState?.displayMessages || []);
+	const eventsWithMetadata = $derived(conversationState?.displayEventsWithMetadata || []);
 
 	// Sync to bindable messages prop
 	$effect(() => {
@@ -208,19 +210,28 @@
 				<ThreadedMessage {rootEvent} eventId={rootEvent.id} depth={0} {onTimeClick} />
 			</div>
 		{:else}
-			<!-- Flattened view: Render messages in chronological order -->
+			<!-- Flattened view: Render messages and metadata in chronological order -->
 			{@const messageProps = calculateMessageProperties(messages)}
+			{@const messagePropsMap = new Map(messageProps.map(mp => [mp.message.id, mp]))}
 			<div class="flex flex-col">
-				{#each messageProps as { message, isConsecutive, hasNextConsecutive, isLastReasoningMessage }, index (message.id)}
-					<Message
-						{message}
-						isLastMessage={index === messageProps.length - 1}
-						{isConsecutive}
-						{hasNextConsecutive}
-						{onReply}
-						{onQuote}
-						{onTimeClick}
-					/>
+				{#each eventsWithMetadata as event, index (event.type === 'message' ? (event.data as MessageType).id : (event.data as NDKEvent).id)}
+					{#if event.type === 'metadata'}
+						<SystemMessage event={event.data as NDKEvent} />
+					{:else}
+						{@const message = event.data as MessageType}
+						{@const props = messagePropsMap.get(message.id)}
+						{#if props}
+							<Message
+								message={props.message}
+								isLastMessage={index === eventsWithMetadata.length - 1}
+								isConsecutive={props.isConsecutive}
+								hasNextConsecutive={props.hasNextConsecutive}
+								{onReply}
+								{onQuote}
+								{onTimeClick}
+							/>
+						{/if}
+					{/if}
 				{/each}
 			</div>
 		{/if}

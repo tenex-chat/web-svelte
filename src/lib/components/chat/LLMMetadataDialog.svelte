@@ -3,11 +3,11 @@
 	import { Info, X, Cpu, Zap, Settings, Activity } from 'lucide-svelte';
 
 	interface Props {
+		open?: boolean;
 		event: NDKEvent;
-		onClose: () => void;
 	}
 
-	let { event, onClose }: Props = $props();
+	let { open = $bindable(false), event }: Props = $props();
 
 	// Extract LLM metadata from event tags
 	const metadata = $derived.by(() => {
@@ -84,13 +84,18 @@
 		const text = JSON.stringify(metadata, null, 2);
 		navigator.clipboard.writeText(text);
 	}
+
+	function handleClose() {
+		open = false;
+	}
 </script>
 
+{#if open}
 <div
 		class="fixed inset-0 bg-overlay/50 flex items-center justify-center z-50"
-		onclick={onClose}
+		onclick={handleClose}
 		onkeydown={(e) => {
-			if (e.key === 'Escape') onClose();
+			if (e.key === 'Escape') handleClose();
 		}}
 		role="dialog"
 		aria-modal="true"
@@ -112,7 +117,7 @@
 				</div>
 				<button
 					type="button"
-					onclick={onClose}
+					onclick={handleClose}
 					class="p-1 rounded hover:bg-muted transition-colors"
 					aria-label="Close"
 				>
@@ -179,3 +184,4 @@
 			{/if}
 		</div>
 	</div>
+{/if}

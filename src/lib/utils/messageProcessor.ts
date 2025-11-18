@@ -47,14 +47,8 @@ export function processEvent(
 	streamingSessions: Map<string, StreamingSession>,
 	finalMessages: Message[]
 ): void {
-	// Skip operations events
-	if (event.kind === 24133 || event.kind === 24134) {
-		return;
-	}
-
-	// Metadata events always shown
-	if (event.kind === NDKKind.TenexConversationMetadata) {
-		finalMessages.push({ id: event.id, event });
+	// Skip operations events and metadata events (metadata handled separately)
+	if (event.kind === 24133 || event.kind === 24134 || event.kind === NDKKind.TenexConversationMetadata) {
 		return;
 	}
 

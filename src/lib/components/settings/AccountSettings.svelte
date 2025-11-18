@@ -1,19 +1,18 @@
 <script lang="ts">
 	import ndk from '$lib/ndk.svelte';
-
-	const currentUser = $derived(ndk.$currentUser);
+	import { User } from '$lib/ndk/ui/user';
 
 	function logout() {
-		if (currentUser?.pubkey) {
-			ndk.$sessions.logout(currentUser.pubkey);
+		if (ndk.$currentPubkey) {
+			ndk.$sessions.logout();
 		}
 		window.location.href = '/';
 	}
 
 	function copyPublicKey() {
-		if (currentUser?.pubkey) {
-			navigator.clipboard.writeText(currentUser.pubkey);
-			alert('Public key copied to clipboard');
+		if (ndk.$currentPubkey) {
+			navigator.clipboard.writeText(ndk.$currentPubkey);
+			alert("Public key copied to clipboard");
 		}
 	}
 </script>
@@ -23,35 +22,19 @@
 	<div class="bg-card rounded-lg border border-border p-6">
 		<h3 class="text-lg font-semibold text-foreground mb-4">Profile</h3>
 
-		{#if currentUser}
+		{#if ndk.$currentPubkey}
 			<div class="space-y-4">
 				<!-- Profile Picture -->
 				<div class="flex items-center gap-4">
-					{#if currentUser.profile?.image}
-						<img
-							src={currentUser.profile.image}
-							alt={currentUser.profile?.name || 'User'}
-							class="w-16 h-16 rounded-full object-cover"
-						/>
-					{:else}
-						<div class="w-16 h-16 rounded-full bg-secondary flex items-center justify-center">
-							<svg class="w-8 h-8 text-muted-foreground" fill="currentColor" viewBox="0 0 20 20">
-								<path
-									fill-rule="evenodd"
-									d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-									clip-rule="evenodd"
-								/>
-							</svg>
+					<User.Root user={ndk.$currentUser}>
+						<User.Avatar class="w-16 h-16" />
+						<div>
+							<p class="text-sm font-medium text-foreground">
+								<User.Name field="displayName" />
+							</p>
+							<User.Bio class="text-xs text-muted-foreground" />
 						</div>
-					{/if}
-					<div>
-						<p class="text-sm font-medium text-foreground">
-							{currentUser.profile?.displayName || currentUser.profile?.name || 'Anonymous'}
-						</p>
-						{#if currentUser.profile?.about}
-							<p class="text-xs text-muted-foreground">{currentUser.profile.about}</p>
-						{/if}
-					</div>
+					</User.Root>
 				</div>
 
 				<!-- Public Key -->
@@ -61,7 +44,7 @@
 						<input
 							type="text"
 							readonly
-							value={currentUser.pubkey}
+							value={ndk.$currentPubkey}
 							class="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm font-mono"
 						/>
 						<button
@@ -74,12 +57,12 @@
 				</div>
 
 				<!-- NIP-05 -->
-				{#if currentUser.profile?.nip05}
-					<div>
-						<label class="block text-sm font-medium text-foreground mb-1">NIP-05</label>
-						<p class="text-sm text-foreground">{currentUser.profile.nip05}</p>
-					</div>
-				{/if}
+				<div>
+					<label class="block text-sm font-medium text-foreground mb-1">NIP-05</label>
+					<User.Root user={ndk.$currentUser}>
+						<User.Nip05 showVerified={true} class="text-sm text-foreground" />
+					</User.Root>
+				</div>
 			</div>
 		{:else}
 			<div class="text-center py-8">
@@ -93,7 +76,7 @@
 		<h3 class="text-lg font-semibold text-foreground mb-4">Account Actions</h3>
 
 		<div class="space-y-3">
-			{#if currentUser}
+			{#if ndk.$currentPubkey}
 				<button
 					onclick={logout}
 					class="w-full px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"

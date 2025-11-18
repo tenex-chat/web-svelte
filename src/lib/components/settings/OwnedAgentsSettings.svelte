@@ -1,32 +1,17 @@
 <script lang="ts">
 	import ndk from '$lib/ndk.svelte';
-	import type { NDKAgentDefinition } from '$lib/events/NDKAgentDefinition';
-	import { onMount } from 'svelte';
+	import { NDKAgentDefinition } from '$lib/events/NDKAgentDefinition';
 
-	const currentUser = $derived(ndk.$currentUser);
+	const agentsSubscription = ndk.$subscribe(() =>
+		ndk.$currentPubkey ? {
+			filters: [{ kinds: [4199 as number], authors: [ndk.$currentPubkey] }],
+			closeOnEose: true
+		} : undefined
+	);
 
-	let agents = $state<NDKAgentDefinition[]>([]);
-	let loading = $state(true);
-
-	onMount(async () => {
-		if (!currentUser) {
-			loading = false;
-			return;
-		}
-
-		try {
-			const agentEvents = await ndk.fetchEvents({
-				kinds: [4199 as number],
-				authors: [currentUser.pubkey]
-			});
-
-			agents = Array.from(agentEvents) as NDKAgentDefinition[];
-		} catch (error) {
-			console.error('Failed to fetch agents:', error);
-		} finally {
-			loading = false;
-		}
-	});
+	const agents = $derived(
+		agentsSubscription.events.map(event => NDKAgentDefinition.from(event))
+	);
 </script>
 
 <div class="space-y-6">
@@ -37,14 +22,9 @@
 			Agents you've created and published to the Nostr network
 		</p>
 
-		{#if !currentUser}
+		{#if !ndk.$currentPubkey}
 			<div class="text-center py-8 text-muted-foreground">
 				<p class="text-sm">Please login to view your agents</p>
-			</div>
-		{:else if loading}
-			<div class="text-center py-8">
-				<div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-				<p class="text-sm text-muted-foreground mt-2">Loading agents...</p>
 			</div>
 		{:else if agents.length === 0}
 			<div class="text-center py-8 text-muted-foreground">
