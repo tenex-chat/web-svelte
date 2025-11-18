@@ -352,7 +352,5 @@ src/lib/components/chat/
 - Searching for specific messages
 
 ## Related Documentation
-- [CHAT_SYSTEM_ANALYSIS.md](./CHAT_SYSTEM_ANALYSIS.md) - Complete tag structure
-- [ULTRATHINKING_COMPLETE.md](./ULTRATHINKING_COMPLETE.md) - Threading deep-dive
 - [messageProcessor.ts](../src/lib/utils/messageProcessor.ts) - Flat processing
 - [threadBuilder.ts](../src/lib/utils/threadBuilder.ts) - Tree building
