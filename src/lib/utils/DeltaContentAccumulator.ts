@@ -1,4 +1,5 @@
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
+import { performanceMetrics, type AccumulatorMetrics } from '$lib/stores/performance-metrics.svelte';
 
 /**
  * Accumulates delta content from streaming response events (kind:21111)
@@ -9,6 +10,21 @@ export class DeltaContentAccumulator {
 	private cachedContent = '';
 	private lastReconstructedSequence = 0;
 	private highestContiguousSequence = -1; // Track the highest sequence without gaps
+	private sessionId: string;
+
+	// Performance metrics
+	private metrics = {
+		totalEvents: 0,
+		fastPathHits: 0,
+		slowPathHits: 0,
+		totalReconstructTime: 0,
+		maxContentLength: 0,
+		slowReconstructionCount: 0
+	};
+
+	constructor(sessionId: string) {
+		this.sessionId = sessionId;
+	}
 
 	/**
 	 * Add a delta event and return the reconstructed content
@@ -16,16 +32,11 @@ export class DeltaContentAccumulator {
 	 * @returns Reconstructed full content from all deltas
 	 */
 	addEvent(event: NDKEvent): string {
+		const startTime = performance.now();
 		const sequenceTag = event.tags.find((t) => t[0] === 'sequence');
 		const sequence = sequenceTag ? parseInt(sequenceTag[1]) : 0;
 
-		console.log('[DeltaAccumulator] Adding event', {
-			eventId: event.id,
-			sequence,
-			deltaContent: event.content?.substring(0, 50),
-			deltaLength: event.content?.length,
-			existingDeltas: this.deltas.size
-		});
+		this.metrics.totalEvents++;
 
 		// If no content, don't add
 		if (!event.content) {
@@ -45,18 +56,31 @@ export class DeltaContentAccumulator {
 				// Note: content already in deltas map, just update pointer
 			}
 			this.lastReconstructedSequence = this.getHighestSequence();
+			this.metrics.fastPathHits++;
 		} else {
 			// Out-of-order or gap detected, need full reconstruction
 			this.cachedContent = this.reconstruct();
 			this.lastReconstructedSequence = this.getHighestSequence();
 			this.updateHighestContiguous();
+			this.metrics.slowPathHits++;
 		}
 
-		console.log('[DeltaAccumulator] After adding', {
-			totalDeltas: this.deltas.size,
-			reconstructedLength: this.cachedContent.length,
-			sequences: Array.from(this.deltas.keys()).sort((a, b) => a - b)
-		});
+		// Track reconstruction time and update metrics
+		const reconstructTime = performance.now() - startTime;
+		this.metrics.totalReconstructTime += reconstructTime;
+		this.metrics.maxContentLength = Math.max(this.metrics.maxContentLength, this.cachedContent.length);
+
+		if (reconstructTime > 10) {
+			this.metrics.slowReconstructionCount++;
+		}
+
+		// Update global metrics if enabled
+		if (performanceMetrics.isEnabled) {
+			performanceMetrics.updateAccumulatorMetrics(this.sessionId, {
+				...this.metrics,
+				avgReconstructTime: this.metrics.totalReconstructTime / this.metrics.totalEvents
+			});
+		}
 
 		return this.cachedContent;
 	}
@@ -133,5 +157,17 @@ export class DeltaContentAccumulator {
 
 	getDeltaCount(): number {
 		return this.deltas.size;
+	}
+
+	/**
+	 * Get performance metrics for this accumulator
+	 */
+	getMetrics(): AccumulatorMetrics {
+		return {
+			...this.metrics,
+			avgReconstructTime: this.metrics.totalEvents > 0
+				? this.metrics.totalReconstructTime / this.metrics.totalEvents
+				: 0
+		};
 	}
 }

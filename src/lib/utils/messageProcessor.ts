@@ -269,9 +269,9 @@ export function processEventsToMessages(
 			let session = streamingSessions.get(event.pubkey);
 			if (!session) {
 				// Create new streaming session
-				const accumulator = new DeltaContentAccumulator();
-				const reconstructedContent = accumulator.addEvent(event);
 				const syntheticId = `streaming-${event.pubkey}-${event.created_at || Date.now()}`;
+				const accumulator = new DeltaContentAccumulator(syntheticId);
+				const reconstructedContent = accumulator.addEvent(event);
 
 				session = {
 					syntheticId,
@@ -307,7 +307,7 @@ export function processEventsToMessages(
 				const syntheticId = `typing-${event.pubkey}`;
 				session = {
 					syntheticId,
-					accumulator: new DeltaContentAccumulator(), // Not used for typing
+					accumulator: new DeltaContentAccumulator(syntheticId), // Not used for typing
 					latestEvent: event,
 					reconstructedContent: event.content || 'typing...'
 				};

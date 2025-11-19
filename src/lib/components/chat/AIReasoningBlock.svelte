@@ -39,8 +39,8 @@
 	const renderedReasoningContent = $derived.by(() => {
 		// During streaming, use plain-text fallback to avoid re-parsing markdown on every character
 		if (isStreaming) {
-			const escapedHtml = escapeAndPreserveNewlines(reasoningContent);
-			return DOMPurify.sanitize(escapedHtml);
+			// const escapedHtml = escapeAndPreserveNewlines(reasoningContent);
+			return DOMPurify.sanitize(reasoningContent);
 		}
 
 		// When finalized, parse markdown
@@ -52,8 +52,8 @@
 			if (dev) {
 				console.warn('[AIReasoningBlock] Markdown parsing failed:', error);
 			}
-			const escapedHtml = escapeAndPreserveNewlines(reasoningContent);
-			return DOMPurify.sanitize(escapedHtml);
+			// const escapedHtml = escapeAndPreserveNewlines(reasoningContent);
+			return DOMPurify.sanitize(reasoningContent);
 		}
 	});
 </script>
@@ -116,7 +116,7 @@
 			<!-- Reasoning Content -->
 			{#if isOpen}
 				<div id={contentId} class="px-4 py-3 border-t border-border bg-card/50">
-					<div class="prose prose-sm max-w-none dark:prose-invert text-foreground">
+					<div class="prose prose-sm max-w-none dark:prose-invert text-foreground text-sm">
 						{@html renderedReasoningContent}
 					</div>
 					{#if isStreaming}

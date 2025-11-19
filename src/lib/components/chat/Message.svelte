@@ -14,6 +14,8 @@
 	import TypingIndicator from './TypingIndicator.svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Copy, Reply, Quote, MoreVertical, Info, Eye, Hash } from 'lucide-svelte';
+	import { performanceMetrics } from '$lib/stores/performance-metrics.svelte';
+	import { formatTimestamp } from '$lib/utils/time';
 
 	interface Props {
 		message: Message;
@@ -35,18 +37,23 @@
 	);
 	const hasSuggestions = $derived(message.event.tags?.some((tag) => tag[0] === 'suggestion'));
 
-	// Debug streaming messages
+	// Track render performance
 	$effect(() => {
-		if (isStreaming) {
-			console.log('[Message Component] RENDERING streaming message!!!', {
-				messageId: message.id,
-				eventId: message.event.id,
-				kind: message.event.kind,
-				content: message.event.content?.substring(0, 200),
-				contentLength: message.event.content?.length,
-				pubkey: message.event.pubkey,
-				isTyping,
-				hasContent: !!message.event.content
+		if (isStreaming && performanceMetrics.isEnabled) {
+			const startTime = performance.now();
+
+			// Trigger effect by accessing message content
+			message.event.content;
+
+			const renderTime = performance.now() - startTime;
+
+			// Update metrics
+			const currentMetrics = performanceMetrics.messageRenderMetrics;
+			performanceMetrics.updateMessageRenderMetrics({
+				renderCount: currentMetrics.renderCount + 1,
+				totalRenderTime: currentMetrics.totalRenderTime + renderTime,
+				lastRenderTime: renderTime,
+				slowRenderCount: renderTime > 16 ? currentMetrics.slowRenderCount + 1 : currentMetrics.slowRenderCount
 			});
 		}
 	});
@@ -55,16 +62,26 @@
 	// Format timestamp
 	const timestamp = $derived.by(() => {
 		if (!message.event.created_at) return '';
-		const date = new Date(message.event.created_at * 1000);
-		return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+		return formatTimestamp(message.event.created_at);
 	});
 
 	// Render markdown with sanitization
 	const renderedContent = $derived.by(() => {
 		if (isTyping) return message.event.content;
 		try {
+			const parseStart = performanceMetrics.isEnabled ? performance.now() : 0;
 			const rawHtml = marked.parse(message.event.content || '') as string;
-			return DOMPurify.sanitize(rawHtml);
+			const sanitized = DOMPurify.sanitize(rawHtml);
+
+			if (performanceMetrics.isEnabled) {
+				const parseTime = performance.now() - parseStart;
+				const currentMetrics = performanceMetrics.messageRenderMetrics;
+				performanceMetrics.updateMessageRenderMetrics({
+					markdownParseTime: currentMetrics.markdownParseTime + parseTime
+				});
+			}
+
+			return sanitized;
 		} catch {
 			return message.event.content || '';
 		}

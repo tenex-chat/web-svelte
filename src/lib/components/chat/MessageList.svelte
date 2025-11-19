@@ -8,6 +8,7 @@
 	import { type Message as MessageType } from '$lib/utils/messageProcessor';
 	import { calculateMessageProperties } from '$lib/utils/messageUtils';
 	import { ChevronDown } from 'lucide-svelte';
+	import PerformanceMonitor from './PerformanceMonitor.svelte';
 
 	interface Props {
 		rootEvent: NDKEvent;
@@ -38,6 +39,9 @@
 
 	// User scroll intent detection
 	let isUserScrolling = $state(false);
+
+	// Performance monitor
+	let showPerformanceMonitor = $state(false);
 	let isProgrammaticScroll = $state(false);
 	let scrollDebounceTimer: number | undefined;
 	const SCROLL_DEBOUNCE_MS = 150; // Time to wait after scroll stops to detect user intent
@@ -255,4 +259,7 @@
 			</button>
 		</div>
 	{/if}
+
+	<!-- Performance Monitor -->
+	<PerformanceMonitor bind:visible={showPerformanceMonitor} />
 </div>

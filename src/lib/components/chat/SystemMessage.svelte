@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { formatTimestamp } from '$lib/utils/time';
 
 	interface Props {
 		event: NDKEvent;
@@ -14,8 +15,7 @@
 	// Format timestamp
 	const timestamp = $derived.by(() => {
 		if (!event.created_at) return '';
-		const date = new Date(event.created_at * 1000);
-		return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+		return formatTimestamp(event.created_at);
 	});
 </script>
 

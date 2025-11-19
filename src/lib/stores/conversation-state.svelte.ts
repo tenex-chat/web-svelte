@@ -6,6 +6,7 @@ import { DeltaContentAccumulator } from '$lib/utils/DeltaContentAccumulator';
 import type { Message, ThreadViewMode } from '$lib/utils/messageProcessor';
 import { conversationMetadataStore } from './conversationMetadata.svelte';
 import { processConversationMetadataEvent } from '$lib/utils/conversationMetadataProcessor';
+import { performanceMetrics, type ConversationStateMetrics } from './performance-metrics.svelte';
 
 interface StreamingSession {
 	syntheticId: string;
@@ -53,8 +54,21 @@ export class ConversationState {
 	private selectedEventIds = new SvelteSet<string>();
 	private hasModeratorSelections = false;
 
+	// Performance metrics
+	private conversationId: string;
+	private metrics = {
+		eventsProcessed: 0,
+		streamingEvents: 0,
+		displayMessagesComputations: 0,
+		displayMessagesComputeTime: 0,
+		lastComputeTime: 0,
+		slowComputationCount: 0
+	};
+
 	// Reactive display messages for UI
 	displayMessages = $derived.by(() => {
+		const startTime = performance.now();
+		this.metrics.displayMessagesComputations++;
 		const allMessages: Message[] = [];
 
 		// Add all final messages from the map
@@ -132,6 +146,23 @@ export class ConversationState {
 			return 0;
 		});
 
+		// Track computation time
+		const computeTime = performance.now() - startTime;
+		this.metrics.displayMessagesComputeTime += computeTime;
+		this.metrics.lastComputeTime = computeTime;
+
+		if (computeTime > 50) {
+			this.metrics.slowComputationCount++;
+		}
+
+		// Update global metrics if enabled
+		if (performanceMetrics.isEnabled) {
+			performanceMetrics.updateConversationStateMetrics(this.conversationId, {
+				...this.metrics,
+				avgComputeTime: this.metrics.displayMessagesComputeTime / this.metrics.displayMessagesComputations
+			});
+		}
+
 		return allMessages;
 	});
 
@@ -176,6 +207,7 @@ export class ConversationState {
 		this.debug = options.debug ?? false;
 		this.maxReconnectAttempts = options.maxReconnectAttempts ?? 5;
 		this.reconnectDelay = options.reconnectDelay ?? 1000;
+		this.conversationId = rootEvent?.id || `conversation-${crypto.randomUUID()}`;
 	}
 
 	/**
@@ -347,15 +379,8 @@ export class ConversationState {
 	 * Process a single event - O(1) complexity
 	 */
 	private processEvent(event: NDKEvent): void {
-		// Debug: Log ALL events being processed
-		console.log('[ConversationState.processEvent] Received:', {
-			rootEventId: this.rootEvent?.id,
-			eventId: event.id,
-			kind: event.kind,
-			content: event.content?.substring(0, 50),
-			eTags: event.tags.filter(t => t[0] === 'e'),
-			isDirectReplyToRoot: this.isDirectReplyToRoot(event)
-		});
+		// Track event processing
+		this.metrics.eventsProcessed++;
 
 		// Skip operations events
 		if (event.kind === 24133 || event.kind === 24134) {
@@ -371,7 +396,6 @@ export class ConversationState {
 
 		// Apply view mode filtering
 		if (!this.isBrainstorm && this.viewMode === 'threaded' && !this.isDirectReplyToRoot(event)) {
-			console.log('[ConversationState.processEvent] FILTERED OUT by threaded view mode');
 			this.log('Event filtered out by threaded view mode', { eventId: event.id });
 			return;
 		}
@@ -447,6 +471,9 @@ export class ConversationState {
 	 * Handle streaming event (kind 21111)
 	 */
 	private handleStreamingEvent(event: NDKEvent, pubkey: string): void {
+		// Track streaming events
+		this.metrics.streamingEvents++;
+
 		// Check if we already have a finalized message from this pubkey with same created_at
 		// This catches late-arriving streaming chunks for already-finalized messages
 		for (const message of this.messages.values()) {
@@ -467,9 +494,9 @@ export class ConversationState {
 
 		if (!session) {
 			// Create new streaming session with unique ID
-			const accumulator = new DeltaContentAccumulator();
-			const reconstructedContent = accumulator.addEvent(event);
 			const syntheticId = `streaming-${crypto.randomUUID()}`;
+			const accumulator = new DeltaContentAccumulator(syntheticId);
+			const reconstructedContent = accumulator.addEvent(event);
 
 			session = {
 				syntheticId,
@@ -644,5 +671,17 @@ export class ConversationState {
 		this.selectedEventIds.clear();
 
 		this.log('ConversationState destroyed successfully');
+	}
+
+	/**
+	 * Get performance metrics for this conversation
+	 */
+	getMetrics(): ConversationStateMetrics {
+		return {
+			...this.metrics,
+			avgComputeTime: this.metrics.displayMessagesComputations > 0
+				? this.metrics.displayMessagesComputeTime / this.metrics.displayMessagesComputations
+				: 0
+		};
 	}
 }
