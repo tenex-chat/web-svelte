@@ -165,11 +165,13 @@
 		} catch (error) {
 			console.error('[AgentConfigDialog] Failed to save agent config:', error);
 
-	function handleClose() {
-		open = false;
 	}
-		}
-	}
+}
+
+function handleClose() {
+	open = false;
+}
+
 
 	// Reset state when agent changes
 	$effect(() => {

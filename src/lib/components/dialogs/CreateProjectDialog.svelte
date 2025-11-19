@@ -430,7 +430,6 @@
 											<span class="inline-block px-2 py-1 border border-border rounded text-sm">
 												{tool.name}
 											</span>
-										{/if}
 									{/each}
 								</div>
 							</div>

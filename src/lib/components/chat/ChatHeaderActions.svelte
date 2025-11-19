@@ -52,7 +52,3 @@
 		</svg>
 	{/if}
 </button>
-			</svg>
-		{/if}
-	</button>
-{/if}

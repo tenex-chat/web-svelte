@@ -537,7 +537,6 @@
 		}
 	}
 
-	}
 </script>
 
 <div class="border-t border-border/50 p-4">
@@ -791,16 +790,15 @@
 </div>
 
 <!-- Agent Configuration Dialog -->
-{#if onlineAgents.length > 0 && agentToConfigurePubkey}
+{#if project && onlineAgents.length > 0 && agentToConfigurePubkey}
 	{@const agentToConfig = onlineAgents.find((a) => a.pubkey === agentToConfigurePubkey)}
 	{#if agentToConfig}
 		<AgentConfigDialog
 			bind:open={configDialogOpen}
-			project={project}
+			{project}
 			agent={agentToConfig}
 			availableModels={availableModels}
 			availableTools={availableTools}
-		/>
 		/>
 	{/if}
 {/if}

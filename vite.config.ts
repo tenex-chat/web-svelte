@@ -117,13 +117,6 @@ export default defineConfig({
 		commonjsOptions: {
 			include: [/node_modules/],
 			transformMixedEsModules: true
-		},
-		rollupOptions: {
-			output: {
-				manualChunks: {
-					'vad-web': ['@ricky0123/vad-web']
-				}
-			}
 		}
 	},
 	worker: {
