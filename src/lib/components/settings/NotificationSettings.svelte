@@ -66,7 +66,7 @@
 							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							notifications.projectUpdates ? 'translate-x-6' : 'translate-x-1'
 						)}
-					/>
+					></span>
 				</button>
 			</div>
 
@@ -96,7 +96,7 @@
 							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							notifications.taskAssignments ? 'translate-x-6' : 'translate-x-1'
 						)}
-					/>
+					></span>
 				</button>
 			</div>
 
@@ -126,7 +126,7 @@
 							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							notifications.agentResponses ? 'translate-x-6' : 'translate-x-1'
 						)}
-					/>
+					></span>
 				</button>
 			</div>
 
@@ -154,7 +154,7 @@
 							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							notifications.threadReplies ? 'translate-x-6' : 'translate-x-1'
 						)}
-					/>
+					></span>
 				</button>
 			</div>
 
@@ -180,7 +180,7 @@
 							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							notifications.mentions ? 'translate-x-6' : 'translate-x-1'
 						)}
-					/>
+					></span>
 				</button>
 			</div>
 		</div>
@@ -215,7 +215,7 @@
 							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							notifications.soundEnabled ? 'translate-x-6' : 'translate-x-1'
 						)}
-					/>
+					></span>
 				</button>
 			</div>
 

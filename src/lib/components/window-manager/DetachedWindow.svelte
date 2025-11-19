@@ -279,11 +279,6 @@
 		user-select: none;
 	}
 
-	.detached-window.dragging * {
-		user-select: none;
-		pointer-events: none;
-	}
-
 	.resize-handle {
 		background: linear-gradient(135deg, transparent 50%, #9ca3af 50%);
 	}

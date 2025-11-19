@@ -115,7 +115,7 @@
 							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							uploadConfig.compressImages ? 'translate-x-6' : 'translate-x-1'
 						)}
-					/>
+					></span>
 				</button>
 			</div>
 
@@ -143,7 +143,7 @@
 							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							uploadConfig.stripExif ? 'translate-x-6' : 'translate-x-1'
 						)}
-					/>
+					></span>
 				</button>
 			</div>
 		</div>

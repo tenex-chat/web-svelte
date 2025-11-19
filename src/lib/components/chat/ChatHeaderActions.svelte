@@ -24,7 +24,7 @@
 {/if}
 
 <!-- Copy Thread Menu -->
-<CopyThreadMenu {messages} {rootEvent} />
+<CopyThreadMenu {messages} rootEvent={rootEvent ?? null} />
 
 <!-- View Mode Toggle -->
 <button

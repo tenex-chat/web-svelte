@@ -168,7 +168,7 @@
 							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							settings.compactMode ? 'translate-x-6' : 'translate-x-1'
 						)}
-					/>
+					></span>
 				</button>
 			</div>
 
@@ -195,7 +195,7 @@
 							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							settings.animationsEnabled ? 'translate-x-6' : 'translate-x-1'
 						)}
-					/>
+					></span>
 				</button>
 			</div>
 
@@ -222,7 +222,7 @@
 							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							settings.streamingResponsesEnabled ? 'translate-x-6' : 'translate-x-1'
 						)}
-					/>
+					></span>
 				</button>
 			</div>
 		</div>

@@ -82,7 +82,7 @@
 		{#each suggestions as suggestion, index (`${event.id}-suggestion-${index}`)}
 			<button
 				type="button"
-				onclick={() => handleSuggestionClick(suggestion, index)}
+				onclick={() => handleSuggestionClick(suggestion)}
 				class={cn(
 					'group relative transition-all hover:border-muted-foreground text-sm',
 					'flex items-center gap-2 px-3 py-2 border border-border rounded-md',

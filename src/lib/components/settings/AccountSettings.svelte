@@ -26,7 +26,7 @@
 			<div class="space-y-4">
 				<!-- Profile Picture -->
 				<div class="flex items-center gap-4">
-					<User.Root user={ndk.$currentUser}>
+					<User.Root user={ndk.$currentUser} ndk={ndk}>
 						<User.Avatar class="w-16 h-16" />
 						<div>
 							<p class="text-sm font-medium text-foreground">
@@ -59,7 +59,7 @@
 				<!-- NIP-05 -->
 				<div>
 					<label class="block text-sm font-medium text-foreground mb-1">NIP-05</label>
-					<User.Root user={ndk.$currentUser}>
+					<User.Root user={ndk.$currentUser} ndk={ndk}>
 						<User.Nip05 showVerified={true} class="text-sm text-foreground" />
 					</User.Root>
 				</div>

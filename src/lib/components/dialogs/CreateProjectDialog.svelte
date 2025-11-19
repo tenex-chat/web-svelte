@@ -253,7 +253,7 @@
 									'h-0.5 w-8',
 									index < currentStepIndex ? 'bg-primary' : 'bg-border'
 								)}
-							/>
+							></div>
 						{/if}
 					</div>
 				{/each}
