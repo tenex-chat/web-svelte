@@ -3,10 +3,9 @@
 
 	interface Props {
 		open?: boolean;
-		onOpenChange?: (open: boolean) => void;
 	}
 
-	let { open = $bindable(false), onOpenChange }: Props = $props();
+	let { open = $bindable(false) }: Props = $props();
 
 	let query = $state('');
 	let searchResults = $state<{ type: string; title: string; href: string }[]>([]);
@@ -14,7 +13,6 @@
 
 	function handleClose() {
 		open = false;
-		onOpenChange?.(false);
 		query = '';
 		searchResults = [];
 		selectedIndex = 0;

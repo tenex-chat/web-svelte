@@ -5,10 +5,9 @@
 
 	interface Props {
 		open?: boolean;
-		onOpenChange?: (open: boolean) => void;
 	}
 
-	let { open = $bindable(false), onOpenChange }: Props = $props();
+	let { open = $bindable(false) }: Props = $props();
 
 	let name = $state('');
 	let provider = $state<AIProvider>('openai');
@@ -30,7 +29,6 @@
 
 	function handleClose() {
 		open = false;
-		onOpenChange?.(false);
 		name = '';
 		provider = 'openai';
 		model = '';

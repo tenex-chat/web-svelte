@@ -9,12 +9,11 @@
 
 	interface Props {
 		open?: boolean;
-		onOpenChange?: (open: boolean) => void;
 		currentPrompt: string;
 		onUpdatePrompt: (prompt: string) => void;
 	}
 
-	let { open = $bindable(false), onOpenChange, currentPrompt, onUpdatePrompt }: Props = $props();
+	let { open = $bindable(false), currentPrompt, onUpdatePrompt }: Props = $props();
 
 	let selectedConfigId = $state('');
 	let instructions = $state('');
@@ -27,7 +26,6 @@
 
 	function handleClose() {
 		open = false;
-		onOpenChange?.(false);
 		resetState();
 	}
 

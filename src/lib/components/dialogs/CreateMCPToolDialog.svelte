@@ -5,12 +5,10 @@
 
 	interface Props {
 		open?: boolean;
-		onOpenChange?: (open: boolean) => void;
 		tool?: NDKMCPTool | null;
-		onClose?: () => void;
 	}
 
-	let { open = $bindable(false), onOpenChange, tool = null, onClose }: Props = $props();
+	let { open = $bindable(false), tool = null }: Props = $props();
 
 	let name = $state('');
 	let description = $state('');
@@ -39,8 +37,6 @@
 
 	function handleClose() {
 		open = false;
-		onOpenChange?.(false);
-		onClose?.();
 		resetForm();
 	}
 

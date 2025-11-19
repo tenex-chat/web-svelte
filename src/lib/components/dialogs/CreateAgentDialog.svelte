@@ -23,12 +23,11 @@
 
 	interface Props {
 		open?: boolean;
-		onOpenChange?: (open: boolean) => void;
 		forkAgent?: ForkAgentData;
 		cloneMode?: boolean;
 	}
 
-	let { open = $bindable(false), onOpenChange, forkAgent, cloneMode = false }: Props = $props();
+	let { open = $bindable(false), forkAgent, cloneMode = false }: Props = $props();
 
 	type WizardStep = 'basics' | 'prompt' | 'preview' | 'tools' | 'phases' | 'criteria';
 
@@ -105,7 +104,6 @@
 
 	function handleClose() {
 		open = false;
-		onOpenChange?.(false);
 		resetForm();
 	}
 

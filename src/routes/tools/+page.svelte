@@ -50,10 +50,12 @@
 		showCreateDialog = true;
 	}
 
-	function handleCloseDialog() {
-		showCreateDialog = false;
-		editingTool = null;
-	}
+	// Reset editingTool when dialog closes
+	$effect(() => {
+		if (!showCreateDialog) {
+			editingTool = null;
+		}
+	});
 
 	const myToolsCount = $derived(
 		allTools.filter((tool) => tool.pubkey === ndk.$currentUser?.pubkey).length
@@ -153,5 +155,4 @@
 <CreateMCPToolDialog
 	bind:open={showCreateDialog}
 	tool={editingTool}
-	onClose={handleCloseDialog}
 />

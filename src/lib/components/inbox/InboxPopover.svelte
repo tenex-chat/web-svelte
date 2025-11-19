@@ -6,11 +6,10 @@
 
 	interface Props {
 		open?: boolean;
-		onOpenChange?: (open: boolean) => void;
 		children?: any;
 	}
 
-	let { open = $bindable(false), onOpenChange, children }: Props = $props();
+	let { open = $bindable(false), children }: Props = $props();
 
 	let triggerRef: HTMLElement | null = $state(null);
 	let popoverRef: HTMLDivElement | null = $state(null);
@@ -62,7 +61,6 @@
 		if (open) {
 			calculatePosition();
 		}
-		onOpenChange?.(open);
 	}
 
 	function handleClickOutside(event: MouseEvent) {
@@ -74,26 +72,22 @@
 			!popoverRef.contains(event.target as Node)
 		) {
 			open = false;
-			onOpenChange?.(false);
 		}
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape' && open) {
 			open = false;
-			onOpenChange?.(false);
 		}
 	}
 
 	function handleOpenInboxPage() {
 		open = false;
-		onOpenChange?.(false);
 		goto('/inbox');
 	}
 
 	function handleEventClick(eventId: string) {
 		open = false;
-		onOpenChange?.(false);
 		goto(`/chat/${eventId}`);
 	}
 
