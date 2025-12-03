@@ -7,6 +7,7 @@
 	import { Trash2, Plus, ArrowLeft, Search, Star, X } from 'lucide-svelte';
 	import { User } from '$lib/ndk/ui/user';
 	import Portal from 'svelte-portal';
+	import { storage } from '$lib/utils/storage.svelte';
 
 	let nudges = $state<NDKEvent[]>([]);
 	let loading = $state(true);
@@ -24,16 +25,9 @@
 		tags: ''
 	});
 
-	// Load saved nudges from localStorage
+	// Load saved nudges from storage
 	onMount(async () => {
-		const saved = localStorage.getItem('saved_nudges');
-		if (saved) {
-			try {
-				savedNudges = JSON.parse(saved);
-			} catch {
-				savedNudges = [];
-			}
-		}
+		savedNudges = storage.get('saved_nudges') ?? [];
 		await fetchNudges();
 	});
 
@@ -141,7 +135,7 @@
 		} else {
 			savedNudges = [...savedNudges, nudgeId];
 		}
-		localStorage.setItem('saved_nudges', JSON.stringify(savedNudges));
+		storage.set('saved_nudges', savedNudges);
 	}
 
 	function getNudgeTitle(nudge: NDKEvent): string {

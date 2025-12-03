@@ -10,6 +10,7 @@
 	import ConversationMetadataDisplay from '../chat/ConversationMetadataDisplay.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import type { ThreadViewMode, Message } from '$lib/utils/messageUtils';
+	import { storage } from '$lib/utils/storage.svelte';
 
 	interface Props {
 		window: WindowConfig;
@@ -20,7 +21,6 @@
 	let viewMode = $state<ThreadViewMode>('threaded');
 	let messages = $state<Message[]>([]);
 
-	const STORAGE_KEY = 'drawer-width-vw';
 	const DEFAULT_WIDTH_VW = 65;
 	const MIN_WIDTH_VW = 20;
 	const MAX_WIDTH_VW = 95;
@@ -36,14 +36,9 @@
 	const agentPubkey = $derived(window.type === 'agent' ? window.data?.agentPubkey : null);
 
 	$effect(() => {
-		if (typeof localStorage !== 'undefined') {
-			const stored = localStorage.getItem(STORAGE_KEY);
-			if (stored) {
-				const parsed = parseFloat(stored);
-				if (!isNaN(parsed) && parsed >= MIN_WIDTH_VW && parsed <= MAX_WIDTH_VW) {
-					widthVw = parsed;
-				}
-			}
+		const stored = storage.get('drawer-width');
+		if (stored && stored >= MIN_WIDTH_VW && stored <= MAX_WIDTH_VW) {
+			widthVw = stored;
 		}
 	});
 
@@ -81,9 +76,7 @@
 		const handleMouseUp = () => {
 			if (isResizing) {
 				isResizing = false;
-				if (typeof localStorage !== 'undefined') {
-					localStorage.setItem(STORAGE_KEY, widthVw.toString());
-				}
+				storage.set('drawer-width', widthVw);
 			}
 			document.removeEventListener('mousemove', handleMouseMove);
 			document.removeEventListener('mouseup', handleMouseUp);

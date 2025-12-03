@@ -5,6 +5,7 @@
 	import { NDKKind } from '$lib/kinds';
 	import { X, Loader2, FileText, Trash2, Hash as HashIcon } from 'lucide-svelte';
 	import { onMount } from 'svelte';
+	import { storage } from '$lib/utils/storage.svelte';
 
 	interface Props {
 		open: boolean;
@@ -23,7 +24,7 @@
 	let titleTextarea = $state<HTMLTextAreaElement>();
 	let contentTextarea = $state<HTMLTextAreaElement>();
 
-	const draftKey = $derived(`doc-draft-${project.dTag}`);
+	const projectId = $derived(project.dTag || '');
 
 	// Auto-resize title textarea
 	function resizeTitleTextarea() {
@@ -40,29 +41,24 @@
 
 	// Load draft on mount
 	onMount(() => {
-		if (open) {
-			const savedDraft = localStorage.getItem(draftKey);
-			if (savedDraft) {
-				try {
-					const draft = JSON.parse(savedDraft);
-					if (draft.title || draft.content || draft.hashtags?.length > 0) {
-						title = draft.title || '';
-						content = draft.content || '';
-						hashtags = draft.hashtags || [];
-						draftLoaded = true;
-					}
-				} catch (e) {
-					console.error('Failed to load draft:', e);
-				}
+		if (open && projectId) {
+			const drafts = storage.get('doc-drafts') ?? {};
+			const draft = drafts[projectId];
+			if (draft && (draft.title || draft.content || draft.hashtags?.length > 0)) {
+				title = draft.title || '';
+				content = draft.content || '';
+				hashtags = draft.hashtags || [];
+				draftLoaded = true;
 			}
 		}
 	});
 
-	// Save draft to localStorage
+	// Save draft to storage
 	$effect(() => {
-		if (title || content || hashtags.length > 0) {
-			const draft = { title, content, hashtags };
-			localStorage.setItem(draftKey, JSON.stringify(draft));
+		if (projectId && (title || content || hashtags.length > 0)) {
+			const drafts = storage.get('doc-drafts') ?? {};
+			drafts[projectId] = { title, content, hashtags };
+			storage.set('doc-drafts', drafts);
 		}
 	});
 
@@ -71,7 +67,11 @@
 		content = '';
 		hashtags = [];
 		draftLoaded = false;
-		localStorage.removeItem(draftKey);
+		if (projectId) {
+			const drafts = storage.get('doc-drafts') ?? {};
+			delete drafts[projectId];
+			storage.set('doc-drafts', drafts);
+		}
 	}
 
 	function handleHashtagKeydown(e: KeyboardEvent) {

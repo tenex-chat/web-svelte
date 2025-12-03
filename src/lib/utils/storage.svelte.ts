@@ -42,6 +42,9 @@ export type StorageSchema = {
 	'message-drafts': Record<string, string>;
 	'draft-timestamps': Record<string, number>;
 
+	// Conversation-specific nudge selections
+	'conversation-nudges': Record<string, string[]>;
+
 	// Project management
 	'tenex:openProjects': string[];
 	'project-filters': Record<string, string | null>;
@@ -83,6 +86,11 @@ export type StorageSchema = {
 	'tenex-windows': any[];
 	'last-inbox-visit': number;
 	'saved_nudges': string[];
+
+	// Component-level settings
+	'agent-voice-configs': Record<string, any>; // { [agentPubkey]: voiceConfig }
+	'drawer-width': number;
+	'doc-drafts': Record<string, { title: string; content: string; hashtags: string[] }>; // { [projectId]: draft }
 };
 
 type StorageKey = keyof StorageSchema;
@@ -130,7 +138,11 @@ class StorageService {
 			'tenex:call-settings',
 			'tenex-windows',
 			'last-inbox-visit',
-			'saved_nudges'
+			'saved_nudges',
+			'agent-voice-configs',
+			'drawer-width',
+			'doc-drafts',
+			'conversation-nudges'
 		];
 
 		for (const key of keys) {
@@ -298,6 +310,24 @@ class StorageService {
 		const filters = { ...(this.state['project-filters'] ?? {}) };
 		delete filters[projectId];
 		this.set('project-filters', filters);
+	}
+
+	// ========== Conversation nudge selections ==========
+
+	getConversationNudges(conversationId: string): string[] | undefined {
+		const nudges = this.state['conversation-nudges'];
+		return nudges?.[conversationId];
+	}
+
+	setConversationNudges(conversationId: string, nudgeIds: string[]): void {
+		const nudges = { ...(this.state['conversation-nudges'] ?? {}), [conversationId]: nudgeIds };
+		this.set('conversation-nudges', nudges);
+	}
+
+	clearConversationNudges(conversationId: string): void {
+		const nudges = { ...(this.state['conversation-nudges'] ?? {}) };
+		delete nudges[conversationId];
+		this.set('conversation-nudges', nudges);
 	}
 }
 

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Volume2, Settings2, Save } from 'lucide-svelte';
 	import { aiConfigStore } from '$lib/stores/aiConfig.svelte';
+	import { storage } from '$lib/utils/storage.svelte';
 
 	interface Props {
 		pubkey: string;
@@ -8,35 +9,22 @@
 
 	let { pubkey }: Props = $props();
 
-	const AGENT_VOICE_STORAGE_KEY = 'agent-voice-configs';
-
 	interface AgentVoiceConfig {
 		voiceId: string;
 		speed?: number;
 	}
 
-	// Load voice settings from localStorage
+	// Load voice settings from storage
 	function loadVoiceConfig(): AgentVoiceConfig | null {
-		try {
-			const stored = localStorage.getItem(AGENT_VOICE_STORAGE_KEY);
-			if (!stored) return null;
-			const configs = JSON.parse(stored);
-			return configs[pubkey] || null;
-		} catch {
-			return null;
-		}
+		const configs = storage.get('agent-voice-configs') ?? {};
+		return configs[pubkey] || null;
 	}
 
-	// Save voice settings to localStorage
+	// Save voice settings to storage
 	function saveVoiceConfig(config: AgentVoiceConfig) {
-		try {
-			const stored = localStorage.getItem(AGENT_VOICE_STORAGE_KEY);
-			const configs = stored ? JSON.parse(stored) : {};
-			configs[pubkey] = config;
-			localStorage.setItem(AGENT_VOICE_STORAGE_KEY, JSON.stringify(configs));
-		} catch (error) {
-			console.error('[AgentSettingsTab] Failed to save voice config:', error);
-		}
+		const configs = storage.get('agent-voice-configs') ?? {};
+		configs[pubkey] = config;
+		storage.set('agent-voice-configs', configs);
 	}
 
 	// Initialize with saved config or defaults from global settings
@@ -68,22 +56,15 @@
 	}
 
 	function handleResetVoice() {
-		try {
-			const stored = localStorage.getItem(AGENT_VOICE_STORAGE_KEY);
-			if (stored) {
-				const configs = JSON.parse(stored);
-				delete configs[pubkey];
-				localStorage.setItem(AGENT_VOICE_STORAGE_KEY, JSON.stringify(configs));
-			}
+		const configs = storage.get('agent-voice-configs') ?? {};
+		delete configs[pubkey];
+		storage.set('agent-voice-configs', configs);
 
-			// Reset to defaults
-			voiceId = '';
-			voiceSpeed = aiConfigStore.config.voiceSettings.speed;
+		// Reset to defaults
+		voiceId = '';
+		voiceSpeed = aiConfigStore.config.voiceSettings.speed;
 
-			console.log('[AgentSettingsTab] Voice settings reset to global defaults');
-		} catch (error) {
-			console.error('[AgentSettingsTab] Failed to reset voice settings:', error);
-		}
+		console.log('[AgentSettingsTab] Voice settings reset to global defaults');
 	}
 </script>
 

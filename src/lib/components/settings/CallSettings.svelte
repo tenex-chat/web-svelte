@@ -5,7 +5,6 @@
 
 	function clearLocalStorage() {
 		if (confirm('This will reset your voice call settings. Continue?')) {
-			localStorage.removeItem('tenex:call-settings');
 			callSettings.reset();
 			alert('Settings cleared! Reload the page to apply defaults.');
 		}
