@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKThread, NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKThread, type NDKEvent } from '@nostr-dev-kit/ndk';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { ConversationState } from '$lib/stores/conversation-state.svelte';
 	import { CallStore, type CallStoreOptions, type CallState } from '$lib/stores/call-store.svelte';
+	import { generateColorFromString } from '$lib/utils/colors';
 	import VoiceVisualizer from './VoiceVisualizer.svelte';
 	import AudioControls from './AudioControls.svelte';
 	import CallStatus from './CallStatus.svelte';
@@ -222,54 +222,37 @@
 		return callStore.vad.enabled ? 'Auto-detect' : 'Push-to-talk';
 	});
 
-	// Initialize call store on mount
-	onMount(async () => {
-		try {
-			// Create CallStore with options
-			const options: CallStoreOptions = {
-				threadManagement,
-				messages,
-				userPubkey: ndk.$currentUser?.pubkey,
-				activeAgent,
-				onStateChange: (state) => {
-					callState = state;
-				}
-			};
+	// Initialize and manage CallStore lifecycle
+	$effect(() => {
+		// Create CallStore with options
+		const options: CallStoreOptions = {
+			threadManagement,
+			messages,
+			userPubkey: ndk.$currentUser?.pubkey,
+			activeAgent,
+			onStateChange: (state) => {
+				callState = state;
+			}
+		};
 
-			callStore = new CallStore(options);
+		const store = new CallStore(options);
+		callStore = store;
 
-			// Initialize the call
-			await callStore.initialize();
+		// Initialize the call
+		store.initialize()
+			.then(() => {
+				console.log('[CallView] Call initialized successfully');
+			})
+			.catch((error) => {
+				console.error('[CallView] Failed to initialize call:', error);
+			});
 
-			console.log('[CallView] Call initialized successfully');
-		} catch (error) {
-			console.error('[CallView] Failed to initialize call:', error);
-		}
-	});
-
-	// Cleanup on unmount
-	onDestroy(() => {
-		if (callStore) {
+		// Cleanup when effect reruns or component unmounts
+		return () => {
 			console.log('[CallView] Cleaning up CallStore');
-			callStore.destroy();
-		}
+			store.destroy();
+		};
 	});
-
-	// Generate deterministic color from project
-	function getProjectColor(project: any): string {
-		const dTag = project.dTag || project.id || project.title || '';
-		if (!dTag) return '#94a3b8';
-
-		let hash = 0;
-		for (let i = 0; i < dTag.length; i++) {
-			const char = dTag.charCodeAt(i);
-			hash = (hash << 5) - hash + char;
-			hash = hash & hash;
-		}
-
-		const hue = Math.abs(hash) % 360;
-		return `hsl(${hue}, 65%, 55%)`;
-	}
 
 	// Handle microphone toggle
 	async function handleMicToggle() {
@@ -355,7 +338,7 @@
 			<VoiceVisualizer
 				isActive={callStore?.audioRecorder.isRecording || false}
 				audioLevel={callStore?.audioRecorder.audioLevel || 0}
-				color={getProjectColor(project)}
+				color={generateColorFromString(project.dTag || project.id || project.title || '')}
 			/>
 		</div>
 
