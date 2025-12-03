@@ -122,7 +122,7 @@
 		/>
 
 		<!-- Input -->
-		 <div class="fixed bottom-0 w-full z-[1000]">
+		 <div class="absolute left-0 right-0 bottom-0 z-[100]">
 			<ChatInput
 				{project}
 				rootEvent={localRootEvent}
