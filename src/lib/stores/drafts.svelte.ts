@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { TIMING } from '$lib/constants';
+import { SvelteMap } from 'svelte/reactivity';
 
 const STORAGE_KEY = 'message-drafts';
 const TIMESTAMP_KEY = 'draft-timestamps';
@@ -9,7 +10,7 @@ interface DraftTimestamps {
 }
 
 class DraftStore {
-	drafts = $state<Map<string, string>>(new Map());
+	drafts = $state(new SvelteMap<string, string>());
 
 	constructor() {
 		if (browser) {
@@ -24,9 +25,9 @@ class DraftStore {
 		if (stored) {
 			try {
 				const obj = JSON.parse(stored);
-				this.drafts = new Map(Object.entries(obj));
+				this.drafts = new SvelteMap(Object.entries(obj));
 			} catch {
-				this.drafts = new Map();
+				this.drafts = new SvelteMap();
 			}
 		}
 	}
