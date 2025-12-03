@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { callSettings, type VADMode, type InterruptionMode, type InterruptionSensitivity } from '$lib/stores/call-settings.svelte';
-	import { cn } from '$lib/utils/cn';
+	import { callSettings, type InterruptionSensitivity } from '$lib/stores/call-settings.svelte';
 
 	const settings = $derived(callSettings.settings);
 

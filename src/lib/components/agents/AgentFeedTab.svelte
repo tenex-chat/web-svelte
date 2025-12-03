@@ -1,13 +1,10 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { NDKKind } from '$lib/kinds';
 	import { NDKAgentLesson } from '$lib/events/NDKAgentLesson';
 	import { Activity } from 'lucide-svelte';
 	import Message from '../chat/Message.svelte';
 	import LessonCard from './LessonCard.svelte';
 	import GenericEventCard from '../events/GenericEventCard.svelte';
-	import VirtualList from '@humanspeak/svelte-virtual-list';
 
 	interface Props {
 		pubkey: string;

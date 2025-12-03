@@ -1,6 +1,8 @@
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
 import { NDKKind } from '$lib/kinds';
 
+export type ThreadViewMode = 'threaded' | 'flattened';
+
 export interface Message {
 	id: string;
 	event: NDKEvent;

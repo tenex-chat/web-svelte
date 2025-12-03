@@ -1,6 +1,5 @@
 import { NDKEvent, type NostrEvent } from '@nostr-dev-kit/ndk';
 import type NDK from '@nostr-dev-kit/ndk';
-import { NDKKind } from '$lib/kinds';
 
 /**
  * NDKAgentDefinitionPack represents a collection of agent definitions.

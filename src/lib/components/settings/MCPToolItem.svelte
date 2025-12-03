@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKMCPTool } from '$lib/events/NDKMCPTool';
-	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { Trash } from 'lucide-svelte';
 
 	interface Props {

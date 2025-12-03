@@ -7,8 +7,7 @@
 	import CallView from '../call/CallView.svelte';
 	import AgentProfileTabs from '../agents/AgentProfileTabs.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
-	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
-	import type { Message } from '$lib/utils/messageProcessor';
+	import type { ThreadViewMode, Message } from '$lib/utils/messageUtils';
 	import CopyThreadMenu from '../chat/CopyThreadMenu.svelte';
 
 	interface Props {

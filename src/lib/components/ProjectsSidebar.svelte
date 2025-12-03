@@ -4,8 +4,6 @@
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { User } from '$lib/ndk/ui/user';
-	import { openProjects } from '$lib/stores/openProjects.svelte';
-	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { sidebarCollapsedStore } from '$lib/stores/sidebarCollapsed.svelte';
 	import { inboxStore } from '$lib/stores/inbox.svelte';
 	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
@@ -31,14 +29,10 @@
 		Layers,
 		ChevronDown,
 		Pencil,
-		Trash2,
 		Pin
 	} from 'lucide-svelte';
 	import {
 		projectGroupsStore,
-		saveProjectGroup,
-		updateProjectGroup,
-		deleteProjectGroup,
 		selectedProjectGroupStore,
 		type ProjectGroup
 	} from '$lib/utils/projectGroups';
@@ -171,10 +165,6 @@
 			ndk.$sessions.logout(ndk.$currentUser.pubkey);
 		}
 		window.location.href = '/';
-	}
-
-	function handleProjectClick(project: NDKProject) {
-		openProjects.toggle(project);
 	}
 
 </script>

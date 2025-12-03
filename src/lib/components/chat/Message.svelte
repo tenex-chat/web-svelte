@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import type { Message } from '$lib/utils/messageProcessor';
+	import type { Message } from '$lib/utils/messageUtils';
 	import { Streamdown } from 'svelte-streamdown';
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKKind } from '$lib/kinds';
 	import { User } from '$lib/ndk/ui/user';
-	import { NDKProject } from '$lib/events/NDKProject';
 	import AIReasoningBlock from './AIReasoningBlock.svelte';
 	import ToolCallContent from './ToolCallContent.svelte';
 	import SuggestionButtons from './SuggestionButtons.svelte';

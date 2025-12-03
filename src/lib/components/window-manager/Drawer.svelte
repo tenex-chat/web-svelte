@@ -9,8 +9,7 @@
 	import ChatHeaderActions from '../chat/ChatHeaderActions.svelte';
 	import ConversationMetadataDisplay from '../chat/ConversationMetadataDisplay.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
-	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
-	import type { Message } from '$lib/utils/messageProcessor';
+	import type { ThreadViewMode, Message } from '$lib/utils/messageUtils';
 
 	interface Props {
 		window: WindowConfig;

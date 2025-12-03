@@ -3,7 +3,6 @@
 	import { NDKKind } from '$lib/kinds';
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 	import { clickOutside } from '$lib/utils/clickOutside';
 	import Portal from 'svelte-portal';
 	import { Plus, SquareSlash } from 'lucide-svelte';

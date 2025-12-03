@@ -2,8 +2,7 @@
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
-	import type { ThreadViewMode } from '$lib/utils/messageProcessor';
-	import type { Message } from '$lib/utils/messageProcessor';
+	import type { ThreadViewMode, Message } from '$lib/utils/messageUtils';
 	import { ndk } from '$lib/ndk.svelte';
 	import MessageList from './MessageList.svelte';
 	import ChatInput from './ChatInput.svelte';

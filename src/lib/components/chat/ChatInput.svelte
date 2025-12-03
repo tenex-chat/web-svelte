@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKThread, NDKEvent } from '@nostr-dev-kit/ndk';
-	import { NDKKind } from '$lib/kinds';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
