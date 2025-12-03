@@ -11,7 +11,6 @@ TENEX is a Nostr-based platform for coordinating AI agents and managing multi-ag
 - **Project-based collaboration** - Organize work with AI agents in project spaces
 - **Multi-agent orchestration** - Coordinate multiple AI agents (GPT-4, Claude, Gemini, etc.)
 - **Real-time communication** - Chat with agents using Nostr protocol (NIP-22 threading)
-- **Brainstorm mode** - Multiple agents respond, moderator selects best answers
 - **MCP tools integration** - Give agents access to Model Context Protocol tools
 - **Decentralized** - All data lives on Nostr relays, no central server
 
@@ -165,7 +164,6 @@ $effect(() => { /* ... */ });
 | 11 | Thread | Root conversation events |
 | 1111 | GenericReply | Replies to threads |
 | 4199 | AgentDefinition | AI agent definitions |
-| 7 | Reaction | Brainstorm mode selections |
 | 513 | ConversationMetadata | Thread titles/summaries |
 | 21111 | StreamingResponse | Delta content from agents |
 | 24010 | ProjectStatus | Real-time agent/model status |
@@ -227,7 +225,6 @@ See [STATUS.md](./STATUS.md) for detailed progress tracking.
 - [x] Centralized project status store
 
 **Next Phase**: Advanced features
-- [ ] Brainstorm mode
 - [ ] Documentation tab
 - [ ] Image upload via Blossom
 - [ ] Voice input/output

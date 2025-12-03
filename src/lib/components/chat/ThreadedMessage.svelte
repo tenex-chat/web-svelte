@@ -71,7 +71,6 @@
 			if (currentEvent) {
 				repliesState = new ConversationState(ndk, currentEvent, {
 					viewMode: 'threaded',
-					isBrainstorm: false,
 					currentUserPubkey: ndk.$currentUser?.pubkey,
 					directRepliesOnly: true, // Only fetch direct replies to this event
 					debug: false // Disable debug logging

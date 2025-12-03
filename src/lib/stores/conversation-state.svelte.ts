@@ -18,7 +18,6 @@ interface StreamingSession {
 
 interface ConversationOptions {
 	viewMode?: ThreadViewMode;
-	isBrainstorm?: boolean;
 	currentUserPubkey?: string;
 	directRepliesOnly?: boolean;
 	debug?: boolean; // Enable debug logging
@@ -36,7 +35,6 @@ export class ConversationState {
 	// Options
 	private rootEvent: NDKEvent | null;
 	private viewMode: ThreadViewMode;
-	private isBrainstorm: boolean;
 	private currentUserPubkey?: string;
 	private directRepliesOnly: boolean;
 	private debug: boolean;
@@ -50,10 +48,6 @@ export class ConversationState {
 	private reconnectAttempts = 0;
 	private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 	private isDestroyed = false;
-
-	// Brainstorm mode state
-	private selectedEventIds = new SvelteSet<string>();
-	private hasModeratorSelections = false;
 
 	// Performance metrics
 	private conversationId: string;
@@ -207,7 +201,6 @@ export class ConversationState {
 	) {
 		this.rootEvent = rootEvent;
 		this.viewMode = options.viewMode ?? 'threaded';
-		this.isBrainstorm = options.isBrainstorm ?? false;
 		this.currentUserPubkey = options.currentUserPubkey;
 		this.directRepliesOnly = options.directRepliesOnly ?? false;
 		this.debug = options.debug ?? false;
@@ -348,14 +341,7 @@ export class ConversationState {
 			NDKKind.TenexStreamingResponse
 		];
 
-		if (this.isBrainstorm) {
-			// Brainstorm mode filters
-			filters.push(
-				{ kinds: [1111, 7], ...this.rootEvent.filter() },
-				{ kinds: [1111, 7], ...this.rootEvent.nip22Filter() },
-				{ kinds: streamingKinds, limit: 100, ...this.rootEvent.nip22Filter() }
-			);
-		} else if (this.directRepliesOnly) {
+		if (this.directRepliesOnly) {
 			// Direct replies only (for threaded view)
 			filters.push(
 				{
@@ -372,8 +358,8 @@ export class ConversationState {
 		} else {
 			// Regular conversation filters
 			filters.push(
-				{ kinds: [11, NDKKind.GenericReply, 7, NDKKind.TenexConversationMetadata as number], ...this.rootEvent.filter() },
-				{ kinds: [11, NDKKind.GenericReply, 7, NDKKind.TenexConversationMetadata as number], ...this.rootEvent.nip22Filter() },
+				{ kinds: [11, NDKKind.GenericReply, NDKKind.TenexConversationMetadata as number], ...this.rootEvent.filter() },
+				{ kinds: [11, NDKKind.GenericReply, NDKKind.TenexConversationMetadata as number], ...this.rootEvent.nip22Filter() },
 				{ kinds: streamingKinds, limit: 100, ...this.rootEvent.nip22Filter() }
 			);
 		}
@@ -394,14 +380,8 @@ export class ConversationState {
 			return;
 		}
 
-		// Apply brainstorm filtering if needed
-		if (this.isBrainstorm && !this.shouldShowInBrainstormMode(event)) {
-			this.log('Event filtered out by brainstorm mode', { eventId: event.id });
-			return;
-		}
-
 		// Apply view mode filtering
-		if (!this.isBrainstorm && this.viewMode === 'threaded' && !this.isDirectReplyToRoot(event)) {
+		if (this.viewMode === 'threaded' && !this.isDirectReplyToRoot(event)) {
 			this.log('Event filtered out by threaded view mode', { eventId: event.id });
 			return;
 		}
@@ -429,10 +409,6 @@ export class ConversationState {
 
 			case NDKKind.TenexConversationMetadata: // 513 - Conversation metadata
 				this.handleMetadataEvent(event);
-				break;
-
-			case 7: // Reaction/moderation event
-				this.handleModerationEvent(event);
 				break;
 
 			case 11: // Thread/conversation root
@@ -549,28 +525,6 @@ export class ConversationState {
 	}
 
 	/**
-	 * Handle moderation/selection event (kind 7)
-	 */
-	private handleModerationEvent(event: NDKEvent): void {
-		if (!this.isBrainstorm || !this.rootEvent) return;
-
-		// Update selected event IDs for brainstorm filtering
-		const rootETag = event.tagValue('E');
-		if (rootETag === this.rootEvent.id) {
-			const eTags = event.getMatchingTags('e');
-			for (const tag of eTags) {
-				const selectedEventId = tag[1];
-				if (selectedEventId && selectedEventId !== this.rootEvent.id) {
-					this.selectedEventIds.add(selectedEventId);
-				}
-			}
-			this.hasModeratorSelections = this.selectedEventIds.size > 0;
-		}
-
-		// Don't add kind:7 events to the messages
-	}
-
-	/**
 	 * Handle regular message events
 	 */
 	private handleRegularMessage(event: NDKEvent): void {
@@ -613,28 +567,6 @@ export class ConversationState {
 	}
 
 	/**
-	 * Check if event should be shown in brainstorm mode
-	 */
-	private shouldShowInBrainstormMode(event: NDKEvent): boolean {
-		if (!this.rootEvent) return false;
-
-		// Always show root
-		if (event.id === this.rootEvent.id) return true;
-
-		// Always show current user's messages
-		if (this.currentUserPubkey && event.pubkey === this.currentUserPubkey) return true;
-
-		// Never show kind:7 selections in UI
-		if (event.kind === 7) return false;
-
-		// If no selections yet, only show root and user messages
-		if (!this.hasModeratorSelections) return false;
-
-		// Show only selected events
-		return this.selectedEventIds.has(event.id);
-	}
-
-	/**
 	 * Check if event is a direct reply to root
 	 */
 	private isDirectReplyToRoot(event: NDKEvent): boolean {
@@ -672,9 +604,6 @@ export class ConversationState {
 		this.messages.clear();
 		this.streamingSessions.clear();
 		this.typingIndicators.clear();
-
-		// Clear brainstorm state
-		this.selectedEventIds.clear();
 
 		this.log('ConversationState destroyed successfully');
 	}

@@ -98,7 +98,6 @@ describe('ConversationState - Threading Bug', () => {
 		// Create ConversationState with directRepliesOnly=true (as ThreadedMessage does)
 		const conversationState = new ConversationState(ndk, rootEvent, {
 			viewMode: 'threaded',
-			isBrainstorm: false,
 			directRepliesOnly: true,
 			debug: false
 		});

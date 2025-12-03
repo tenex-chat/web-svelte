@@ -96,7 +96,6 @@
 			if (localRootEvent) {
 				conversationState = new ConversationState(ndk, localRootEvent, {
 					viewMode: 'flattened',
-					isBrainstorm: false,
 					currentUserPubkey: ndk.$currentUser?.pubkey,
 					debug: true // Enable debug logging
 				});

@@ -12,7 +12,6 @@
 	interface Props {
 		rootEvent: NDKEvent;
 		viewMode?: 'threaded' | 'flattened';
-		isBrainstorm?: boolean;
 		onReply?: (message: MessageType) => void;
 		onQuote?: (message: MessageType) => void;
 		onTimeClick?: (event: NDKEvent) => void;
@@ -22,7 +21,6 @@
 	let {
 		rootEvent,
 		viewMode = 'threaded',
-		isBrainstorm = false,
 		onReply,
 		onQuote,
 		onTimeClick,
@@ -121,7 +119,6 @@
 			if (rootEvent) {
 				conversationState = new ConversationState(ndk, rootEvent, {
 					viewMode,
-					isBrainstorm,
 					currentUserPubkey: ndk.$currentUser?.pubkey,
 					debug: false // Disable debug logging now that issue is fixed
 				});
