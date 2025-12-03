@@ -14,6 +14,7 @@
     LinkClickCallback,
     MediaClickCallback
   } from '../../ui/content-renderer/index.svelte.js';
+    import { User } from '$lib/ndk/ui/user/index.js';
 
   interface Props {
     ndk: NDKSvelte;
@@ -56,15 +57,10 @@
     className
   )}
 >
-  <EventCard.ReplyIndicator class="text-xs" />
-
   <div class="flex items-center gap-2">
-    <EventCard.Header
-      variant="minimal"
-      showAvatar={true}
-      showTimestamp={true}
-      avatarSize="sm"
-    />
+    <User.Root {ndk} pubkey={event.pubkey}>
+      <User.Avatar class="w-5 h-5" />
+    </User.Root>
 
     <!-- Content - truncated to one line -->
     {#if content}

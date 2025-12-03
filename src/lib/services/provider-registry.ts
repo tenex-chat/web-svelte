@@ -2,8 +2,9 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createOllama } from "ollama-ai-provider-v2";
 
-export type ProviderType = "openai" | "anthropic" | "google" | "openrouter";
+export type ProviderType = "openai" | "anthropic" | "google" | "openrouter" | "ollama";
 
 export interface ProviderConfig {
   id: string;
@@ -17,7 +18,8 @@ type AIProvider =
   | ReturnType<typeof createOpenAI>
   | ReturnType<typeof createAnthropic>
   | ReturnType<typeof createGoogleGenerativeAI>
-  | ReturnType<typeof createOpenRouter>;
+  | ReturnType<typeof createOpenRouter>
+  | ReturnType<typeof createOllama>;
 
 export class ProviderRegistry {
   private providers = new Map<string, { provider: AIProvider; config: ProviderConfig }>();
@@ -50,6 +52,11 @@ export class ProviderRegistry {
           baseURL: config.baseURL,
         });
         break;
+      case "ollama":
+        provider = createOllama({
+          baseURL: config.baseURL || "http://localhost:11434",
+        });
+        break;
       default:
         throw new Error(`Unknown provider: ${config.provider}`);
     }
@@ -78,6 +85,8 @@ export class ProviderRegistry {
         return "gemini-1.5-flash";
       case "openrouter":
         return "openai/gpt-4o-mini";
+      case "ollama":
+        return "llama3.2";
       default:
         return "";
     }

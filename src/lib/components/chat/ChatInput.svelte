@@ -578,7 +578,7 @@
 
 	<!-- Glassy Input Container -->
 	<div class="relative rounded-2xl bg-card/40 backdrop-blur-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
-		<div class="flex flex-col p-3 gap-3">
+		<div class="flex flex-col p-3">
 			<!-- Textarea -->
 			<div class="flex-1 relative">
 				<textarea
@@ -590,8 +590,8 @@
 						? (rootEvent ? 'Type a message... (Cmd+Enter to send)' : 'Start a new conversation... (Cmd+Enter to send)')
 						: (rootEvent ? 'Type a message...' : 'Start a new conversation...')}
 					disabled={isSubmitting || !ndk.$currentUser}
-					class="w-full px-1 py-1 bg-transparent text-foreground rounded-lg resize-none focus:outline-none disabled:cursor-not-allowed placeholder:text-muted-foreground transition-all duration-200"
-					rows={isExpanded ? 30 : 2}
+					class="w-full bg-transparent text-foreground rounded-lg resize-none focus:outline-none disabled:cursor-not-allowed placeholder:text-muted-foreground transition-all duration-200"
+					rows={isExpanded ? 30 : 1}
 					style={isExpanded ? 'font-family: monospace; max-height: 60vh;' : ''}
 				></textarea>
 

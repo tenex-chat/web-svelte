@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
 // Provider types
-export type AIProvider = 'openai' | 'anthropic' | 'google' | 'openrouter' | 'custom';
+export type AIProvider = 'openai' | 'anthropic' | 'google' | 'openrouter' | 'ollama' | 'custom';
 export type TTSProvider = 'openai' | 'elevenlabs';
 export type STTProvider = 'whisper' | 'elevenlabs';
 

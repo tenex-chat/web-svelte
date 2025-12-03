@@ -5,6 +5,7 @@
 	import { createAnthropic } from '@ai-sdk/anthropic';
 	import { createGoogleGenerativeAI } from '@ai-sdk/google';
 	import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+	import { createOllama } from 'ollama-ai-provider-v2';
 	import { cn } from '$lib/utils/cn';
 
 	interface Props {
@@ -78,6 +79,11 @@
 						baseURL: selectedConfig.baseUrl
 					});
 					break;
+				case 'ollama':
+					provider = createOllama({
+						baseURL: selectedConfig.baseUrl || 'http://localhost:11434'
+					});
+					break;
 				case 'custom':
 					// For custom providers, use OpenAI-compatible API
 					provider = createOpenAI({
@@ -139,6 +145,8 @@ Respond ONLY with the full, rewritten system prompt text. Do not add any extra e
 				return 'gemini-1.5-flash';
 			case 'openrouter':
 				return 'openai/gpt-4o-mini';
+			case 'ollama':
+				return 'llama3.2';
 			case 'custom':
 				return 'gpt-4o-mini'; // Assume OpenAI-compatible for custom
 			default:

@@ -160,7 +160,7 @@
 				<button
 					type="button"
 					onclick={handleToggle}
-					class="flex items-center gap-1.5 text-xs text-primary hover:text-blue-700 transition-colors font-medium hover:bg-blue-50 px-2 py-1 rounded"
+					class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium hover:bg-muted px-2 py-1 rounded"
 				>
 					<!-- Avatar stack showing unique authors -->
 					<div class="flex -space-x-1.5">

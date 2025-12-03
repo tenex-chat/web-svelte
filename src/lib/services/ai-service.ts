@@ -231,6 +231,8 @@ Summary:`,
 				return 'gemini-1.5-flash';
 			case 'openrouter':
 				return 'openai/gpt-4o-mini';
+			case 'ollama':
+				return 'llama3.2';
 			default:
 				return '';
 		}

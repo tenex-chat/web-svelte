@@ -24,6 +24,7 @@
 		{ value: 'anthropic', label: 'Anthropic', defaultModel: 'claude-3-5-sonnet-20241022' },
 		{ value: 'google', label: 'Google', defaultModel: 'gemini-1.5-flash' },
 		{ value: 'openrouter', label: 'OpenRouter', defaultModel: 'openai/gpt-4o-mini' },
+		{ value: 'ollama', label: 'Ollama', defaultModel: 'llama3.2' },
 		{ value: 'custom', label: 'Custom', defaultModel: '' }
 	];
 
@@ -50,7 +51,7 @@
 	}
 
 	async function handleFetchModels() {
-		if (!apiKey.trim()) {
+		if (provider !== 'ollama' && !apiKey.trim()) {
 			fetchError = 'Please enter an API key first';
 			return;
 		}
@@ -76,7 +77,9 @@
 	}
 
 	async function handleSave() {
-		if (!name.trim() || !model.trim() || !apiKey.trim()) {
+		const apiKeyRequired = provider !== 'ollama';
+
+		if (!name.trim() || !model.trim() || (apiKeyRequired && !apiKey.trim())) {
 			alert('Please fill in all required fields');
 			return;
 		}
@@ -94,8 +97,11 @@
 				name: name.trim(),
 				provider,
 				model: model.trim(),
-				apiKey: apiKey.trim(),
-				baseUrl: provider === 'custom' ? baseUrl.trim() : undefined
+				apiKey: apiKey.trim() || '',
+				baseUrl:
+					provider === 'custom' || provider === 'ollama'
+						? baseUrl.trim() || undefined
+						: undefined
 			};
 
 			aiConfigStore.addLLMConfig(config);
@@ -186,10 +192,11 @@
 						<button
 							type="button"
 							onclick={handleFetchModels}
-							disabled={!apiKey.trim() || fetchingModels}
+							disabled={(provider !== 'ollama' && !apiKey.trim()) || fetchingModels}
 							class={cn(
 								'text-xs px-2 py-1 border border-border rounded hover:bg-accent transition-colors',
-								(!apiKey.trim() || fetchingModels) && 'opacity-50 cursor-not-allowed'
+								((provider !== 'ollama' && !apiKey.trim()) || fetchingModels) &&
+									'opacity-50 cursor-not-allowed'
 							)}
 						>
 							{fetchingModels ? '🔄 Fetching...' : '🔍 Fetch Available Models'}
@@ -238,6 +245,8 @@
 								Examples: gemini-1.5-pro, gemini-1.5-flash, gemini-pro
 							{:else if provider === 'openrouter'}
 								Examples: openai/gpt-4o, anthropic/claude-3.5-sonnet
+							{:else if provider === 'ollama'}
+								Examples: llama3.2, llama3.2:70b, codellama, mistral
 							{:else}
 								Enter your custom model identifier
 							{/if}
@@ -251,18 +260,23 @@
 
 				<div>
 					<label for="api-key" class="block text-sm font-medium mb-1">
-						API Key
+						API Key{provider === 'ollama' ? ' (Optional)' : ''}
 					</label>
 					<input
 						id="api-key"
 						type="password"
 						bind:value={apiKey}
 						class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-						placeholder="sk-..."
+						placeholder={provider === 'ollama' ? 'Leave empty for local instance' : 'sk-...'}
 					/>
+				{#if provider === 'ollama'}
+					<p class="text-xs text-muted-foreground mt-1">
+						Only required for remote Ollama servers with authentication
+					</p>
+				{/if}
 				</div>
 
-				{#if provider === 'custom'}
+				{#if provider === 'custom' || provider === 'ollama'}
 					<div>
 						<label for="base-url" class="block text-sm font-medium mb-1">
 							Base URL
@@ -272,8 +286,13 @@
 							type="text"
 							bind:value={baseUrl}
 							class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-							placeholder="https://api.your-llm-provider.com"
+							placeholder={provider === 'ollama' ? 'http://localhost:11434' : 'https://api.your-llm-provider.com'}
 						/>
+					{#if provider === 'ollama'}
+						<p class="text-xs text-muted-foreground mt-1">
+							Defaults to http://localhost:11434 if not specified
+						</p>
+					{/if}
 					</div>
 				{/if}
 			</div>
@@ -288,10 +307,16 @@
 				</button>
 				<button
 					onclick={handleSave}
-					disabled={!name.trim() || !model.trim() || !apiKey.trim() || saving}
+					disabled={!name.trim() ||
+						!model.trim() ||
+						(provider !== 'ollama' && !apiKey.trim()) ||
+						saving}
 					class={cn(
 						'flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors',
-						(!name.trim() || !model.trim() || !apiKey.trim() || saving) &&
+						(!name.trim() ||
+							!model.trim() ||
+							(provider !== 'ollama' && !apiKey.trim()) ||
+							saving) &&
 							'opacity-50 cursor-not-allowed'
 					)}
 				>

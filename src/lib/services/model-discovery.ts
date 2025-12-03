@@ -42,6 +42,9 @@ export async function fetchModels(
 			case 'google':
 				models = getGoogleModels();
 				break;
+			case 'ollama':
+				models = await fetchOllamaModels(baseUrl || 'http://localhost:11434');
+				break;
 			case 'custom':
 				// Try OpenAI-compatible endpoint
 				models = await fetchOpenAIModels(apiKey, baseUrl);
@@ -179,4 +182,57 @@ function getGoogleModels(): ModelInfo[] {
 			contextLength: 32000
 		}
 	];
+}
+
+/**
+ * Fetch models from Ollama API
+ * Ollama runs locally by default at http://localhost:11434
+ */
+async function fetchOllamaModels(baseUrl: string): Promise<ModelInfo[]> {
+	const url = `${baseUrl}/api/tags`;
+
+	try {
+		const response = await fetch(url);
+
+		if (!response.ok) {
+			if (response.status === 0 || !response.status) {
+				throw new Error(
+					'Cannot connect to Ollama. Is Ollama running? Start it with: ollama serve'
+				);
+			}
+			throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+		}
+
+		const data = await response.json();
+
+		if (!data.models || !Array.isArray(data.models)) {
+			return [];
+		}
+
+		return data.models
+			.map((model: any) => ({
+				id: model.name || model.model,
+				name: model.name || model.model,
+				description: model.size ? `Size: ${formatBytes(model.size)}` : undefined
+			}))
+			.sort((a: ModelInfo, b: ModelInfo) => a.id.localeCompare(b.id));
+	} catch (error) {
+		if (error instanceof TypeError && error.message.includes('fetch')) {
+			throw new Error(
+				'Cannot connect to Ollama. Is Ollama running? Start it with: ollama serve'
+			);
+		}
+		throw error;
+	}
+}
+
+/**
+ * Format bytes to human-readable string
+ */
+function formatBytes(bytes: number): string {
+	if (bytes === 0) return '0 Bytes';
+	const k = 1024;
+	const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+	const i = Math.floor(Math.log(bytes) / Math.log(k));
+	return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 }
