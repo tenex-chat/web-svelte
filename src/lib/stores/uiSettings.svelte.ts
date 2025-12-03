@@ -19,6 +19,7 @@ interface UISettings {
 	animationsEnabled: boolean;
 	streamingResponsesEnabled: boolean;
 	showReasoningEvents: boolean;
+	showMessageInfo: boolean;
 	colorScheme: string;
 	notifications: NotificationSettings;
 }
@@ -32,6 +33,7 @@ const defaultSettings: UISettings = {
 	animationsEnabled: true,
 	streamingResponsesEnabled: true,
 	showReasoningEvents: true,
+	showMessageInfo: true,
 	colorScheme: 'default',
 	notifications: {
 		projectUpdates: true,
@@ -150,6 +152,11 @@ class UISettingsStore {
 
 	setShowReasoningEvents(enabled: boolean) {
 		this.settings.showReasoningEvents = enabled;
+		this.save();
+	}
+
+	setShowMessageInfo(enabled: boolean) {
+		this.settings.showMessageInfo = enabled;
 		this.save();
 	}
 

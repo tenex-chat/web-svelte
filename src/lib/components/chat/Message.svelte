@@ -112,12 +112,14 @@
 
 		<!-- Message Content -->
 		<div class="flex-1 min-w-0">
-			<div class="text-xs text-muted-foreground font-mono mb-1">
-				<span class="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-					kind:{message.event.kind}
-				</span>
-				<span class="ml-2">id:{message.event.id.slice(0, 8)}</span>
-			</div>
+			{#if uiSettings.showMessageInfo}
+				<div class="text-xs text-muted-foreground font-mono mb-1">
+					<span class="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+						kind:{message.event.kind}
+					</span>
+					<span class="ml-2">id:{message.event.id.slice(0, 8)}</span>
+				</div>
+			{/if}
 			{#if !isConsecutive}
 				<div class="flex items-center gap-2 mb-1">
 					<User.Root {ndk} pubkey={message.event.pubkey}>

@@ -226,6 +226,13 @@
 				</button>
 			</div>
 
+		</div>
+	</div>
+
+	<!-- Debug Section -->
+	<div class="bg-card rounded-lg border border-border p-6">
+		<h3 class="text-lg font-semibold text-foreground mb-4">Debug</h3>
+		<div class="space-y-4">
 			<!-- Show Reasoning Events -->
 			<div class="flex items-center justify-between">
 				<div>
@@ -248,6 +255,33 @@
 						class={cn(
 							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
 							settings.showReasoningEvents ? 'translate-x-6' : 'translate-x-1'
+						)}
+					></span>
+				</button>
+			</div>
+
+			<!-- Show Message Info -->
+			<div class="flex items-center justify-between">
+				<div>
+					<label for="show-message-info" class="text-sm font-medium text-foreground">
+						Show Message Info
+					</label>
+					<p class="text-xs text-muted-foreground">Display message kind and ID for debugging</p>
+				</div>
+				<button
+					id="show-message-info"
+					onclick={() => uiSettingsStore.setShowMessageInfo(!settings.showMessageInfo)}
+					class={cn(
+						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+						settings.showMessageInfo ? 'bg-primary' : 'bg-secondary'
+					)}
+					role="switch"
+					aria-checked={settings.showMessageInfo}
+				>
+					<span
+						class={cn(
+							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
+							settings.showMessageInfo ? 'translate-x-6' : 'translate-x-1'
 						)}
 					></span>
 				</button>
