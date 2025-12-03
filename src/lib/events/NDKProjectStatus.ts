@@ -186,6 +186,22 @@ export class NDKProjectStatus extends NDKEvent {
 		}
 	}
 
+	/**
+	 * Get all worktrees from this status event
+	 * Returns array of branch names, with the first being the default branch
+	 */
+	get worktrees(): string[] {
+		const worktreeTags = this.tags.filter((tag) => tag[0] === 'branch' && tag[1]);
+		return worktreeTags.map((tag) => tag[1]);
+	}
+
+	/**
+	 * Get the default worktree (first in the list)
+	 */
+	get defaultWorktree(): string | undefined {
+		return this.worktrees[0];
+	}
+
 	static from(event: NDKEvent): NDKProjectStatus {
 		return new NDKProjectStatus(event.ndk, event.rawEvent());
 	}

@@ -1,26 +1,16 @@
 import { browser } from '$app/environment';
 import type { NDKProject } from '$lib/events/NDKProject';
 import { selectedProjectGroupStore, getProjectGroups } from '$lib/utils/projectGroups';
-
-const STORAGE_KEY = 'tenex:openProjects';
+import { storage } from '$lib/utils/storage.svelte';
 
 function loadFromStorage(): string[] {
 	if (!browser) return [];
-	try {
-		const stored = localStorage.getItem(STORAGE_KEY);
-		return stored ? JSON.parse(stored) : [];
-	} catch {
-		return [];
-	}
+	return storage.get('tenex:openProjects') ?? [];
 }
 
 function saveToStorage(ids: string[]) {
 	if (!browser) return;
-	try {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
-	} catch (error) {
-		console.error('Failed to save open projects:', error);
-	}
+	storage.set('tenex:openProjects', ids);
 }
 
 export const openProjects = (() => {

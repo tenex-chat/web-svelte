@@ -55,17 +55,15 @@ function sortEventsByTime(events: NDKEvent[], ascending = false): NDKEvent[] {
 	});
 }
 
+import { storage } from '$lib/utils/storage.svelte';
+
 /**
  * Helper to get persisted last visit timestamp
  */
 function getPersistedLastVisit(): number {
 	if (!browser) return Math.floor(Date.now() / 1000);
-
-	const stored = localStorage.getItem('last-inbox-visit');
-	if (stored) {
-		return parseInt(stored, 10);
-	}
-	return Math.floor(Date.now() / 1000);
+	const stored = storage.get('last-inbox-visit');
+	return stored ?? Math.floor(Date.now() / 1000);
 }
 
 /**
@@ -73,7 +71,7 @@ function getPersistedLastVisit(): number {
  */
 function persistLastVisit(timestamp: number): void {
 	if (!browser) return;
-	localStorage.setItem('last-inbox-visit', timestamp.toString());
+	storage.set('last-inbox-visit', timestamp);
 }
 
 class InboxStore {

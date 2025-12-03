@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
 import type { NDKProject } from '$lib/events/NDKProject';
 import { isElectron } from '$lib/utils/electron';
+import { storage } from '$lib/utils/storage.svelte';
 
 export type WindowType = 'chat' | 'settings' | 'agent' | 'document' | 'hashtag' | 'call';
 
@@ -28,41 +29,32 @@ class WindowManager {
 	}
 
 	private loadFromStorage() {
-		try {
-			const saved = localStorage.getItem('tenex-windows');
-			if (saved) {
-				const data = JSON.parse(saved);
-				// Don't restore windows on load - start fresh
-				// Could restore detached windows if desired
-			}
-		} catch (e) {
-			console.error('Failed to load windows from storage:', e);
+		const saved = storage.get('tenex-windows');
+		if (saved) {
+			// Don't restore windows on load - start fresh
+			// Could restore detached windows if desired
 		}
 	}
 
 	private saveToStorage() {
-		try {
-			const detachedWindows = this.windowsArray.filter((w) => w.isDetached);
+		const detachedWindows = this.windowsArray.filter((w) => w.isDetached);
 
-			// Transform windows to serializable format (remove circular references from NDK objects)
-			const serializableWindows = detachedWindows.map((w) => ({
-				id: w.id,
-				type: w.type,
-				title: w.title,
-				projectTagId: w.project?.tagId(),
-				threadId: w.data?.thread?.id,
-				agentPubkey: w.data?.agentPubkey,
-				agentName: w.data?.agentName,
-				isDetached: w.isDetached,
-				position: w.position,
-				size: w.size,
-				zIndex: w.zIndex
-			}));
+		// Transform windows to serializable format (remove circular references from NDK objects)
+		const serializableWindows = detachedWindows.map((w) => ({
+			id: w.id,
+			type: w.type,
+			title: w.title,
+			projectTagId: w.project?.tagId(),
+			threadId: w.data?.thread?.id,
+			agentPubkey: w.data?.agentPubkey,
+			agentName: w.data?.agentName,
+			isDetached: w.isDetached,
+			position: w.position,
+			size: w.size,
+			zIndex: w.zIndex
+		}));
 
-			localStorage.setItem('tenex-windows', JSON.stringify(serializableWindows));
-		} catch (e) {
-			console.error('Failed to save windows to storage:', e instanceof Error ? e.message : String(e));
-		}
+		storage.set('tenex-windows', serializableWindows);
 	}
 
 	/**

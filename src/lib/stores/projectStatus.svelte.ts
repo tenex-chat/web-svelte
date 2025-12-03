@@ -162,6 +162,24 @@ class ProjectStatusStore {
   }
 
   /**
+   * Get all worktrees for a project
+   * Returns array of branch names, with the first being the default branch
+   */
+  getWorktrees(projectId: string): string[] {
+    const status = this.getStatus(projectId);
+    if (!status) return [];
+    return status.worktrees;
+  }
+
+  /**
+   * Get the default worktree for a project
+   */
+  getDefaultWorktree(projectId: string): string | undefined {
+    const status = this.getStatus(projectId);
+    return status?.defaultWorktree;
+  }
+
+  /**
    * Get all online project IDs
    */
   get onlineProjects(): string[] {

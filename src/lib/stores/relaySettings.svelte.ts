@@ -1,7 +1,6 @@
 import { browser } from '$app/environment';
 import ndk from '$lib/ndk.svelte';
-
-const STORAGE_KEY = 'relay-settings';
+import { storage } from '$lib/utils/storage.svelte';
 
 class RelaySettingsStore {
 	relays = $state<string[]>([]);
@@ -13,25 +12,11 @@ class RelaySettingsStore {
 	}
 
 	private load() {
-		try {
-			const stored = localStorage.getItem(STORAGE_KEY);
-			if (stored) {
-				this.relays = JSON.parse(stored);
-			} else {
-				this.relays = Array.from(ndk.pool.relays.keys());
-			}
-		} catch (error) {
-			console.error('Failed to load relay settings:', error);
+		const stored = storage.get('relay-settings');
+		if (stored) {
+			this.relays = stored;
+		} else {
 			this.relays = Array.from(ndk.pool.relays.keys());
-		}
-	}
-
-	private save() {
-		if (!browser) return;
-		try {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(this.relays));
-		} catch (error) {
-			console.error('Failed to save relay settings:', error);
 		}
 	}
 
@@ -47,14 +32,14 @@ class RelaySettingsStore {
 		}
 
 		this.relays = [...this.relays, normalizedUrl];
-		this.save();
+		storage.set('relay-settings', this.relays);
 
 		ndk.addExplicitRelay(normalizedUrl);
 	}
 
 	removeRelay(url: string) {
 		this.relays = this.relays.filter((r) => r !== url);
-		this.save();
+		storage.set('relay-settings', this.relays);
 
 		const relay = ndk.pool.relays.get(url);
 		if (relay) {

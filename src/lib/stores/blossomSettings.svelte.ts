@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { storage } from '$lib/utils/storage.svelte';
 
 export interface BlossomServer {
 	url: string;
@@ -17,8 +18,6 @@ interface BlossomSettings {
 	servers: BlossomServer[];
 	uploadConfig: BlossomUploadConfig;
 }
-
-const STORAGE_KEY = 'blossom-settings';
 
 const defaultSettings: BlossomSettings = {
 	servers: [],
@@ -39,23 +38,15 @@ class BlossomSettingsStore {
 	}
 
 	private load() {
-		try {
-			const stored = localStorage.getItem(STORAGE_KEY);
-			if (stored) {
-				this.settings = { ...defaultSettings, ...JSON.parse(stored) };
-			}
-		} catch (error) {
-			console.error('Failed to load blossom settings:', error);
+		const stored = storage.get('blossom-settings');
+		if (stored) {
+			this.settings = { ...defaultSettings, ...stored };
 		}
 	}
 
 	private save() {
 		if (!browser) return;
-		try {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(this.settings));
-		} catch (error) {
-			console.error('Failed to save blossom settings:', error);
-		}
+		storage.set('blossom-settings', this.settings);
 	}
 
 	addServer(url: string, name?: string) {

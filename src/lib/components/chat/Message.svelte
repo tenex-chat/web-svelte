@@ -77,6 +77,28 @@
 		return phaseTag ? phaseTag[1] : null;
 	});
 
+	// Get branch information
+	const branchInfo = $derived.by(() => {
+		const branchTag = message.event.tags.find((tag) => tag[0] === 'branch');
+		return branchTag ? branchTag[1] : null;
+	});
+
+	// Generate deterministic color from branch name
+	function getBranchColor(branchName: string): string {
+		// Simple hash function
+		let hash = 0;
+		for (let i = 0; i < branchName.length; i++) {
+			hash = branchName.charCodeAt(i) + ((hash << 5) - hash);
+		}
+
+		// Convert to hue (0-360)
+		const hue = Math.abs(hash % 360);
+
+		// Use HSL for better color consistency
+		// Saturation 65% and lightness 45% for good visibility in both light/dark modes
+		return `hsl(${hue}, 65%, 45%)`;
+	}
+
 	let dropdownOpen = $state(false);
 	let showRawEvent = $state(false);
 	let showLLMMetadata = $state(false);
@@ -137,6 +159,17 @@
 					>
 						{timestamp}
 					</button>
+
+					<!-- Branch badge -->
+					{#if branchInfo}
+						<span
+							class="px-2 py-0.5 rounded-md text-[10px] font-medium text-white"
+							style="background-color: {getBranchColor(branchInfo)}"
+							title="Branch: {branchInfo}"
+						>
+							{branchInfo}
+						</span>
+					{/if}
 
 					<!-- P-tagged user avatars -->
 					{#if replyingTo.length > 0}

@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { storage } from '$lib/utils/storage.svelte';
 
 export type Theme = 'light' | 'dark' | 'system';
 export type FontSize = 'small' | 'medium' | 'large';
@@ -23,8 +24,6 @@ interface UISettings {
 	colorScheme: string;
 	notifications: NotificationSettings;
 }
-
-const STORAGE_KEY = 'ui-settings';
 
 const defaultSettings: UISettings = {
 	theme: 'system',
@@ -56,23 +55,15 @@ class UISettingsStore {
 	}
 
 	private load() {
-		try {
-			const stored = localStorage.getItem(STORAGE_KEY);
-			if (stored) {
-				this.settings = { ...defaultSettings, ...JSON.parse(stored) };
-			}
-		} catch (error) {
-			console.error('Failed to load UI settings:', error);
+		const stored = storage.get('ui-settings');
+		if (stored) {
+			this.settings = { ...defaultSettings, ...stored };
 		}
 	}
 
 	private save() {
 		if (!browser) return;
-		try {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(this.settings));
-		} catch (error) {
-			console.error('Failed to save UI settings:', error);
-		}
+		storage.set('ui-settings', this.settings);
 	}
 
 	private applySettings() {

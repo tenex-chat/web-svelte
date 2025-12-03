@@ -4,6 +4,7 @@
  */
 
 import { browser } from '$app/environment';
+import { storage } from '$lib/utils/storage.svelte';
 
 export type VADMode = 'disabled' | 'auto' | 'push-to-talk';
 export type InterruptionMode = 'disabled' | 'headphones';
@@ -42,37 +43,21 @@ const DEFAULT_SETTINGS: AudioSettings = {
 	interruptionSensitivity: 'medium'
 };
 
-const STORAGE_KEY = 'tenex:call-settings';
-
 /**
- * Load settings from localStorage
+ * Load settings from storage
  */
 function loadSettings(): AudioSettings {
 	if (!browser) return DEFAULT_SETTINGS;
-
-	try {
-		const stored = localStorage.getItem(STORAGE_KEY);
-		if (stored) {
-			return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
-		}
-	} catch (error) {
-		console.error('Failed to load call settings:', error);
-	}
-
-	return DEFAULT_SETTINGS;
+	const stored = storage.get('tenex:call-settings');
+	return stored ? { ...DEFAULT_SETTINGS, ...stored } : DEFAULT_SETTINGS;
 }
 
 /**
- * Save settings to localStorage
+ * Save settings to storage
  */
 function saveSettings(settings: AudioSettings): void {
 	if (!browser) return;
-
-	try {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-	} catch (error) {
-		console.error('Failed to save call settings:', error);
-	}
+	storage.set('tenex:call-settings', settings);
 }
 
 /**

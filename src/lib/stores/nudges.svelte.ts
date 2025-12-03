@@ -1,6 +1,7 @@
 import { ndk } from '$lib/ndk.svelte';
 import { NDKKind } from '$lib/kinds';
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
+import { storage } from '$lib/utils/storage.svelte';
 
 class NudgeStore {
 	nudges = $state<NDKEvent[]>([]);
@@ -8,16 +9,9 @@ class NudgeStore {
 	loading = $state(false);
 
 	constructor() {
-		// Load saved nudges from localStorage
+		// Load saved nudges from storage
 		if (typeof window !== 'undefined') {
-			const saved = localStorage.getItem('saved_nudges');
-			if (saved) {
-				try {
-					this.savedNudges = JSON.parse(saved);
-				} catch {
-					this.savedNudges = [];
-				}
-			}
+			this.savedNudges = storage.get('saved_nudges') ?? [];
 		}
 	}
 
@@ -46,7 +40,7 @@ class NudgeStore {
 			this.savedNudges = [...this.savedNudges, nudgeId];
 		}
 		if (typeof window !== 'undefined') {
-			localStorage.setItem('saved_nudges', JSON.stringify(this.savedNudges));
+			storage.set('saved_nudges', this.savedNudges);
 		}
 	}
 

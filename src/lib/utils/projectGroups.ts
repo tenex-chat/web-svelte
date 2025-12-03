@@ -1,8 +1,6 @@
 import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
-
-const STORAGE_KEY = 'tenex:projectGroups';
-const SELECTED_GROUP_KEY = 'tenex:selectedProjectGroup';
+import { storage } from './storage.svelte';
 
 export interface ProjectGroup {
 	id: string;
@@ -13,28 +11,19 @@ export interface ProjectGroup {
 }
 
 /**
- * Get all project groups from localStorage
+ * Get all project groups from storage
  */
 export function getProjectGroups(): ProjectGroup[] {
 	if (!browser) return [];
-
-	try {
-		const stored = localStorage.getItem(STORAGE_KEY);
-		if (!stored) return [];
-
-		return JSON.parse(stored);
-	} catch (error) {
-		console.error('Failed to parse project groups from localStorage:', error);
-		return [];
-	}
+	return storage.get('tenex:projectGroups') ?? [];
 }
 
 /**
- * Persist project groups to localStorage
+ * Persist project groups to storage
  */
 function persistProjectGroups(groups: ProjectGroup[]): void {
 	if (!browser) return;
-	localStorage.setItem(STORAGE_KEY, JSON.stringify(groups));
+	storage.set('tenex:projectGroups', groups);
 }
 
 /**
@@ -152,8 +141,7 @@ export function toggleGroupPin(groupId: string): boolean {
  */
 export function getSelectedProjectGroup(): string | null {
 	if (!browser) return null;
-
-	return localStorage.getItem(SELECTED_GROUP_KEY);
+	return storage.get('tenex:selectedProjectGroup') ?? null;
 }
 
 /**
@@ -163,9 +151,9 @@ export function setSelectedProjectGroup(groupId: string | null): void {
 	if (!browser) return;
 
 	if (groupId === null) {
-		localStorage.removeItem(SELECTED_GROUP_KEY);
+		storage.remove('tenex:selectedProjectGroup');
 	} else {
-		localStorage.setItem(SELECTED_GROUP_KEY, groupId);
+		storage.set('tenex:selectedProjectGroup', groupId);
 	}
 }
 

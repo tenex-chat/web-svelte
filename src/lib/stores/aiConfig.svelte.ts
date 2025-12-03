@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { storage } from '$lib/utils/storage.svelte';
 
 // Provider types
 export type AIProvider = 'openai' | 'anthropic' | 'google' | 'openrouter' | 'ollama' | 'custom';
@@ -81,49 +82,40 @@ class AIConfigStore {
 	}
 
 	private load() {
-		try {
-			// Load main config
-			const stored = localStorage.getItem(STORAGE_KEY);
-			if (stored) {
-				const parsed = JSON.parse(stored);
-				this.config = { ...defaultConfig, ...parsed };
-			}
+		// Load main config
+		const stored = storage.get('ai-config-v2');
+		if (stored) {
+			this.config = { ...defaultConfig, ...stored };
+		}
 
-			// Load LLM configs
-			const llmConfigsStored = localStorage.getItem(LLM_CONFIGS_KEY);
-			if (llmConfigsStored) {
-				this.config.llmConfigs = JSON.parse(llmConfigsStored);
-			}
+		// Load LLM configs
+		const llmConfigsStored = storage.get('llm-configs');
+		if (llmConfigsStored) {
+			this.config.llmConfigs = llmConfigsStored;
+		}
 
-			// Load active LLM config ID
-			const activeLLMStored = localStorage.getItem(ACTIVE_LLM_KEY);
-			if (activeLLMStored) {
-				this.config.activeLLMConfigId = JSON.parse(activeLLMStored);
-			}
+		// Load active LLM config ID
+		const activeLLMStored = storage.get('active-llm-config-id');
+		if (activeLLMStored !== undefined) {
+			this.config.activeLLMConfigId = activeLLMStored;
+		}
 
-			// Load UI LLM configs
-			const uiLLMConfigsStored = localStorage.getItem(UI_LLM_CONFIGS_KEY);
-			if (uiLLMConfigsStored) {
-				this.config.uiLLMConfigs = JSON.parse(uiLLMConfigsStored);
-			}
-		} catch (error) {
-			console.error('Failed to load AI config:', error);
+		// Load UI LLM configs
+		const uiLLMConfigsStored = storage.get('ui-llm-configs');
+		if (uiLLMConfigsStored) {
+			this.config.uiLLMConfigs = uiLLMConfigsStored;
 		}
 	}
 
 	private save() {
 		if (!browser) return;
 
-		try {
-			// Save main config
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(this.config));
-			// Save LLM configs separately
-			localStorage.setItem(LLM_CONFIGS_KEY, JSON.stringify(this.config.llmConfigs));
-			localStorage.setItem(ACTIVE_LLM_KEY, JSON.stringify(this.config.activeLLMConfigId));
-			localStorage.setItem(UI_LLM_CONFIGS_KEY, JSON.stringify(this.config.uiLLMConfigs));
-		} catch (error) {
-			console.error('Failed to save AI config:', error);
-		}
+		// Save main config
+		storage.set('ai-config-v2', this.config);
+		// Save LLM configs separately
+		storage.set('llm-configs', this.config.llmConfigs);
+		storage.set('active-llm-config-id', this.config.activeLLMConfigId);
+		storage.set('ui-llm-configs', this.config.uiLLMConfigs);
 	}
 
 	// LLM Configuration Methods
@@ -185,12 +177,11 @@ class AIConfigStore {
 	// Reset to defaults
 	reset() {
 		this.config = { ...defaultConfig };
-		this.save();
 		if (browser) {
-			localStorage.removeItem(STORAGE_KEY);
-			localStorage.removeItem(LLM_CONFIGS_KEY);
-			localStorage.removeItem(ACTIVE_LLM_KEY);
-			localStorage.removeItem(UI_LLM_CONFIGS_KEY);
+			storage.remove('ai-config-v2');
+			storage.remove('llm-configs');
+			storage.remove('active-llm-config-id');
+			storage.remove('ui-llm-configs');
 		}
 	}
 }

@@ -1,8 +1,7 @@
 import { browser } from '$app/environment';
+import { storage } from '$lib/utils/storage.svelte';
 
 type Theme = 'light' | 'dark';
-
-const STORAGE_KEY = 'theme-preference';
 
 class ThemeStore {
 	theme = $state<Theme>('light');
@@ -14,8 +13,8 @@ class ThemeStore {
 	}
 
 	private init() {
-		// Check localStorage first
-		const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+		// Check storage first
+		const stored = storage.theme;
 
 		if (stored === 'light' || stored === 'dark') {
 			this.theme = stored;
@@ -31,7 +30,7 @@ class ThemeStore {
 		// Listen for system preference changes
 		window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
 			// Only update if user hasn't set a preference
-			if (!localStorage.getItem(STORAGE_KEY)) {
+			if (!storage.theme) {
 				this.theme = e.matches ? 'dark' : 'light';
 				this.applyTheme();
 			}
@@ -53,10 +52,7 @@ class ThemeStore {
 	setTheme(newTheme: Theme) {
 		this.theme = newTheme;
 		this.applyTheme();
-
-		if (browser) {
-			localStorage.setItem(STORAGE_KEY, newTheme);
-		}
+		storage.theme = newTheme;
 	}
 
 	toggle() {

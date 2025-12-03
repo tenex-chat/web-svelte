@@ -7,6 +7,7 @@
 	import { User } from '$lib/ndk/ui/user';
 	import AgentConfigDialog from './AgentConfigDialog.svelte';
 	import AgentSelector from './AgentSelector.svelte';
+	import WorktreeSelector from './WorktreeSelector.svelte';
 	import NudgeSelector from './NudgeSelector.svelte';
 	import ActiveAgents from './ActiveAgents.svelte';
 	import NudgeAutocompleteItem from './NudgeAutocompleteItem.svelte';
@@ -41,12 +42,15 @@
 	const projectId = $derived(project?.tagId());
 	const availableModels = $derived(projectId ? projectStatusStore.getModels(projectId) : []);
 	const availableTools = $derived(projectId ? projectStatusStore.getTools(projectId) : []);
+	const availableWorktrees = $derived(projectId ? projectStatusStore.getWorktrees(projectId) : []);
+	const defaultWorktree = $derived(projectId ? projectStatusStore.getDefaultWorktree(projectId) : null);
 
 	// Draft key: use conversation ID if exists, otherwise use project-level key for new threads
 	const draftKey = $derived(rootEvent?.id || (projectId ? `project:${projectId}` : undefined));
 
 	let messageInput = $state('');
 	let selectedAgent = $state<string | null>(null);
+	let selectedWorktree = $state<string | null>(null);
 	let selectedNudges = $state<string[]>([]);
 	let isSubmitting = $state(false);
 	let textareaElement: HTMLTextAreaElement | null = $state(null);
@@ -149,6 +153,30 @@
 		// Otherwise, default to the PM (first agent)
 		return onlineAgents[0].pubkey;
 	});
+
+	// Compute default worktree based on recent messages (follows agent selector pattern)
+	const defaultWorktreeFromMessages = $derived.by(() => {
+		if (availableWorktrees.length === 0) return null;
+
+		// If there are recent messages, find the most recent branch tag
+		if (recentMessages.length > 0) {
+			const recentWorktree = [...recentMessages].reverse().find((msg) => {
+				const branchTag = msg.tags.find((tag) => tag[0] === 'branch' && tag[1]);
+				return branchTag !== undefined;
+			});
+
+			if (recentWorktree) {
+				const branchTag = recentWorktree.tags.find((tag) => tag[0] === 'branch' && tag[1]);
+				return branchTag?.[1] || null;
+			}
+		}
+
+		// Otherwise, default to the first worktree (default branch)
+		return defaultWorktree;
+	});
+
+	// Derive the current worktree (selected takes precedence, then derived default)
+	const currentWorktree = $derived(selectedWorktree || defaultWorktreeFromMessages);
 
 	// Derive the current agent (mentioned agent takes precedence, then selected, then default)
 	const currentAgent = $derived.by(() => {
@@ -363,6 +391,11 @@
 					thread.tags.push(['nudge', nudgeId]);
 				}
 
+				// Add branch tag if specified
+				if (currentWorktree) {
+					thread.tags.push(['branch', currentWorktree]);
+				}
+
 				// Sign and publish
 				await thread.sign(undefined, { pTags: false });
 				await thread.publish();
@@ -419,6 +452,11 @@
 					reply.tags.push(['nudge', nudgeId]);
 				}
 
+				// Add branch tag if specified
+				if (currentWorktree) {
+					reply.tags.push(['branch', currentWorktree]);
+				}
+
 				// Sign and publish
 				await reply.sign(undefined, { pTags: false });
 				await reply.publish();
@@ -429,6 +467,7 @@
 
 			// Reset state
 			selectedAgent = null;
+			selectedWorktree = null;
 			mentionedAgents = [];
 			// Reset expansion state after sending
 			isExpanded = false;
@@ -669,6 +708,16 @@
 								agentToConfigurePubkey = pubkey;
 								configDialogOpen = true;
 							}}
+						/>
+					{/if}
+
+					<!-- Worktree Selector -->
+					{#if availableWorktrees.length > 0}
+						<WorktreeSelector
+							worktrees={availableWorktrees}
+							selectedWorktree={selectedWorktree}
+							defaultWorktree={defaultWorktreeFromMessages}
+							onSelect={(branch) => (selectedWorktree = branch)}
 						/>
 					{/if}
 

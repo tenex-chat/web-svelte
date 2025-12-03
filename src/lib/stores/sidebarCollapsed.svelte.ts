@@ -1,29 +1,23 @@
 import { browser } from '$app/environment';
-
-const STORAGE_KEY = 'tenex-sidebar-collapsed';
+import { storage } from '$lib/utils/storage.svelte';
 
 class SidebarCollapsedStore {
 	collapsed = $state<boolean>(false);
 
 	constructor() {
 		if (browser) {
-			const stored = localStorage.getItem(STORAGE_KEY);
-			this.collapsed = stored === 'true';
+			this.collapsed = storage.sidebarCollapsed;
 		}
 	}
 
 	toggle() {
 		this.collapsed = !this.collapsed;
-		if (browser) {
-			localStorage.setItem(STORAGE_KEY, String(this.collapsed));
-		}
+		storage.sidebarCollapsed = this.collapsed;
 	}
 
 	set(value: boolean) {
 		this.collapsed = value;
-		if (browser) {
-			localStorage.setItem(STORAGE_KEY, String(value));
-		}
+		storage.sidebarCollapsed = value;
 	}
 }
 

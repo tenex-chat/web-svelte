@@ -1,13 +1,7 @@
 import { browser } from '$app/environment';
 import { TIMING } from '$lib/constants';
+import { storage } from '$lib/utils/storage.svelte';
 import { SvelteMap } from 'svelte/reactivity';
-
-const STORAGE_KEY = 'message-drafts';
-const TIMESTAMP_KEY = 'draft-timestamps';
-
-interface DraftTimestamps {
-	[key: string]: number;
-}
 
 class DraftStore {
 	drafts = $state(new SvelteMap<string, string>());
@@ -21,40 +15,20 @@ class DraftStore {
 	}
 
 	private loadFromStorage() {
-		const stored = localStorage.getItem(STORAGE_KEY);
+		const stored = storage.get('message-drafts');
 		if (stored) {
 			try {
-				const obj = JSON.parse(stored);
-				this.drafts = new SvelteMap(Object.entries(obj));
+				this.drafts = new SvelteMap(Object.entries(stored));
 			} catch {
 				this.drafts = new SvelteMap();
 			}
 		}
 	}
 
-	private saveToStorage() {
-		if (!browser) return;
-
-		const obj = Object.fromEntries(this.drafts);
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
-	}
-
-	private updateTimestamp(conversationId: string) {
-		if (!browser) return;
-
-		const timestamps: DraftTimestamps = JSON.parse(
-			localStorage.getItem(TIMESTAMP_KEY) || '{}'
-		);
-		timestamps[conversationId] = Date.now();
-		localStorage.setItem(TIMESTAMP_KEY, JSON.stringify(timestamps));
-	}
-
 	private cleanup() {
 		if (!browser) return;
 
-		const timestamps: DraftTimestamps = JSON.parse(
-			localStorage.getItem(TIMESTAMP_KEY) || '{}'
-		);
+		const timestamps = storage.get('draft-timestamps') ?? {};
 		const now = Date.now();
 		const cleanupDuration = TIMING.DRAFT_CLEANUP_DURATION;
 
@@ -62,12 +36,9 @@ class DraftStore {
 		for (const [conversationId, timestamp] of Object.entries(timestamps)) {
 			if (now - timestamp > cleanupDuration) {
 				this.drafts.delete(conversationId);
-				delete timestamps[conversationId];
+				storage.clearDraft(conversationId);
 			}
 		}
-
-		this.saveToStorage();
-		localStorage.setItem(TIMESTAMP_KEY, JSON.stringify(timestamps));
 	}
 
 	getDraft(conversationId: string | undefined): string {
@@ -85,28 +56,18 @@ class DraftStore {
 		if (!content.trim()) {
 			// Remove empty drafts
 			this.drafts.delete(conversationId);
+			storage.clearDraft(conversationId);
 		} else {
 			this.drafts.set(conversationId, content);
-			this.updateTimestamp(conversationId);
+			storage.setDraft(conversationId, content);
 		}
-
-		this.saveToStorage();
 	}
 
 	clearDraft(conversationId: string | undefined) {
 		if (!conversationId) return;
 
 		this.drafts.delete(conversationId);
-		this.saveToStorage();
-
-		// Also remove timestamp
-		if (browser) {
-			const timestamps: DraftTimestamps = JSON.parse(
-				localStorage.getItem(TIMESTAMP_KEY) || '{}'
-			);
-			delete timestamps[conversationId];
-			localStorage.setItem(TIMESTAMP_KEY, JSON.stringify(timestamps));
-		}
+		storage.clearDraft(conversationId);
 	}
 }
 

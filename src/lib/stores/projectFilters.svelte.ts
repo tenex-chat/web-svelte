@@ -1,7 +1,8 @@
 import { browser } from '$app/environment';
+import { storage } from '$lib/utils/storage.svelte';
 
 /**
- * Store to persist project-specific filter settings to localStorage.
+ * Store to persist project-specific filter settings.
  * Each project can have its own time filter preference (e.g., "4h", "1d", "needs-response-1h", etc.)
  */
 
@@ -9,34 +10,12 @@ interface ProjectFilters {
 	[projectId: string]: string | null;
 }
 
-const STORAGE_KEY = 'project-filters';
-
 class ProjectFiltersStore {
 	private filters = $state<ProjectFilters>({});
 
 	constructor() {
 		if (browser) {
-			this.load();
-		}
-	}
-
-	private load() {
-		try {
-			const stored = localStorage.getItem(STORAGE_KEY);
-			if (stored) {
-				this.filters = JSON.parse(stored);
-			}
-		} catch (error) {
-			console.error('Failed to load project filters:', error);
-		}
-	}
-
-	private save() {
-		if (!browser) return;
-		try {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(this.filters));
-		} catch (error) {
-			console.error('Failed to save project filters:', error);
+			this.filters = storage.get('project-filters') ?? {};
 		}
 	}
 
@@ -52,7 +31,7 @@ class ProjectFiltersStore {
 	 */
 	setFilter(projectId: string, filter: string | null) {
 		this.filters[projectId] = filter;
-		this.save();
+		storage.set('project-filters', this.filters);
 	}
 
 	/**
@@ -60,7 +39,7 @@ class ProjectFiltersStore {
 	 */
 	clearFilter(projectId: string) {
 		delete this.filters[projectId];
-		this.save();
+		storage.set('project-filters', this.filters);
 	}
 
 	/**
@@ -68,7 +47,7 @@ class ProjectFiltersStore {
 	 */
 	clearAll() {
 		this.filters = {};
-		this.save();
+		storage.set('project-filters', this.filters);
 	}
 }
 
