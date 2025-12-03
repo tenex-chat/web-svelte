@@ -54,7 +54,7 @@
 	let projectGroupMenuOpen = $state(false);
 	let editingGroup = $state<ProjectGroup | null>(null);
 	let showPinnedPopover = $state(false);
-	let popoverButtonRef: HTMLButtonElement | null = null;
+	let popoverButtonRef = $state<HTMLButtonElement | null>(null);
 
 	// Derived state
 	const collapsed = $derived(sidebarCollapsedStore.collapsed);

@@ -13,7 +13,7 @@
 
 	const agentId = $derived($page.params.id);
 
-	const agentEvent = createFetchEvent(() => ({ bech32: agentId }), ndk);
+	const agentEvent = createFetchEvent(ndk, () => ({ bech32: agentId }));
 
 	const agent = $derived.by(() => {
 		if (!agentEvent.event) return null;

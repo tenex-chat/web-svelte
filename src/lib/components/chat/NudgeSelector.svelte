@@ -310,6 +310,7 @@
 						{creating ? 'Creating...' : 'Create Nudge'}
 					</button>
 				</div>
+				</div>
 			</div>
 		</Portal>
 	{/if}

@@ -15,12 +15,19 @@
 
 	const agentDefinitionEvents = ndk.$fetchEvents<NDKAgentDefinition>(() => eventId ? { ids: [eventId] } : undefined);
 	const agentDefinition = $derived(agentDefinitionEvents[0]);
-	console.log('fetched agent definition:', agentDefinition);
+	const agent = $derived.by(() => {
+		const def = agentDefinition;
+		if (def) {
+			console.log('fetched agent definition:', def);
+			return NDKAgentDefinition.from(def);
+		}
+		return null;
+	});
 </script>
 
-{#if agentDefinition}
+{#if agent}
 	<div class="relative">
-		<AgentDefinitionCard agent={NDKAgentDefinition.from(agentDefinition)} />
+		<AgentDefinitionCard {agent} />
 
 		<!-- PM Badge and Controls -->
 		<div class="flex items-center justify-between mt-2 px-2">

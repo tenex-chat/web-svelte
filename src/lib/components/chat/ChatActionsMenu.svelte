@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { MoreHorizontal, FileText } from 'lucide-svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import type { Message } from '$lib/utils/messageProcessor';
+	import type { Message } from '$lib/utils/messageUtils';
 	import { ndk } from '$lib/ndk.svelte';
 	import { aiService } from '$lib/services/ai-service';
 	import { ConversationPublisher } from '$lib/utils/conversationPublisher';

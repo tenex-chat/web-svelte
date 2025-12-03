@@ -2,7 +2,7 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKKind } from '$lib/kinds';
-	import type { Message } from '$lib/utils/messageProcessor';
+	import type { Message } from '$lib/utils/messageUtils';
 	import { formatThreadAsMarkdown, formatThreadAsJSON, formatThreadAsJSONL } from '$lib/utils/copyThread';
 	import { clickOutside } from '$lib/utils/clickOutside';
 

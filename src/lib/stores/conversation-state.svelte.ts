@@ -3,7 +3,7 @@ import { NDKEvent, type NDKSubscription, type NDKFilter } from '@nostr-dev-kit/n
 import type { NDKSvelte } from '@nostr-dev-kit/svelte';
 import { NDKKind } from '$lib/kinds';
 import { DeltaContentAccumulator } from '$lib/utils/DeltaContentAccumulator';
-import type { Message, ThreadViewMode } from '$lib/utils/messageProcessor';
+import type { Message, ThreadViewMode } from '$lib/utils/messageUtils';
 import { conversationMetadataStore } from './conversationMetadata.svelte';
 import { processConversationMetadataEvent } from '$lib/utils/conversationMetadataProcessor';
 import { performanceMetrics, type ConversationStateMetrics } from './performance-metrics.svelte';

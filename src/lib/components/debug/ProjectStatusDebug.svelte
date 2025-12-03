@@ -18,7 +18,7 @@
 	let selectedProjectDTag = $state<string | null>(null);
 	let showProjectSidebar = $state(true);
 	let activeTab = $state<'comparison' | 'store' | 'wire'>('comparison');
-	let expandedAgents: SvelteSet<string> = new SvelteSet();
+	let expandedAgents = $state<SvelteSet<string>>(new SvelteSet());
 
 	// Independent wire feed subscription (last 60 seconds)
 	const oneMinuteAgo = Math.floor(Date.now() / 1000) - 60;

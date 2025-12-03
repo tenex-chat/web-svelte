@@ -141,12 +141,10 @@
 					<div class="space-y-4">
 						{#each Object.entries(groupedMetadata) as [, category]}
 							{#if category.items.length > 0}
+								{@const Icon = category.icon}
 								<div class="border border-border rounded-lg p-4">
 									<div class="flex items-center gap-2 mb-3">
-										<svelte:component
-											this={category.icon}
-											class="w-4 h-4 text-primary"
-										/>
+										<Icon class="w-4 h-4 text-primary" />
 										<h4 class="font-medium text-sm text-foreground">
 											{category.title}
 										</h4>

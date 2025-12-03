@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import type { Message } from '$lib/utils/messageProcessor';
+	import type { Message } from '$lib/utils/messageUtils';
 	import CopyThreadMenu from './CopyThreadMenu.svelte';
 	import ChatActionsMenu from './ChatActionsMenu.svelte';
 	import ConversationMetadataDisplay from './ConversationMetadataDisplay.svelte';

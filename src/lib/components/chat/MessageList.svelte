@@ -5,8 +5,7 @@
 	import SystemMessage from './SystemMessage.svelte';
 	import ThreadedMessage from './ThreadedMessage.svelte';
 	import { ConversationState } from '$lib/stores/conversation-state.svelte';
-	import { type Message as MessageType } from '$lib/utils/messageProcessor';
-	import { calculateMessageProperties } from '$lib/utils/messageUtils';
+	import { type Message as MessageType, calculateMessageProperties } from '$lib/utils/messageUtils';
 	import { ChevronDown } from 'lucide-svelte';
 	import PerformanceMonitor from './PerformanceMonitor.svelte';
 

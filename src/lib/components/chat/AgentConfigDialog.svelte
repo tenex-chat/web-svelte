@@ -19,7 +19,7 @@
 
 	// Local state for editing
 	let selectedModel = $state(agent.model || '');
-	let selectedTools: SvelteSet<string> = new SvelteSet(agent.tools || []);
+	let selectedTools = $state<SvelteSet<string>>(new SvelteSet(agent.tools || []));
 
 	// Group tools intelligently
 	interface ToolGroup {
@@ -95,7 +95,7 @@
 		return result.sort((a, b) => a.name.localeCompare(b.name));
 	});
 
-	let expandedGroups: SvelteSet<string> = new SvelteSet();
+	let expandedGroups = $state<SvelteSet<string>>(new SvelteSet());
 
 	function toggleGroup(groupName: string) {
 		if (expandedGroups.has(groupName)) {

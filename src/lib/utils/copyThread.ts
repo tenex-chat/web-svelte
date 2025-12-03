@@ -1,6 +1,6 @@
 import type NDK from '@nostr-dev-kit/ndk';
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
-import type { Message } from '$lib/utils/messageProcessor';
+import type { Message } from '$lib/utils/messageUtils';
 
 interface JSONMessage {
 	id: string;
@@ -159,8 +159,8 @@ export async function formatThreadAsMarkdown(
 		// Check if this message is a reply to another message in the thread
 		const isReplyToThreadMessage = messages.some((m) => {
 			if (m.event.id === message.event.id) return false;
-			const eTags = message.event.tags?.filter((tag) => tag[0] === 'e') || [];
-			return eTags.some((tag) => tag[1] === m.event.id);
+			const eTags = message.event.tags?.filter((tag: string[]) => tag[0] === 'e') || [];
+			return eTags.some((tag: string[]) => tag[1] === m.event.id);
 		});
 
 		// Only process root-level messages
@@ -319,8 +319,8 @@ export async function formatThreadAsJSON(
 		// Check if this message is a reply to another message in the thread
 		const isReplyToThreadMessage = messages.some((m) => {
 			if (m.event.id === message.event.id) return false;
-			const eTags = message.event.tags?.filter((tag) => tag[0] === 'e') || [];
-			return eTags.some((tag) => tag[1] === m.event.id);
+			const eTags = message.event.tags?.filter((tag: string[]) => tag[0] === 'e') || [];
+			return eTags.some((tag: string[]) => tag[1] === m.event.id);
 		});
 
 		// Only process root-level messages
