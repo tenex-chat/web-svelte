@@ -7,6 +7,7 @@ import type { Message, ThreadViewMode } from '$lib/utils/messageUtils';
 import { conversationMetadataStore } from './conversationMetadata.svelte';
 import { processConversationMetadataEvent } from '$lib/utils/conversationMetadataProcessor';
 import { performanceMetrics, type ConversationStateMetrics } from './performance-metrics.svelte';
+import { uiSettingsStore } from './uiSettings.svelte';
 
 interface StreamingSession {
 	syntheticId: string;
@@ -161,6 +162,11 @@ export class ConversationState {
 				...this.metrics,
 				avgComputeTime: this.metrics.displayMessagesComputeTime / this.metrics.displayMessagesComputations
 			});
+		}
+
+		// Filter reasoning events based on user preference
+		if (!uiSettingsStore.settings.showReasoningEvents) {
+			return allMessages.filter(msg => !msg.event.hasTag('reasoning'));
 		}
 
 		return allMessages;

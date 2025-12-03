@@ -224,14 +224,12 @@
 						<!-- Typing indicator is shown in the header, no content needed -->
 					{:else if isToolCallEvent}
 						<ToolCallContent event={message.event} />
-					{:else if isReasoningEvent && uiSettings.showReasoningEvents}
+					{:else if isReasoningEvent}
 						<AIReasoningBlock
 							reasoningEvent={message.event}
 							{isStreaming}
 							{isLastMessage}
 						/>
-					{:else if isReasoningEvent}
-						<!-- Reasoning events hidden by user preference -->
 					{:else}
 						<div class="prose prose-sm text-sm max-w-none dark:prose-invert text-foreground">
 							<Streamdown
