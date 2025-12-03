@@ -1,6 +1,6 @@
 import { ndk } from '$lib/ndk.svelte';
 import { parseKind24133, type Kind24133Snapshot } from '$lib/ndk-events/operations';
-import type { NDKFilter, NDKEvent } from '@nostr-dev-kit/ndk';
+import type { NDKFilter, NDKEvent, NDKSubscription } from '@nostr-dev-kit/ndk';
 
 /**
  * Create a reactive subscription to active operations for a specific event
@@ -11,50 +11,46 @@ export function createOperationsSubscription(eventId: string | undefined, projec
     return () => [];
   }
 
-  // Create subscription for kind 24133 events
-  const subscription = ndk.$subscribe(() => {
-    const filters: NDKFilter[] = [
-      {
-        kinds: [24133],
-        "#a": [projectId],
-        "#e": [eventId],
-        limit: 0, // Live-only telemetry
-      }
-    ];
+  // Track the latest snapshot state reactively
+  let latestSnapshot = $state<Kind24133Snapshot | null>(null);
+  let latestCreatedAt = 0;
+  let latestEventId = "";
 
-    return {
-      filters,
+  // Create subscription with incremental event processing
+  const filters: NDKFilter[] = [
+    {
+      kinds: [24133],
+      "#a": [projectId],
+      "#e": [eventId],
+      limit: 0, // Live-only telemetry
+    }
+  ];
+
+  const subscription: NDKSubscription = ndk.subscribe(
+    filters,
+    {
       closeOnEose: false,
-      bufferMs: 100
-    };
-  });
+    },
+    {
+      onEvent: (event: NDKEvent) => {
+        const snapshot = parseKind24133(event);
+        if (!snapshot || snapshot.eId !== eventId || snapshot.projectId !== projectId) return;
 
-  // Return a function that processes events when called inside $derived
-  return (): string[] => {
-    const events = subscription.events;
-
-    // Process all events and find the latest snapshot
-    let latestSnapshot: Kind24133Snapshot | null = null;
-    let latestCreatedAt = 0;
-
-    events.forEach((event: NDKEvent) => {
-      const snapshot: Kind24133Snapshot | null = parseKind24133(event);
-      if (!snapshot || snapshot.eId !== eventId) return;
-      if (snapshot.projectId !== projectId) return;
-
-      // Last-write-wins logic
-      if (snapshot.createdAt > latestCreatedAt) {
-        latestSnapshot = snapshot;
-        latestCreatedAt = snapshot.createdAt;
-      } else if (
-        snapshot.createdAt === latestCreatedAt &&
-        snapshot.eventId > (latestSnapshot?.eventId || "")
-      ) {
-        latestSnapshot = snapshot;
+        // Last-write-wins logic
+        if (snapshot.createdAt > latestCreatedAt) {
+          latestSnapshot = snapshot;
+          latestCreatedAt = snapshot.createdAt;
+          latestEventId = snapshot.eventId;
+        } else if (snapshot.createdAt === latestCreatedAt && snapshot.eventId > latestEventId) {
+          latestSnapshot = snapshot;
+          latestEventId = snapshot.eventId;
+        }
       }
-    });
+    }
+  );
 
-    // Return array of agent pubkeys that are currently active
-    return (latestSnapshot as Kind24133Snapshot | null)?.agentPubkeys ?? [];
-  };
+  subscription.start();
+
+  // Return a function that just reads the reactive state
+  return (): string[] => latestSnapshot?.agentPubkeys ?? [];
 }

@@ -100,7 +100,6 @@ export function createProfileFetcher(
 						closeOnEose: true,
 						groupable: true,
 						groupableDelay: 250,
-						subId: 'profile-fetcher'
 					})
 					.finally(() => {
 						// Remove from in-flight requests when complete

@@ -210,7 +210,7 @@
 			</div>
 		{:else if viewMode === 'threaded'}
 			<!-- Threaded view: Use recursive ThreadedMessage component -->
-			<div class="flex flex-col">
+			<div class="flex flex-col pb-52">
 				<ThreadedMessage {rootEvent} eventId={rootEvent.id} depth={0} {onTimeClick} />
 			</div>
 		{:else}

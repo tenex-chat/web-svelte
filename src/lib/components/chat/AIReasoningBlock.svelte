@@ -1,9 +1,7 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { cn } from '$lib/utils/cn';
-	import { marked } from 'marked';
-	import DOMPurify from 'dompurify';
-	import { dev } from '$app/environment';
+	import { Streamdown } from 'svelte-streamdown';
 
 	interface Props {
 		reasoningEvent: NDKEvent;
@@ -23,39 +21,6 @@
 			? `reasoning-content-${reasoningEvent.id}`
 			: `reasoning-content-${Date.now()}`
 	);
-
-	// Helper function to escape HTML and convert newlines to <br>
-	function escapeAndPreserveNewlines(text: string): string {
-		return text
-			.replace(/&/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;')
-			.replace(/"/g, '&quot;')
-			.replace(/'/g, '&#039;')
-			.replace(/\n/g, '<br>');
-	}
-
-	// Render markdown with sanitization - optimized for streaming
-	const renderedReasoningContent = $derived.by(() => {
-		// During streaming, use plain-text fallback to avoid re-parsing markdown on every character
-		if (isStreaming) {
-			// const escapedHtml = escapeAndPreserveNewlines(reasoningContent);
-			return DOMPurify.sanitize(reasoningContent);
-		}
-
-		// When finalized, parse markdown
-		try {
-			const rawHtml = marked.parse(reasoningContent) as string;
-			return DOMPurify.sanitize(rawHtml);
-		} catch (error) {
-			// Log error in dev mode and fallback to escaped plain-text
-			if (dev) {
-				console.warn('[AIReasoningBlock] Markdown parsing failed:', error);
-			}
-			// const escapedHtml = escapeAndPreserveNewlines(reasoningContent);
-			return DOMPurify.sanitize(reasoningContent);
-		}
-	});
 </script>
 
 {#if reasoningContent}
@@ -117,7 +82,14 @@
 			{#if isOpen}
 				<div id={contentId} class="px-4 py-3 border-t border-border bg-card/50">
 					<div class="prose prose-sm max-w-none dark:prose-invert text-foreground text-sm">
-						{@html renderedReasoningContent}
+						<Streamdown
+							content={reasoningContent}
+							class="prose prose-sm max-w-none dark:prose-invert text-foreground text-sm"
+							parseIncompleteMarkdown={true}
+							animation={{ enabled: false }}
+							baseTheme="tailwind"
+							shikiTheme="github-dark-dimmed"
+						/>
 					</div>
 					{#if isStreaming}
 						<span class="inline-block w-1.5 h-4 ml-0.5 bg-primary animate-pulse"></span>

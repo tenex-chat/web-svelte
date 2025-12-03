@@ -13,6 +13,7 @@
 		calculateMessageProperties,
 		getUniquePubkeys
 	} from '$lib/utils/messageUtils';
+	import EventCardInline from '$lib/ndk/components/event-card-inline/event-card-inline.svelte';
 
 	interface Props {
 		eventId?: string;
@@ -102,6 +103,9 @@
 	// Get unique author pubkeys for collapse button avatars
 	const uniquePubkeys = $derived(getUniquePubkeys(replies));
 
+	// Get the most recent reply event
+	const mostRecentReply = $derived(replies.length > 0 ? replies[replies.length - 1].event : null);
+
 	// LOCAL COMPONENT STATE - each ThreadedMessage manages its own expansion
 	let isExpanded = $state(false);
 
@@ -152,7 +156,7 @@
 		<!-- Render replies if any exist -->
 		{#if replies.length > 0}
 			<!-- Toggle button for replies -->
-			<div class={cn('ml-12 mt-1.5 relative')}>
+			<div class={cn('ml-12 mt-1.5 relative flex flex-row')}>
 				<button
 					type="button"
 					onclick={handleToggle}
@@ -184,6 +188,13 @@
 						<ChevronRight class="w-3 h-3" />
 					{/if}
 				</button>
+
+				<!-- Show most recent reply when collapsed -->
+				{#if !isExpanded && mostRecentReply}
+					<div class="ml-2 inline-block">
+						<EventCardInline {ndk} event={mostRecentReply} />
+					</div>
+				{/if}
 			</div>
 
 			<!-- Render reply messages (when expanded) -->

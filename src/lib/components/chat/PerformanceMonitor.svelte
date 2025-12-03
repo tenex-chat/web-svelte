@@ -207,10 +207,6 @@
 					{stats.messageRenders.lastRenderTime.toFixed(2)}ms
 				</span>
 			</div>
-			<div class="flex justify-between items-center">
-				<span class="text-gray-400">Markdown Parse:</span>
-				<span class="text-white">{stats.messageRenders.markdownParseTime.toFixed(2)}ms</span>
-			</div>
 		</div>
 
 		<!-- Footer with help text -->

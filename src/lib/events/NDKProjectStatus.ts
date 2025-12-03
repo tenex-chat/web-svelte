@@ -1,4 +1,4 @@
-import { NDKEvent, type NostrEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, registerEventClass, type NostrEvent } from '@nostr-dev-kit/ndk';
 import type NDK from '@nostr-dev-kit/ndk';
 import { NDKKind } from '$lib/kinds';
 
@@ -190,3 +190,5 @@ export class NDKProjectStatus extends NDKEvent {
 		return new NDKProjectStatus(event.ndk, event.rawEvent());
 	}
 }
+
+registerEventClass(NDKProjectStatus);

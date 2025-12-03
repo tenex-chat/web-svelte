@@ -20,10 +20,6 @@
 
 	const projects = $derived.by(() => projectsSubscription.events.map(NDKProject.from));
 
-	$effect(() => {
-		projects.forEach((p) => p.publish())
-	})
-
 	// Update open projects when projects load
 	$effect(() => {
 		if (projects.length > 0) {

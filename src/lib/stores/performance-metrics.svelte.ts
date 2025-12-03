@@ -30,7 +30,6 @@ export interface MessageRenderMetrics {
 	avgRenderTime: number;
 	lastRenderTime: number;
 	slowRenderCount: number; // >16ms (60fps threshold)
-	markdownParseTime: number;
 }
 
 export interface AggregatedMetrics {
@@ -50,8 +49,7 @@ class PerformanceMetricsStore {
 		totalRenderTime: 0,
 		avgRenderTime: 0,
 		lastRenderTime: 0,
-		slowRenderCount: 0,
-		markdownParseTime: 0
+		slowRenderCount: 0
 	});
 
 	// Reactive state for UI
@@ -208,8 +206,7 @@ class PerformanceMetricsStore {
 			totalRenderTime: 0,
 			avgRenderTime: 0,
 			lastRenderTime: 0,
-			slowRenderCount: 0,
-			markdownParseTime: 0
+			slowRenderCount: 0
 		};
 		this.lastUpdateTime = Date.now();
 	}

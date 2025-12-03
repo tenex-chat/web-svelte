@@ -539,7 +539,7 @@
 
 </script>
 
-<div class="border-t border-border/50 p-4">
+<div class="p-4">
 	<!-- Reply Context -->
 	{#if replyToEvent}
 		<div class="mb-3 px-3 py-2 bg-blue-50/50 backdrop-blur-sm border-l-4 border-blue-500 rounded-lg flex items-center gap-2">

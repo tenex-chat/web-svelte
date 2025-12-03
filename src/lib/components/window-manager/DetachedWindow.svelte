@@ -119,8 +119,7 @@
 	role="dialog"
 	aria-label={window.title}
 >
-	<!-- Window Header (hidden for call windows) -->
-	{#if window.type !== 'call'}
+	<!-- Window Header -->
 	<div
 		class="window-header flex items-center justify-between px-4 py-2 border-b border-border bg-muted"
 		onmousedown={handleMouseDownDrag}
@@ -203,7 +202,6 @@
 			</button>
 		</div>
 	</div>
-	{/if}
 
 	<!-- Window Content -->
 	<div class="window-content flex-1 overflow-hidden">
@@ -258,8 +256,7 @@
 		{/if}
 	</div>
 
-	<!-- Resize Handle (hidden for call windows) -->
-	{#if window.type !== 'call'}
+	<!-- Resize Handle -->
 	<div
 		class="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-0 hover:opacity-100 transition-opacity"
 		onmousedown={handleMouseDownResize}
@@ -271,7 +268,6 @@
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
 		</svg>
 	</div>
-	{/if}
 </div>
 
 <style>

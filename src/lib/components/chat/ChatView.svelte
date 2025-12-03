@@ -106,7 +106,7 @@
 	}
 </script>
 
-<div class="flex flex-col h-full">
+<div class="flex flex-col h-full relative">
 	{#if localRootEvent}
 		{#if !hideHeader}
 			<ChatHeader rootEvent={localRootEvent} {messages} />
@@ -123,16 +123,18 @@
 		/>
 
 		<!-- Input -->
-		<ChatInput
-			{project}
-			rootEvent={localRootEvent}
-			{onlineAgents}
-			recentMessages={messages.map(m => m.event)}
-			onThreadCreated={handleThreadCreated}
-			{replyToEvent}
-			{initialContent}
-			onCancelReply={handleCancelReply}
-		/>
+		 <div class="fixed bottom-0 w-full z-[1000]">
+			<ChatInput
+				{project}
+				rootEvent={localRootEvent}
+				{onlineAgents}
+				recentMessages={messages.map(m => m.event)}
+				onThreadCreated={handleThreadCreated}
+				{replyToEvent}
+				{initialContent}
+				onCancelReply={handleCancelReply}
+			/>
+		</div>	
 	{:else}
 		<!-- New Conversation -->
 		<div class="flex-1 flex items-center justify-center text-muted-foreground">

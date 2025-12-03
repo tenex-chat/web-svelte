@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import type { Message } from '$lib/utils/messageProcessor';
-	import { marked } from 'marked';
-	import DOMPurify from 'dompurify';
+	import { Streamdown } from 'svelte-streamdown';
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKKind } from '$lib/kinds';
 	import { User } from '$lib/ndk/ui/user';
@@ -63,28 +62,6 @@
 	const timestamp = $derived.by(() => {
 		if (!message.event.created_at) return '';
 		return formatTimestamp(message.event.created_at);
-	});
-
-	// Render markdown with sanitization
-	const renderedContent = $derived.by(() => {
-		if (isTyping) return message.event.content;
-		try {
-			const parseStart = performanceMetrics.isEnabled ? performance.now() : 0;
-			const rawHtml = marked.parse(message.event.content || '') as string;
-			const sanitized = DOMPurify.sanitize(rawHtml);
-
-			if (performanceMetrics.isEnabled) {
-				const parseTime = performance.now() - parseStart;
-				const currentMetrics = performanceMetrics.messageRenderMetrics;
-				performanceMetrics.updateMessageRenderMetrics({
-					markdownParseTime: currentMetrics.markdownParseTime + parseTime
-				});
-			}
-
-			return sanitized;
-		} catch {
-			return message.event.content || '';
-		}
 	});
 
 	// Get p-tags (users being replied to)
@@ -252,7 +229,19 @@
 						/>
 					{:else}
 						<div class="prose prose-sm text-sm max-w-none dark:prose-invert text-foreground">
-							{@html renderedContent}
+							<Streamdown
+								content={message.event.content}
+								class="prose prose-sm text-sm max-w-none dark:prose-invert text-foreground"
+								parseIncompleteMarkdown={true}
+								animation={{
+									enabled: isStreaming,
+									type: 'blur',
+									duration: 300,
+									tokenize: 'word'
+								}}
+								baseTheme="tailwind"
+								shikiTheme="github-dark-dimmed"
+							/>
 							{#if isStreaming}
 								<span class="inline-block w-1.5 h-4 ml-0.5 bg-primary animate-pulse"></span>
 							{/if}

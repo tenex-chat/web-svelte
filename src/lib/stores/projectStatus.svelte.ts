@@ -5,6 +5,7 @@ import {
   type ProjectAgent,
 } from "$lib/events/NDKProjectStatus";
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+import { type NDKSubscription, type NDKEvent, NDKSubscriptionCacheUsage } from '@nostr-dev-kit/ndk';
 
 /**
  * Centralized store for project status (kind:24010)
@@ -24,62 +25,50 @@ class ProjectStatusStore {
     if (this.initialized || !browser) return;
     this.initialized = true;
 
-    // Subscribe to kind:24010 events for current user
-    const subscription = ndk.$subscribe(
-      () => {
-        const currentUser = ndk.$sessions.currentUser;
-        if (!currentUser?.pubkey) {
-          return {
-            filters: [{ kinds: [24010], limit: 0 }],
-            closeOnEose: true,
-            eventClass: NDKProjectStatus,
-            wrap: true,
-          };
-        }
+    let subscription: NDKSubscription | undefined;
 
-        return {
-          filters: [
-            {
-              kinds: [24010],
-              "#p": [currentUser.pubkey],
-            },
-          ],
-          eventClass: NDKProjectStatus,
-          subId: "project-status-store",
-          wrap: true,
-          closeOnEose: false,
-        };
-      }
-    );
-
-    // Update map when events arrive
+    // React to user changes and re-subscribe
     $effect(() => {
-      const events = subscription.events as NDKProjectStatus[];
+      const currentUser = ndk.$sessions.currentUser;
 
-      // Group by project, keep only latest per project
-      const latestByProject = new SvelteMap<string, NDKProjectStatus>();
+      // Clean up previous subscription
+      if (subscription) {
+        subscription.stop();
+      }
 
-      for (const event of events) {
-        const projectId = event.projectId;
-        if (!projectId) continue;
+      // Create filters based on current user
+      const filters = !currentUser?.pubkey
+        ? [{ kinds: [24010], limit: 0 }]
+        : [{ kinds: [24010], "#p": [currentUser.pubkey], limit: 0 }];
 
-        // Extract dTag from projectId (format: kind:pubkey:dTag)
-        // The "a" tag is in format: kind:pubkey:dTag, we want just the dTag
-        let key = projectId;
-        if (projectId.includes(":")) {
-          const parts = projectId.split(":");
-          if (parts.length >= 3) {
-            key = parts[2]; // Use dTag as key
+      // Subscribe with incremental event processing
+      subscription = ndk.subscribe(
+        filters,
+        {
+          cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY,
+          subId: "project-status-store",
+          closeOnEose: false,
+          wrap: true
+        },
+        {
+          onEvent: (event: NDKEvent) => {
+            const statusEvent = event as NDKProjectStatus;
+            const projectId = statusEvent.projectId;
+            if (!projectId) return;
+
+            // Extract dTag as key
+            const key = this.extractDTag(projectId);
+
+            // Last-write-wins: only update if this event is newer
+            const existing = this.statusMap.get(key);
+            if (!existing || (statusEvent.created_at || 0) > (existing.created_at || 0)) {
+              this.statusMap.set(key, statusEvent);
+            }
           }
         }
+      );
 
-        const existing = latestByProject.get(key);
-        if (!existing || (event.created_at || 0) > (existing.created_at || 0)) {
-          latestByProject.set(key, event);
-        }
-      }
-
-      this.statusMap = latestByProject;
+      subscription.start();
     });
   }
 

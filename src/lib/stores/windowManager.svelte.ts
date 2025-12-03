@@ -43,7 +43,23 @@ class WindowManager {
 	private saveToStorage() {
 		try {
 			const detachedWindows = this.windowsArray.filter((w) => w.isDetached);
-			localStorage.setItem('tenex-windows', JSON.stringify(detachedWindows));
+
+			// Transform windows to serializable format (remove circular references from NDK objects)
+			const serializableWindows = detachedWindows.map((w) => ({
+				id: w.id,
+				type: w.type,
+				title: w.title,
+				projectTagId: w.project?.tagId(),
+				threadId: w.data?.thread?.id,
+				agentPubkey: w.data?.agentPubkey,
+				agentName: w.data?.agentName,
+				isDetached: w.isDetached,
+				position: w.position,
+				size: w.size,
+				zIndex: w.zIndex
+			}));
+
+			localStorage.setItem('tenex-windows', JSON.stringify(serializableWindows));
 		} catch (e) {
 			console.error('Failed to save windows to storage:', e instanceof Error ? e.message : String(e));
 		}

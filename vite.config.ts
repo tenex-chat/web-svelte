@@ -49,7 +49,7 @@ function copyVadWasmFiles(): Plugin {
 		configResolved() {
 			const filesToCopy = [
 				// Model files
-				{ src: 'node_modules/@ricky0123/vad-web/dist/silero_vad_legacy.onnx', dest: 'static' },
+				{ src: 'node_modules/@ricky0123/vad-web/dist/silero_vad_legacy.onnx', dest: 'static/vad' },
 				{ src: 'node_modules/@ricky0123/vad-web/dist/silero_vad_v5.onnx', dest: 'static/vad' },
 				// Worklet
 				{ src: 'node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js', dest: 'static/vad' },
@@ -103,8 +103,7 @@ export default defineConfig({
 		'global': 'globalThis',
 	},
 	optimizeDeps: {
-		include: ['@ricky0123/vad-web'],
-		exclude: ['onnxruntime-web'],
+		include: ['@ricky0123/vad-web', 'onnxruntime-web'],
 		esbuildOptions: {
 			target: 'esnext',
 			define: {
