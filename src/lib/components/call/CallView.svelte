@@ -97,7 +97,7 @@
 					viewMode: 'flattened',
 					isBrainstorm: false,
 					currentUserPubkey: ndk.$currentUser?.pubkey,
-					debug: false // Disable debug logging
+					debug: true // Enable debug logging
 				});
 
 				conversationState.start();
