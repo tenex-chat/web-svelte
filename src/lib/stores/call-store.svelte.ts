@@ -5,9 +5,9 @@
  */
 
 import { VADController } from '$lib/audio/vad-controller.svelte';
-import { AudioRecorder, type AudioRecorderOptions } from '$lib/audio/audio-recorder.svelte';
-import { TTSPlayer, type TTSPlayerOptions } from '$lib/audio/tts-player.svelte';
-import { TTSQueue, type TTSQueueOptions, type ChatMessage } from '$lib/audio/tts-queue.svelte';
+import { AudioRecorder } from '$lib/audio/audio-recorder.svelte';
+import { TTSPlayer } from '$lib/audio/tts-player.svelte';
+import { TTSQueue, type ChatMessage } from '$lib/audio/tts-queue.svelte';
 import {
 	MessagingController,
 	type MessagingControllerOptions
@@ -35,6 +35,10 @@ export class CallStore {
 	transcript = $state('');
 	error = $state<string | null>(null);
 
+	// Private reactive state for tracking changes
+	private messages = $state<ChatMessage[]>([]);
+	private isInitialized = $state(false);
+
 	// Sub-controllers
 	vad: VADController;
 	audioRecorder: AudioRecorder;
@@ -43,6 +47,8 @@ export class CallStore {
 	messaging: MessagingController;
 
 	constructor(private options: CallStoreOptions) {
+		// Initialize reactive messages state
+		this.messages = options.messages;
 		// Initialize audio recorder
 		this.audioRecorder = new AudioRecorder({
 			deviceId: callSettings.settings.inputDeviceId,
@@ -102,8 +108,11 @@ export class CallStore {
 		});
 
 		// Set up $effect to process messages when they change
+		// Only process after initialization to avoid queueing historical messages
 		$effect(() => {
-			this.ttsQueue.processMessages(this.options.messages);
+			if (this.isInitialized) {
+				this.ttsQueue.processMessages(this.messages);
+			}
 		});
 	}
 
@@ -229,6 +238,10 @@ export class CallStore {
 
 			this.callState = 'idle';
 			this.options.onStateChange?.(this.callState);
+
+			// Mark as initialized - now we can start processing new messages
+			// All historical messages should have been loaded by now
+			this.isInitialized = true;
 		} catch (error) {
 			console.error('[CallStore] Failed to initialize:', error);
 			this.error = error instanceof Error ? error.message : 'Microphone access required';
@@ -338,6 +351,11 @@ export class CallStore {
 	 */
 	updateOptions(options: Partial<CallStoreOptions>): void {
 		Object.assign(this.options, options);
+
+		// Update reactive messages state if provided
+		if (options.messages) {
+			this.messages = options.messages;
+		}
 
 		// Update messaging controller if relevant options changed
 		if (options.threadManagement || options.messages || options.activeAgent) {

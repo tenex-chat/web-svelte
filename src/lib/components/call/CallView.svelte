@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKThread, type NDKEvent } from '@nostr-dev-kit/ndk';
 	import type { NDKProject } from '$lib/events/NDKProject';
@@ -121,6 +122,10 @@
 	// Get messages from conversation state
 	const messages = $derived(conversationState?.displayMessages || []);
 
+	$effect(() => {
+		console.log("[CALLVIEW]", conversationState?.displayMessages?.length);
+	})
+
 	// Thread management functions matching MessagingController interface
 	async function createThread(
 		content: string,
@@ -222,20 +227,31 @@
 		return callStore.vad.enabled ? 'Auto-detect' : 'Push-to-talk';
 	});
 
-	// Initialize and manage CallStore lifecycle
-	$effect(() => {
-		// Create CallStore with options
-		const options: CallStoreOptions = {
-			threadManagement,
-			messages,
-			userPubkey: ndk.$currentUser?.pubkey,
-			activeAgent,
-			onStateChange: (state) => {
-				callState = state;
-			}
-		};
+	// Track essential values that require CallStore recreation
+	const userPubkey = $derived(ndk.$currentUser?.pubkey);
+	const rootEventId = $derived(localRootEvent?.id || null);
 
-		const store = new CallStore(options);
+	// Initialize CallStore once when component mounts or essential properties change
+	$effect(() => {
+		// Only track userPubkey and rootEventId as dependencies
+		const currentUserPubkey = userPubkey;
+		const currentRootEventId = rootEventId;
+
+		// Use untrack to read other values without making them dependencies
+		const store = untrack(() => {
+			const options: CallStoreOptions = {
+				threadManagement,
+				messages,
+				userPubkey: currentUserPubkey,
+				activeAgent,
+				onStateChange: (state) => {
+					callState = state;
+				}
+			};
+
+			return new CallStore(options);
+		});
+
 		callStore = store;
 
 		// Initialize the call
@@ -247,11 +263,18 @@
 				console.error('[CallView] Failed to initialize call:', error);
 			});
 
-		// Cleanup when effect reruns or component unmounts
+		// Cleanup when essential properties change or component unmounts
 		return () => {
 			console.log('[CallView] Cleaning up CallStore');
 			store.destroy();
 		};
+	});
+
+	// Update CallStore options when messages, activeAgent, or threadManagement change
+	$effect(() => {
+		if (callStore) {
+			callStore.updateOptions({ threadManagement, messages, activeAgent });
+		}
 	});
 
 	// Handle microphone toggle
