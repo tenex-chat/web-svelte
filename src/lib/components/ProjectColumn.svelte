@@ -6,7 +6,7 @@
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { cn } from '$lib/utils/cn';
 	import { generateColorFromString } from '$lib/utils/colors';
-	import { MessageSquare, FileText, Bot, Hash, Rss, Settings as SettingsIcon, Filter, Clock, MoreVertical, MessageCircleQuestion, Plus } from 'lucide-svelte';
+	import { MessageSquare, FileText, Bot, Hash, Rss, Settings as SettingsIcon, Filter, Clock, MoreVertical, MessageCircleQuestion, Plus, Phone } from 'lucide-svelte';
 	import * as DropdownMenu from './ui/dropdown-menu';
 	import { User } from "$lib/ndk/ui/user";
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
@@ -155,6 +155,15 @@
 						aria-label="New conversation"
 					>
 						<Plus class="w-3.5 h-3.5" />
+					</button>
+
+					<button
+						onclick={() => windowManager.openCall(project)}
+						class="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground dark:hover:text-foreground rounded hover:bg-muted transition-colors"
+						title="Voice call"
+						aria-label="Voice call"
+					>
+						<Phone class="w-3.5 h-3.5" />
 					</button>
 
 					<!-- Activity Filter Button (only for conversations tab) -->
