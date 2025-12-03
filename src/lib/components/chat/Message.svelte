@@ -5,6 +5,7 @@
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKKind } from '$lib/kinds';
 	import { User } from '$lib/ndk/ui/user';
+	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import AIReasoningBlock from './AIReasoningBlock.svelte';
 	import ToolCallContent from './ToolCallContent.svelte';
 	import SuggestionButtons from './SuggestionButtons.svelte';
@@ -34,6 +35,7 @@
 		message.event.kind === NDKKind.GenericReply && message.event.hasTag('tool')
 	);
 	const hasSuggestions = $derived(message.event.tags?.some((tag) => tag[0] === 'suggestion'));
+	const uiSettings = $derived(uiSettingsStore.settings);
 
 	// Track render performance
 	$effect(() => {
@@ -220,12 +222,14 @@
 						<!-- Typing indicator is shown in the header, no content needed -->
 					{:else if isToolCallEvent}
 						<ToolCallContent event={message.event} />
-					{:else if isReasoningEvent}
+					{:else if isReasoningEvent && uiSettings.showReasoningEvents}
 						<AIReasoningBlock
 							reasoningEvent={message.event}
 							{isStreaming}
 							{isLastMessage}
 						/>
+					{:else if isReasoningEvent}
+						<!-- Reasoning events hidden by user preference -->
 					{:else}
 						<div class="prose prose-sm text-sm max-w-none dark:prose-invert text-foreground">
 							<Streamdown

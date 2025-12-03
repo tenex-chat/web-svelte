@@ -225,6 +225,33 @@
 					></span>
 				</button>
 			</div>
+
+			<!-- Show Reasoning Events -->
+			<div class="flex items-center justify-between">
+				<div>
+					<label for="show-reasoning" class="text-sm font-medium text-foreground">
+						Show Reasoning Events
+					</label>
+					<p class="text-xs text-muted-foreground">Display AI thinking/reasoning blocks in conversations</p>
+				</div>
+				<button
+					id="show-reasoning"
+					onclick={() => uiSettingsStore.setShowReasoningEvents(!settings.showReasoningEvents)}
+					class={cn(
+						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+						settings.showReasoningEvents ? 'bg-primary' : 'bg-secondary'
+					)}
+					role="switch"
+					aria-checked={settings.showReasoningEvents}
+				>
+					<span
+						class={cn(
+							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
+							settings.showReasoningEvents ? 'translate-x-6' : 'translate-x-1'
+						)}
+					/>
+				</button>
+			</div>
 		</div>
 	</div>
 

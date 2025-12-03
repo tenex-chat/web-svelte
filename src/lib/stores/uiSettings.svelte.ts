@@ -18,6 +18,7 @@ interface UISettings {
 	compactMode: boolean;
 	animationsEnabled: boolean;
 	streamingResponsesEnabled: boolean;
+	showReasoningEvents: boolean;
 	colorScheme: string;
 	notifications: NotificationSettings;
 }
@@ -30,6 +31,7 @@ const defaultSettings: UISettings = {
 	compactMode: false,
 	animationsEnabled: true,
 	streamingResponsesEnabled: true,
+	showReasoningEvents: true,
 	colorScheme: 'default',
 	notifications: {
 		projectUpdates: true,
@@ -143,6 +145,11 @@ class UISettingsStore {
 
 	setStreamingResponsesEnabled(enabled: boolean) {
 		this.settings.streamingResponsesEnabled = enabled;
+		this.save();
+	}
+
+	setShowReasoningEvents(enabled: boolean) {
+		this.settings.showReasoningEvents = enabled;
 		this.save();
 	}
 
