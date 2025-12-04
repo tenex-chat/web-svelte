@@ -1,21 +1,25 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKThread, NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKThread, type NDKEvent } from '@nostr-dev-kit/ndk';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
-	import { User } from '$lib/ndk/ui/user';
 	import AgentConfigDialog from './AgentConfigDialog.svelte';
 	import AgentSelector from './AgentSelector.svelte';
 	import WorktreeSelector from './WorktreeSelector.svelte';
 	import NudgeSelector from './NudgeSelector.svelte';
 	import ActiveAgents from './ActiveAgents.svelte';
-	import NudgeAutocompleteItem from './NudgeAutocompleteItem.svelte';
 	import { Maximize2, Minimize2, Phone, X } from 'lucide-svelte';
 	import { nudgeStore } from '$lib/stores/nudges.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { draftStore } from '$lib/stores/drafts.svelte';
 	import { TIMING } from '$lib/constants';
+	import ReplyContextBanner from './ReplyContextBanner.svelte';
+	import MentionedAgentsPills from './MentionedAgentsPills.svelte';
+	import SelectedNudgesPills from './SelectedNudgesPills.svelte';
+	import MentionAutocomplete from './MentionAutocomplete.svelte';
+	import NudgeAutocomplete from './NudgeAutocomplete.svelte';
+    import { cn } from '$lib/ndk/utils/cn';
 
 	interface Props {
 		project?: NDKProject;
@@ -56,6 +60,9 @@
 	let textareaElement: HTMLTextAreaElement | null = $state(null);
 	let configDialogOpen = $state(false);
 	let agentToConfigurePubkey = $state<string | null>(null);
+	let cursorPosition = $state(0);
+	let mentionKeyDownHandler = $state<(e: KeyboardEvent) => boolean>(() => false);
+	let nudgeKeyDownHandler = $state<(e: KeyboardEvent) => boolean>(() => false);
 
 	// Clean up agent configuration state when dialog closes
 	$effect(() => {
@@ -172,7 +179,7 @@
 		}
 
 		// Otherwise, default to the first worktree (default branch)
-		return defaultWorktree;
+		return defaultWorktree ?? null;
 	});
 
 	// Derive the current worktree (selected takes precedence, then derived default)
@@ -198,154 +205,61 @@
 		return agent?.model || null;
 	});
 
-	// @mention autocomplete state
-	let showMentionAutocomplete = $state(false);
-	let mentionQuery = $state('');
-	let mentionStartPos = $state(0);
-	let selectedMentionIndex = $state(0);
 	let mentionedAgents = $state<string[]>([]);
 
-	// Nudge autocomplete state
-	let showNudgeAutocomplete = $state(false);
-	let nudgeQuery = $state('');
-	let nudgeStartPos = $state(0);
-	let selectedNudgeIndex = $state(0);
-
-	// Filter agents for autocomplete
-	const filteredAgents = $derived.by(() => {
-		if (!showMentionAutocomplete) return [];
-		const query = mentionQuery.toLowerCase();
-		return onlineAgents.filter((agent) => agent.name.toLowerCase().includes(query));
-	});
-
-	// Filter nudges for autocomplete (user's own nudges + saved nudges)
-	const filteredNudges = $derived.by(() => {
-		if (!showNudgeAutocomplete) return [];
-		const query = nudgeQuery.toLowerCase();
-		const displayNudges = nudgeStore.getDisplayNudges(ndk.$currentUser?.pubkey);
-		return displayNudges.filter((nudge) => {
-			const title = nudge.tagValue('title') || '';
-			const description = nudge.tagValue('description') || '';
-			return title.toLowerCase().includes(query) || description.toLowerCase().includes(query);
-		});
-	});
-
-	// Detect @ mentions and / nudges and update autocomplete
-	function handleInput() {
-		if (!textareaElement) return;
-
-		const cursorPos = textareaElement.selectionStart;
-		const textBeforeCursor = messageInput.substring(0, cursorPos);
-
-		// Check for / nudge autocomplete first
-		const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
-		if (lastSlashIndex !== -1) {
-			const charBeforeSlash = lastSlashIndex > 0 ? textBeforeCursor[lastSlashIndex - 1] : ' ';
-			const isAtWordBoundary = /\s/.test(charBeforeSlash) || lastSlashIndex === 0;
-			const textAfterSlash = textBeforeCursor.substring(lastSlashIndex + 1);
-			const hasNoSpace = !textAfterSlash.includes(' ');
-
-			if (isAtWordBoundary && hasNoSpace) {
-				showNudgeAutocomplete = true;
-				nudgeQuery = textAfterSlash;
-				nudgeStartPos = lastSlashIndex;
-				selectedNudgeIndex = 0;
-				showMentionAutocomplete = false;
-				return;
-			}
+	function updateCursorPosition() {
+		if (textareaElement) {
+			cursorPosition = textareaElement.selectionStart;
 		}
-
-		// Find the last @ before cursor
-		const lastAtIndex = textBeforeCursor.lastIndexOf('@');
-
-		if (lastAtIndex !== -1) {
-			// Check if there's a space before @ (or it's at start)
-			const charBeforeAt = lastAtIndex > 0 ? textBeforeCursor[lastAtIndex - 1] : ' ';
-			const isAtWordBoundary = /\s/.test(charBeforeAt);
-
-			// Extract text between @ and cursor
-			const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
-
-			// Check if there's no space after @
-			const hasNoSpace = !textAfterAt.includes(' ');
-
-			if (isAtWordBoundary && hasNoSpace) {
-				showMentionAutocomplete = true;
-				mentionQuery = textAfterAt;
-				mentionStartPos = lastAtIndex;
-				selectedMentionIndex = 0;
-				showNudgeAutocomplete = false;
-				return;
-			}
-		}
-
-		// Hide autocomplete
-		showMentionAutocomplete = false;
-		showNudgeAutocomplete = false;
-		mentionQuery = '';
-		nudgeQuery = '';
 	}
 
-	// Insert mention into textarea
-	function selectMention(agent: ProjectAgent) {
-		const before = messageInput.substring(0, mentionStartPos);
-		const after = messageInput.substring(textareaElement?.selectionStart || 0);
-		const mention = `@${agent.name} `;
-
+	// Handle mention selection from autocomplete
+	function handleMentionSelect(agent: ProjectAgent, mention: string, startPos: number, endPos: number) {
+		const before = messageInput.substring(0, startPos);
+		const after = messageInput.substring(endPos);
 		messageInput = before + mention + after;
 
-		// Add to mentioned agents for p-tagging
 		if (!mentionedAgents.includes(agent.pubkey)) {
 			mentionedAgents = [...mentionedAgents, agent.pubkey];
-
-			// Update selected agent to the mentioned agent (for UI display)
-			// If there's exactly one mention, show that agent in the selector
 			if (mentionedAgents.length === 1) {
 				selectedAgent = agent.pubkey;
 			}
 		}
 
-		// Hide autocomplete
-		showMentionAutocomplete = false;
-		mentionQuery = '';
-
-		// Focus and set cursor after mention
 		setTimeout(() => {
 			if (textareaElement) {
 				const newCursorPos = before.length + mention.length;
 				textareaElement.focus();
 				textareaElement.setSelectionRange(newCursorPos, newCursorPos);
+				cursorPosition = newCursorPos;
 			}
 		}, 0);
 	}
 
-	// Insert nudge selection
-	function selectNudge(nudge: NDKEvent) {
-		const before = messageInput.substring(0, nudgeStartPos);
-		const after = messageInput.substring(textareaElement?.selectionStart || 0);
-
-		// Remove the /command text from input
+	// Handle nudge selection from autocomplete
+	function handleNudgeSelect(nudge: NDKEvent, startPos: number, endPos: number) {
+		const before = messageInput.substring(0, startPos);
+		const after = messageInput.substring(endPos);
 		messageInput = before + after;
 
-		// Toggle nudge in selectedNudges
 		if (!selectedNudges.includes(nudge.id)) {
 			selectedNudges = [...selectedNudges, nudge.id];
 		}
 
-		// Hide autocomplete
-		showNudgeAutocomplete = false;
-		nudgeQuery = '';
-
-		// Focus and set cursor
 		setTimeout(() => {
 			if (textareaElement) {
 				textareaElement.focus();
 				textareaElement.setSelectionRange(before.length, before.length);
+				cursorPosition = before.length;
 			}
 		}, 0);
 	}
 
-	function removeNudge(nudgeId: string) {
+	function handleRemoveMention(pubkey: string) {
+		mentionedAgents = mentionedAgents.filter((p) => p !== pubkey);
+	}
+
+	function handleRemoveNudge(nudgeId: string) {
 		selectedNudges = selectedNudges.filter(id => id !== nudgeId);
 	}
 
@@ -490,54 +404,14 @@
 	}
 
 	function handleKeyDown(e: KeyboardEvent) {
-		// Handle nudge autocomplete navigation
-		if (showNudgeAutocomplete && filteredNudges.length > 0) {
-			if (e.key === 'ArrowDown') {
-				e.preventDefault();
-				selectedNudgeIndex = (selectedNudgeIndex + 1) % filteredNudges.length;
-				return;
-			}
-			if (e.key === 'ArrowUp') {
-				e.preventDefault();
-				selectedNudgeIndex =
-					selectedNudgeIndex === 0 ? filteredNudges.length - 1 : selectedNudgeIndex - 1;
-				return;
-			}
-			if (e.key === 'Enter' || e.key === 'Tab') {
-				e.preventDefault();
-				selectNudge(filteredNudges[selectedNudgeIndex]);
-				return;
-			}
-			if (e.key === 'Escape') {
-				e.preventDefault();
-				showNudgeAutocomplete = false;
-				return;
-			}
+		// Handle nudge autocomplete first
+		if (nudgeKeyDownHandler(e)) {
+			return;
 		}
 
-		// Handle mention autocomplete navigation
-		if (showMentionAutocomplete && filteredAgents.length > 0) {
-			if (e.key === 'ArrowDown') {
-				e.preventDefault();
-				selectedMentionIndex = (selectedMentionIndex + 1) % filteredAgents.length;
-				return;
-			}
-			if (e.key === 'ArrowUp') {
-				e.preventDefault();
-				selectedMentionIndex =
-					selectedMentionIndex === 0 ? filteredAgents.length - 1 : selectedMentionIndex - 1;
-				return;
-			}
-			if (e.key === 'Enter' || e.key === 'Tab') {
-				e.preventDefault();
-				selectMention(filteredAgents[selectedMentionIndex]);
-				return;
-			}
-			if (e.key === 'Escape') {
-				e.preventDefault();
-				showMentionAutocomplete = false;
-				return;
-			}
+		// Handle mention autocomplete
+		if (mentionKeyDownHandler(e)) {
+			return;
 		}
 
 		// In expanded mode: Cmd/Ctrl+Enter sends, Enter adds new line
@@ -579,41 +453,7 @@
 
 <div class="p-4">
 	<!-- Reply Context -->
-	{#if replyToEvent}
-		<div class="mb-3 px-3 py-2 bg-blue-50/50 backdrop-blur-sm border-l-4 border-blue-500 rounded-lg flex items-center gap-2">
-			<svg class="w-4 h-4 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-				/>
-			</svg>
-			<div class="flex-1 min-w-0">
-				<User.Root {ndk} pubkey={replyToEvent.pubkey}>
-					<div class="text-xs text-primary font-medium">Replying to <User.Name /></div>
-				</User.Root>
-				<div class="text-xs text-blue-800 truncate">
-					{replyToEvent.content.slice(0, 100)}{replyToEvent.content.length > 100 ? '...' : ''}
-				</div>
-			</div>
-			<button
-				type="button"
-				onclick={onCancelReply}
-				class="p-1 rounded hover:bg-blue-100/50 transition-colors text-primary"
-				aria-label="Cancel reply"
-			>
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M6 18L18 6M6 6l12 12"
-					/>
-				</svg>
-			</button>
-		</div>
-	{/if}
+	<ReplyContextBanner {replyToEvent} onCancel={onCancelReply} />
 
 	<!-- Glassy Input Container -->
 	<div class="relative rounded-2xl bg-card/40 backdrop-blur-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
@@ -623,67 +463,38 @@
 				<textarea
 					bind:this={textareaElement}
 					bind:value={messageInput}
-					oninput={handleInput}
+					oninput={updateCursorPosition}
+					onclick={updateCursorPosition}
 					onkeydown={handleKeyDown}
 					placeholder={isExpanded
 						? (rootEvent ? 'Type a message... (Cmd+Enter to send)' : 'Start a new conversation... (Cmd+Enter to send)')
 						: (rootEvent ? 'Type a message...' : 'Start a new conversation...')}
 					disabled={isSubmitting || !ndk.$currentUser}
-					class="w-full bg-transparent text-foreground rounded-lg resize-none focus:outline-none disabled:cursor-not-allowed placeholder:text-muted-foreground transition-all duration-200"
+					class={cn(
+						"w-full bg-transparent h-auto text-foreground rounded-lg resize-none focus:outline-none disabled:cursor-not-allowed placeholder:text-muted-foreground transition-all duration-200",
+						messageInput.length > 5 ? 'h-12' : ''
+					)}
 					rows={isExpanded ? 30 : 1}
 					style={isExpanded ? 'font-family: monospace; max-height: 60vh;' : ''}
 				></textarea>
 
-				<!-- /nudge Autocomplete Dropdown -->
-				{#if showNudgeAutocomplete && filteredNudges.length > 0}
-					<div
-						class="absolute bottom-full left-0 mb-2 w-full max-w-md bg-popover/90 backdrop-blur-xl border border-border/50 rounded-xl shadow-lg overflow-hidden z-50"
-					>
-						<div class="max-h-64 overflow-y-auto">
-							{#each filteredNudges as nudge, index (nudge.id)}
-								<NudgeAutocompleteItem
-									{nudge}
-									isActive={selectedNudges.includes(nudge.id)}
-									isSelected={index === selectedNudgeIndex}
-									onclick={() => selectNudge(nudge)}
-									onmouseenter={() => (selectedNudgeIndex = index)}
-								/>
-							{/each}
-						</div>
-						<div class="px-3 py-1 bg-muted/50 backdrop-blur-sm border-t border-border/50 text-xs text-muted-foreground">
-							↑↓ navigate • ↵ select • esc dismiss
-						</div>
-					</div>
-				{/if}
+				<!-- Nudge Autocomplete -->
+				<NudgeAutocomplete
+					{messageInput}
+					{cursorPosition}
+					{selectedNudges}
+					onSelectNudge={handleNudgeSelect}
+					bind:onKeyDown={nudgeKeyDownHandler}
+				/>
 
-				<!-- @mention Autocomplete Dropdown -->
-				{#if showMentionAutocomplete && filteredAgents.length > 0}
-					<div
-						class="absolute bottom-full left-0 mb-2 w-full max-w-xs bg-popover/90 backdrop-blur-xl border border-border/50 rounded-xl shadow-lg overflow-hidden z-50"
-					>
-						<div class="max-h-48 overflow-y-auto">
-							{#each filteredAgents as agent, index (agent.pubkey)}
-								<button
-									type="button"
-									onclick={() => selectMention(agent)}
-									onmouseenter={() => (selectedMentionIndex = index)}
-									class="w-full px-3 py-2 text-left hover:bg-blue-50/50 transition-colors {index ===
-									selectedMentionIndex
-										? 'bg-blue-100/50'
-										: ''}"
-								>
-									<div class="font-medium text-sm text-foreground">{agent.name}</div>
-									{#if agent.model}
-										<div class="text-xs text-muted-foreground">{agent.model}</div>
-									{/if}
-								</button>
-							{/each}
-						</div>
-						<div class="px-3 py-1 bg-muted/50 backdrop-blur-sm border-t border-border/50 text-xs text-muted-foreground">
-							↑↓ navigate • ↵ select • esc dismiss
-						</div>
-					</div>
-				{/if}
+				<!-- Mention Autocomplete -->
+				<MentionAutocomplete
+					{messageInput}
+					{cursorPosition}
+					{onlineAgents}
+					onSelectMention={handleMentionSelect}
+					bind:onKeyDown={mentionKeyDownHandler}
+				/>
 			</div>
 
 			<!-- Controls Row: Agent Selector, Active Agents, Attachment -->
@@ -776,65 +587,11 @@
 		</div>
 	</div>
 
-	<!-- Mentioned Agents Indicator (only show when multiple agents mentioned) -->
-	{#if mentionedAgents.length > 1}
-		<div class="mt-3 flex items-center gap-2 flex-wrap">
-			<span class="text-xs text-muted-foreground">Mentioning:</span>
-			{#each mentionedAgents as pubkey (pubkey)}
-				{@const agent = onlineAgents.find((a) => a.pubkey === pubkey)}
-				{#if agent}
-					<span
-						class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100/50 backdrop-blur-sm text-blue-800 rounded-full text-xs"
-					>
-						<span>@{agent.name}</span>
-						<button
-							type="button"
-							onclick={() => {
-								mentionedAgents = mentionedAgents.filter((p) => p !== pubkey);
-							}}
-							class="hover:bg-blue-200/50 rounded-full p-0.5"
-							aria-label="Remove mention"
-						>
-							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M6 18L18 6M6 6l12 12"
-								/>
-							</svg>
-						</button>
-					</span>
-				{/if}
-			{/each}
-		</div>
-	{/if}
+	<!-- Mentioned Agents Indicator -->
+	<MentionedAgentsPills {mentionedAgents} {onlineAgents} onRemoveMention={handleRemoveMention} />
 
 	<!-- Selected Nudges Indicator -->
-	{#if selectedNudges.length > 0}
-		<div class="mt-3 flex items-center gap-2 flex-wrap">
-			<span class="text-xs text-muted-foreground">Nudges:</span>
-			{#each selectedNudges as nudgeId (nudgeId)}
-				{@const nudge = nudgeStore.nudges.find((n) => n.id === nudgeId)}
-				{#if nudge}
-					{@const title = nudge.tagValue('title') || 'Untitled'}
-					<span
-						class="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 backdrop-blur-sm text-primary rounded-full text-xs"
-					>
-						<span>/{title}</span>
-						<button
-							type="button"
-							onclick={() => removeNudge(nudgeId)}
-							class="hover:bg-primary/20 rounded-full p-0.5"
-							aria-label="Remove nudge"
-						>
-							<X class="w-3 h-3" />
-						</button>
-					</span>
-				{/if}
-			{/each}
-		</div>
-	{/if}
+	<SelectedNudgesPills {selectedNudges} onRemoveNudge={handleRemoveNudge} />
 </div>
 
 <!-- Agent Configuration Dialog -->
