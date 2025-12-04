@@ -41483,108 +41483,92 @@ function setEventSync(db, event, relay) {
 // src/binary/encoder.ts
 var MAGIC_NUMBER = 1313821524;
 var VERSION = 1;
-var textEncoder = new TextEncoder;
 function hexToBytes4(hex2) {
   if (hex2.length % 2 !== 0) {
     throw new Error("Hex string must have even length");
   }
   const bytes4 = new Uint8Array(hex2.length / 2);
   for (let i3 = 0;i3 < hex2.length; i3 += 2) {
-    const hi = hex2.charCodeAt(i3);
-    const lo = hex2.charCodeAt(i3 + 1);
-    const hiVal = hi > 96 ? hi - 87 : hi > 64 ? hi - 55 : hi - 48;
-    const loVal = lo > 96 ? lo - 87 : lo > 64 ? lo - 55 : lo - 48;
-    bytes4[i3 / 2] = hiVal << 4 | loVal;
+    bytes4[i3 / 2] = parseInt(hex2.substring(i3, i3 + 2), 16);
   }
   return bytes4;
 }
 function encodeString(str) {
-  return textEncoder.encode(str);
+  return new TextEncoder().encode(str);
 }
-function preEncodeEvent(event) {
-  const idBytes = hexToBytes4(event.id);
-  const pubkeyBytes = hexToBytes4(event.pubkey);
-  const sigBytes = hexToBytes4(event.sig);
-  const contentBytes = encodeString(event.content);
-  const tagBytes = [];
-  for (const tag of event.tags) {
-    const encodedTag = [];
-    for (const item of tag) {
-      encodedTag.push(encodeString(item));
-    }
-    tagBytes.push(encodedTag);
-  }
-  const relayBytes = event.relay_url ? encodeString(event.relay_url) : null;
+function calculateEventSize(event) {
   let size = 4;
   size += 32;
   size += 32;
   size += 4;
   size += 2;
   size += 64;
+  const contentBytes = encodeString(event.content);
   size += 4;
   size += contentBytes.length;
   size += 2;
-  for (const tag of tagBytes) {
+  for (const tag of event.tags) {
     size += 1;
     for (const item of tag) {
+      const itemBytes = encodeString(item);
       size += 2;
-      size += item.length;
+      size += itemBytes.length;
     }
   }
   size += 1;
-  if (relayBytes) {
+  if (event.relay_url) {
+    const relayBytes = encodeString(event.relay_url);
     size += 2;
     size += relayBytes.length;
   }
-  return {
-    idBytes,
-    pubkeyBytes,
-    sigBytes,
-    contentBytes,
-    tagBytes,
-    relayBytes,
-    totalSize: size
-  };
+  return size;
 }
-function writeEncodedEvent(event, encoded, buffer, offset) {
+function encodeEvent(event, buffer, offset) {
   const view = new DataView(buffer);
   const uint8 = new Uint8Array(buffer);
   let pos = offset;
-  view.setUint32(pos, encoded.totalSize, true);
+  const eventSize = calculateEventSize(event);
+  view.setUint32(pos, eventSize, true);
   pos += 4;
-  uint8.set(encoded.idBytes, pos);
+  const idBytes = hexToBytes4(event.id);
+  uint8.set(idBytes, pos);
   pos += 32;
-  uint8.set(encoded.pubkeyBytes, pos);
+  const pubkeyBytes = hexToBytes4(event.pubkey);
+  uint8.set(pubkeyBytes, pos);
   pos += 32;
   view.setUint32(pos, event.created_at, true);
   pos += 4;
   view.setUint16(pos, event.kind, true);
   pos += 2;
-  uint8.set(encoded.sigBytes, pos);
+  const sigBytes = hexToBytes4(event.sig);
+  uint8.set(sigBytes, pos);
   pos += 64;
-  view.setUint32(pos, encoded.contentBytes.length, true);
+  const contentBytes = encodeString(event.content);
+  view.setUint32(pos, contentBytes.length, true);
   pos += 4;
-  uint8.set(encoded.contentBytes, pos);
-  pos += encoded.contentBytes.length;
-  view.setUint16(pos, encoded.tagBytes.length, true);
+  uint8.set(contentBytes, pos);
+  pos += contentBytes.length;
+  view.setUint16(pos, event.tags.length, true);
   pos += 2;
-  for (const tag of encoded.tagBytes) {
+  for (const tag of event.tags) {
     view.setUint8(pos, tag.length);
     pos += 1;
     for (const item of tag) {
-      view.setUint16(pos, item.length, true);
+      const itemBytes = encodeString(item);
+      view.setUint16(pos, itemBytes.length, true);
       pos += 2;
-      uint8.set(item, pos);
-      pos += item.length;
+      uint8.set(itemBytes, pos);
+      pos += itemBytes.length;
     }
   }
-  if (encoded.relayBytes) {
+  if (event.relay_url) {
     view.setUint8(pos, 1);
     pos += 1;
-    view.setUint16(pos, encoded.relayBytes.length, true);
+    const relayBytes = encodeString(event.relay_url);
+    view.setUint16(pos, relayBytes.length, true);
     pos += 2;
-    uint8.set(encoded.relayBytes, pos);
-    pos += encoded.relayBytes.length;
+    uint8.set(relayBytes, pos);
+    pos += relayBytes.length;
   } else {
     view.setUint8(pos, 0);
     pos += 1;
@@ -41592,12 +41576,10 @@ function writeEncodedEvent(event, encoded, buffer, offset) {
   return pos;
 }
 function encodeEvents(events) {
-  const encodedEvents = [];
   let totalSize = 4 + 1 + 4;
   for (const event of events) {
-    const encoded = preEncodeEvent(event);
-    encodedEvents.push(encoded);
-    totalSize += encoded.totalSize;
+    const eventSize = calculateEventSize(event);
+    totalSize += eventSize;
   }
   const buffer = new ArrayBuffer(totalSize);
   const view = new DataView(buffer);
@@ -41609,7 +41591,7 @@ function encodeEvents(events) {
   view.setUint32(offset, events.length, true);
   offset += 4;
   for (let i3 = 0;i3 < events.length; i3++) {
-    offset = writeEncodedEvent(events[i3], encodedEvents[i3], buffer, offset);
+    offset = encodeEvent(events[i3], buffer, offset);
   }
   return buffer;
 }
@@ -41920,12 +41902,9 @@ self.onmessage = async (event) => {
         break;
       }
       case "query": {
-        const queryStart = performance.now();
         const { filters, subId } = payload;
         const queryResult = querySync(db, filters, subId);
-        const sqlTime = performance.now() - queryStart;
         if (queryResult.length > 0) {
-          const parseStart = performance.now();
           const eventsForEncoding = queryResult.map((row) => {
             let eventData;
             if (typeof row.raw === "string") {
@@ -41973,25 +41952,13 @@ self.onmessage = async (event) => {
               relay_url: row.relay_url || null
             };
           });
-          const parseTime = performance.now() - parseStart;
-          const encodeStart = performance.now();
           const buffer = encodeEvents(eventsForEncoding);
-          const encodeTime = performance.now() - encodeStart;
-          const totalWorkerTime = performance.now() - queryStart;
-          const kindCounts = new Map;
-          for (const event2 of eventsForEncoding) {
-            kindCounts.set(event2.kind, (kindCounts.get(event2.kind) || 0) + 1);
-          }
-          const kindSummary = Array.from(kindCounts.entries()).sort((a, b) => b[1] - a[1]).map(([kind, count]) => `${count}×kind${kind}`).join(", ");
-          console.log(`[Worker Query] Total: ${totalWorkerTime.toFixed(1)}ms | ` + `SQL: ${sqlTime.toFixed(1)}ms | ` + `Parse: ${parseTime.toFixed(1)}ms | ` + `Encode: ${encodeTime.toFixed(1)}ms | ` + `Events: ${eventsForEncoding.length} | ` + `Size: ${(buffer.byteLength / 1024).toFixed(1)}KB`);
-          console.log(`[Worker Query] Kinds: ${kindSummary}`);
           result = {
             type: "binary",
             buffer,
             eventCount: eventsForEncoding.length
           };
         } else {
-          console.log(`[Worker Query] No results in ${sqlTime.toFixed(1)}ms`);
           result = {
             type: "binary",
             buffer: new ArrayBuffer(0),

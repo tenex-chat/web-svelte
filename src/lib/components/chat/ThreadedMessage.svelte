@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { NDKEvent } from '@nostr-dev-kit/ndk';
+	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { ndk } from '$lib/ndk.svelte';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { ChevronDown, ChevronRight } from 'lucide-svelte';
@@ -125,6 +125,7 @@
 			hasNextConsecutive={replies.length > 0 && replies[0].event.pubkey === currentEvent.pubkey}
 			{onTimeClick}
 		/>
+		messages = {replyProperties.length}
 
 		<!-- Render direct replies recursively -->
 		{#each replyProperties as { message: replyMsg, isConsecutive: replyConsecutive, hasNextConsecutive: replyHasNext, isLastReasoningMessage: replyLastReasoning } (replyMsg.id)}

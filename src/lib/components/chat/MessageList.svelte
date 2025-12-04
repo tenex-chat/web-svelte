@@ -120,7 +120,7 @@
 				conversationState = new ConversationState(ndk, rootEvent, {
 					viewMode,
 					currentUserPubkey: ndk.$currentUser?.pubkey,
-					debug: false // Disable debug logging now that issue is fixed
+					debug: true
 				});
 
 				conversationState.start();

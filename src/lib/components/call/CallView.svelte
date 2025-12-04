@@ -121,10 +121,6 @@
 	// Get messages from conversation state
 	const messages = $derived(conversationState?.displayMessages || []);
 
-	$effect(() => {
-		console.log("[CALLVIEW]", conversationState?.displayMessages?.length);
-	})
-
 	// Thread management functions matching MessagingController interface
 	async function createThread(
 		content: string,

@@ -270,7 +270,7 @@
 								class="prose prose-sm text-sm max-w-none dark:prose-invert text-foreground"
 								parseIncompleteMarkdown={true}
 								animation={{
-									enabled: isStreaming,
+									enabled: false,
 									type: 'blur',
 									duration: 300,
 									tokenize: 'word'

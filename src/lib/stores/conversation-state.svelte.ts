@@ -35,7 +35,6 @@ export class ConversationState {
 	// Options
 	private rootEvent: NDKEvent | null;
 	private viewMode: ThreadViewMode;
-	private currentUserPubkey?: string;
 	private directRepliesOnly: boolean;
 	private debug: boolean;
 	private maxReconnectAttempts: number;
@@ -243,35 +242,35 @@ export class ConversationState {
 			this.log('Added root event to messages', { eventId: this.rootEvent.id });
 		}
 
+		const onEvent = (event: NDKEvent) => {
+			try {
+				this.processEvent(event);
+			} catch (error) {
+				console.error('[ConversationState] Error processing event:', error, event);
+			}
+		}
+
 		try {
 			const filters = this.buildFilters();
 			this.log('Starting subscription with filters', filters);
 
 			// Use event-driven subscription with onEvent callback
 			this.subscription = this.ndk.subscribe(filters, {
-				closeOnEose: false
-			});
-
-			// Process each event as it arrives (O(1) per event)
-			this.subscription.on('event', (event: NDKEvent) => {
-				try {
-					this.processEvent(event);
-				} catch (error) {
-					console.error('[ConversationState] Error processing event:', error, event);
+				closeOnEose: false,
+				onEvents: (events: NDKEvent[]) => {
+					for (const e of events) {
+						if (e.kind === NDKKind.GenericReply)
+							onEvent(e);
+					}
+				},
+				onEvent,
+				onClose: () => {
+					this.log('Subscription closed');
+					if (!this.isDestroyed) {
+						this.handleSubscriptionError();
+					}
 				}
 			});
-
-			// Handle subscription close
-			this.subscription.on('close', () => {
-				this.log('Subscription closed');
-				if (!this.isDestroyed) {
-					this.handleSubscriptionError();
-				}
-			});
-
-			// Start the subscription
-			this.subscription.start();
-			this.log('Subscription started successfully');
 
 			// Reset reconnection attempts on successful start
 			this.reconnectAttempts = 0;
@@ -399,11 +398,11 @@ export class ConversationState {
 				this.handleStreamingEvent(event, pubkey);
 				break;
 
-			case NDKKind.TenexAgentTypingStart: // 21081 - Typing start
+			case NDKKind.TenexAgentTypingStart: // 24111 - Typing start
 				this.handleTypingStart(event, pubkey);
 				break;
 
-			case NDKKind.TenexAgentTypingStop: // 21082 - Typing stop
+			case NDKKind.TenexAgentTypingStop: // 24112 - Typing stop
 				this.handleTypingStop(pubkey);
 				break;
 
@@ -502,7 +501,7 @@ export class ConversationState {
 	}
 
 	/**
-	 * Handle typing start event (kind 21081)
+	 * Handle typing start event (kind 24111)
 	 */
 	private handleTypingStart(event: NDKEvent, pubkey: string): void {
 		// Clear any streaming session when typing starts
@@ -510,12 +509,29 @@ export class ConversationState {
 			this.streamingSessions.delete(pubkey);
 		}
 
+		// Check if a final message from this pubkey already exists
+		// If so, don't show typing indicator (handles out-of-order event arrival)
+		const typing_timestamp = event.created_at ?? 0;
+		for (const message of this.messages.values()) {
+			if (message.event.pubkey === pubkey &&
+				message.event.kind === NDKKind.GenericReply &&
+				(message.event.created_at ?? 0) >= typing_timestamp) {
+				this.log('Ignoring typing indicator, final message already exists', {
+					pubkey: pubkey.substring(0, 8),
+					typing_timestamp,
+					final_timestamp: message.event.created_at
+				});
+				return; // Don't set typing indicator
+			}
+		}
+
 		// Set typing indicator
 		this.typingIndicators.set(pubkey, event);
+		this.log('Set typing indicator for pubkey', { pubkey: pubkey.substring(0, 8) });
 	}
 
 	/**
-	 * Handle typing stop event (kind 21082)
+	 * Handle typing stop event (kind 24112)
 	 */
 	private handleTypingStop(pubkey: string): void {
 		// Remove typing indicator
