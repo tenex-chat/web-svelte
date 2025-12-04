@@ -6,6 +6,8 @@
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import AIAssistedPromptEditor from './AIAssistedPromptEditor.svelte';
+	import ToolAutocomplete from './ToolAutocomplete.svelte';
+	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 
 	type ForkAgentData = Partial<AgentDefType> & {
 		id?: string;
@@ -46,6 +48,11 @@
 	let phases = $state<Array<{ name: string; instructions: string }>>([]);
 	let newTool = $state('');
 	let showAIEditor = $state(false);
+	let toolKeyDownHandler = $state<(e: KeyboardEvent) => boolean>(() => false);
+	let toolAutocompleteRef = $state<any>(null);
+	let toolInputRef = $state<HTMLInputElement | null>(null);
+
+	const availableTools = $derived(projectStatusStore.allTools.filter((t) => !t.startsWith('mcp__')));
 
 	$effect(() => {
 		if (open && forkAgent) {
@@ -279,6 +286,23 @@
 		tools = tools.filter((t) => t !== tool);
 	}
 
+	function handleToolKeyDown(e: KeyboardEvent) {
+		if (toolKeyDownHandler(e)) {
+			return;
+		}
+
+		if (e.key === 'Enter') {
+			addTool();
+		}
+	}
+
+	function selectTool(tool: string) {
+		if (!tools.includes(tool)) {
+			tools = [...tools, tool];
+			newTool = '';
+		}
+	}
+
 	function addPhase() {
 		phases = [...phases, { name: '', instructions: '' }];
 	}
@@ -465,20 +489,34 @@
 								Specify which tools this agent needs access to. Users will be notified when adding this
 								agent.
 							</p>
-							<div class="flex gap-2 mb-2">
-								<input
-									type="text"
-									bind:value={newTool}
-									onkeydown={(e) => e.key === 'Enter' && addTool()}
-									placeholder="Add a tool name..."
-									class="flex-1 px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							<div class="relative">
+								<ToolAutocomplete
+									bind:this={toolAutocompleteRef}
+									inputValue={newTool}
+									availableTools={availableTools}
+									excludeTools={tools}
+									onSelectTool={selectTool}
+									bind:onKeyDown={toolKeyDownHandler}
+									inputElement={toolInputRef}
 								/>
-								<button
-									onclick={addTool}
-									class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-								>
-									Add
-								</button>
+								<div class="flex gap-2 mb-2">
+									<input
+										bind:this={toolInputRef}
+										type="text"
+										bind:value={newTool}
+										onkeydown={handleToolKeyDown}
+										onfocus={() => toolAutocompleteRef?.show()}
+										onblur={() => setTimeout(() => toolAutocompleteRef?.hide(), 200)}
+										placeholder="Add a tool name..."
+										class="flex-1 px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+									/>
+									<button
+										onclick={addTool}
+										class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+									>
+										Add
+									</button>
+								</div>
 							</div>
 							<div class="flex flex-wrap gap-2">
 								{#each tools as tool}
