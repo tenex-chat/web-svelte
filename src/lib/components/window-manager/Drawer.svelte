@@ -194,7 +194,7 @@
 						thread.tagValue('title') || 'Conversation'
 					);
 				}}
-				{viewMode}
+				bind:viewMode
 				hideHeader={true}
 				bind:messages
 			/>

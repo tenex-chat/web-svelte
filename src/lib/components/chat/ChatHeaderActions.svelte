@@ -3,7 +3,8 @@
 	import { type ChatViewMode, type Message } from '$lib/utils/messageUtils';
 	import ChatActionsMenu from './ChatActionsMenu.svelte';
 	import CopyThreadMenu from './CopyThreadMenu.svelte';
-	import { GitFork, MessageSquareText, List, AlignJustify } from 'lucide-svelte';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { GitFork, List, AlignJustify, Check, LayoutList } from 'lucide-svelte';
 
 	interface Props {
 		rootEvent?: NDKEvent | null;
@@ -13,28 +14,24 @@
 
 	let { rootEvent, messages, viewMode = $bindable('threaded') }: Props = $props();
 
-	function cycleViewMode() {
-		if (viewMode === 'threaded') {
-			viewMode = 'flattened';
-		} else if (viewMode === 'flattened') {
-			viewMode = 'delegation';
-		} else {
-			viewMode = 'threaded';
+	function setViewMode(mode: ChatViewMode) {
+		viewMode = mode;
+	}
+
+	function getCurrentIcon() {
+		switch (viewMode) {
+			case 'threaded':
+				return List;
+			case 'flattened':
+				return AlignJustify;
+			case 'delegation':
+				return GitFork;
+			default:
+				return List;
 		}
 	}
 
-	function getViewModeTitle(): string {
-		switch (viewMode) {
-			case 'threaded':
-				return 'Switch to flat view';
-			case 'flattened':
-				return 'Switch to tree view';
-			case 'delegation':
-				return 'Switch to threaded view';
-			default:
-				return 'Toggle view mode';
-		}
-	}
+	const CurrentIcon = $derived(getCurrentIcon());
 </script>
 
 <!-- Chat Actions Menu (Summarize, etc.) -->
@@ -45,17 +42,52 @@
 <!-- Copy Thread Menu -->
 <CopyThreadMenu {messages} rootEvent={rootEvent ?? null} />
 
-<!-- View Mode Toggle -->
-<button
-	onclick={cycleViewMode}
-	class="p-2 hover:bg-secondary rounded transition-colors"
-	title={getViewModeTitle()}
->
-	{#if viewMode === 'threaded'}
-		<List class="w-4 h-4 text-muted-foreground" />
-	{:else if viewMode === 'flattened'}
-		<AlignJustify class="w-4 h-4 text-muted-foreground" />
-	{:else}
-		<GitFork class="w-4 h-4 text-muted-foreground" />
-	{/if}
-</button>
+<!-- View Mode Dropdown -->
+<DropdownMenu.Root>
+	<DropdownMenu.Trigger>
+		{#snippet child({ props })}
+			<button
+				{...props}
+				class="p-2 hover:bg-secondary rounded transition-colors"
+				title="Change view mode"
+			>
+				<CurrentIcon class="w-4 h-4 text-muted-foreground" />
+			</button>
+		{/snippet}
+	</DropdownMenu.Trigger>
+	<DropdownMenu.Content align="end" class="w-[180px]">
+		<DropdownMenu.Item onclick={() => setViewMode('threaded')}>
+			<div class="flex items-center justify-between w-full">
+				<div class="flex items-center gap-2">
+					<List class="w-4 h-4" />
+					<span>Threaded</span>
+				</div>
+				{#if viewMode === 'threaded'}
+					<Check class="w-4 h-4" />
+				{/if}
+			</div>
+		</DropdownMenu.Item>
+		<DropdownMenu.Item onclick={() => setViewMode('flattened')}>
+			<div class="flex items-center justify-between w-full">
+				<div class="flex items-center gap-2">
+					<AlignJustify class="w-4 h-4" />
+					<span>Flat</span>
+				</div>
+				{#if viewMode === 'flattened'}
+					<Check class="w-4 h-4" />
+				{/if}
+			</div>
+		</DropdownMenu.Item>
+		<DropdownMenu.Item onclick={() => setViewMode('delegation')}>
+			<div class="flex items-center justify-between w-full">
+				<div class="flex items-center gap-2">
+					<GitFork class="w-4 h-4" />
+					<span>Tree View</span>
+				</div>
+				{#if viewMode === 'delegation'}
+					<Check class="w-4 h-4" />
+				{/if}
+			</div>
+		</DropdownMenu.Item>
+	</DropdownMenu.Content>
+</DropdownMenu.Root>

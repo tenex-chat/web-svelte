@@ -21,9 +21,7 @@
 		messages?: Message[];
 	}
 
-	let { project = $bindable(), projectId, rootEvent = $bindable(null), threadId, onlineAgents = [], onThreadCreated, viewMode: initialViewMode = 'threaded', hideHeader = false, messages = $bindable([]) }: Props = $props();
-
-	let currentViewMode = $state<ChatViewMode>(initialViewMode);
+	let { project = $bindable(), projectId, rootEvent = $bindable(null), threadId, onlineAgents = [], onThreadCreated, viewMode = $bindable<ChatViewMode>('threaded'), hideHeader = false, messages = $bindable([]) }: Props = $props();
 
 	// Fetch project if projectId provided but project not available
 	$effect(() => {
@@ -110,16 +108,16 @@
 			<ChatHeader
 				rootEvent={localRootEvent}
 				{messages}
-				viewMode={currentViewMode}
-				onViewModeChange={(mode) => (currentViewMode = mode)}
+				viewMode={viewMode}
+				onViewModeChange={(mode) => (viewMode = mode)}
 			/>
 		{/if}
 
 		<!-- Messages - MessageList always runs for subscription management -->
-		<div class={currentViewMode === 'delegation' ? 'hidden' : 'contents'}>
+		<div class={viewMode === 'delegation' ? 'hidden' : 'contents'}>
 			<MessageList
 				rootEvent={localRootEvent}
-				viewMode={currentViewMode === 'flattened' ? 'flattened' : 'threaded'}
+				viewMode={viewMode === 'flattened' ? 'flattened' : 'threaded'}
 				onReply={handleReply}
 				onQuote={handleQuote}
 				onTimeClick={handleTimeClick}
@@ -127,7 +125,7 @@
 			/>
 		</div>
 
-		{#if currentViewMode === 'delegation'}
+		{#if viewMode === 'delegation'}
 			<DelegationTreeView
 				rootEvent={localRootEvent}
 				{messages}
