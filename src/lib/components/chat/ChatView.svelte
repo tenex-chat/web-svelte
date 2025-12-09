@@ -9,7 +9,7 @@
 	import ChatHeader from './ChatHeader.svelte';
 	import DelegationTreeView from './DelegationTreeView.svelte';
 
-	type ViewMode = 'threaded' | 'delegation';
+	type ChatViewMode = 'threaded' | 'flattened' | 'delegation';
 
 	interface Props {
 		project?: NDKProject;
@@ -25,7 +25,7 @@
 
 	let { project = $bindable(), projectId, rootEvent = $bindable(null), threadId, onlineAgents = [], onThreadCreated, viewMode: initialViewMode = 'threaded', hideHeader = false, messages = $bindable([]) }: Props = $props();
 
-	let viewMode = $state<ViewMode>(initialViewMode);
+	let currentViewMode = $state<ChatViewMode>(initialViewMode);
 
 	// Fetch project if projectId provided but project not available
 	$effect(() => {
@@ -112,23 +112,23 @@
 			<ChatHeader
 				rootEvent={localRootEvent}
 				{messages}
-				{viewMode}
-				onViewModeChange={(mode) => (viewMode = mode)}
+				viewMode={currentViewMode}
+				onViewModeChange={(mode) => (currentViewMode = mode)}
 			/>
 		{/if}
 
 		<!-- Messages -->
-		{#if viewMode === 'threaded'}
+		{#if currentViewMode === 'delegation'}
+			<DelegationTreeView rootEvent={localRootEvent} />
+		{:else}
 			<MessageList
 				rootEvent={localRootEvent}
-				viewMode="threaded"
+				viewMode={currentViewMode === 'flattened' ? 'flattened' : 'threaded'}
 				onReply={handleReply}
 				onQuote={handleQuote}
 				onTimeClick={handleTimeClick}
 				bind:messages
 			/>
-		{:else}
-			<DelegationTreeView rootEvent={localRootEvent} />
 		{/if}
 
 		<!-- Input -->

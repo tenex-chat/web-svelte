@@ -4,7 +4,6 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import type { Message } from '$lib/utils/messageUtils';
 	import * as d3 from 'd3';
-	import { onMount } from 'svelte';
 
 	interface DelegationNode {
 		id: string;
@@ -20,9 +19,11 @@
 
 	let tree = $state<DelegationNode | null>(null);
 	let conversationState = $state<ConversationState | null>(null);
-	let svgElement: SVGElement;
+	let svgElement: SVGSVGElement | undefined = $state();
+	let containerElement: HTMLDivElement | undefined = $state();
 	let nodes = $state<d3.HierarchyPointNode<DelegationNode>[]>([]);
 	let links = $state<d3.HierarchyPointLink<DelegationNode>[]>([]);
+	let transform = $state('translate(0, 50)');
 
 	$effect(() => {
 		conversationState = new ConversationState(ndk, rootEvent, {
@@ -40,7 +41,6 @@
 	const messages = $derived(conversationState?.displayMessages || []);
 
 	function buildTree(messages: Message[], rootId: string): DelegationNode | null {
-		const messageMap = new Map<string, Message>(messages.map((m) => [m.id, m]));
 		const nodeMap = new Map<string, DelegationNode>();
 
 		for (const message of messages) {
@@ -72,51 +72,96 @@
 		}
 	});
 
+	// Layout calculation effect
 	$effect(() => {
-		if (tree && svgElement) {
-			const width = svgElement.clientWidth;
-			const height = svgElement.clientHeight;
-			const root = d3.hierarchy(tree, (d) => d.children);
-			const treeLayout = d3.tree<DelegationNode>().size([width, height - 100]);
-			const treeData = treeLayout(root);
-			nodes = treeData.descendants();
-			links = treeData.links();
+		if (!tree || !containerElement) return;
 
-			const svg = d3.select(svgElement);
-			const g = svg.select("g");
+		const width = containerElement.clientWidth || 800;
+		const height = containerElement.clientHeight || 600;
 
-			const zoom = d3.zoom().on("zoom", (event) => {
-				g.attr("transform", event.transform);
+		const root = d3.hierarchy(tree, (d) => d.children);
+		const treeLayout = d3.tree<DelegationNode>().size([width - 250, height - 150]);
+		const treeData = treeLayout(root);
+
+		nodes = treeData.descendants();
+		links = treeData.links();
+	});
+
+	// Zoom/pan effect - separate to avoid recreating on every tree change
+	$effect(() => {
+		if (!svgElement) return;
+
+		const svg = d3.select(svgElement);
+
+		const zoom = d3.zoom<SVGSVGElement, unknown>()
+			.scaleExtent([0.1, 4])
+			.on('zoom', (event) => {
+				transform = event.transform.toString();
 			});
 
-			svg.call(zoom);
-		}
+		svg.call(zoom);
+
+		// Set initial transform
+		svg.call(zoom.transform, d3.zoomIdentity.translate(50, 50));
+
+		return () => {
+			svg.on('.zoom', null);
+		};
 	});
+
+	function linkPath(link: d3.HierarchyPointLink<DelegationNode>): string {
+		const path = d3.linkVertical<d3.HierarchyPointLink<DelegationNode>, d3.HierarchyPointNode<DelegationNode>>()
+			.x(d => d.x)
+			.y(d => d.y);
+		return path(link) || '';
+	}
+
+	function truncateText(text: string, maxLength: number): string {
+		if (text.length <= maxLength) return text;
+		return text.substring(0, maxLength) + '...';
+	}
 </script>
 
-<div class="w-full h-full bg-background p-4 overflow-auto">
-	<h2 class="text-lg font-semibold mb-4">Delegation Tree View</h2>
-	<div class="w-full h-full" bind:this={svgElement}>
-		<svg class="w-full h-full">
-			<g transform="translate(0, 50)">
-				{#each links as link}
+<div class="flex flex-col h-full bg-background overflow-hidden">
+	<div class="px-4 py-2 border-b border-border">
+		<h2 class="text-sm font-medium text-muted-foreground">Delegation Tree</h2>
+	</div>
+
+	<div class="flex-1 overflow-hidden" bind:this={containerElement}>
+		<svg
+			bind:this={svgElement}
+			class="w-full h-full"
+			style="cursor: grab;"
+		>
+			<g {transform}>
+				{#each links as link (link.source.data.id + '-' + link.target.data.id)}
 					<path
-						class="fill-none stroke-current text-gray-300"
-						d={d3.linkVertical()
-							.x(d => d.x)
-							.y(d => d.y)
-							(link)}
+						class="fill-none stroke-muted-foreground/30"
+						stroke-width="2"
+						d={linkPath(link)}
 					/>
 				{/each}
-				{#each nodes as node}
-					<g transform="translate({node.x}, {node.y})">
-						<rect width="200" height="100" rx="10" class="fill-current text-blue-100" />
-						<text dy="1.2em" dx="0.5em" class="text-xs fill-current text-gray-800 font-bold">
-							{node.data.event.pubkey.substring(0, 16)}
+				{#each nodes as node (node.data.id)}
+					<g transform="translate({node.x - 100}, {node.y})">
+						<rect
+							width="200"
+							height="80"
+							rx="8"
+							class="fill-card stroke-border"
+							stroke-width="1"
+						/>
+						<text
+							dy="1.5em"
+							dx="0.75em"
+							class="text-xs fill-muted-foreground font-mono"
+						>
+							{node.data.event.pubkey.substring(0, 12)}...
 						</text>
-						<text dy="2.8em" dx="0.5em" class="text-xs fill-current text-gray-600">
-							{node.data.event.content.substring(0, 100)}...
-						</text>
+						<foreignObject x="8" y="28" width="184" height="44">
+							<div class="text-xs text-foreground line-clamp-2 overflow-hidden">
+								{truncateText(node.data.event.content, 80)}
+							</div>
+						</foreignObject>
 					</g>
 				{/each}
 			</g>
