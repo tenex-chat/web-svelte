@@ -55,15 +55,22 @@
 	// Profile cache - using SvelteMap for reactivity
 	let profileCache = new SvelteMap<string, NDKUserProfile>();
 
-	// Build tree from messages
+	// Build tree from messages using conversation flow logic
+	// Messages connect to the previous message from a different author,
+	// unless they p-tag someone (which starts a new delegation branch)
 	function buildTree(messages: Message[], rootId: string): TreeNode | null {
 		if (messages.length === 0) return null;
+
+		// Sort messages chronologically
+		const sortedMessages = [...messages].sort(
+			(a, b) => (a.event.created_at ?? 0) - (b.event.created_at ?? 0)
+		);
 
 		// Using regular Map here since it's not reactive state, just internal computation
 		const nodeMap = new Map<string, TreeNode>();
 
 		// Create nodes for all messages
-		for (const message of messages) {
+		for (const message of sortedMessages) {
 			nodeMap.set(message.id, {
 				id: message.id,
 				event: message.event,
@@ -74,11 +81,18 @@
 			});
 		}
 
-		// Build parent-child relationships using NIP-10 conventions
-		for (const message of messages) {
-			if (message.id === rootId) continue;
+		// Track the last message from each author for implicit threading
+		const lastMessageByAuthor = new Map<string, string>();
 
-			const parentId = findParentId(message.event, rootId);
+		// Build parent-child relationships
+		for (const message of sortedMessages) {
+			if (message.id === rootId) {
+				// Root message - just track it
+				lastMessageByAuthor.set(message.event.pubkey, message.id);
+				continue;
+			}
+
+			const parentId = findParentId(message, sortedMessages, rootId, lastMessageByAuthor, nodeMap);
 			if (parentId) {
 				const parentNode = nodeMap.get(parentId);
 				const childNode = nodeMap.get(message.id);
@@ -86,40 +100,69 @@
 					parentNode.children.push(childNode);
 				}
 			}
+
+			// Update last message tracker for this author
+			lastMessageByAuthor.set(message.event.pubkey, message.id);
 		}
 
 		return nodeMap.get(rootId) || null;
 	}
 
-	// Find parent event ID following NIP-10 conventions
-	function findParentId(event: NDKEvent, rootId: string): string | null {
+	// Find parent event ID using conversation flow logic
+	function findParentId(
+		message: Message,
+		allMessages: Message[],
+		rootId: string,
+		lastMessageByAuthor: Map<string, string>,
+		nodeMap: Map<string, TreeNode>
+	): string | null {
+		const event = message.event;
 		const eTags = event.tags.filter((t) => t[0] === 'e');
-		if (eTags.length === 0) return null;
+		const pTags = event.tags.filter((t) => t[0] === 'p');
 
-		// Look for explicit reply marker first (NIP-10 preferred)
+		// 1. If there's an explicit reply marker, use it
 		const replyTag = eTags.find((t) => t[3] === 'reply');
-		if (replyTag) return replyTag[1];
-
-		// Look for root marker - in that case, parent is root
-		const rootTag = eTags.find((t) => t[3] === 'root');
-		if (rootTag && eTags.length === 1) return rootTag[1];
-
-		// NIP-10 positional: last e-tag without marker is reply, first is root
-		const unmarkedTags = eTags.filter((t) => !t[3]);
-		if (unmarkedTags.length > 0) {
-			// If there's only one e-tag, it's the parent
-			if (unmarkedTags.length === 1) return unmarkedTags[0][1];
-			// Otherwise, last one is the reply target
-			return unmarkedTags[unmarkedTags.length - 1][1];
+		if (replyTag && nodeMap.has(replyTag[1])) {
+			return replyTag[1];
 		}
 
-		// If we have a root tag and other tags, the non-root one is parent
-		if (rootTag && eTags.length > 1) {
-			const nonRootTag = eTags.find((t) => t !== rootTag);
-			if (nonRootTag) return nonRootTag[1];
+		// 2. If the message p-tags someone (delegation/mention), find the last message from that person
+		if (pTags.length > 0) {
+			// Find the most recent message from any p-tagged pubkey
+			const pTaggedPubkeys = pTags.map((t) => t[1]);
+			for (const pubkey of pTaggedPubkeys) {
+				const lastMsgId = lastMessageByAuthor.get(pubkey);
+				if (lastMsgId && nodeMap.has(lastMsgId)) {
+					return lastMsgId;
+				}
+			}
 		}
 
-		// Fallback: assume replying to root
+		// 3. Find the most recent message from a DIFFERENT author (conversation flow)
+		const messageTime = event.created_at ?? 0;
+		let bestParent: string | null = null;
+		let bestParentTime = -1;
+
+		for (const [authorPubkey, lastMsgId] of lastMessageByAuthor) {
+			// Skip messages from the same author (don't connect to yourself)
+			if (authorPubkey === event.pubkey) continue;
+
+			const node = nodeMap.get(lastMsgId);
+			if (node) {
+				const nodeTime = node.event.created_at ?? 0;
+				// Must be before current message and more recent than current best
+				if (nodeTime < messageTime && nodeTime > bestParentTime) {
+					bestParent = lastMsgId;
+					bestParentTime = nodeTime;
+				}
+			}
+		}
+
+		if (bestParent) {
+			return bestParent;
+		}
+
+		// 4. Fallback: connect to root
 		return rootId;
 	}
 
