@@ -57,10 +57,12 @@
 	let replyToEvent = $state<NDKEvent | null>(null);
 	let quoteEvent = $state<NDKEvent | null>(null);
 	let navigationStack = $state<NDKEvent[]>([]);
+	let lastPropRootId = $state<string | undefined>(rootEvent?.id);
 
-	// Update local root when prop changes
+	// Update local root when prop changes (not from internal navigation)
 	$effect(() => {
-		if (rootEvent && rootEvent.id !== localRootEvent?.id) {
+		if (rootEvent && rootEvent.id !== lastPropRootId) {
+			lastPropRootId = rootEvent.id;
 			localRootEvent = rootEvent;
 			// Clear navigation stack when explicitly setting a new root from props
 			navigationStack = [];
@@ -88,17 +90,10 @@
 	}
 
 	function handleTimeClick(event: NDKEvent) {
-		console.log('handleTimeClick called', event.id);
-		console.log('Current root:', localRootEvent?.id);
-		console.log('Navigation stack before:', navigationStack.map(e => e.id));
-
 		if (localRootEvent && localRootEvent.id !== event.id) {
 			navigationStack = [...navigationStack, localRootEvent];
 		}
 		localRootEvent = event;
-
-		console.log('New root:', localRootEvent.id);
-		console.log('Navigation stack after:', navigationStack.map(e => e.id));
 	}
 </script>
 
