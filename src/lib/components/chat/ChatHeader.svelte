@@ -1,12 +1,10 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import type { Message } from '$lib/utils/messageUtils';
+	import { type ChatViewMode, type Message } from '$lib/utils/messageUtils';
 	import CopyThreadMenu from './CopyThreadMenu.svelte';
 	import ChatActionsMenu from './ChatActionsMenu.svelte';
 	import ConversationMetadataDisplay from './ConversationMetadataDisplay.svelte';
 	import { GitFork, MessageSquareText } from 'lucide-svelte';
-
-	type ChatViewMode = 'threaded' | 'flattened' | 'delegation';
 
 	interface Props {
 		rootEvent: NDKEvent;

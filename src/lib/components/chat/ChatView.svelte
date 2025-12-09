@@ -2,14 +2,12 @@
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
-	import type { ThreadViewMode, Message } from '$lib/utils/messageUtils';
+	import { type ChatViewMode, type Message } from '$lib/utils/messageUtils';
 	import { ndk } from '$lib/ndk.svelte';
 	import MessageList from './MessageList.svelte';
 	import ChatInput from './ChatInput.svelte';
 	import ChatHeader from './ChatHeader.svelte';
 	import DelegationTreeView from './DelegationTreeView.svelte';
-
-	type ChatViewMode = 'threaded' | 'flattened' | 'delegation';
 
 	interface Props {
 		project?: NDKProject;
@@ -18,7 +16,7 @@
 		threadId?: string;
 		onlineAgents?: ProjectAgent[];
 		onThreadCreated?: (thread: NDKEvent) => void;
-		viewMode?: ThreadViewMode;
+		viewMode?: ChatViewMode;
 		hideHeader?: boolean;
 		messages?: Message[];
 	}
@@ -117,10 +115,8 @@
 			/>
 		{/if}
 
-		<!-- Messages -->
-		{#if currentViewMode === 'delegation'}
-			<DelegationTreeView rootEvent={localRootEvent} />
-		{:else}
+		<!-- Messages - MessageList always runs for subscription management -->
+		<div class={currentViewMode === 'delegation' ? 'hidden' : 'contents'}>
 			<MessageList
 				rootEvent={localRootEvent}
 				viewMode={currentViewMode === 'flattened' ? 'flattened' : 'threaded'}
@@ -128,6 +124,15 @@
 				onQuote={handleQuote}
 				onTimeClick={handleTimeClick}
 				bind:messages
+			/>
+		</div>
+
+		{#if currentViewMode === 'delegation'}
+			<DelegationTreeView
+				rootEvent={localRootEvent}
+				{messages}
+				isLoading={messages.length === 0}
+				onNodeClick={handleTimeClick}
 			/>
 		{/if}
 
