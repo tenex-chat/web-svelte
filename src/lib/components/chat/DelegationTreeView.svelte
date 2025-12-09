@@ -4,18 +4,18 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import * as d3 from 'd3';
-	import { GitFork, ZoomIn, ZoomOut, Maximize2, Loader2 } from 'lucide-svelte';
+	import { GitFork, ZoomIn, ZoomOut, Maximize2, Loader2, ArrowLeft } from 'lucide-svelte';
 
 	// Layout constants
-	const NODE_WIDTH = 220;
-	const NODE_HEIGHT = 90;
-	const NODE_SPACING_X = 40;
-	const NODE_SPACING_Y = 120;
+	const NODE_WIDTH = 200;
+	const NODE_HEIGHT = 80;
+	const COLUMN_GAP = 60;
+	const ROW_GAP = 20;
 	const INITIAL_TRANSLATE_X = 50;
 	const INITIAL_TRANSLATE_Y = 50;
 	const ZOOM_MIN = 0.1;
 	const ZOOM_MAX = 4;
-	const CONTENT_MAX_LENGTH = 100;
+	const CONTENT_MAX_LENGTH = 80;
 
 	interface TreeNode {
 		id: string;
@@ -26,12 +26,25 @@
 		isCurrentUser: boolean;
 	}
 
+	interface LayoutNode {
+		node: TreeNode;
+		x: number;
+		y: number;
+	}
+
+	interface LayoutLink {
+		source: LayoutNode;
+		target: LayoutNode;
+	}
+
 	interface Props {
 		rootEvent: NDKEvent;
 		messages: Message[];
 		isLoading?: boolean;
 		currentUserPubkey?: string;
+		parentEvent?: NDKEvent | null;
 		onNodeClick?: (event: NDKEvent) => void;
+		onNavigateBack?: () => void;
 	}
 
 	let {
@@ -39,16 +52,18 @@
 		messages,
 		isLoading = false,
 		currentUserPubkey = ndk.$currentUser?.pubkey,
-		onNodeClick
+		parentEvent = null,
+		onNodeClick,
+		onNavigateBack
 	}: Props = $props();
 
 	// DOM references
 	let svgElement: SVGSVGElement | undefined = $state();
 	let containerElement: HTMLDivElement | undefined = $state();
 
-	// D3 state
-	let nodes = $state<d3.HierarchyPointNode<TreeNode>[]>([]);
-	let links = $state<d3.HierarchyPointLink<TreeNode>[]>([]);
+	// Layout state
+	let layoutNodes = $state<LayoutNode[]>([]);
+	let layoutLinks = $state<LayoutLink[]>([]);
 	let transform = $state(`translate(${INITIAL_TRANSLATE_X}, ${INITIAL_TRANSLATE_Y})`);
 	let zoomBehavior = $state<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
 
@@ -56,20 +71,15 @@
 	let profileCache = new SvelteMap<string, NDKUserProfile>();
 
 	// Build tree from messages using conversation flow logic
-	// Messages connect to the previous message from a different author,
-	// unless they p-tag someone (which starts a new delegation branch)
 	function buildTree(messages: Message[], rootId: string): TreeNode | null {
 		if (messages.length === 0) return null;
 
-		// Sort messages chronologically
 		const sortedMessages = [...messages].sort(
 			(a, b) => (a.event.created_at ?? 0) - (b.event.created_at ?? 0)
 		);
 
-		// Using regular Map here since it's not reactive state, just internal computation
 		const nodeMap = new Map<string, TreeNode>();
 
-		// Create nodes for all messages
 		for (const message of sortedMessages) {
 			nodeMap.set(message.id, {
 				id: message.id,
@@ -81,18 +91,15 @@
 			});
 		}
 
-		// Track the last message from each author for implicit threading
 		const lastMessageByAuthor = new Map<string, string>();
 
-		// Build parent-child relationships
 		for (const message of sortedMessages) {
 			if (message.id === rootId) {
-				// Root message - just track it
 				lastMessageByAuthor.set(message.event.pubkey, message.id);
 				continue;
 			}
 
-			const parentId = findParentId(message, sortedMessages, rootId, lastMessageByAuthor, nodeMap);
+			const parentId = findParentId(message, rootId, lastMessageByAuthor, nodeMap);
 			if (parentId) {
 				const parentNode = nodeMap.get(parentId);
 				const childNode = nodeMap.get(message.id);
@@ -101,17 +108,14 @@
 				}
 			}
 
-			// Update last message tracker for this author
 			lastMessageByAuthor.set(message.event.pubkey, message.id);
 		}
 
 		return nodeMap.get(rootId) || null;
 	}
 
-	// Find parent event ID using conversation flow logic
 	function findParentId(
 		message: Message,
-		allMessages: Message[],
 		rootId: string,
 		lastMessageByAuthor: Map<string, string>,
 		nodeMap: Map<string, TreeNode>
@@ -120,15 +124,12 @@
 		const eTags = event.tags.filter((t) => t[0] === 'e');
 		const pTags = event.tags.filter((t) => t[0] === 'p');
 
-		// 1. If there's an explicit reply marker, use it
 		const replyTag = eTags.find((t) => t[3] === 'reply');
 		if (replyTag && nodeMap.has(replyTag[1])) {
 			return replyTag[1];
 		}
 
-		// 2. If the message p-tags someone (delegation/mention), find the last message from that person
 		if (pTags.length > 0) {
-			// Find the most recent message from any p-tagged pubkey
 			const pTaggedPubkeys = pTags.map((t) => t[1]);
 			for (const pubkey of pTaggedPubkeys) {
 				const lastMsgId = lastMessageByAuthor.get(pubkey);
@@ -138,9 +139,6 @@
 			}
 		}
 
-		// 3. Find the most recent message (from any author) - this creates linear chains
-		// When the same author sends multiple messages, they chain together
-		// When a different author responds, the chain continues from that response
 		const messageTime = event.created_at ?? 0;
 		let bestParent: string | null = null;
 		let bestParentTime = -1;
@@ -149,7 +147,6 @@
 			const node = nodeMap.get(lastMsgId);
 			if (node) {
 				const nodeTime = node.event.created_at ?? 0;
-				// Must be before current message and more recent than current best
 				if (nodeTime < messageTime && nodeTime > bestParentTime) {
 					bestParent = lastMsgId;
 					bestParentTime = nodeTime;
@@ -161,11 +158,101 @@
 			return bestParent;
 		}
 
-		// 4. Fallback: connect to root
 		return rootId;
 	}
 
-	// Fetch profiles for all unique pubkeys
+	// Custom horizontal layout with vertical stacking for same-author chains
+	function calculateLayout(root: TreeNode): { nodes: LayoutNode[]; links: LayoutLink[] } {
+		const nodes: LayoutNode[] = [];
+		const links: LayoutLink[] = [];
+		const nodePositions = new Map<string, LayoutNode>();
+
+		function layoutColumn(
+			children: TreeNode[],
+			parentLayoutNode: LayoutNode | null,
+			columnX: number
+		): number {
+			if (children.length === 0) return 0;
+
+			// Group consecutive children by author for vertical stacking
+			const groups: TreeNode[][] = [];
+			let currentGroup: TreeNode[] = [];
+			let currentAuthor: string | null = null;
+
+			for (const child of children) {
+				if (child.event.pubkey === currentAuthor) {
+					currentGroup.push(child);
+				} else {
+					if (currentGroup.length > 0) {
+						groups.push(currentGroup);
+					}
+					currentGroup = [child];
+					currentAuthor = child.event.pubkey;
+				}
+			}
+			if (currentGroup.length > 0) {
+				groups.push(currentGroup);
+			}
+
+			let currentY = parentLayoutNode ? parentLayoutNode.y : 0;
+			let maxDescendantHeight = 0;
+
+			for (const group of groups) {
+				const groupStartY = currentY;
+
+				for (let i = 0; i < group.length; i++) {
+					const child = group[i];
+					const layoutNode: LayoutNode = {
+						node: child,
+						x: columnX,
+						y: currentY
+					};
+					nodes.push(layoutNode);
+					nodePositions.set(child.id, layoutNode);
+
+					// Link to parent or previous in chain
+					if (i === 0 && parentLayoutNode) {
+						links.push({ source: parentLayoutNode, target: layoutNode });
+					} else if (i > 0) {
+						const prevNode = nodePositions.get(group[i - 1].id);
+						if (prevNode) {
+							links.push({ source: prevNode, target: layoutNode });
+						}
+					}
+
+					// Process this node's children recursively
+					const descendantHeight = layoutColumn(
+						child.children,
+						layoutNode,
+						columnX + NODE_WIDTH + COLUMN_GAP
+					);
+
+					// Move to next row position
+					const nodeHeight = Math.max(NODE_HEIGHT + ROW_GAP, descendantHeight);
+					currentY += nodeHeight;
+				}
+
+				maxDescendantHeight = Math.max(maxDescendantHeight, currentY - groupStartY);
+			}
+
+			return currentY - (parentLayoutNode ? parentLayoutNode.y : 0);
+		}
+
+		// Layout root
+		const rootLayoutNode: LayoutNode = {
+			node: root,
+			x: 0,
+			y: 0
+		};
+		nodes.push(rootLayoutNode);
+		nodePositions.set(root.id, rootLayoutNode);
+
+		// Layout children
+		layoutColumn(root.children, rootLayoutNode, NODE_WIDTH + COLUMN_GAP);
+
+		return { nodes, links };
+	}
+
 	async function fetchProfiles(pubkeys: string[]): Promise<void> {
 		const uniquePubkeys = [...new Set(pubkeys)].filter((pk) => !profileCache.has(pk));
 		if (uniquePubkeys.length === 0) return;
@@ -186,7 +273,6 @@
 		}
 	}
 
-	// Fetch profiles when messages change
 	$effect(() => {
 		if (messages.length > 0) {
 			const pubkeys = messages.map((m) => m.event.pubkey);
@@ -194,35 +280,23 @@
 		}
 	});
 
-	// Build tree whenever messages or profiles change
 	const tree = $derived.by(() => {
 		if (messages.length === 0) return null;
 		return buildTree(messages, rootEvent.id);
 	});
 
-	// Calculate layout when tree or container changes
 	$effect(() => {
-		if (!tree || !containerElement) {
-			nodes = [];
-			links = [];
+		if (!tree) {
+			layoutNodes = [];
+			layoutLinks = [];
 			return;
 		}
 
-		const width = containerElement.clientWidth || 800;
-		const height = containerElement.clientHeight || 600;
-
-		const root = d3.hierarchy(tree, (d) => d.children);
-		const treeLayout = d3.tree<TreeNode>().size([
-			width - NODE_WIDTH - NODE_SPACING_X * 2,
-			height - NODE_HEIGHT - NODE_SPACING_Y
-		]);
-		const treeData = treeLayout(root);
-
-		nodes = treeData.descendants();
-		links = treeData.links();
+		const layout = calculateLayout(tree);
+		layoutNodes = layout.nodes;
+		layoutLinks = layout.links;
 	});
 
-	// Set up zoom behavior
 	$effect(() => {
 		if (!svgElement) return;
 
@@ -244,7 +318,6 @@
 		};
 	});
 
-	// Zoom control functions
 	function handleZoomIn() {
 		if (!svgElement || !zoomBehavior) return;
 		d3.select(svgElement).transition().duration(300).call(zoomBehavior.scaleBy, 1.5);
@@ -263,30 +336,35 @@
 			.call(zoomBehavior.transform, d3.zoomIdentity.translate(INITIAL_TRANSLATE_X, INITIAL_TRANSLATE_Y));
 	}
 
-	// Generate link path
-	function linkPath(link: d3.HierarchyPointLink<TreeNode>): string {
-		const path = d3
-			.linkVertical<d3.HierarchyPointLink<TreeNode>, d3.HierarchyPointNode<TreeNode>>()
-			.x((d) => d.x + NODE_WIDTH / 2)
-			.y((d) => d.y + NODE_HEIGHT / 2);
-		return path(link) || '';
+	function linkPath(link: LayoutLink): string {
+		const sx = link.source.x + NODE_WIDTH;
+		const sy = link.source.y + NODE_HEIGHT / 2;
+		const tx = link.target.x;
+		const ty = link.target.y + NODE_HEIGHT / 2;
+
+		// If same column (vertical chain), draw straight line
+		if (link.source.x === link.target.x) {
+			return `M ${link.source.x + NODE_WIDTH / 2} ${link.source.y + NODE_HEIGHT}
+			        L ${link.target.x + NODE_WIDTH / 2} ${link.target.y}`;
+		}
+
+		// Horizontal link with curve
+		const midX = (sx + tx) / 2;
+		return `M ${sx} ${sy} C ${midX} ${sy}, ${midX} ${ty}, ${tx} ${ty}`;
 	}
 
-	// Get display name for a node
 	function getDisplayName(node: TreeNode): string {
 		if (node.profile?.name) return node.profile.name;
 		if (node.profile?.displayName) return node.profile.displayName;
 		return node.event.pubkey.substring(0, 12) + '...';
 	}
 
-	// Truncate content
 	function truncateContent(content: string): string {
 		const cleaned = content.replace(/\n/g, ' ').trim();
 		if (cleaned.length <= CONTENT_MAX_LENGTH) return cleaned;
 		return cleaned.substring(0, CONTENT_MAX_LENGTH) + '...';
 	}
 
-	// Get node styling based on type
 	function getNodeClass(node: TreeNode): string {
 		if (node.isRoot) return 'fill-primary/10 stroke-primary';
 		if (node.isCurrentUser) return 'fill-accent/20 stroke-accent';
@@ -299,8 +377,18 @@
 </script>
 
 <div class="flex flex-col h-full bg-background overflow-hidden">
-	<!-- Zoom Controls -->
+	<!-- Controls -->
 	<div class="absolute top-14 right-4 z-10 flex flex-col gap-1">
+		{#if parentEvent && onNavigateBack}
+			<button
+				class="p-2 rounded-md bg-card border border-border hover:bg-accent transition-colors"
+				onclick={onNavigateBack}
+				aria-label="Go back"
+				title="Go back to parent"
+			>
+				<ArrowLeft class="h-4 w-4" />
+			</button>
+		{/if}
 		<button
 			class="p-2 rounded-md bg-card border border-border hover:bg-accent transition-colors"
 			onclick={handleZoomIn}
@@ -330,15 +418,13 @@
 	<!-- Main Content Area -->
 	<div class="flex-1 overflow-hidden relative" bind:this={containerElement}>
 		{#if isLoading}
-			<!-- Loading State -->
 			<div class="absolute inset-0 flex items-center justify-center">
 				<div class="text-center text-muted-foreground">
 					<Loader2 class="h-8 w-8 mx-auto mb-2 animate-spin" />
 					<p class="text-sm">Loading conversation tree...</p>
 				</div>
 			</div>
-		{:else if !tree || nodes.length === 0}
-			<!-- Empty State -->
+		{:else if !tree || layoutNodes.length === 0}
 			<div class="absolute inset-0 flex items-center justify-center">
 				<div class="text-center text-muted-foreground">
 					<GitFork class="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -347,7 +433,6 @@
 				</div>
 			</div>
 		{:else}
-			<!-- Tree Visualization -->
 			<svg
 				bind:this={svgElement}
 				class="w-full h-full"
@@ -357,7 +442,7 @@
 			>
 				<g {transform}>
 					<!-- Links -->
-					{#each links as link (link.source.data.id + '-' + link.target.data.id)}
+					{#each layoutLinks as link (link.source.node.id + '-' + link.target.node.id)}
 						<path
 							class="fill-none stroke-muted-foreground/40"
 							stroke-width="2"
@@ -366,46 +451,31 @@
 					{/each}
 
 					<!-- Nodes -->
-					{#each nodes as node (node.data.id)}
+					{#each layoutNodes as layoutNode (layoutNode.node.id)}
 						<g
-							transform="translate({node.x}, {node.y})"
+							transform="translate({layoutNode.x}, {layoutNode.y})"
 							class="cursor-pointer"
-							onclick={() => handleNodeClick(node.data)}
-							onkeydown={(e) => e.key === 'Enter' && handleNodeClick(node.data)}
+							onclick={() => handleNodeClick(layoutNode.node)}
+							onkeydown={(e) => e.key === 'Enter' && handleNodeClick(layoutNode.node)}
 							role="treeitem"
 							tabindex="0"
 							aria-selected="false"
-							aria-label="{getDisplayName(node.data)}: {truncateContent(node.data.event.content)}"
+							aria-label="{getDisplayName(layoutNode.node)}: {truncateContent(layoutNode.node.event.content)}"
 						>
-							<!-- Node Background -->
 							<rect
 								width={NODE_WIDTH}
 								height={NODE_HEIGHT}
 								rx="8"
-								class="{getNodeClass(node.data)} transition-colors hover:brightness-95"
-								stroke-width={node.data.isRoot ? 2 : 1}
+								class="{getNodeClass(layoutNode.node)} transition-colors hover:brightness-95"
+								stroke-width={layoutNode.node.isRoot ? 2 : 1}
 							/>
 
-							<!-- Root Indicator -->
-							{#if node.data.isRoot}
-								<rect
-									x="0"
-									y="0"
-									width={NODE_WIDTH}
-									height="20"
-									rx="8"
-									class="fill-primary"
-								/>
-								<rect
-									x="0"
-									y="12"
-									width={NODE_WIDTH}
-									height="8"
-									class="fill-primary"
-								/>
+							{#if layoutNode.node.isRoot}
+								<rect x="0" y="0" width={NODE_WIDTH} height="18" rx="8" class="fill-primary" />
+								<rect x="0" y="10" width={NODE_WIDTH} height="8" class="fill-primary" />
 								<text
 									x={NODE_WIDTH / 2}
-									y="14"
+									y="13"
 									text-anchor="middle"
 									class="text-[10px] fill-primary-foreground font-semibold"
 								>
@@ -413,33 +483,30 @@
 								</text>
 							{/if}
 
-							<!-- Author Name -->
 							<text
-								x="12"
-								y={node.data.isRoot ? 38 : 22}
+								x="10"
+								y={layoutNode.node.isRoot ? 34 : 18}
 								class="text-xs fill-foreground font-medium"
 							>
-								{getDisplayName(node.data)}
+								{getDisplayName(layoutNode.node)}
 							</text>
 
-							<!-- Message Content -->
 							<foreignObject
-								x="12"
-								y={node.data.isRoot ? 44 : 28}
-								width={NODE_WIDTH - 24}
-								height="50"
+								x="10"
+								y={layoutNode.node.isRoot ? 38 : 22}
+								width={NODE_WIDTH - 20}
+								height="44"
 							>
-								<div class="text-xs text-muted-foreground line-clamp-2 overflow-hidden leading-tight">
-									{truncateContent(node.data.event.content)}
+								<div class="text-[11px] text-muted-foreground line-clamp-2 overflow-hidden leading-tight">
+									{truncateContent(layoutNode.node.event.content)}
 								</div>
 							</foreignObject>
 
-							<!-- User Indicator Badge -->
-							{#if node.data.isCurrentUser && !node.data.isRoot}
+							{#if layoutNode.node.isCurrentUser && !layoutNode.node.isRoot}
 								<circle
-									cx={NODE_WIDTH - 12}
-									cy="12"
-									r="6"
+									cx={NODE_WIDTH - 10}
+									cy="10"
+									r="5"
 									class="fill-accent stroke-background"
 									stroke-width="2"
 								/>
@@ -449,7 +516,6 @@
 				</g>
 			</svg>
 
-			<!-- Instructions -->
 			<div class="absolute bottom-4 left-4 text-xs text-muted-foreground bg-card/80 px-2 py-1 rounded">
 				Scroll to zoom &bull; Drag to pan &bull; Click node to view
 			</div>

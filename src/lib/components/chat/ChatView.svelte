@@ -95,6 +95,16 @@
 		}
 		localRootEvent = event;
 	}
+
+	function handleNavigateBack() {
+		if (navigationStack.length > 0) {
+			const parent = navigationStack[navigationStack.length - 1];
+			navigationStack = navigationStack.slice(0, -1);
+			localRootEvent = parent;
+		}
+	}
+
+	const parentEvent = $derived(navigationStack.length > 0 ? navigationStack[navigationStack.length - 1] : null);
 </script>
 
 <div class="flex flex-col h-full relative">
@@ -126,6 +136,8 @@
 				{messages}
 				isLoading={messages.length === 0}
 				onNodeClick={handleTimeClick}
+				{parentEvent}
+				onNavigateBack={handleNavigateBack}
 			/>
 		{/if}
 
