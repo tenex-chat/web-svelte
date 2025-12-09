@@ -10,7 +10,7 @@
 	import ConversationMetadataDisplay from '../chat/ConversationMetadataDisplay.svelte';
 	import DebugEventsView from '../debug/DebugEventsView.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
-	import type { ThreadViewMode, Message } from '$lib/utils/messageUtils';
+	import type { ChatViewMode, Message } from '$lib/utils/messageUtils';
 	import { storage } from '$lib/utils/storage.svelte';
 
 	interface Props {
@@ -19,7 +19,7 @@
 
 	let { window }: Props = $props();
 
-	let viewMode = $state<ThreadViewMode>('threaded');
+	let viewMode = $state<ChatViewMode>('threaded');
 	let messages = $state<Message[]>([]);
 
 	const DEFAULT_WIDTH_VW = 65;

@@ -1,19 +1,39 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import type { Message, ThreadViewMode } from '$lib/utils/messageUtils';
+	import { type ChatViewMode, type Message } from '$lib/utils/messageUtils';
 	import ChatActionsMenu from './ChatActionsMenu.svelte';
 	import CopyThreadMenu from './CopyThreadMenu.svelte';
+	import { GitFork, MessageSquareText, List, AlignJustify } from 'lucide-svelte';
 
 	interface Props {
 		rootEvent?: NDKEvent | null;
 		messages: Message[];
-		viewMode?: ThreadViewMode;
+		viewMode?: ChatViewMode;
 	}
 
 	let { rootEvent, messages, viewMode = $bindable('threaded') }: Props = $props();
 
-	function toggleViewMode() {
-		viewMode = viewMode === 'threaded' ? 'flattened' : 'threaded';
+	function cycleViewMode() {
+		if (viewMode === 'threaded') {
+			viewMode = 'flattened';
+		} else if (viewMode === 'flattened') {
+			viewMode = 'delegation';
+		} else {
+			viewMode = 'threaded';
+		}
+	}
+
+	function getViewModeTitle(): string {
+		switch (viewMode) {
+			case 'threaded':
+				return 'Switch to flat view';
+			case 'flattened':
+				return 'Switch to tree view';
+			case 'delegation':
+				return 'Switch to threaded view';
+			default:
+				return 'Toggle view mode';
+		}
 	}
 </script>
 
@@ -27,27 +47,15 @@
 
 <!-- View Mode Toggle -->
 <button
-	onclick={toggleViewMode}
+	onclick={cycleViewMode}
 	class="p-2 hover:bg-secondary rounded transition-colors"
-	title={viewMode === 'threaded' ? 'Switch to flat view' : 'Switch to threaded view'}
+	title={getViewModeTitle()}
 >
 	{#if viewMode === 'threaded'}
-		<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-			<path
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				stroke-width="2"
-				d="M4 6h16M4 12h16M4 18h16"
-			/>
-		</svg>
+		<List class="w-4 h-4 text-muted-foreground" />
+	{:else if viewMode === 'flattened'}
+		<AlignJustify class="w-4 h-4 text-muted-foreground" />
 	{:else}
-		<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-			<path
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				stroke-width="2"
-				d="M4 6h16M4 12h16M4 18h16"
-			/>
-		</svg>
+		<GitFork class="w-4 h-4 text-muted-foreground" />
 	{/if}
 </button>
