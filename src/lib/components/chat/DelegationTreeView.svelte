@@ -138,15 +138,14 @@
 			}
 		}
 
-		// 3. Find the most recent message from a DIFFERENT author (conversation flow)
+		// 3. Find the most recent message (from any author) - this creates linear chains
+		// When the same author sends multiple messages, they chain together
+		// When a different author responds, the chain continues from that response
 		const messageTime = event.created_at ?? 0;
 		let bestParent: string | null = null;
 		let bestParentTime = -1;
 
-		for (const [authorPubkey, lastMsgId] of lastMessageByAuthor) {
-			// Skip messages from the same author (don't connect to yourself)
-			if (authorPubkey === event.pubkey) continue;
-
+		for (const [, lastMsgId] of lastMessageByAuthor) {
 			const node = nodeMap.get(lastMsgId);
 			if (node) {
 				const nodeTime = node.event.created_at ?? 0;
