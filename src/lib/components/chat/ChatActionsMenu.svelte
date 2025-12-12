@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { MoreHorizontal, FileText } from 'lucide-svelte';
+	import { MoreHorizontal, FileText, Bug } from 'lucide-svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import type { Message } from '$lib/utils/messageUtils';
 	import { ndk } from '$lib/ndk.svelte';
@@ -9,6 +9,7 @@
 	import { toastStore } from '$lib/stores/toast.svelte';
 	import type { ProviderConfig } from '$lib/services/provider-registry';
 	import { clickOutside } from '$lib/utils/clickOutside';
+	import { windowManager } from '$lib/stores/windowManager.svelte';
 
 	interface Props {
 		rootEvent: NDKEvent;
@@ -76,6 +77,15 @@
 
 	function handleClickOutside() {
 		isOpen = false;
+	}
+
+	function handleDebugEvents() {
+		isOpen = false;
+		windowManager.open({
+			type: 'debug-events',
+			title: `Debug Events - ${rootEvent.id.slice(0, 8)}`,
+			data: { rootEvent }
+		});
 	}
 
 	async function handleSummarize() {
@@ -173,6 +183,14 @@
 			>
 				<FileText class="w-4 h-4" />
 				<span>{isSummarizing ? 'Summarizing...' : 'Summarize'}</span>
+			</button>
+			<button
+				type="button"
+				onclick={handleDebugEvents}
+				class="w-full text-left px-3 py-2 hover:bg-muted transition-colors flex items-center gap-2 text-sm"
+			>
+				<Bug class="w-4 h-4" />
+				<span>Debug Events</span>
 			</button>
 		</div>
 	{/if}

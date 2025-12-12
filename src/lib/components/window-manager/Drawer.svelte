@@ -8,6 +8,7 @@
 	import AgentProfileTabs from '../agents/AgentProfileTabs.svelte';
 	import ChatHeaderActions from '../chat/ChatHeaderActions.svelte';
 	import ConversationMetadataDisplay from '../chat/ConversationMetadataDisplay.svelte';
+	import DebugEventsView from '../debug/DebugEventsView.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import type { ThreadViewMode, Message } from '$lib/utils/messageUtils';
 	import { storage } from '$lib/utils/storage.svelte';
@@ -224,6 +225,8 @@
 			/>
 		{:else if window.type === 'agent' && agentPubkey}
 			<AgentProfileTabs pubkey={agentPubkey} />
+		{:else if window.type === 'debug-events'}
+			<DebugEventsView rootEvent={window.data?.rootEvent} />
 		{:else}
 			<div class="p-4">
 				<p class="text-sm text-muted-foreground">Unknown window type: {window.type}</p>
