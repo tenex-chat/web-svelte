@@ -18,6 +18,7 @@
 	import LessonLearnToolRenderer from './renderers/LessonLearnToolRenderer.svelte';
 	import CodebaseSearchToolRenderer from './renderers/CodebaseSearchToolRenderer.svelte';
 	import DelegateToolRenderer from './renderers/DelegateToolRenderer.svelte';
+	import DelegateExternalToolRenderer from './renderers/DelegateExternalToolRenderer.svelte';
 
 	interface Props {
 		event: NDKEvent;
@@ -65,6 +66,8 @@
 	<CodebaseSearchToolRenderer {args} />
 {:else if toolName === 'delegate'}
 	<DelegateToolRenderer {args} />
+{:else if toolName === 'delegate_external'}
+	<DelegateExternalToolRenderer {args} />
 {:else if toolName}
 	<DefaultToolRenderer {toolName} />
 {/if}
