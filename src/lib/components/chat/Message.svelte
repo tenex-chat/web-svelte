@@ -217,10 +217,12 @@
 								<MoreVertical class="w-4 h-4 text-muted-foreground" />
 							</DropdownMenu.Trigger>
 							<DropdownMenu.Content align="end" class="w-48">
-								<DropdownMenu.Item onclick={() => onReply?.(message)}>
-									<Reply class="mr-2 h-4 w-4" />
-									<span>Reply</span>
-								</DropdownMenu.Item>
+								{#if onReply}
+									<DropdownMenu.Item onclick={() => onReply(message)}>
+										<Reply class="mr-2 h-4 w-4" />
+										<span>Reply</span>
+									</DropdownMenu.Item>
+								{/if}
 								{#if onQuote}
 									<DropdownMenu.Item onclick={() => onQuote?.(message)}>
 										<Quote class="mr-2 h-4 w-4" />
@@ -270,12 +272,12 @@
 								class="prose prose-sm text-sm max-w-none dark:prose-invert text-foreground"
 								parseIncompleteMarkdown={true}
 								animation={{
-									enabled: false,
-									type: 'blur',
+									enabled: isStreaming,
+									type: 'fade',
 									duration: 300,
 									tokenize: 'word'
 								}}
-								baseTheme="tailwind"
+								baseTheme="shadcn"
 								shikiTheme="github-dark-dimmed"
 							/>
 							{#if isStreaming}

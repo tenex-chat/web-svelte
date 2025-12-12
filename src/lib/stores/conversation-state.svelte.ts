@@ -63,6 +63,7 @@ export class ConversationState {
 	displayMessages = $derived.by(() => {
 		const startTime = performance.now();
 		this.metrics.displayMessagesComputations++;
+		console.log('[ConversationState.displayMessages] RECOMPUTING - computation #', this.metrics.displayMessagesComputations);
 		const allMessages: Message[] = [];
 
 		// Add all final messages from the map
@@ -91,7 +92,14 @@ export class ConversationState {
 		}
 
 		// Add active streaming sessions as synthetic messages
+		console.log('[ConversationState.displayMessages] Processing streaming sessions, count:', this.streamingSessions.size);
 		for (const session of this.streamingSessions.values()) {
+			console.log('[ConversationState.displayMessages] Creating synthetic event for session:', {
+				syntheticId: session.syntheticId,
+				contentLength: session.reconstructedContent.length,
+				contentPreview: session.reconstructedContent.substring(0, 50)
+			});
+
 			// Create synthetic event with accumulated content
 			const syntheticEvent = new NDKEvent(session.latestEvent.ndk);
 			syntheticEvent.kind = session.latestEvent.kind;
@@ -490,12 +498,28 @@ export class ConversationState {
 			this.log('Created new streaming session', { pubkey, syntheticId });
 		} else {
 			// Update existing session
-			session.reconstructedContent = session.accumulator.addEvent(event);
-			session.latestEvent = event;
+			const reconstructedContent = session.accumulator.addEvent(event);
+
+			// Create NEW session object to trigger SvelteMap reactivity
+			// Setting same object reference doesn't trigger reactivity in Svelte 5
+			const updatedSession: StreamingSession = {
+				syntheticId: session.syntheticId,
+				accumulator: session.accumulator,
+				latestEvent: event,
+				reconstructedContent
+			};
+
+			console.log('[ConversationState.handleStreamingEvent] CALLING .set() with NEW object to trigger reactivity', {
+				pubkey: pubkey.substring(0, 8),
+				contentLength: reconstructedContent.length,
+				contentPreview: reconstructedContent.substring(0, 50)
+			});
+			this.streamingSessions.set(pubkey, updatedSession);
+
 			this.log('Updated streaming session', {
 				pubkey,
-				syntheticId: session.syntheticId,
-				contentLength: session.reconstructedContent.length
+				syntheticId: updatedSession.syntheticId,
+				contentLength: updatedSession.reconstructedContent.length
 			});
 		}
 	}

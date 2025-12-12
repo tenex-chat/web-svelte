@@ -24,7 +24,7 @@
 </script>
 
 {#if reasoningContent}
-	<div class="my-2">
+	<div class="">
 		<div
 			class={cn(
 				'transition-all',
@@ -40,7 +40,7 @@
 				onclick={() => (isOpen = !isOpen)}
 				aria-expanded={isOpen}
 				aria-controls={contentId}
-				class="w-full px-4 py-2 flex items-center gap-2 text-left hover:bg-muted/50 transition-colors rounded-lg"
+				class="w-full py-2 flex items-center gap-2 text-left hover:bg-muted/50 transition-colors rounded-lg"
 			>
 				<svg
 					class={cn(
@@ -80,7 +80,7 @@
 
 			<!-- Reasoning Content -->
 			{#if isOpen}
-				<div id={contentId} class="px-4 py-3 border-t border-border bg-card/50">
+				<div id={contentId} class="px-4 py-3 bg-card/50">
 					<div class="prose prose-sm max-w-none dark:prose-invert text-foreground text-sm">
 						<Streamdown
 							content={reasoningContent}

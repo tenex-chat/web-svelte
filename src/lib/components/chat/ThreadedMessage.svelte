@@ -23,6 +23,8 @@
 		project?: NDKProject | null;
 		onTimeClick?: (event: NDKEvent) => void;
 		onConversationNavigate?: (event: NDKEvent) => void;
+		onReply?: (message: MessageType) => void;
+		onQuote?: (message: MessageType) => void;
 		isConsecutive?: boolean;
 		hasNextConsecutive?: boolean;
 		isLastReasoningMessage?: boolean;
@@ -36,6 +38,8 @@
 		project = null,
 		onTimeClick,
 		onConversationNavigate,
+		onReply,
+		onQuote,
 		isConsecutive = false,
 		hasNextConsecutive = false,
 		isLastReasoningMessage = false
@@ -124,6 +128,8 @@
 			isConsecutive={false}
 			hasNextConsecutive={replies.length > 0 && replies[0].event.pubkey === currentEvent.pubkey}
 			{onTimeClick}
+			{onReply}
+			{onQuote}
 		/>
 		messages = {replyProperties.length}
 
@@ -136,6 +142,8 @@
 				{project}
 				{onTimeClick}
 				{onConversationNavigate}
+				{onReply}
+				{onQuote}
 				isConsecutive={replyConsecutive}
 				hasNextConsecutive={replyHasNext}
 				isLastReasoningMessage={replyLastReasoning}
@@ -151,6 +159,8 @@
 			{isConsecutive}
 			{hasNextConsecutive}
 			{onTimeClick}
+			{onReply}
+			{onQuote}
 		/>
 
 		<!-- Render replies if any exist -->
@@ -208,6 +218,8 @@
 							{project}
 							{onTimeClick}
 							{onConversationNavigate}
+							{onReply}
+							{onQuote}
 							isConsecutive={replyConsecutive}
 							hasNextConsecutive={replyHasNext}
 							isLastReasoningMessage={replyLastReasoning}

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { formatRelativeTime } from '$lib/utils/time';
 	import { MessageSquare, Users } from 'lucide-svelte';
 	import ConversationMetadataDisplay from './ConversationMetadataDisplay.svelte';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
 	import type { SvelteMap } from 'svelte/reactivity';
+	import TimeAgo from '$lib/components/common/TimeAgo.svelte';
 
 	interface ThreadMetadata {
 		latestReply: NDKEvent | null;
@@ -59,6 +59,6 @@
 			<Users class="w-3 h-3" />
 			<span>{participantCount}</span>
 		</div>
-		<span class="ml-auto">{formatRelativeTime(displayTime)}</span>
+		<TimeAgo timestamp={displayTime} class="ml-auto" />
 	</div>
 </button>

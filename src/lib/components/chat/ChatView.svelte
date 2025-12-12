@@ -25,22 +25,25 @@
 	// Fetch project if projectId provided but project not available
 	$effect(() => {
 		if (projectId && !project) {
-			ndk
-				.fetchEvent({
-					kinds: [31933],
-					'#d': [projectId]
-				})
-				.then((event) => {
-					if (event) {
-						project = new NDKProject(ndk, event.rawEvent());
-					}
-				});
+			// This is probably not needed -- if it is we're masking a problem
+			alert('FIXME: this is a bug')
+			// ndk
+			// 	.fetchEvent({
+			// 		kinds: [31933],
+			// 		'#d': [projectId]
+			// 	})
+			// 	.then((event) => {
+			// 		if (event) {
+			// 			project = new NDKProject(ndk, event.rawEvent());
+			// 		}
+			// 	});
 		}
 	});
 
 	// Fetch thread if threadId provided but rootEvent not available
 	$effect(() => {
 		if (threadId && !rootEvent) {
+			alert('This is probably not needed')
 			ndk.fetchEvent(threadId).then((event) => {
 				if (event) {
 					rootEvent = event;
@@ -122,7 +125,7 @@
 		/>
 
 		<!-- Input -->
-		 <div class="absolute left-0 right-0 bottom-0 z-[100]">
+		 <div class="absolute left-0 right-0 bottom-0 z-[49]">
 			<ChatInput
 				{project}
 				rootEvent={localRootEvent}
