@@ -14,6 +14,7 @@
 	import BashToolRenderer from './renderers/BashToolRenderer.svelte';
 	import ShellToolRenderer from './renderers/ShellToolRenderer.svelte';
 	import TodoWriteToolRenderer from './renderers/TodoWriteToolRenderer.svelte';
+	import LessonLearnToolRenderer from './renderers/LessonLearnToolRenderer.svelte';
 
 	interface Props {
 		event: NDKEvent;
@@ -53,6 +54,8 @@
 	<ShellToolRenderer command={(args?.command as string) || ''} />
 {:else if toolName === 'TodoWrite'}
 	<TodoWriteToolRenderer todos={(args?.todos as Array<{content: string; status: 'pending' | 'in_progress' | 'completed'; activeForm: string}>) || []} />
+{:else if toolName === 'lesson_learn'}
+	<LessonLearnToolRenderer {args} />
 {:else if toolName}
 	<DefaultToolRenderer {toolName} />
 {/if}
