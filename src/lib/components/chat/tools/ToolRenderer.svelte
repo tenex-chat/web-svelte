@@ -17,6 +17,7 @@
 	import TodoWriteToolRenderer from './renderers/TodoWriteToolRenderer.svelte';
 	import LessonLearnToolRenderer from './renderers/LessonLearnToolRenderer.svelte';
 	import CodebaseSearchToolRenderer from './renderers/CodebaseSearchToolRenderer.svelte';
+	import DelegateToolRenderer from './renderers/DelegateToolRenderer.svelte';
 
 	interface Props {
 		event: NDKEvent;
@@ -62,6 +63,8 @@
 	<LessonLearnToolRenderer {args} />
 {:else if toolName === 'codebase_search'}
 	<CodebaseSearchToolRenderer {args} />
+{:else if toolName === 'delegate'}
+	<DelegateToolRenderer {args} />
 {:else if toolName}
 	<DefaultToolRenderer {toolName} />
 {/if}
