@@ -471,11 +471,12 @@
 						: (rootEvent ? 'Type a message...' : 'Start a new conversation...')}
 					disabled={isSubmitting || !ndk.$currentUser}
 					class={cn(
-						"w-full bg-transparent h-auto text-foreground rounded-lg resize-none focus:outline-none disabled:cursor-not-allowed placeholder:text-muted-foreground transition-all duration-200",
-						messageInput.length > 5 ? 'h-12' : ''
+						"w-full bg-transparent text-foreground rounded-lg resize-none focus:outline-none disabled:cursor-not-allowed placeholder:text-muted-foreground transition-all duration-300",
+						messageInput.length > 5 && !isExpanded ? 'h-12' : '',
+						isExpanded ? 'font-mono' : ''
 					)}
 					rows={isExpanded ? 30 : 1}
-					style={isExpanded ? 'font-family: monospace; max-height: 60vh;' : ''}
+					style={isExpanded ? 'max-height: 60vh; min-height: 400px;' : ''}
 				></textarea>
 
 				<!-- Nudge Autocomplete -->
