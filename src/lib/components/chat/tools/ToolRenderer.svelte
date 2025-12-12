@@ -16,6 +16,7 @@
 	import ShellToolRenderer from './renderers/ShellToolRenderer.svelte';
 	import TodoWriteToolRenderer from './renderers/TodoWriteToolRenderer.svelte';
 	import LessonLearnToolRenderer from './renderers/LessonLearnToolRenderer.svelte';
+	import CodebaseSearchToolRenderer from './renderers/CodebaseSearchToolRenderer.svelte';
 
 	interface Props {
 		event: NDKEvent;
@@ -59,6 +60,8 @@
 	<TodoWriteToolRenderer todos={(args?.todos as Array<{content: string; status: 'pending' | 'in_progress' | 'completed'; activeForm: string}>) || []} />
 {:else if toolName === 'lesson_learn'}
 	<LessonLearnToolRenderer {args} />
+{:else if toolName === 'codebase_search'}
+	<CodebaseSearchToolRenderer {args} />
 {:else if toolName}
 	<DefaultToolRenderer {toolName} />
 {/if}
