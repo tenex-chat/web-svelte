@@ -9,6 +9,7 @@
 	} from '$lib/utils/toolPaths';
 	import DefaultToolRenderer from './renderers/DefaultToolRenderer.svelte';
 	import ReadToolRenderer from './renderers/ReadToolRenderer.svelte';
+	import ReadPathToolRenderer from './renderers/ReadPathToolRenderer.svelte';
 	import WriteToolRenderer from './renderers/WriteToolRenderer.svelte';
 	import GlobToolRenderer from './renderers/GlobToolRenderer.svelte';
 	import BashToolRenderer from './renderers/BashToolRenderer.svelte';
@@ -37,6 +38,8 @@
 
 {#if toolName === 'Read'}
 	<ReadToolRenderer displayPath={getFilePath('file_path')} />
+{:else if toolName === 'read_path'}
+	<ReadPathToolRenderer {args} />
 {:else if toolName === 'Write'}
 	<WriteToolRenderer displayPath={getFilePath('file_path')} content={(args?.content as string) || ''} />
 {:else if toolName === 'Edit'}
