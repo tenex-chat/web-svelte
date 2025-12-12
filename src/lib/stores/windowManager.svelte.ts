@@ -4,7 +4,7 @@ import type { NDKProject } from '$lib/events/NDKProject';
 import { isElectron } from '$lib/utils/electron';
 import { storage } from '$lib/utils/storage.svelte';
 
-export type WindowType = 'chat' | 'settings' | 'agent' | 'document' | 'hashtag' | 'call';
+export type WindowType = 'chat' | 'settings' | 'agent' | 'document' | 'hashtag' | 'call' | 'debug-events';
 
 export interface WindowConfig {
 	id: string;
