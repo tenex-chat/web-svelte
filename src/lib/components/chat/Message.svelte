@@ -233,6 +233,10 @@
 									<Copy class="mr-2 h-4 w-4" />
 									<span>Copy content</span>
 								</DropdownMenu.Item>
+								<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.inspect)}>
+									<Copy class="mr-2 h-4 w-4" />
+									<span>Copy raw event</span>
+								</DropdownMenu.Item>
 								<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.encode())}>
 									<Hash class="mr-2 h-4 w-4" />
 									<span>Copy ID</span>
@@ -330,6 +334,10 @@
 									<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.content)}>
 										<Copy class="mr-2 h-4 w-4" />
 										<span>Copy content</span>
+									</DropdownMenu.Item>
+									<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.inspect)}>
+										<Copy class="mr-2 h-4 w-4" />
+										<span>Copy raw event</span>
 									</DropdownMenu.Item>
 									<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.encode())}>
 										<Hash class="mr-2 h-4 w-4" />
