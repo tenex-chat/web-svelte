@@ -48,6 +48,7 @@ ipcMain.on("open-window", (event, { url, title, width, height }) => {
     height: height || 600,
     title: title || "Window",
     backgroundColor: "#000000",
+    resizable: true,
     webPreferences: {
       preload: join(__dirname, "../preload/preload.cjs"),
       nodeIntegration: false,

@@ -11,6 +11,7 @@
 	import AudioControls from './AudioControls.svelte';
 	import CallStatus from './CallStatus.svelte';
 	import AgentSelector from '../chat/AgentSelector.svelte';
+	import WorktreeSelector from '../chat/WorktreeSelector.svelte';
 	import AgentAvatar from './AgentAvatar.svelte';
 
 	interface Props {
@@ -36,9 +37,14 @@
 	// Get online agents for this project
 	const onlineAgents = $derived(projectId ? projectStatusStore.getOnlineAgents(projectId) : []);
 
+	// Get available worktrees for this project
+	const availableWorktrees = $derived(projectId ? projectStatusStore.getWorktrees(projectId) : []);
+	const defaultWorktree = $derived(projectId ? projectStatusStore.getDefaultWorktree(projectId) : null);
+
 	// Local thread state
 	let localRootEvent = $state<NDKEvent | null>(initialRootEvent ?? null);
 	let selectedAgentPubkey: string | null = $state(null);
+	let selectedWorktree: string | null = $state(null);
 
 	// Compute default agent based on recent messages (same logic as ChatInput)
 	const defaultAgent = $derived.by(() => {
@@ -58,6 +64,30 @@
 		// Otherwise, default to the PM (first agent)
 		return onlineAgents[0].pubkey;
 	});
+
+	// Compute default worktree based on recent messages (same logic as ChatInput)
+	const defaultWorktreeFromMessages = $derived.by(() => {
+		if (availableWorktrees.length === 0) return null;
+
+		// If there are recent messages, find the most recent branch tag
+		if (messages.length > 0) {
+			const recentWorktree = [...messages].reverse().find((msg) => {
+				const branchTag = msg.event.tags.find((tag) => tag[0] === 'branch' && tag[1]);
+				return branchTag !== undefined;
+			});
+
+			if (recentWorktree) {
+				const branchTag = recentWorktree.event.tags.find((tag) => tag[0] === 'branch' && tag[1]);
+				return branchTag?.[1] || null;
+			}
+		}
+
+		// Otherwise, default to the first worktree (default branch)
+		return defaultWorktree ?? null;
+	});
+
+	// Derive the current worktree (selected takes precedence, then derived default)
+	const currentWorktree = $derived(selectedWorktree || defaultWorktreeFromMessages);
 
 	// Derive active agent for display
 	const activeProjectAgent = $derived(
@@ -148,6 +178,11 @@
 			thread.tags.push(['p', onlineAgents[0].pubkey]);
 		}
 
+		// Add branch tag if specified
+		if (currentWorktree) {
+			thread.tags.push(['branch', currentWorktree]);
+		}
+
 		// Add extra tags if provided
 		if (extraTags) {
 			thread.tags.push(...extraTags);
@@ -193,6 +228,11 @@
 			reply.tags.push(['p', targetAgent]);
 		} else if (onlineAgents.length > 0) {
 			reply.tags.push(['p', onlineAgents[0].pubkey]);
+		}
+
+		// Add branch tag if specified
+		if (currentWorktree) {
+			reply.tags.push(['branch', currentWorktree]);
 		}
 
 		// Add extra tags if provided
@@ -329,6 +369,14 @@
 					currentModel={activeProjectAgent?.model}
 					onSelect={handleAgentSelect}
 					onConfigure={handleAgentConfigure}
+				/>
+			{/if}
+			{#if availableWorktrees.length > 0}
+				<WorktreeSelector
+					worktrees={availableWorktrees}
+					selectedWorktree={selectedWorktree}
+					defaultWorktree={defaultWorktreeFromMessages}
+					onSelect={(branch) => (selectedWorktree = branch)}
 				/>
 			{/if}
 		</div>
