@@ -29,7 +29,6 @@ export class ConversationState {
 	// Reactive maps using SvelteMap for proper Svelte 5 reactivity
 	private messages = $state(new SvelteMap<string, Message>());
 	private streamingSessions = $state(new SvelteMap<string, StreamingSession>());
-	private typingIndicators = $state(new SvelteMap<string, NDKEvent>());
 	private metadataEvents = $state(new SvelteMap<string, NDKEvent>());
 
 	// Options
@@ -91,37 +90,41 @@ export class ConversationState {
 			});
 		}
 
-		// Add active streaming sessions as synthetic messages
+		// Add active streaming sessions as synthetic messages or typing indicators
+		// If stream has no content, show typing indicator; otherwise show streaming content
 		console.log('[ConversationState.displayMessages] Processing streaming sessions, count:', this.streamingSessions.size);
 		for (const session of this.streamingSessions.values()) {
-			console.log('[ConversationState.displayMessages] Creating synthetic event for session:', {
+			const hasContent = session.reconstructedContent.trim().length > 0;
+
+			console.log('[ConversationState.displayMessages] Processing session:', {
 				syntheticId: session.syntheticId,
+				hasContent,
 				contentLength: session.reconstructedContent.length,
 				contentPreview: session.reconstructedContent.substring(0, 50)
 			});
 
-			// Create synthetic event with accumulated content
-			const syntheticEvent = new NDKEvent(session.latestEvent.ndk);
-			syntheticEvent.kind = session.latestEvent.kind;
-			syntheticEvent.pubkey = session.latestEvent.pubkey;
-			syntheticEvent.created_at = session.latestEvent.created_at;
-			syntheticEvent.tags = session.latestEvent.tags;
-			syntheticEvent.content = session.reconstructedContent;
-			syntheticEvent.id = session.latestEvent.id;
-			syntheticEvent.sig = session.latestEvent.sig;
+			if (hasContent) {
+				// Show streaming content
+				const syntheticEvent = new NDKEvent(session.latestEvent.ndk);
+				syntheticEvent.kind = session.latestEvent.kind;
+				syntheticEvent.pubkey = session.latestEvent.pubkey;
+				syntheticEvent.created_at = session.latestEvent.created_at;
+				syntheticEvent.tags = session.latestEvent.tags;
+				syntheticEvent.content = session.reconstructedContent;
+				syntheticEvent.id = session.latestEvent.id;
+				syntheticEvent.sig = session.latestEvent.sig;
 
-			allMessages.push({
-				id: session.syntheticId,
-				event: syntheticEvent
-			});
-		}
-
-		// Add active typing indicators
-		for (const [pubkey, typingEvent] of this.typingIndicators) {
-			allMessages.push({
-				id: `typing-${pubkey}`, // OK to use pubkey here as only one typing indicator per pubkey
-				event: typingEvent
-			});
+				allMessages.push({
+					id: session.syntheticId,
+					event: syntheticEvent
+				});
+			} else {
+				// Show typing indicator (stream has no content yet)
+				allMessages.push({
+					id: `typing-${session.latestEvent.pubkey}`,
+					event: session.latestEvent
+				});
+			}
 		}
 
 		// Sort by timestamp (with tag priority for same timestamp)
@@ -343,8 +346,6 @@ export class ConversationState {
 
 		// Streaming kinds
 		const streamingKinds: number[] = [
-			NDKKind.TenexAgentTypingStart,
-			NDKKind.TenexAgentTypingStop,
 			NDKKind.TenexStreamingResponse
 		];
 
@@ -406,14 +407,6 @@ export class ConversationState {
 				this.handleStreamingEvent(event, pubkey);
 				break;
 
-			case NDKKind.TenexAgentTypingStart: // 24111 - Typing start
-				this.handleTypingStart(event, pubkey);
-				break;
-
-			case NDKKind.TenexAgentTypingStop: // 24112 - Typing stop
-				this.handleTypingStop(pubkey);
-				break;
-
 			case NDKKind.TenexConversationMetadata: // 513 - Conversation metadata
 				this.handleMetadataEvent(event);
 				break;
@@ -449,11 +442,6 @@ export class ConversationState {
 			}, 1000);
 		}
 
-		// Clear any typing indicator for this pubkey immediately (O(1))
-		if (this.typingIndicators.has(pubkey)) {
-			this.typingIndicators.delete(pubkey);
-			this.log('Cleared typing indicator for pubkey', { pubkey });
-		}
 	}
 
 	/**
@@ -521,46 +509,6 @@ export class ConversationState {
 				syntheticId: updatedSession.syntheticId,
 				contentLength: updatedSession.reconstructedContent.length
 			});
-		}
-	}
-
-	/**
-	 * Handle typing start event (kind 24111)
-	 */
-	private handleTypingStart(event: NDKEvent, pubkey: string): void {
-		// Clear any streaming session when typing starts
-		if (this.streamingSessions.has(pubkey)) {
-			this.streamingSessions.delete(pubkey);
-		}
-
-		// Check if a final message from this pubkey already exists
-		// If so, don't show typing indicator (handles out-of-order event arrival)
-		const typing_timestamp = event.created_at ?? 0;
-		for (const message of this.messages.values()) {
-			if (message.event.pubkey === pubkey &&
-				message.event.kind === NDKKind.GenericReply &&
-				(message.event.created_at ?? 0) >= typing_timestamp) {
-				this.log('Ignoring typing indicator, final message already exists', {
-					pubkey: pubkey.substring(0, 8),
-					typing_timestamp,
-					final_timestamp: message.event.created_at
-				});
-				return; // Don't set typing indicator
-			}
-		}
-
-		// Set typing indicator
-		this.typingIndicators.set(pubkey, event);
-		this.log('Set typing indicator for pubkey', { pubkey: pubkey.substring(0, 8) });
-	}
-
-	/**
-	 * Handle typing stop event (kind 24112)
-	 */
-	private handleTypingStop(pubkey: string): void {
-		// Remove typing indicator
-		if (this.typingIndicators.has(pubkey)) {
-			this.typingIndicators.delete(pubkey);
 		}
 	}
 
@@ -643,7 +591,6 @@ export class ConversationState {
 		// Clear all maps
 		this.messages.clear();
 		this.streamingSessions.clear();
-		this.typingIndicators.clear();
 
 		this.log('ConversationState destroyed successfully');
 	}
