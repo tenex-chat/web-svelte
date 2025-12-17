@@ -52,9 +52,12 @@ class ProjectStatusStore {
         },
         {
           onEvent: (event: NDKEvent) => {
-            const statusEvent = event as NDKProjectStatus;
+            // Use NDKProjectStatus.from() to properly convert the event
+            const statusEvent = NDKProjectStatus.from(event);
             const projectId = statusEvent.projectId;
-            if (!projectId) return;
+            if (!projectId) {
+              return;
+            }
 
             // Extract dTag as key
             const key = this.extractDTag(projectId);
