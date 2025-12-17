@@ -14,8 +14,11 @@
 
 	let { eventId, projectId, onlineAgents }: Props = $props();
 
-	// Create subscription function for this event
-	const getActiveAgents = createOperationsSubscription(eventId, projectId);
+	// Create subscription function for this event - recreate when props change
+	let getActiveAgents = $state(() => [] as string[]);
+	$effect(() => {
+		getActiveAgents = createOperationsSubscription(eventId, projectId);
+	});
 
 	// Subscribe to active operations for this event
 	const activeAgentPubkeys = $derived(getActiveAgents());

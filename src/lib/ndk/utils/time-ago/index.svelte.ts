@@ -5,13 +5,13 @@
 /**
  * Creates a reactive time ago string that updates automatically every minute.
  *
- * @param timestamp - Unix timestamp in seconds
+ * @param timestampOrGetter - Unix timestamp in seconds, or a getter function returning the timestamp
  * @returns Reactive string showing relative time ("now", "5m", "2h", "3d", or formatted date)
  *
  * @example
  * ```svelte
  * <script>
- *   const timeAgo = createTimeAgo(event.created_at);
+ *   const timeAgo = createTimeAgo(() => event.created_at);
  * </script>
  *
  * <time datetime={new Date(event.created_at * 1000).toISOString()}>
@@ -19,11 +19,13 @@
  * </time>
  * ```
  */
-export function createTimeAgo(timestamp: number | undefined) {
+export function createTimeAgo(timestampOrGetter: number | undefined | (() => number | undefined)) {
 	let tick = $state(0);
+	const getTimestamp = typeof timestampOrGetter === 'function' ? timestampOrGetter : () => timestampOrGetter;
 
 	const formatted = $derived.by(() => {
 		tick;
+		const timestamp = getTimestamp();
 
 		if (!timestamp) return "";
 

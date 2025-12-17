@@ -15,7 +15,7 @@
 
   let { event, class: className = '' }: Props = $props();
 
-  const timeAgo = createTimeAgo(event.created_at);
+  const timeAgo = createTimeAgo(() => event.created_at);
   const datetime = $derived(event.created_at ? new Date(event.created_at * 1000).toISOString() : undefined);
 </script>
 

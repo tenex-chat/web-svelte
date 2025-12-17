@@ -4,8 +4,10 @@
 	import Message from './Message.svelte';
 	import SystemMessage from './SystemMessage.svelte';
 	import ThreadedMessage from './ThreadedMessage.svelte';
+	import CollapsedMessagesIndicator from './CollapsedMessagesIndicator.svelte';
 	import { ConversationState } from '$lib/stores/conversation-state.svelte';
-	import { type Message as MessageType, calculateMessageProperties } from '$lib/utils/messageUtils';
+	import { type Message as MessageType, createDisplayModel, type DisplayItem } from '$lib/utils/messageUtils';
+	import { scrollManager } from '$lib/actions/scrollManager';
 	import { ChevronDown } from 'lucide-svelte';
 	import PerformanceMonitor from './PerformanceMonitor.svelte';
 
@@ -27,77 +29,14 @@
 		messages = $bindable([])
 	}: Props = $props();
 
-	// Scroll management
+	// Scroll state
 	let scrollContainer: HTMLDivElement;
-	let isUserAtBottom = $state(true);
 	let showScrollButton = $state(false);
 	let unreadMessageCount = $state(0);
-	const SCROLL_THRESHOLD = 150; // pixels from bottom to consider "at bottom"
-
-	// User scroll intent detection
-	let isUserScrolling = $state(false);
+	let scrollManagerInstance: ReturnType<typeof scrollManager> | null = null;
 
 	// Performance monitor
 	let showPerformanceMonitor = $state(false);
-	let isProgrammaticScroll = $state(false);
-	let scrollDebounceTimer: number | undefined;
-	const SCROLL_DEBOUNCE_MS = 150; // Time to wait after scroll stops to detect user intent
-
-	// Check if user is at bottom of scroll container
-	function checkScrollPosition() {
-		if (!scrollContainer) return;
-
-		const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-		const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-
-		const wasAtBottom = isUserAtBottom;
-		isUserAtBottom = distanceFromBottom < SCROLL_THRESHOLD;
-
-		// Show button if user scrolled up, hide if at bottom
-		showScrollButton = !isUserAtBottom && messages.length > 0;
-
-		// Reset unread count when user scrolls to bottom
-		if (isUserAtBottom && !wasAtBottom) {
-			unreadMessageCount = 0;
-		}
-
-		// Detect user-initiated scrolling (not programmatic)
-		if (!isProgrammaticScroll) {
-			isUserScrolling = true;
-
-			// Clear existing timer
-			if (scrollDebounceTimer) {
-				clearTimeout(scrollDebounceTimer);
-			}
-
-			// Set timer to detect when user stops scrolling
-			scrollDebounceTimer = window.setTimeout(() => {
-				isUserScrolling = false;
-			}, SCROLL_DEBOUNCE_MS);
-		}
-	}
-
-	// Scroll to bottom smoothly
-	function scrollToBottom(smooth = true) {
-		if (!scrollContainer) return;
-
-		// Mark this as a programmatic scroll to prevent triggering user scroll detection
-		isProgrammaticScroll = true;
-
-		scrollContainer.scrollTo({
-			top: scrollContainer.scrollHeight,
-			behavior: smooth ? 'smooth' : 'instant'
-		});
-
-		unreadMessageCount = 0;
-		showScrollButton = false;
-		isUserAtBottom = true;
-
-		// Reset the flag after a brief delay to allow the scroll event to complete
-		setTimeout(() => {
-			isProgrammaticScroll = false;
-		}, 100);
-	}
 
 	// Track the actual rootEvent ID to avoid unnecessary recreations
 	let currentRootEventId = $state<string | null>(null);
@@ -145,59 +84,58 @@
 	const flatMessages = $derived(conversationState?.displayMessages || []);
 	const eventsWithMetadata = $derived(conversationState?.displayEventsWithMetadata || []);
 
+	// Create unified display model using $derived
+	const displayList = $derived<DisplayItem[]>(
+		viewMode === 'flattened'
+			? createDisplayModel(flatMessages, eventsWithMetadata)
+			: []
+	);
+
 	// Sync to bindable messages prop
 	$effect(() => {
 		messages = flatMessages;
 	});
 
-	// Auto-scroll when new messages arrive (if user is at bottom AND not actively scrolling)
-	let previousMessageCount = 0;
+	// Handle scroll state changes
+	function handleScrollChange(isAtBottom: boolean, unreadCount: number) {
+		showScrollButton = !isAtBottom && messages.length > 0;
+		unreadMessageCount = unreadCount;
+	}
+
+	// Scroll to bottom function
+	function scrollToBottom() {
+		scrollManagerInstance?.scrollToBottom(true);
+	}
+
+	// Initialize scroll manager when container is available
 	$effect(() => {
-		const currentCount = messages.length;
+		if (scrollContainer) {
+			scrollManagerInstance = scrollManager(scrollContainer, {
+				onScrollChange: handleScrollChange,
+				itemCount: messages.length,
+				scrollThreshold: 150,
+				scrollDebounceMs: 150
+			});
 
-		// Only process after initial render
-		if (scrollContainer && previousMessageCount > 0) {
-			const hasNewMessages = currentCount > previousMessageCount;
-
-			if (hasNewMessages) {
-				// Only auto-scroll if:
-				// 1. User is at bottom
-				// 2. User is NOT currently scrolling (to avoid jarring interruptions)
-				if (isUserAtBottom && !isUserScrolling) {
-					// User is at bottom and not scrolling, auto-scroll to show new message
-					// Use requestAnimationFrame to ensure DOM has updated
-					requestAnimationFrame(() => scrollToBottom(true));
-				} else {
-					// User is scrolled up OR actively scrolling, increment unread count
-					unreadMessageCount += currentCount - previousMessageCount;
-				}
-			}
-		}
-
-		previousMessageCount = currentCount;
-	});
-
-	// Initial scroll to bottom on mount
-	$effect(() => {
-		if (scrollContainer && messages.length > 0) {
-			scrollToBottom(false);
+			return () => {
+				scrollManagerInstance?.destroy();
+			};
 		}
 	});
 
-	// Cleanup timer on component destroy
+	// Update scroll manager when item count changes
 	$effect(() => {
-		return () => {
-			if (scrollDebounceTimer) {
-				clearTimeout(scrollDebounceTimer);
-			}
-		};
+		if (scrollManagerInstance) {
+			scrollManagerInstance.update({
+				itemCount: messages.length
+			});
+		}
 	});
 </script>
 
 <div class="relative flex-1">
 	<div
 		bind:this={scrollContainer}
-		onscroll={checkScrollPosition}
 		class="absolute inset-0 overflow-y-auto"
 	>
 		{#if messages.length === 0}
@@ -210,27 +148,29 @@
 				<ThreadedMessage {rootEvent} eventId={rootEvent.id} depth={0} {onTimeClick} {onReply} {onQuote} />
 			</div>
 		{:else}
-			<!-- Flattened view: Render messages and metadata in chronological order -->
-			{@const messageProps = calculateMessageProperties(messages)}
-			{@const messagePropsMap = new Map(messageProps.map(mp => [mp.message.id, mp]))}
+			<!-- Flattened view: Render from unified display model -->
 			<div class="flex flex-col">
-				{#each eventsWithMetadata as event, index (event.type === 'message' ? (event.data as MessageType).id : (event.data as NDKEvent).id)}
-					{#if event.type === 'metadata'}
-						<SystemMessage event={event.data as NDKEvent} />
-					{:else}
-						{@const message = event.data as MessageType}
-						{@const props = messagePropsMap.get(message.id)}
-						{#if props}
-							<Message
-								message={props.message}
-								isLastMessage={index === eventsWithMetadata.length - 1}
-								isConsecutive={props.isConsecutive}
-								hasNextConsecutive={props.hasNextConsecutive}
-								{onReply}
-								{onQuote}
-								{onTimeClick}
-							/>
-						{/if}
+				{#each displayList as item, index (item.type === 'visible' ? item.message.id : item.type === 'collapsed' ? `collapsed-${item.messages[0]?.id || index}` : `metadata-${(item as any).event.id}`)}
+					{#if item.type === 'metadata'}
+						<SystemMessage event={item.event} />
+					{:else if item.type === 'collapsed'}
+						<CollapsedMessagesIndicator
+							count={item.count}
+							messages={item.messages}
+							{onReply}
+							{onQuote}
+							{onTimeClick}
+						/>
+					{:else if item.type === 'visible'}
+						<Message
+							message={item.message}
+							isLastMessage={index === displayList.length - 1}
+							isConsecutive={item.isConsecutive}
+							hasNextConsecutive={item.hasNextConsecutive}
+							{onReply}
+							{onQuote}
+							{onTimeClick}
+						/>
 					{/if}
 				{/each}
 			</div>
@@ -243,7 +183,7 @@
 			<button
 				type="button"
 				class="relative rounded-full shadow-lg h-10 w-10 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors flex items-center justify-center"
-				onclick={() => scrollToBottom(true)}
+				onclick={scrollToBottom}
 				aria-label="Scroll to bottom"
 			>
 				<ChevronDown class="h-5 w-5" />

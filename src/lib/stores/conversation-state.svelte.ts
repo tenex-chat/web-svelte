@@ -34,6 +34,7 @@ export class ConversationState {
 	// Options
 	private rootEvent: NDKEvent | null;
 	private viewMode: ThreadViewMode;
+	private currentUserPubkey: string | undefined;
 	private directRepliesOnly: boolean;
 	private debug: boolean;
 	private maxReconnectAttempts: number;

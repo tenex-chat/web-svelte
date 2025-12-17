@@ -7,7 +7,7 @@
   import type { NDKSvelte } from '@nostr-dev-kit/svelte';
   import type { Snippet } from 'svelte';
   import { getContext } from 'svelte';
-  import { getNDK } from '../../utils/ndk';
+  import { NDK_CONTEXT_KEY } from '../../utils/ndk';
   import { CONTENT_RENDERER_CONTEXT_KEY, type ContentRendererContext } from '../content-renderer/content-renderer.context.js';
   import { User } from '../user/index.js';
 
@@ -31,7 +31,9 @@
     children
   }: Props = $props();
 
-  const ndk = getNDK(providedNdk);
+  // Cache context NDK at init (getContext can only be called during initialization)
+  const contextNdk = getContext<NDKSvelte | undefined>(NDK_CONTEXT_KEY);
+  const ndk = $derived(providedNdk ?? contextNdk ?? (() => { throw new Error('NDK not found'); })());
   const rendererContext = getContext<ContentRendererContext | undefined>(CONTENT_RENDERER_CONTEXT_KEY);
 
   // Use onclick prop if provided, otherwise fall back to renderer callback

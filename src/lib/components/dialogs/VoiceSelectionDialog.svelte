@@ -24,7 +24,11 @@
 		onMultiSelect
 	}: Props = $props();
 
-	let selectedVoices = $state<string[]>(currentVoiceIds || []);
+	// Sync selected voices when prop changes
+	let selectedVoices = $state<string[]>([]);
+	$effect(() => {
+		selectedVoices = currentVoiceIds || [];
+	});
 	let customVoiceId = $state('');
 	let availableVoices = $state<Voice[]>([]);
 	let fetchingVoices = $state(false);

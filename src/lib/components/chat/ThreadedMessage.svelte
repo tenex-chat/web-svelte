@@ -10,9 +10,11 @@
 	import { ConversationState } from '$lib/stores/conversation-state.svelte';
 	import {
 		type Message as MessageType,
-		calculateMessageProperties,
+		type DisplayItem,
+		createDisplayModel,
 		getUniquePubkeys
 	} from '$lib/utils/messageUtils';
+	import CollapsedMessagesIndicator from './CollapsedMessagesIndicator.svelte';
 	import EventCardInline from '$lib/ndk/components/event-card-inline/event-card-inline.svelte';
 
 	interface Props {
@@ -100,8 +102,8 @@
 	// Get replies from conversation state
 	const replies = $derived(repliesState?.displayMessages || []);
 
-	// Calculate properties for replies
-	const replyProperties = $derived(calculateMessageProperties(replies));
+	// Create display model for replies (handles collapsing)
+	const displayItems = $derived<DisplayItem[]>(createDisplayModel(replies));
 
 	// Get unique author pubkeys for collapse button avatars
 	const uniquePubkeys = $derived(getUniquePubkeys(replies));
@@ -133,20 +135,30 @@
 		/>
 
 		<!-- Render direct replies recursively -->
-		{#each replyProperties as { message: replyMsg, isConsecutive: replyConsecutive, hasNextConsecutive: replyHasNext, isLastReasoningMessage: replyLastReasoning } (replyMsg.id)}
-			<ThreadedMessage
-				message={replyMsg}
-				{rootEvent}
-				depth={1}
-				{project}
-				{onTimeClick}
-				{onConversationNavigate}
-				{onReply}
-				{onQuote}
-				isConsecutive={replyConsecutive}
-				hasNextConsecutive={replyHasNext}
-				isLastReasoningMessage={replyLastReasoning}
-			/>
+		{#each displayItems as item, index (item.type === 'visible' ? item.message.id : item.type === 'collapsed' ? `collapsed-${item.messages[0]?.id || index}` : `metadata-${index}`)}
+			{#if item.type === 'collapsed'}
+				<CollapsedMessagesIndicator
+					count={item.count}
+					messages={item.messages}
+					{onReply}
+					{onQuote}
+					{onTimeClick}
+				/>
+			{:else if item.type === 'visible'}
+				<ThreadedMessage
+					message={item.message}
+					{rootEvent}
+					depth={1}
+					{project}
+					{onTimeClick}
+					{onConversationNavigate}
+					{onReply}
+					{onQuote}
+					isConsecutive={item.isConsecutive}
+					hasNextConsecutive={item.hasNextConsecutive}
+					isLastReasoningMessage={item.isLastReasoningMessage}
+				/>
+			{/if}
 		{/each}
 	{:else}
 		<!-- NESTED LEVEL: Render message with collapsible replies -->
@@ -209,20 +221,30 @@
 			<!-- Render reply messages (when expanded) -->
 			{#if isExpanded}
 				<div class="ml-12 mt-2">
-					{#each replyProperties as { message: replyMsg, isConsecutive: replyConsecutive, hasNextConsecutive: replyHasNext, isLastReasoningMessage: replyLastReasoning } (replyMsg.id)}
-						<ThreadedMessage
-							message={replyMsg}
-							{rootEvent}
-							depth={depth + 1}
-							{project}
-							{onTimeClick}
-							{onConversationNavigate}
-							{onReply}
-							{onQuote}
-							isConsecutive={replyConsecutive}
-							hasNextConsecutive={replyHasNext}
-							isLastReasoningMessage={replyLastReasoning}
-						/>
+					{#each displayItems as item, index (item.type === 'visible' ? item.message.id : item.type === 'collapsed' ? `collapsed-${item.messages[0]?.id || index}` : `metadata-${index}`)}
+						{#if item.type === 'collapsed'}
+							<CollapsedMessagesIndicator
+								count={item.count}
+								messages={item.messages}
+								{onReply}
+								{onQuote}
+								{onTimeClick}
+							/>
+						{:else if item.type === 'visible'}
+							<ThreadedMessage
+								message={item.message}
+								{rootEvent}
+								depth={depth + 1}
+								{project}
+								{onTimeClick}
+								{onConversationNavigate}
+								{onReply}
+								{onQuote}
+								isConsecutive={item.isConsecutive}
+								hasNextConsecutive={item.hasNextConsecutive}
+								isLastReasoningMessage={item.isLastReasoningMessage}
+							/>
+						{/if}
 					{/each}
 				</div>
 			{/if}

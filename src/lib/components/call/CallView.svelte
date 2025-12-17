@@ -41,10 +41,14 @@
 	const availableWorktrees = $derived(projectId ? projectStatusStore.getWorktrees(projectId) : []);
 	const defaultWorktree = $derived(projectId ? projectStatusStore.getDefaultWorktree(projectId) : null);
 
-	// Local thread state
-	let localRootEvent = $state<NDKEvent | null>(initialRootEvent ?? null);
+	// Local thread state - sync when prop changes
+	let localRootEvent = $state<NDKEvent | null>(null);
 	let selectedAgentPubkey: string | null = $state(null);
 	let selectedWorktree: string | null = $state(null);
+
+	$effect(() => {
+		localRootEvent = initialRootEvent ?? null;
+	});
 
 	// Compute default agent based on recent messages (same logic as ChatInput)
 	const defaultAgent = $derived.by(() => {

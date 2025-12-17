@@ -9,7 +9,7 @@
 
 	let { timestamp, class: className = '' }: Props = $props();
 
-	const timeAgo = createTimeAgo(timestamp);
+	const timeAgo = createTimeAgo(() => timestamp);
 	const datetime = $derived(timestamp ? new Date(timestamp * 1000).toISOString() : undefined);
 </script>
 

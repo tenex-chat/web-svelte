@@ -8,9 +8,16 @@
 
 	let { project }: Props = $props();
 
-	let title = $state(project.title || '');
-	let description = $state(project.description || '');
-	let repoUrl = $state(project.repoUrl || '');
+	// Sync editing state when project prop changes
+	let title = $state('');
+	let description = $state('');
+	let repoUrl = $state('');
+
+	$effect(() => {
+		title = project.title || '';
+		description = project.description || '';
+		repoUrl = project.repoUrl || '';
+	});
 	let isSaving = $state(false);
 	let saveMessage = $state<{ type: 'success' | 'error'; text: string } | null>(null);
 

@@ -12,7 +12,9 @@
 
 	let { pubkey }: Props = $props();
 
-	console.log('[AgentFeedTab] Subscribing to agent:', pubkey);
+	$effect(() => {
+		console.log('[AgentFeedTab] Subscribing to agent:', pubkey);
+	});
 
 	// Subscribe to all events from this agent
 	const feedSubscription = ndk.$subscribe(() => ({

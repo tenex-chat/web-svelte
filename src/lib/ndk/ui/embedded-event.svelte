@@ -36,10 +36,14 @@
 		get renderer() { return renderer; }
 	});
 
-	const eventFetcher = createFetchEvent(ndk, () => ({ bech32 }))
+	// Use $state + $effect to make eventFetcher reactive to ndk changes
+	let eventFetcher = $state<ReturnType<typeof createFetchEvent> | null>(null);
+	$effect(() => {
+		eventFetcher = createFetchEvent(ndk, () => ({ bech32 }));
+	});
 
 	// Lookup handler from registry for this specific kind
-	let handlerInfo = $derived(renderer.getKindHandler(eventFetcher.event?.kind));
+	let handlerInfo = $derived(renderer.getKindHandler(eventFetcher?.event?.kind));
 
 	// Use kind-specific handler
 	let KindHandler = $derived(handlerInfo?.component);
@@ -49,9 +53,9 @@
 
 	// Wrap event using NDK wrapper class if available (only for kind-specific handlers)
 	let wrappedEvent = $derived(
-		eventFetcher.event && handlerInfo?.wrapper?.from
+		eventFetcher?.event && handlerInfo?.wrapper?.from
 			? handlerInfo.wrapper.from(eventFetcher.event)
-			: eventFetcher.event
+			: eventFetcher?.event
 	);
 
 	// Handle click on embedded event
@@ -63,7 +67,7 @@
 	}
 </script>
 
-{#if eventFetcher.loading}
+{#if !eventFetcher || eventFetcher.loading}
 	<div class="flex items-center gap-2 p-3 rounded-lg border border-border bg-muted text-sm {className}">
 		<div class="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
 		<span>Loading event...</span>

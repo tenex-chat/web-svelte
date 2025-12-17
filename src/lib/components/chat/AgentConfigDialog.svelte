@@ -17,9 +17,14 @@
 	}
 	let { open = $bindable(false), project, agent, availableModels, availableTools }: Props = $props();
 
-	// Local state for editing
-	let selectedModel = $state(agent.model || '');
-	let selectedTools = $state<SvelteSet<string>>(new SvelteSet(agent.tools || []));
+	// Local state for editing - sync from agent prop when it changes
+	let selectedModel = $state('');
+	let selectedTools = $state<SvelteSet<string>>(new SvelteSet());
+
+	$effect(() => {
+		selectedModel = agent.model || '';
+		selectedTools = new SvelteSet(agent.tools || []);
+	});
 
 	// Group tools intelligently
 	interface ToolGroup {

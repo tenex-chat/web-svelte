@@ -15,7 +15,7 @@
     LinkClickCallback,
     MediaClickCallback
   } from '../../ui/content-renderer/index.svelte.js';
-  import { getNDK } from '../../utils/ndk';
+  import { NDK_CONTEXT_KEY } from '../../utils/ndk';
   import { cn } from '../../utils/cn';
   import type { Snippet } from 'svelte';
 
@@ -57,7 +57,9 @@
     ...restProps
   }: Props = $props();
 
-  const ndk = getNDK(providedNdk);
+  // Cache context NDK at init (getContext can only be called during initialization)
+  const contextNdk = getContext<NDKSvelte | undefined>(NDK_CONTEXT_KEY);
+  const ndk = $derived(providedNdk ?? contextNdk ?? (() => { throw new Error('NDK not found'); })());
 
   // EventCardContext: structural data about the card
   const context: EventCardContext = {
