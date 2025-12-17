@@ -54,7 +54,7 @@
 
 	let localRootEvent = $state<NDKEvent | null>(rootEvent);
 	let replyToEvent = $state<NDKEvent | null>(null);
-	let initialContent = $state<string>('');
+	let quoteEvent = $state<NDKEvent | null>(null);
 	let navigationStack = $state<NDKEvent[]>([]);
 
 	// Update local root when prop changes
@@ -75,22 +75,15 @@
 
 	function handleReply(message: Message) {
 		replyToEvent = message.event;
-		initialContent = '';
 	}
 
 	function handleQuote(message: Message) {
-		replyToEvent = null;
-		// Format the quoted text with markdown quote syntax
-		const quotedText = message.event.content
-			.split('\n')
-			.map((line) => `> ${line}`)
-			.join('\n');
-		initialContent = `${quotedText}\n\n`;
+		quoteEvent = message.event;
 	}
 
 	function handleCancelReply() {
 		replyToEvent = null;
-		initialContent = '';
+		quoteEvent = null;
 	}
 
 	function handleTimeClick(event: NDKEvent) {
@@ -133,7 +126,7 @@
 				recentMessages={messages.map(m => m.event)}
 				onThreadCreated={handleThreadCreated}
 				{replyToEvent}
-				{initialContent}
+				{quoteEvent}
 				onCancelReply={handleCancelReply}
 			/>
 		</div>	

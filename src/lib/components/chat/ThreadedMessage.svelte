@@ -131,7 +131,6 @@
 			{onReply}
 			{onQuote}
 		/>
-		messages = {replyProperties.length}
 
 		<!-- Render direct replies recursively -->
 		{#each replyProperties as { message: replyMsg, isConsecutive: replyConsecutive, hasNextConsecutive: replyHasNext, isLastReasoningMessage: replyLastReasoning } (replyMsg.id)}

@@ -28,8 +28,8 @@
 		recentMessages?: NDKEvent[];
 		onThreadCreated?: (thread: NDKEvent) => void;
 		replyToEvent?: NDKEvent | null;
+		quoteEvent?: NDKEvent | null;
 		onCancelReply?: () => void;
-		initialContent?: string;
 	}
 
 	let {
@@ -39,8 +39,8 @@
 		recentMessages = [],
 		onThreadCreated,
 		replyToEvent = null,
-		onCancelReply,
-		initialContent = ''
+		quoteEvent = null,
+		onCancelReply
 	}: Props = $props();
 
 	const projectId = $derived(project?.tagId());
@@ -78,8 +78,6 @@
 		if (draftKey) {
 			const draft = draftStore.getDraft(draftKey);
 			messageInput = draft || '';
-		} else if (initialContent) {
-			messageInput = initialContent;
 		} else {
 			messageInput = '';
 		}
@@ -310,6 +308,11 @@
 					thread.tags.push(['branch', currentWorktree]);
 				}
 
+				// Add quote tag if quoting an event
+				if (quoteEvent) {
+					thread.tags.push(['q', quoteEvent.id, '', quoteEvent.pubkey]);
+				}
+
 				// Sign and publish
 				await thread.sign(undefined, { pTags: false });
 				await thread.publish();
@@ -320,7 +323,7 @@
 				}
 			} else {
 				// SEND REPLY (kind:1111)
-				const reply = rootEvent.reply();
+				const reply = (replyToEvent||rootEvent).reply();
 				reply.content = content;
 
 				// Remove NDK's auto p-tags
@@ -338,9 +341,9 @@
 				if (replyToEvent) {
 					// Check if e-tag doesn't already exist
 					const hasETag = reply.tags.some((tag) => tag[0] === 'e' && tag[1] === replyToEvent.id);
-					if (!hasETag) {
-						reply.tags.push(['e', replyToEvent.id, '', 'reply']);
-					}
+					// if (!hasETag) {
+					// 	reply.tags.push(['e', replyToEvent.id, '', 'reply']);
+					// }
 					// Also add p-tag for the author of the message being replied to
 					const hasReplyAuthorPTag = reply.tags.some(
 						(tag) => tag[0] === 'p' && tag[1] === replyToEvent.pubkey
@@ -369,6 +372,11 @@
 				// Add branch tag if specified
 				if (currentWorktree) {
 					reply.tags.push(['branch', currentWorktree]);
+				}
+
+				// Add quote tag if quoting an event
+				if (quoteEvent) {
+					reply.tags.push(['q', quoteEvent.id, '', quoteEvent.pubkey]);
 				}
 
 				// Sign and publish
@@ -452,8 +460,8 @@
 </script>
 
 <div class="p-4">
-	<!-- Reply Context -->
-	<ReplyContextBanner {replyToEvent} onCancel={onCancelReply} />
+	<!-- Reply/Quote Context -->
+	<ReplyContextBanner {replyToEvent} {quoteEvent} onCancel={onCancelReply} />
 
 	<!-- Glassy Input Container -->
 	<div class="relative rounded-2xl bg-card/40 backdrop-blur-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
