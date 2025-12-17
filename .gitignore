@@ -24,3 +24,6 @@ vite.config.ts.timestamp-*
 
 # Logs
 dev_server.log
+
+# VAD WASM files (copied from node_modules by vite plugin)
+static/vad/
