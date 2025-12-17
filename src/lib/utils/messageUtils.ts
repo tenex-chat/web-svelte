@@ -2,6 +2,7 @@ import type { NDKEvent } from '@nostr-dev-kit/ndk';
 import { NDKKind } from '$lib/kinds';
 
 export type ThreadViewMode = 'threaded' | 'flattened';
+export type ChatViewMode = 'threaded' | 'flattened' | 'delegation';
 
 export interface Message {
 	id: string;

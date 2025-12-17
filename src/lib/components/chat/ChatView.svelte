@@ -2,11 +2,12 @@
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
-	import type { ThreadViewMode, Message } from '$lib/utils/messageUtils';
+	import { type ChatViewMode, type Message } from '$lib/utils/messageUtils';
 	import { ndk } from '$lib/ndk.svelte';
 	import MessageList from './MessageList.svelte';
 	import ChatInput from './ChatInput.svelte';
 	import ChatHeader from './ChatHeader.svelte';
+	import DelegationTreeView from './DelegationTreeView.svelte';
 
 	interface Props {
 		project?: NDKProject;
@@ -15,12 +16,12 @@
 		threadId?: string;
 		onlineAgents?: ProjectAgent[];
 		onThreadCreated?: (thread: NDKEvent) => void;
-		viewMode?: ThreadViewMode;
+		viewMode?: ChatViewMode;
 		hideHeader?: boolean;
 		messages?: Message[];
 	}
 
-	let { project = $bindable(), projectId, rootEvent = $bindable(null), threadId, onlineAgents = [], onThreadCreated, viewMode = $bindable('threaded'), hideHeader = false, messages = $bindable([]) }: Props = $props();
+	let { project = $bindable(), projectId, rootEvent = $bindable(null), threadId, onlineAgents = [], onThreadCreated, viewMode = $bindable<ChatViewMode>('threaded'), hideHeader = false, messages = $bindable([]) }: Props = $props();
 
 	// Fetch project if projectId provided but project not available
 	$effect(() => {
@@ -56,10 +57,12 @@
 	let replyToEvent = $state<NDKEvent | null>(null);
 	let quoteEvent = $state<NDKEvent | null>(null);
 	let navigationStack = $state<NDKEvent[]>([]);
+	let lastPropRootId = $state<string | undefined>(rootEvent?.id);
 
-	// Update local root when prop changes
+	// Update local root when prop changes (not from internal navigation)
 	$effect(() => {
-		if (rootEvent && rootEvent.id !== localRootEvent?.id) {
+		if (rootEvent && rootEvent.id !== lastPropRootId) {
+			lastPropRootId = rootEvent.id;
 			localRootEvent = rootEvent;
 			// Clear navigation stack when explicitly setting a new root from props
 			navigationStack = [];
@@ -87,38 +90,59 @@
 	}
 
 	function handleTimeClick(event: NDKEvent) {
-		console.log('handleTimeClick called', event.id);
-		console.log('Current root:', localRootEvent?.id);
-		console.log('Navigation stack before:', navigationStack.map(e => e.id));
-
 		if (localRootEvent && localRootEvent.id !== event.id) {
 			navigationStack = [...navigationStack, localRootEvent];
 		}
 		localRootEvent = event;
-
-		console.log('New root:', localRootEvent.id);
-		console.log('Navigation stack after:', navigationStack.map(e => e.id));
 	}
+
+	function handleNavigateBack() {
+		if (navigationStack.length > 0) {
+			const parent = navigationStack[navigationStack.length - 1];
+			navigationStack = navigationStack.slice(0, -1);
+			localRootEvent = parent;
+		}
+	}
+
+	const parentEvent = $derived(navigationStack.length > 0 ? navigationStack[navigationStack.length - 1] : null);
 </script>
 
 <div class="flex flex-col h-full relative">
 	{#if localRootEvent}
 		{#if !hideHeader}
-			<ChatHeader rootEvent={localRootEvent} {messages} />
+			<ChatHeader
+				rootEvent={localRootEvent}
+				{messages}
+				viewMode={viewMode}
+				onViewModeChange={(mode) => (viewMode = mode)}
+			/>
 		{/if}
 
-		<!-- Messages -->
-		<MessageList
-			rootEvent={localRootEvent}
-			{viewMode}
-			onReply={handleReply}
-			onQuote={handleQuote}
-			onTimeClick={handleTimeClick}
-			bind:messages
-		/>
+		<!-- Messages - MessageList always runs for subscription management -->
+		<div class={viewMode === 'delegation' ? 'hidden' : 'contents'}>
+			<MessageList
+				rootEvent={localRootEvent}
+				viewMode={viewMode === 'flattened' ? 'flattened' : 'threaded'}
+				onReply={handleReply}
+				onQuote={handleQuote}
+				onTimeClick={handleTimeClick}
+				bind:messages
+			/>
+		</div>
+
+		{#if viewMode === 'delegation'}
+			<DelegationTreeView
+				rootEvent={localRootEvent}
+				{messages}
+				isLoading={messages.length === 0}
+				onNodeClick={handleTimeClick}
+				{parentEvent}
+				onNavigateBack={handleNavigateBack}
+			/>
+		{/if}
 
 		<!-- Input -->
-		 <div class="absolute left-0 right-0 bottom-0 z-[49]">
+		<div class="absolute left-0 right-0 bottom-0 z-[100]">
 			<ChatInput
 				{project}
 				rootEvent={localRootEvent}

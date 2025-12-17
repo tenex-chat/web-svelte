@@ -8,8 +8,8 @@
 	import AgentProfileTabs from '../agents/AgentProfileTabs.svelte';
 	import DebugEventsView from '../debug/DebugEventsView.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
-	import type { ThreadViewMode, Message } from '$lib/utils/messageUtils';
-	import CopyThreadMenu from '../chat/CopyThreadMenu.svelte';
+	import type { ChatViewMode, Message } from '$lib/utils/messageUtils';
+	import ChatHeaderActions from '../chat/ChatHeaderActions.svelte';
 
 	interface Props {
 		window: WindowConfig;
@@ -17,7 +17,7 @@
 
 	let { window }: Props = $props();
 
-	let viewMode = $state<ThreadViewMode>('threaded');
+	let viewMode = $state<ChatViewMode>('threaded');
 	let messages = $state<Message[]>([]);
 
 	const onlineAgents = $derived(
@@ -88,10 +88,6 @@
 		isResizing = false;
 	}
 
-	function toggleViewMode() {
-		viewMode = viewMode === 'threaded' ? 'flattened' : 'threaded';
-	}
-
 	$effect(() => {
 		if (isDragging || isResizing) {
 			globalThis.addEventListener('mousemove', handleMouseMove);
@@ -138,35 +134,11 @@
 		<!-- Actions -->
 		<div class="flex items-center gap-1 pointer-events-auto">
 			{#if window.type === 'chat'}
-				<!-- Copy Thread Menu -->
-				<CopyThreadMenu {messages} rootEvent={window.data?.thread} />
-
-				<!-- View Mode Toggle -->
-				<button
-					onclick={toggleViewMode}
-					class="p-2 hover:bg-secondary rounded transition-colors"
-					title={viewMode === 'threaded' ? 'Switch to flat view' : 'Switch to threaded view'}
-				>
-					{#if viewMode === 'threaded'}
-						<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M4 6h16M4 12h16M4 18h7"
-							/>
-						</svg>
-					{:else}
-						<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M4 6h16M4 12h16M4 18h16"
-							/>
-						</svg>
-					{/if}
-				</button>
+				<ChatHeaderActions
+					rootEvent={window.data?.thread}
+					{messages}
+					bind:viewMode
+				/>
 			{/if}
 
 			<!-- Re-attach button -->
@@ -218,7 +190,7 @@
 						thread.tagValue('title') || 'Conversation'
 					);
 				}}
-				{viewMode}
+				bind:viewMode
 				hideHeader={true}
 				bind:messages
 			/>
