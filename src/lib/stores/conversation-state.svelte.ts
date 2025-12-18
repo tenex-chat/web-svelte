@@ -350,6 +350,9 @@ export class ConversationState {
 			NDKKind.TenexStreamingResponse
 		];
 
+		// Streaming events are ephemeral - only fetch from the last minute
+		const streamingSince = Math.floor(Date.now() / 1000) - 60;
+
 		if (this.directRepliesOnly) {
 			// Direct replies only (for threaded view)
 			filters.push(
@@ -361,7 +364,8 @@ export class ConversationState {
 				{
 					kinds: streamingKinds,
 					'#e': [this.rootEvent.id],
-					limit: 100
+					limit: 100,
+					since: streamingSince
 				}
 			);
 		} else {
@@ -369,7 +373,7 @@ export class ConversationState {
 			filters.push(
 				{ kinds: [11, NDKKind.GenericReply, NDKKind.TenexConversationMetadata as number], ...this.rootEvent.filter() },
 				{ kinds: [11, NDKKind.GenericReply, NDKKind.TenexConversationMetadata as number], ...this.rootEvent.nip22Filter() },
-				{ kinds: streamingKinds, limit: 100, ...this.rootEvent.nip22Filter() }
+				{ kinds: streamingKinds, limit: 100, since: streamingSince, ...this.rootEvent.nip22Filter() }
 			);
 		}
 
