@@ -1,20 +1,37 @@
 <script lang="ts">
-	import type { Message } from '$lib/utils/messageUtils';
-	import { ChevronDown, ChevronRight } from 'lucide-svelte';
+	import type { Message, GroupedItem } from '$lib/utils/messageUtils';
+	import { ChevronDown, ChevronRight, Settings } from 'lucide-svelte';
 	import { slide } from 'svelte/transition';
 	import MessageComponent from './Message.svelte';
+	import ToolGroupDisplay from './ToolGroupDisplay.svelte';
 
 	interface Props {
 		count: number;
-		messages: Message[];
+		items: GroupedItem[];
 		onReply?: (message: Message) => void;
 		onQuote?: (message: Message) => void;
 		onTimeClick?: (event: import('@nostr-dev-kit/ndk').NDKEvent) => void;
 	}
 
-	let { count, messages, onReply, onQuote, onTimeClick }: Props = $props();
+	let { count, items, onReply, onQuote, onTimeClick }: Props = $props();
 
 	let isExpanded = $state(false);
+
+	// Check if all items are tool groups
+	const areAllToolGroups = $derived(
+		items.length > 0 && items.every((item) => item.type === 'tool_group')
+	);
+
+	// Count total tools if all are tool groups
+	const totalToolCount = $derived.by(() => {
+		if (!areAllToolGroups) return 0;
+		return items.reduce((sum, item) => {
+			if (item.type === 'tool_group') {
+				return sum + item.tools.length;
+			}
+			return sum;
+		}, 0);
+	});
 
 	function toggleExpanded() {
 		isExpanded = !isExpanded;
@@ -29,7 +46,7 @@
 			<div class="absolute left-1/2 -translate-x-1/2 inset-y-0 border-l border-border/60"></div>
 		</div>
 
-		<!-- Collapsed messages indicator -->
+		<!-- Collapsed indicator -->
 		<div class="flex-1 min-w-0">
 			<button
 				type="button"
@@ -41,27 +58,44 @@
 				{:else}
 					<ChevronRight class="w-3 h-3 flex-shrink-0" />
 				{/if}
-				<span class="font-medium">
-					{count} {count === 1 ? 'message' : 'messages'}
-				</span>
+				{#if areAllToolGroups}
+					<Settings class="w-3 h-3 flex-shrink-0" />
+					<span class="font-medium">
+						Used {totalToolCount} {totalToolCount === 1 ? 'tool' : 'tools'}
+					</span>
+				{:else}
+					<span class="font-medium">
+						{count} {count === 1 ? 'message' : 'messages'}
+					</span>
+				{/if}
 				<span class="text-muted-foreground/70 group-hover:text-muted-foreground/90">
 					{isExpanded ? 'Click to collapse' : 'Click to expand'}
 				</span>
 			</button>
 
-			<!-- Expanded messages -->
+			<!-- Expanded items -->
 			{#if isExpanded}
 				<div transition:slide={{ duration: 200 }}>
-					{#each messages as message, index (message.id)}
-						<MessageComponent
-							{message}
-							isLastMessage={false}
-							isConsecutive={true}
-							hasNextConsecutive={index < messages.length - 1}
-							{onReply}
-							{onQuote}
-							{onTimeClick}
-						/>
+					{#each items as item, index}
+						{#if item.type === 'message'}
+							<MessageComponent
+								message={item.message}
+								isLastMessage={false}
+								isConsecutive={true}
+								hasNextConsecutive={index < items.length - 1}
+								{onReply}
+								{onQuote}
+								{onTimeClick}
+							/>
+						{:else if item.type === 'tool_group'}
+							<ToolGroupDisplay
+								tools={item.tools}
+								thinking={item.thinking}
+								isActive={false}
+								isConsecutive={true}
+								hasNextConsecutive={index < items.length - 1}
+							/>
+						{/if}
 					{/each}
 				</div>
 			{/if}
