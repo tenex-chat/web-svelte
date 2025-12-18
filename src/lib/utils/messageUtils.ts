@@ -10,19 +10,10 @@ export interface Message {
 }
 
 /**
- * Intermediate representation after tool grouping
- * Sequential tool calls and adjacent thinking blocks are combined into a single tool_group
- */
-export type GroupedItem =
-	| { type: 'message'; message: Message }
-	| { type: 'tool_group'; tools: Message[]; thinking: Message[] };
-
-/**
  * Display item types for the unified display model
  */
 export type DisplayItem =
 	| { type: 'visible'; message: Message; isConsecutive: boolean; hasNextConsecutive: boolean; isLastReasoningMessage: boolean }
-	| { type: 'collapsed'; count: number; items: GroupedItem[] }
 	| { type: 'tool_group'; tools: Message[]; thinking: Message[]; isConsecutive: boolean; hasNextConsecutive: boolean; isActive: boolean }
 	| { type: 'metadata'; event: NDKEvent };
 
@@ -82,30 +73,6 @@ export function findLastReasoningIndex(messages: Message[]): number {
 }
 
 /**
- * Get the author pubkey of a GroupedItem
- */
-function getItemAuthor(item: GroupedItem): string {
-	if (item.type === 'message') {
-		return item.message.event.pubkey;
-	}
-	// For tool_group, prefer tools but fall back to thinking
-	if (item.tools.length > 0) {
-		return item.tools[0].event.pubkey;
-	}
-	if (item.thinking.length > 0) {
-		return item.thinking[0].event.pubkey;
-	}
-	return '';
-}
-
-/**
- * Check if a GroupedItem has p-tags (only messages can have p-tags)
- */
-function itemHasPTag(item: GroupedItem): boolean {
-	return item.type === 'message' && hasPTag(item.message.event);
-}
-
-/**
  * Classify a message as tool, thinking, or regular message
  */
 function classifyMessage(message: Message): 'tool' | 'thinking' | 'message' {
@@ -122,10 +89,10 @@ function classifyMessage(message: Message): 'tool' | 'thinking' | 'message' {
  * - If the group has tools, it becomes a tool_group (with thinking absorbed)
  * - If the group has only thinking (no tools), the thinking messages stay as individual messages
  */
-function groupSequentialToolCalls(messages: Message[]): GroupedItem[] {
+function groupSequentialToolCalls(messages: Message[]): DisplayItem[] {
 	if (messages.length === 0) return [];
 
-	const result: GroupedItem[] = [];
+	const result: DisplayItem[] = [];
 	let pendingTools: Message[] = [];
 	let pendingThinking: Message[] = [];
 
@@ -135,12 +102,21 @@ function groupSequentialToolCalls(messages: Message[]): GroupedItem[] {
 			result.push({
 				type: 'tool_group',
 				tools: [...pendingTools],
-				thinking: [...pendingThinking]
+				thinking: [...pendingThinking],
+				isConsecutive: false,
+				hasNextConsecutive: false,
+				isActive: false
 			});
 		} else if (pendingThinking.length > 0) {
 			// Only thinking, no tools - emit as individual messages
 			for (const t of pendingThinking) {
-				result.push({ type: 'message', message: t });
+				result.push({
+					type: 'visible',
+					message: t,
+					isConsecutive: false,
+					hasNextConsecutive: false,
+					isLastReasoningMessage: false
+				});
 			}
 		}
 		pendingTools = [];
@@ -157,132 +133,18 @@ function groupSequentialToolCalls(messages: Message[]): GroupedItem[] {
 		} else {
 			// Regular message - flush any pending group and emit the message
 			flushPending();
-			result.push({ type: 'message', message: msg });
+			result.push({
+				type: 'visible',
+				message: msg,
+				isConsecutive: false,
+				hasNextConsecutive: false,
+				isLastReasoningMessage: false
+			});
 		}
 	}
 
 	flushPending();
 	return result;
-}
-
-/**
- * Group items by author
- * Returns an array of item groups, where each group contains items from the same author
- */
-function groupItemsByAuthor(items: GroupedItem[]): GroupedItem[][] {
-	if (items.length === 0) return [];
-
-	const groups: GroupedItem[][] = [];
-	let currentGroup: GroupedItem[] = [items[0]];
-	let currentAuthor = getItemAuthor(items[0]);
-
-	for (let i = 1; i < items.length; i++) {
-		const item = items[i];
-		const itemAuthor = getItemAuthor(item);
-
-		if (itemAuthor === currentAuthor) {
-			currentGroup.push(item);
-		} else {
-			groups.push(currentGroup);
-			currentGroup = [item];
-			currentAuthor = itemAuthor;
-		}
-	}
-
-	if (currentGroup.length > 0) {
-		groups.push(currentGroup);
-	}
-
-	return groups;
-}
-
-/**
- * Convert a GroupedItem to a DisplayItem
- * Tool groups get isActive=false by default (will be updated later)
- */
-function itemToDisplayItem(item: GroupedItem): DisplayItem {
-	if (item.type === 'tool_group') {
-		return {
-			type: 'tool_group',
-			tools: item.tools,
-			thinking: item.thinking,
-			isConsecutive: false,
-			hasNextConsecutive: false,
-			isActive: false
-		};
-	} else {
-		return {
-			type: 'visible',
-			message: item.message,
-			isConsecutive: false,
-			hasNextConsecutive: false,
-			isLastReasoningMessage: false
-		};
-	}
-}
-
-/**
- * Apply collapsing rules to a group of items from the same author
- * Regular messages collapse at 4+, tool groups are always shown (they handle their own collapsing)
- */
-function applyCollapsingRules(group: GroupedItem[]): DisplayItem[] {
-	const items: DisplayItem[] = [];
-	const COLLAPSE_THRESHOLD = 4;
-
-	// Small groups: show everything
-	if (group.length < COLLAPSE_THRESHOLD) {
-		for (const item of group) {
-			items.push(itemToDisplayItem(item));
-		}
-		return items;
-	}
-
-	// Large groups: apply collapsing logic (show first, collapse middle, show last)
-	const first = group[0];
-	const last = group[group.length - 1];
-	const middle = group.slice(1, -1);
-
-	// Show first item
-	items.push(itemToDisplayItem(first));
-
-	// Helper to flush pending items
-	function flushPending(pending: GroupedItem[], target: DisplayItem[]) {
-		if (pending.length === 0) return;
-
-		if (pending.length >= COLLAPSE_THRESHOLD) {
-			target.push({
-				type: 'collapsed',
-				count: pending.length,
-				items: [...pending]
-			});
-		} else {
-			for (const p of pending) {
-				target.push(itemToDisplayItem(p));
-			}
-		}
-	}
-
-	// Process middle items
-	const pendingItems: GroupedItem[] = [];
-
-	for (const item of middle) {
-		if (itemHasPTag(item)) {
-			// p-tag items break the collapse - flush pending and show the p-tag item
-			flushPending(pendingItems, items);
-			pendingItems.length = 0;
-			items.push(itemToDisplayItem(item));
-		} else {
-			pendingItems.push(item);
-		}
-	}
-
-	// Flush remaining pending items
-	flushPending(pendingItems, items);
-
-	// Show last item
-	items.push(itemToDisplayItem(last));
-
-	return items;
 }
 
 /**
@@ -377,7 +239,7 @@ function markActiveToolGroup(items: DisplayItem[]): DisplayItem[] {
 
 	// Check if there are any visible messages after the last tool group
 	const hasVisibleAfter = items.slice(lastToolGroupIdx + 1).some(
-		(item) => item.type === 'visible' || item.type === 'collapsed'
+		(item) => item.type === 'visible'
 	);
 
 	// Only mark as active if nothing visible comes after
@@ -394,16 +256,13 @@ function markActiveToolGroup(items: DisplayItem[]): DisplayItem[] {
 
 /**
  * Create a unified display model from messages
- * This is the main function that transforms raw messages into a display-ready list
  *
  * Flow:
  * 1. Group sequential tool calls into tool_group items
- * 2. Group items by author
- * 3. Apply collapsing rules to each author group
- * 4. Calculate consecutive states
- * 5. Calculate reasoning states
- * 6. Mark active tool group
- * 7. Merge with metadata events if provided
+ * 2. Calculate consecutive states
+ * 3. Calculate reasoning states
+ * 4. Mark active tool group
+ * 5. Merge with metadata events if provided
  */
 export function createDisplayModel(
 	messages: Message[],
@@ -412,33 +271,22 @@ export function createDisplayModel(
 	if (messages.length === 0) return [];
 
 	// Step 1: Group sequential tool calls
-	const groupedItems = groupSequentialToolCalls(messages);
+	let items = groupSequentialToolCalls(messages);
 
-	// Step 2: Group items by author
-	const authorGroups = groupItemsByAuthor(groupedItems);
-
-	// Step 3: Apply collapsing rules to each group
-	let items: DisplayItem[] = [];
-	for (const group of authorGroups) {
-		items = items.concat(applyCollapsingRules(group));
-	}
-
-	// Step 4: Calculate consecutive states
+	// Step 2: Calculate consecutive states
 	items = calculateConsecutiveStates(items);
 
-	// Step 5: Calculate reasoning states
+	// Step 3: Calculate reasoning states
 	items = calculateReasoningStates(items);
 
-	// Step 6: Mark active tool group
+	// Step 4: Mark active tool group
 	items = markActiveToolGroup(items);
 
-	// Step 7: Merge with metadata events if provided
+	// Step 5: Merge with metadata events if provided
 	if (eventsWithMetadata) {
 		const result: DisplayItem[] = [];
 
 		// Build a map from message ID to its display item
-		// For tool_groups, map all tool message IDs to the same tool_group item
-		// For collapsed items, map the first message ID to the collapsed item
 		const messageToDisplayItemMap = new Map<string, DisplayItem>();
 		const processedItemIds = new Set<string>();
 
@@ -449,19 +297,6 @@ export function createDisplayModel(
 				// Map all tool IDs to this tool_group
 				for (const tool of item.tools) {
 					messageToDisplayItemMap.set(tool.id, item);
-				}
-			} else if (item.type === 'collapsed') {
-				// Map first message/tool ID of each grouped item
-				for (const groupedItem of item.items) {
-					if (groupedItem.type === 'message') {
-						messageToDisplayItemMap.set(groupedItem.message.id, item);
-						break; // Only need one mapping for the collapsed group
-					} else if (groupedItem.type === 'tool_group') {
-						if (groupedItem.tools.length > 0) {
-							messageToDisplayItemMap.set(groupedItem.tools[0].id, item);
-							break;
-						}
-					}
 				}
 			}
 		}
@@ -500,13 +335,6 @@ function getDisplayItemId(item: DisplayItem): string {
 		return `visible-${item.message.id}`;
 	} else if (item.type === 'tool_group') {
 		return `tool_group-${item.tools.map((t) => t.id).join('-')}`;
-	} else if (item.type === 'collapsed') {
-		const firstItemId = item.items[0]
-			? item.items[0].type === 'message'
-				? item.items[0].message.id
-				: item.items[0].tools[0]?.id
-			: 'empty';
-		return `collapsed-${firstItemId}`;
 	} else {
 		return `metadata-${item.event.id}`;
 	}
@@ -522,74 +350,4 @@ export function getUniquePubkeys(messages: Message[]): string[] {
 		uniquePubkeys.add(msg.event.pubkey);
 	}
 	return Array.from(uniquePubkeys);
-}
-
-/**
- * @deprecated Use createDisplayModel instead
- */
-export function calculateMessageProperties(messages: Message[]) {
-	const lastReasoningIndex = findLastReasoningIndex(messages);
-
-	return messages.map((msg, index) => {
-		const nextMsg = messages[index + 1];
-		return {
-			message: msg,
-			isConsecutive: areConsecutiveMessages(messages[index - 1], msg),
-			hasNextConsecutive: nextMsg ? areConsecutiveMessages(msg, nextMsg) : false,
-			isLastReasoningMessage: index === lastReasoningIndex
-		};
-	});
-}
-
-/**
- * @deprecated Use createDisplayModel instead
- */
-export interface MessageGroup {
-	type: 'visible' | 'collapsed';
-	messages: Message[];
-	collapsedCount?: number;
-}
-
-/**
- * @deprecated Use createDisplayModel instead
- */
-export function calculateCollapsedMessageGroups(messages: Message[]): MessageGroup[] {
-	const groupedItems = groupSequentialToolCalls(messages);
-	const authorGroups = groupItemsByAuthor(groupedItems);
-	const result: MessageGroup[] = [];
-
-	for (const group of authorGroups) {
-		const items = applyCollapsingRules(group);
-
-		for (const item of items) {
-			if (item.type === 'visible') {
-				result.push({
-					type: 'visible',
-					messages: [item.message]
-				});
-			} else if (item.type === 'tool_group') {
-				result.push({
-					type: 'visible',
-					messages: item.tools
-				});
-			} else if (item.type === 'collapsed') {
-				// Flatten GroupedItems to messages
-				const flatMessages: Message[] = [];
-				for (const gi of item.items) {
-					if (gi.type === 'message') {
-						flatMessages.push(gi.message);
-					} else {
-						flatMessages.push(...gi.tools);
-					}
-				}
-				result.push({
-					type: 'collapsed',
-					messages: flatMessages,
-					collapsedCount: item.count
-				});
-			}
-		}
-	}
-
-	return result;
 }

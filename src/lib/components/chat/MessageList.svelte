@@ -4,7 +4,6 @@
 	import Message from './Message.svelte';
 	import SystemMessage from './SystemMessage.svelte';
 	import ThreadedMessage from './ThreadedMessage.svelte';
-	import CollapsedMessagesIndicator from './CollapsedMessagesIndicator.svelte';
 	import ToolGroupDisplay from './ToolGroupDisplay.svelte';
 	import { ConversationState } from '$lib/stores/conversation-state.svelte';
 	import { type Message as MessageType, createDisplayModel, type DisplayItem } from '$lib/utils/messageUtils';
@@ -18,14 +17,6 @@
 			return `visible-${item.message.id}`;
 		} else if (item.type === 'tool_group') {
 			return `tool_group-${item.tools[0]?.id || index}`;
-		} else if (item.type === 'collapsed') {
-			const firstItem = item.items[0];
-			const firstId = firstItem
-				? firstItem.type === 'message'
-					? firstItem.message.id
-					: firstItem.tools[0]?.id
-				: index;
-			return `collapsed-${firstId}`;
 		} else {
 			return `metadata-${item.event.id}`;
 		}
@@ -173,14 +164,6 @@
 				{#each displayList as item, index (getDisplayItemKey(item, index))}
 					{#if item.type === 'metadata'}
 						<SystemMessage event={item.event} />
-					{:else if item.type === 'collapsed'}
-						<CollapsedMessagesIndicator
-							count={item.count}
-							items={item.items}
-							{onReply}
-							{onQuote}
-							{onTimeClick}
-						/>
 					{:else if item.type === 'tool_group'}
 						<ToolGroupDisplay
 							tools={item.tools}

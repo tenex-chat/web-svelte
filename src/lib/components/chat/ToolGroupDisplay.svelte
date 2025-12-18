@@ -8,7 +8,8 @@
 		Pencil,
 		Terminal,
 		Users,
-		Search
+		Search,
+		Brain
 	} from 'lucide-svelte';
 	import { slide } from 'svelte/transition';
 	import {
@@ -18,6 +19,7 @@
 		getToolActionInfo,
 		getToolCategoryIcon
 	} from '$lib/utils/toolDisplayUtils';
+	import { parseToolArgs } from '$lib/utils/toolPaths';
 	import AIReasoningBlock from './AIReasoningBlock.svelte';
 
 	interface Props {
@@ -31,15 +33,25 @@
 	let { tools, thinking = [], isActive, isConsecutive, hasNextConsecutive }: Props = $props();
 
 	let isExpanded = $state(false);
+	let expandedToolIds = $state<Set<string>>(new Set());
 
 	const hasThinking = $derived(thinking.length > 0);
 	const toolCount = $derived(tools.length);
+
+	function toggleToolArgs(toolId: string) {
+		const newSet = new Set(expandedToolIds);
+		if (newSet.has(toolId)) {
+			newSet.delete(toolId);
+		} else {
+			newSet.add(toolId);
+		}
+		expandedToolIds = newSet;
+	}
 
 	// Get display text using the utility
 	const displayText = $derived(
 		getToolGroupDisplayText({
 			tools,
-			hasThinking,
 			isActive
 		})
 	);
@@ -99,6 +111,11 @@
 					<IconComponent class="w-4 h-4 flex-shrink-0" />
 					<span>{displayText}</span>
 				</div>
+			{:else if toolCount === 0 && hasThinking}
+				<!-- Only thinking, no tools: just show brain icon -->
+				<div class="flex items-center gap-2 text-sm text-muted-foreground">
+					<Brain class="w-4 h-4 flex-shrink-0" />
+				</div>
 			{:else}
 				<!-- Multiple tools or has thinking: collapsible group -->
 				<button
@@ -110,6 +127,9 @@
 						<ChevronDown class="w-4 h-4 flex-shrink-0" />
 					{:else}
 						<ChevronRight class="w-4 h-4 flex-shrink-0" />
+					{/if}
+					{#if hasThinking}
+						<Brain class="w-4 h-4 flex-shrink-0" />
 					{/if}
 					<IconComponent class="w-4 h-4 flex-shrink-0" />
 					<span>{displayText}</span>
@@ -134,9 +154,27 @@
 							{@const action = getToolActionInfo(tool.event)}
 							{@const toolIcon = getToolCategoryIcon(action.category)}
 							{@const ToolIcon = getIconComponent(toolIcon)}
-							<div class="flex items-center gap-2 py-1 text-sm text-muted-foreground">
-								<ToolIcon class="w-4 h-4 flex-shrink-0" />
-								<span>{getIndividualToolDisplayText(tool.event)}</span>
+							{@const args = parseToolArgs(tool.event)}
+							{@const isToolExpanded = expandedToolIds.has(tool.id)}
+							<div class="py-1">
+								<button
+									type="button"
+									onclick={() => toggleToolArgs(tool.id)}
+									class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+								>
+									{#if args}
+										{#if isToolExpanded}
+											<ChevronDown class="w-3 h-3 flex-shrink-0" />
+										{:else}
+											<ChevronRight class="w-3 h-3 flex-shrink-0" />
+										{/if}
+									{/if}
+									<ToolIcon class="w-4 h-4 flex-shrink-0" />
+									<span>{getIndividualToolDisplayText(tool.event)}</span>
+								</button>
+								{#if isToolExpanded && args}
+									<pre class="mt-1 ml-7 p-2 bg-muted/50 rounded text-xs overflow-x-auto">{JSON.stringify(args, null, 2)}</pre>
+								{/if}
 							</div>
 						{/each}
 					</div>

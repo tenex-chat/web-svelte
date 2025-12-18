@@ -77,7 +77,7 @@ const CATEGORY_VERBS: Record<ToolCategory, VerbConfig> = {
 	write: { activeVerb: 'Writing', pastVerb: 'Wrote', noun: 'file', pluralNoun: 'files' },
 	execute: { activeVerb: 'Executing', pastVerb: 'Executed', noun: 'command', pluralNoun: 'commands' },
 	delegate: { activeVerb: 'Delegating to', pastVerb: 'Delegated to', noun: 'agent', pluralNoun: 'agents' },
-	search: { activeVerb: 'Searching', pastVerb: 'Searched', noun: 'pattern', pluralNoun: 'patterns' },
+	search: { activeVerb: 'Searching for', pastVerb: 'Searched for', noun: 'query', pluralNoun: 'queries' },
 	other: { activeVerb: 'Using', pastVerb: 'Used', noun: 'tool', pluralNoun: 'tools' }
 };
 
@@ -122,8 +122,15 @@ function extractToolDetail(event: NDKEvent, toolName: string, category: ToolCate
 		}
 
 		case 'delegate': {
-			// For delegate tools, try to get the agent name
-			const agentName = (args?.agent as string) || (args?.subagent_type as string) || (args?.description as string);
+			// For delegate tools, try to get the agent name from various structures
+			const delegations = args?.delegations as Array<{ recipient?: string }> | undefined;
+			const firstRecipient = delegations?.[0]?.recipient;
+			const agentName =
+				firstRecipient ||
+				(args?.agent as string) ||
+				(args?.subagent_type as string) ||
+				(args?.recipient as string) ||
+				(args?.description as string);
 			if (agentName) {
 				return agentName.length > 30 ? agentName.substring(0, 27) + '...' : agentName;
 			}
@@ -131,9 +138,14 @@ function extractToolDetail(event: NDKEvent, toolName: string, category: ToolCate
 		}
 
 		case 'search': {
-			const pattern = args?.pattern as string;
-			if (pattern) {
-				return pattern.length > 40 ? pattern.substring(0, 37) + '...' : pattern;
+			const query = (args?.query as string) || (args?.pattern as string);
+			if (query) {
+				const truncated = query.length > 30 ? query.substring(0, 27) + '...' : query;
+				const searchType = args?.searchType as string;
+				if (searchType === 'filename') {
+					return `files matching "${truncated}"`;
+				}
+				return `"${truncated}"`;
 			}
 			return null;
 		}
@@ -159,7 +171,6 @@ export function getToolActionInfo(event: NDKEvent): ToolActionInfo {
  */
 export interface ToolGroupDisplayOptions {
 	tools: Array<{ event: NDKEvent }>;
-	hasThinking: boolean;
 	isActive: boolean;
 }
 
@@ -180,18 +191,15 @@ function getDominantCategory(actions: ToolActionInfo[]): ToolCategory {
  * Generate display text for a tool group
  */
 export function getToolGroupDisplayText(options: ToolGroupDisplayOptions): string {
-	const { tools, hasThinking, isActive } = options;
+	const { tools, isActive } = options;
 
 	if (tools.length === 0) {
-		return hasThinking ? 'Thinking' : '';
+		return '';
 	}
 
 	const actions = tools.map((t) => getToolActionInfo(t.event));
 	const dominantCategory = getDominantCategory(actions);
 	const verbs = CATEGORY_VERBS[dominantCategory];
-
-	// Thinking prefix
-	const thinkingPrefix = hasThinking ? (isActive ? 'Thinking and ' : 'Thought and ') : '';
 
 	if (isActive) {
 		// Active state
@@ -201,13 +209,13 @@ export function getToolGroupDisplayText(options: ToolGroupDisplayOptions): strin
 			const actionVerbs = CATEGORY_VERBS[action.category];
 
 			if (action.detail) {
-				return `${thinkingPrefix}${actionVerbs.activeVerb.toLowerCase()} ${action.detail}`;
+				return `${actionVerbs.activeVerb} ${action.detail}`;
 			}
-			return `${thinkingPrefix}${actionVerbs.activeVerb.toLowerCase()} 1 ${actionVerbs.noun}`;
+			return `${actionVerbs.activeVerb} 1 ${actionVerbs.noun}`;
 		} else {
 			// Multiple tools: aggregate
 			const noun = verbs.pluralNoun;
-			return `${thinkingPrefix}${verbs.activeVerb.toLowerCase()} ${tools.length} ${noun}`;
+			return `${verbs.activeVerb} ${tools.length} ${noun}`;
 		}
 	} else {
 		// Completed: show summary
@@ -216,16 +224,13 @@ export function getToolGroupDisplayText(options: ToolGroupDisplayOptions): strin
 			const actionVerbs = CATEGORY_VERBS[action.category];
 
 			if (action.detail) {
-				if (action.category === 'delegate') {
-					return `${thinkingPrefix}${actionVerbs.pastVerb.toLowerCase()} ${action.detail}`;
-				}
-				return `${thinkingPrefix}${actionVerbs.pastVerb.toLowerCase()} ${action.detail}`;
+				return `${actionVerbs.pastVerb} ${action.detail}`;
 			}
-			return `${thinkingPrefix}${actionVerbs.pastVerb.toLowerCase()} 1 ${actionVerbs.noun}`;
+			return `${actionVerbs.pastVerb} 1 ${actionVerbs.noun}`;
 		} else {
 			// Multiple tools
 			const noun = verbs.pluralNoun;
-			return `${thinkingPrefix}${verbs.pastVerb.toLowerCase()} ${tools.length} ${noun}`;
+			return `${verbs.pastVerb} ${tools.length} ${noun}`;
 		}
 	}
 }
