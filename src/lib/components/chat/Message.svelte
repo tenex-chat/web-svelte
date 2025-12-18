@@ -241,6 +241,10 @@
 									<Hash class="mr-2 h-4 w-4" />
 									<span>Copy ID</span>
 								</DropdownMenu.Item>
+								<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.id)}>
+									<Hash class="mr-2 h-4 w-4" />
+									<span>Copy Hex ID</span>
+								</DropdownMenu.Item>
 								<DropdownMenu.Separator />
 								<DropdownMenu.Item onclick={() => (showLLMMetadata = true)}>
 									<Info class="mr-2 h-4 w-4" />
@@ -299,6 +303,16 @@
 				<!-- Compact header for consecutive messages -->
 				{#if isConsecutive}
 					<div class="flex items-center gap-2 flex-shrink-0 sticky top-0">
+						<!-- P-tagged user avatars for consecutive messages -->
+						{#if replyingTo.length > 0}
+							<div class="flex items-center -space-x-2">
+								{#each replyingTo as pubkey (pubkey)}
+									<User.Root {ndk} {pubkey}>
+										<User.Avatar class="w-5 h-5 ring-2 ring-white dark:ring-zinc-900 rounded-full" />
+									</User.Root>
+								{/each}
+							</div>
+						{/if}
 						<button
 							type="button"
 							onclick={() => {
@@ -342,6 +356,10 @@
 									<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.encode())}>
 										<Hash class="mr-2 h-4 w-4" />
 										<span>Copy ID</span>
+									</DropdownMenu.Item>
+									<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.id)}>
+										<Hash class="mr-2 h-4 w-4" />
+										<span>Copy Hex ID</span>
 									</DropdownMenu.Item>
 									<DropdownMenu.Separator />
 									<DropdownMenu.Item onclick={() => (showLLMMetadata = true)}>
