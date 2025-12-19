@@ -21,6 +21,8 @@
 	} from '$lib/utils/toolDisplayUtils';
 	import { parseToolArgs } from '$lib/utils/toolPaths';
 	import AIReasoningBlock from './AIReasoningBlock.svelte';
+	import { ndk } from '$lib/ndk.svelte';
+	import { User } from '$lib/ndk/ui/user';
 
 	interface Props {
 		tools: Message[];
@@ -82,6 +84,9 @@
 	}
 
 	const IconComponent = $derived(getIconComponent(groupIcon));
+
+	// Get the pubkey of the agent (from the first tool or thinking message)
+	const agentPubkey = $derived(tools[0]?.event.pubkey || thinking[0]?.event.pubkey);
 </script>
 
 <div class="px-4 py-1">
@@ -96,6 +101,11 @@
 			</div>
 		{:else}
 			<div class="w-9 flex-shrink-0 relative">
+				{#if agentPubkey}
+					<User.Root {ndk} pubkey={agentPubkey}>
+						<User.Avatar class="w-9 h-9 rounded-full" />
+					</User.Root>
+				{/if}
 				{#if hasNextConsecutive}
 					<div class="absolute left-1/2 -translate-x-1/2 top-9 bottom-0 border-l border-border/60"
 					></div>
@@ -105,6 +115,13 @@
 
 		<!-- Tool group content -->
 		<div class="flex-1 min-w-0">
+			{#if !isConsecutive && agentPubkey}
+				<div class="flex items-center gap-2 mb-1">
+					<User.Root {ndk} pubkey={agentPubkey}>
+						<User.Name class="text-sm font-medium text-foreground" />
+					</User.Root>
+				</div>
+			{/if}
 			{#if toolCount === 1 && !hasThinking}
 				<!-- Single tool without thinking: render inline using display text -->
 				<div class="flex items-center gap-2 text-sm text-muted-foreground">
