@@ -30,6 +30,8 @@ export class ConversationState {
 	private messages = $state(new SvelteMap<string, Message>());
 	private streamingSessions = $state(new SvelteMap<string, StreamingSession>());
 	private metadataEvents = $state(new SvelteMap<string, NDKEvent>());
+	// Index for fast late-chunk detection: pubkey+created_at -> finalized message id
+	private finalizedMessageIndex = new Map<string, string>();
 
 	// Options
 	private rootEvent: NDKEvent | null;
@@ -63,7 +65,6 @@ export class ConversationState {
 	displayMessages = $derived.by(() => {
 		const startTime = performance.now();
 		this.metrics.displayMessagesComputations++;
-		console.log('[ConversationState.displayMessages] RECOMPUTING - computation #', this.metrics.displayMessagesComputations);
 		const allMessages: Message[] = [];
 
 		// Add all final messages from the map
@@ -71,38 +72,10 @@ export class ConversationState {
 			allMessages.push(message);
 		}
 
-		// Debug: Check for duplicate messages
-		const messageIds = new Map<string, number>();
-		allMessages.forEach(m => {
-			const count = messageIds.get(m.id) || 0;
-			messageIds.set(m.id, count + 1);
-		});
-		const duplicates = Array.from(messageIds.entries()).filter(([id, count]) => count > 1);
-		if (duplicates.length > 0) {
-			console.warn('[ConversationState.displayMessages] DUPLICATE MESSAGES:', {
-				rootEventId: this.rootEvent?.id,
-				duplicates,
-				allMessages: allMessages.map(m => ({
-					id: m.id,
-					eventId: m.event.id,
-					kind: m.event.kind,
-					content: m.event.content?.substring(0, 30)
-				}))
-			});
-		}
-
 		// Add active streaming sessions as synthetic messages or typing indicators
 		// If stream has no content, show typing indicator; otherwise show streaming content
-		console.log('[ConversationState.displayMessages] Processing streaming sessions, count:', this.streamingSessions.size);
 		for (const session of this.streamingSessions.values()) {
 			const hasContent = session.reconstructedContent.trim().length > 0;
-
-			console.log('[ConversationState.displayMessages] Processing session:', {
-				syntheticId: session.syntheticId,
-				hasContent,
-				contentLength: session.reconstructedContent.length,
-				contentPreview: session.reconstructedContent.substring(0, 50)
-			});
 
 			if (hasContent) {
 				// Show streaming content
@@ -438,6 +411,10 @@ export class ConversationState {
 		// Add to messages map (O(1))
 		this.messages.set(event.id, message);
 
+		// Index for late-chunk detection
+		const indexKey = `${pubkey}:${event.created_at}`;
+		this.finalizedMessageIndex.set(indexKey, event.id);
+
 		// Delay clearing streaming session for 1000ms to ignore late-arriving chunks
 		// This prevents late 21111 chunks from creating duplicate messages after finalization
 		if (this.streamingSessions.has(pubkey)) {
@@ -456,20 +433,11 @@ export class ConversationState {
 		// Track streaming events
 		this.metrics.streamingEvents++;
 
-		// Check if we already have a finalized message from this pubkey with same created_at
-		// This catches late-arriving streaming chunks for already-finalized messages
-		for (const message of this.messages.values()) {
-			if (message.event.pubkey === pubkey &&
-				message.event.kind === NDKKind.GenericReply &&
-				message.event.created_at === event.created_at) {
-				this.log('Ignoring late streaming chunk, finalized message exists', {
-					streamingId: event.id.substring(0, 8),
-					finalizedId: message.event.id.substring(0, 8),
-					pubkey: pubkey.substring(0, 8),
-					created_at: event.created_at
-				});
-				return;
-			}
+		// O(1) check for late-arriving streaming chunks using index
+		const indexKey = `${pubkey}:${event.created_at}`;
+		if (this.finalizedMessageIndex.has(indexKey)) {
+			this.log('Ignoring late streaming chunk, finalized message exists');
+			return;
 		}
 
 		let session = this.streamingSessions.get(pubkey);
@@ -502,11 +470,6 @@ export class ConversationState {
 				reconstructedContent
 			};
 
-			console.log('[ConversationState.handleStreamingEvent] CALLING .set() with NEW object to trigger reactivity', {
-				pubkey: pubkey.substring(0, 8),
-				contentLength: reconstructedContent.length,
-				contentPreview: reconstructedContent.substring(0, 50)
-			});
 			this.streamingSessions.set(pubkey, updatedSession);
 
 			this.log('Updated streaming session', {
@@ -596,6 +559,7 @@ export class ConversationState {
 		// Clear all maps
 		this.messages.clear();
 		this.streamingSessions.clear();
+		this.finalizedMessageIndex.clear();
 
 		this.log('ConversationState destroyed successfully');
 	}

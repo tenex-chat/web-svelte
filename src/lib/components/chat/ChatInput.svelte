@@ -20,6 +20,7 @@
 	import MentionAutocomplete from './MentionAutocomplete.svelte';
 	import NudgeAutocomplete from './NudgeAutocomplete.svelte';
     import { cn } from '$lib/ndk/utils/cn';
+	import { HashtagStore } from '$lib/stores/hashtags.svelte';
 
 	interface Props {
 		project?: NDKProject;
@@ -52,8 +53,22 @@
 	// Draft key: use conversation ID if exists, otherwise use project-level key for new threads
 	const draftKey = $derived(rootEvent?.id || (projectId ? `project:${projectId}` : undefined));
 
+	// Hashtag store for tracking conversation hashtags
+	const hashtagStore = new HashtagStore(ndk);
+
+	// Initialize hashtag store when project is available
+	$effect(() => {
+		if (project) {
+			hashtagStore.init(project);
+		}
+		return () => {
+			hashtagStore.destroy();
+		};
+	});
+
 	let messageInput = $state('');
 	let selectedAgent = $state<string | null>(null);
+	let selectedHashtag = $state<string | null>(null);
 	let selectedWorktree = $state<string | null>(null);
 	let selectedNudges = $state<string[]>([]);
 	let isSubmitting = $state(false);
@@ -211,19 +226,59 @@
 		}
 	}
 
+	// Parse the message input to detect @mentions and update mentionedAgents
+	function parseMentionsFromText(text: string): string[] {
+		const mentionPattern = /@([a-zA-Z0-9_-]+)/g;
+		const matches = text.matchAll(mentionPattern);
+		const foundPubkeys: string[] = [];
+
+		for (const match of matches) {
+			const mentionedName = match[1];
+			// Find the agent by name (case-insensitive)
+			const agent = onlineAgents.find(
+				(a) => a.name.toLowerCase() === mentionedName.toLowerCase()
+			);
+			if (agent && !foundPubkeys.includes(agent.pubkey)) {
+				foundPubkeys.push(agent.pubkey);
+			}
+		}
+
+		return foundPubkeys;
+	}
+
+	// SINGLE SOURCE OF TRUTH: Update mentionedAgents whenever messageInput changes
+	// This ensures paste, autocomplete, and manual typing all keep mentionedAgents in sync
+	$effect(() => {
+		const detectedPubkeys = parseMentionsFromText(messageInput);
+
+		// Only update if the detected mentions differ from current state
+		// This prevents infinite loops and unnecessary re-renders
+		const currentSet = new Set(mentionedAgents);
+		const detectedSet = new Set(detectedPubkeys);
+
+		const hasChanges =
+			currentSet.size !== detectedSet.size ||
+			[...currentSet].some(pk => !detectedSet.has(pk));
+
+		if (hasChanges) {
+			mentionedAgents = detectedPubkeys;
+
+			// Auto-select single mentioned agent
+			if (mentionedAgents.length === 1 && !selectedAgent) {
+				selectedAgent = mentionedAgents[0];
+			}
+		}
+	});
+
 	// Handle mention selection from autocomplete
+	// Note: mentionedAgents array is now automatically updated via the parseMentionsFromText effect
 	function handleMentionSelect(agent: ProjectAgent, mention: string, startPos: number, endPos: number) {
 		const before = messageInput.substring(0, startPos);
 		const after = messageInput.substring(endPos);
 		messageInput = before + mention + after;
 
-		if (!mentionedAgents.includes(agent.pubkey)) {
-			mentionedAgents = [...mentionedAgents, agent.pubkey];
-			if (mentionedAgents.length === 1) {
-				selectedAgent = agent.pubkey;
-			}
-		}
-
+		// The mentionedAgents array will be automatically updated by the $effect above
+		// Just restore focus and cursor position
 		setTimeout(() => {
 			if (textareaElement) {
 				const newCursorPos = before.length + mention.length;
@@ -287,15 +342,23 @@
 					thread.tags.push(['t', match[1].toLowerCase()]);
 				}
 
+				// Add selected hashtag if present
+				if (selectedHashtag) {
+					thread.tags.push(['t', selectedHashtag.toLowerCase()]);
+				}
+
 				// P-TAG ROUTING for new thread
-				if (mentionedAgents.length > 1) {
-					// Multiple mentions - add all as p-tags
-					for (const pubkey of mentionedAgents) {
-						thread.tags.push(['p', pubkey]);
+				// Only add p-tags if no hashtag is selected
+				if (!selectedHashtag) {
+					if (mentionedAgents.length > 1) {
+						// Multiple mentions - add all as p-tags
+						for (const pubkey of mentionedAgents) {
+							thread.tags.push(['p', pubkey]);
+						}
+					} else if (currentAgent) {
+						// Single source of truth: use currentAgent (handles single mention, selection, or default)
+						thread.tags.push(['p', currentAgent]);
 					}
-				} else if (currentAgent) {
-					// Single source of truth: use currentAgent (handles single mention, selection, or default)
-					thread.tags.push(['p', currentAgent]);
 				}
 
 				// Add nudge tags
@@ -521,13 +584,17 @@
 						<AgentSelector
 							agents={onlineAgents}
 							selectedAgent={selectedAgent}
+							selectedHashtag={selectedHashtag}
 							defaultAgent={defaultAgent}
 							currentModel={currentAgentModel}
+							hashtags={hashtagStore.tags}
 							onSelect={(pubkey) => (selectedAgent = pubkey)}
+							onSelectHashtag={(hashtag) => (selectedHashtag = hashtag)}
 							onConfigure={(pubkey) => {
 								agentToConfigurePubkey = pubkey;
 								configDialogOpen = true;
 							}}
+							onClose={() => textareaElement?.focus()}
 						/>
 					{/if}
 
