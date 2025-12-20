@@ -142,7 +142,7 @@
 					<span class="ml-2">id:{message.event.id.slice(0, 8)}</span>
 				</div>
 			{/if}
-			{#if !isConsecutive}
+			{#if !isConsecutive && !isReasoningEvent}
 				<div class="flex items-center gap-2 mb-1">
 					<User.Root {ndk} pubkey={message.event.pubkey}>
 						<span class="font-semibold text-sm text-foreground"><User.Name /></span>
@@ -272,12 +272,19 @@
 							reasoningEvent={message.event}
 							{isStreaming}
 							{isLastMessage}
+							{timestamp}
+							{message}
+							{onReply}
+							{onQuote}
+							{onTimeClick}
+							onShowLLMMetadata={() => (showLLMMetadata = true)}
+							onShowRawEvent={() => (showRawEvent = true)}
 						/>
 					{:else}
-						<div class="prose prose-sm text-sm max-w-none dark:prose-invert text-foreground">
+						<div class="prose prose-sm text-sm max-w-none dark:prose-invert {replyingTo.length === 0 ? 'text-muted-foreground' : 'text-foreground'}">
 							<Streamdown
 								content={message.event.content}
-								class="prose prose-sm text-sm max-w-none dark:prose-invert text-foreground"
+								class="prose prose-sm text-sm max-w-none dark:prose-invert {replyingTo.length === 0 ? 'text-muted-foreground' : 'text-foreground'}"
 								parseIncompleteMarkdown={true}
 								animation={{
 									enabled: isStreaming,
@@ -300,8 +307,8 @@
 					{/if}
 				</div>
 
-				<!-- Compact header for consecutive messages -->
-				{#if isConsecutive}
+				<!-- Compact header for consecutive messages (skip for reasoning events as they have their own) -->
+				{#if isConsecutive && !isReasoningEvent}
 					<div class="flex items-center gap-2 flex-shrink-0 sticky top-0">
 						<!-- P-tagged user avatars for consecutive messages -->
 						{#if replyingTo.length > 0}

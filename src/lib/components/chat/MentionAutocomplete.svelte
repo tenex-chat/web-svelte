@@ -19,7 +19,9 @@
 	const filteredAgents = $derived.by(() => {
 		if (!showMentionAutocomplete) return [];
 		const query = mentionQuery.toLowerCase();
-		return onlineAgents.filter((agent) => agent.name.toLowerCase().includes(query));
+		return onlineAgents
+			.filter((agent) => agent.name.toLowerCase().includes(query))
+			.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 	});
 
 	const isActive = $derived(showMentionAutocomplete && filteredAgents.length > 0);

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { MoreHorizontal, FileText, Bug } from 'lucide-svelte';
+	import { MoreHorizontal, FileText, Bug, ExternalLink } from 'lucide-svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import type { Message } from '$lib/utils/messageUtils';
 	import { ndk } from '$lib/ndk.svelte';
@@ -86,6 +86,13 @@
 			title: `Debug Events - ${rootEvent.id.slice(0, 8)}`,
 			data: { rootEvent }
 		});
+	}
+
+	function handleOpenTraces() {
+		isOpen = false;
+		const conversationId = rootEvent.id;
+		const tracesUrl = `http://localhost:16686/search?service=tenex-daemon&tags=%7B%22conversation.id%22%3A%22${conversationId}%22%7D`;
+		window.open(tracesUrl, '_blank');
 	}
 
 	async function handleSummarize() {
@@ -191,6 +198,14 @@
 			>
 				<Bug class="w-4 h-4" />
 				<span>Debug Events</span>
+			</button>
+			<button
+				type="button"
+				onclick={handleOpenTraces}
+				class="w-full text-left px-3 py-2 hover:bg-muted transition-colors flex items-center gap-2 text-sm"
+			>
+				<ExternalLink class="w-4 h-4" />
+				<span>Open Traces</span>
 			</button>
 		</div>
 	{/if}

@@ -3,7 +3,6 @@
 	import { MessageSquare, Users } from 'lucide-svelte';
 	import ConversationMetadataDisplay from './ConversationMetadataDisplay.svelte';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
-	import type { SvelteMap } from 'svelte/reactivity';
 	import TimeAgo from '$lib/components/common/TimeAgo.svelte';
 	import { generateColorFromString } from '$lib/utils/colors';
 
@@ -11,13 +10,15 @@
 		latestReply: NDKEvent | null;
 		replyCount: number;
 		participants: Set<string>;
+		lastUserReplyTime: number;
+		lastOtherReplyTime: number;
 	}
 
 	interface Props {
 		thread: NDKEvent;
 		isSelected: boolean;
 		conversationMetadataStore: typeof conversationMetadataStore;
-		threadMetadata: SvelteMap<string, ThreadMetadata>;
+		threadMetadata: Map<string, ThreadMetadata>;
 		onclick: () => void;
 	}
 

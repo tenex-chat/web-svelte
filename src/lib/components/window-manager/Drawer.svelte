@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { windowManager, type WindowConfig } from '$lib/stores/windowManager.svelte';
-	import { slide } from 'svelte/transition';
 	import ChatView from '../chat/ChatView.svelte';
 	import SettingsTab from '../settings/SettingsTab.svelte';
 	import DocumentView from '../docs/DocumentView.svelte';
@@ -91,7 +90,6 @@
 <div
 	class="drawer fixed top-0 right-0 bottom-0 bg-card border-l border-border shadow-2xl flex flex-col"
 	style="width: {widthVw}vw; z-index: {window.zIndex}; {isResizing ? 'user-select: none;' : ''}"
-	transition:slide={{ axis: 'x', duration: 200 }}
 	onclick={handleFocus}
 	role="dialog"
 	aria-label={window.title}

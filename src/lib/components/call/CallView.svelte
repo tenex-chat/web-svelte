@@ -369,9 +369,12 @@
 				<AgentSelector
 					agents={onlineAgents}
 					selectedAgent={selectedAgentPubkey}
+					selectedHashtag={null}
 					defaultAgent={defaultAgent}
 					currentModel={activeProjectAgent?.model}
+					hashtags={[]}
 					onSelect={handleAgentSelect}
+					onSelectHashtag={() => {}}
 					onConfigure={handleAgentConfigure}
 				/>
 			{/if}

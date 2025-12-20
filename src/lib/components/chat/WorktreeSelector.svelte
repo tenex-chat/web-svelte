@@ -63,7 +63,7 @@
 					class="fixed w-64 bg-card border border-border rounded-lg shadow-lg overflow-hidden"
 					style="top: {dropdownPosition.top}px; left: {dropdownPosition.left}px; z-index: 9999; transform: translateY(-100%);"
 				>
-					<div class="max-h-80 overflow-y-auto">
+					<div class="max-h-screen overflow-y-auto">
 						<!-- Default Worktree -->
 						{#if defaultWorktree}
 							<button

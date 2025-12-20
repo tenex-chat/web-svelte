@@ -4,7 +4,6 @@
 	import { NDKKind } from '$lib/kinds';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { MessageSquare } from 'lucide-svelte';
-	import { SvelteMap } from 'svelte/reactivity';
 	import VirtualList from '@humanspeak/svelte-virtual-list';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
 	import ThreadListItem from './ThreadListItem.svelte';
@@ -49,11 +48,22 @@
 
 	const replies = $derived(repliesSubscription.events);
 
-	// Build thread metadata (reply count, participants, latest reply)
+	// Build thread metadata (reply count, participants, latest reply, time tracking for filters)
+	// Using regular Map instead of SvelteMap - we create a new map each time anyway,
+	// and SvelteMap's reactivity tracking inside $derived causes massive overhead
+	// Also includes lastUserReplyTime and lastOtherReplyTime to avoid duplicate iteration in sortedThreads
 	const threadMetadata = $derived.by(() => {
-		const metadata = new SvelteMap<
+		const start = performance.now();
+		const currentUserPubkey = currentUser?.pubkey;
+		const metadata = new Map<
 			string,
-			{ replyCount: number; participants: Set<string>; latestReply: NDKEvent | null }
+			{
+				replyCount: number;
+				participants: Set<string>;
+				latestReply: NDKEvent | null;
+				lastUserReplyTime: number;
+				lastOtherReplyTime: number;
+			}
 		>();
 
 		// Initialize metadata for each thread
@@ -61,11 +71,13 @@
 			metadata.set(thread.id, {
 				replyCount: 0,
 				participants: new Set([thread.pubkey]),
-				latestReply: null
+				latestReply: null,
+				lastUserReplyTime: 0,
+				lastOtherReplyTime: 0
 			});
 		}
 
-		// Process replies
+		// Process replies - single pass for all metadata including time tracking
 		for (const reply of replies) {
 			// Find which thread this reply belongs to
 			const eTags = reply.tags.filter((tag) => tag[0] === 'E');
@@ -75,28 +87,41 @@
 				if (meta) {
 					meta.replyCount++;
 					meta.participants.add(reply.pubkey);
+					const replyTime = reply.created_at || 0;
+
 					// Update latest reply if this is newer
-					if (
-						!meta.latestReply ||
-						(reply.created_at || 0) > (meta.latestReply.created_at || 0)
-					) {
+					if (!meta.latestReply || replyTime > (meta.latestReply.created_at || 0)) {
 						meta.latestReply = reply;
+					}
+
+					// Track user vs other reply times for "needs response" filter
+					if (currentUserPubkey && reply.pubkey === currentUserPubkey) {
+						if (replyTime > meta.lastUserReplyTime) {
+							meta.lastUserReplyTime = replyTime;
+						}
+					} else {
+						if (replyTime > meta.lastOtherReplyTime) {
+							meta.lastOtherReplyTime = replyTime;
+						}
 					}
 				}
 			}
 		}
 
+		console.log(`[threadMetadata] threads: ${threads.length}, replies: ${replies.length}, time: ${(performance.now() - start).toFixed(2)}ms`);
 		return metadata;
 	});
 
 	// Sort and filter threads based on timeFilter
+	// Uses pre-computed time data from threadMetadata to avoid duplicate reply iteration
 	const sortedThreads = $derived.by(() => {
+		const start = performance.now();
 		if (threads.length === 0) return [];
 
 		let filteredThreads = [...threads].filter((thread) => thread.created_at !== undefined);
 
-		// Apply time filter if set
-		if (timeFilter && replies) {
+		// Apply time filter if set - uses pre-computed data from threadMetadata
+		if (timeFilter) {
 			const now = Math.floor(Date.now() / 1000);
 
 			// Check if this is a "needs response" filter
@@ -113,39 +138,18 @@
 				const threshold = thresholds[filterTime];
 
 				if (threshold) {
-					// Track the last response from others and the user per thread
-					const threadLastOtherReplyMap = new SvelteMap<string, number>();
-					const threadLastUserReplyMap = new SvelteMap<string, number>();
-
-					// Group replies by thread and categorize by author
-					replies.forEach((reply) => {
-						const threadIdTag = reply.tags?.find((tag) => tag[0] === 'E');
-						if (threadIdTag && threadIdTag[1] && reply.created_at) {
-							if (reply.pubkey === currentUser.pubkey) {
-								// Track user's own replies
-								const currentLast = threadLastUserReplyMap.get(threadIdTag[1]) || 0;
-								if (reply.created_at > currentLast) {
-									threadLastUserReplyMap.set(threadIdTag[1], reply.created_at);
-								}
-							} else {
-								// Track replies from others
-								const currentLast = threadLastOtherReplyMap.get(threadIdTag[1]) || 0;
-								if (reply.created_at > currentLast) {
-									threadLastOtherReplyMap.set(threadIdTag[1], reply.created_at);
-								}
-							}
-						}
-					});
-
-					// Filter threads that need a response from the current user
+					// Filter threads using pre-computed time data from threadMetadata
 					filteredThreads = filteredThreads.filter((thread) => {
-						const lastOtherReplyTime = threadLastOtherReplyMap.get(thread.id);
-						const lastUserReplyTime = threadLastUserReplyMap.get(thread.id);
+						const meta = threadMetadata.get(thread.id);
+						if (!meta) return false;
+
+						const lastOtherReplyTime = meta.lastOtherReplyTime;
+						const lastUserReplyTime = meta.lastUserReplyTime;
 
 						// If someone else has replied
-						if (lastOtherReplyTime) {
+						if (lastOtherReplyTime > 0) {
 							// Check if user has already responded after this reply
-							if (lastUserReplyTime && lastUserReplyTime > lastOtherReplyTime) {
+							if (lastUserReplyTime > 0 && lastUserReplyTime > lastOtherReplyTime) {
 								// User has already responded, don't show
 								return false;
 							}
@@ -175,26 +179,13 @@
 				const threshold = thresholds[timeFilter];
 
 				if (threshold) {
-					// Track the last response time per thread (from anyone)
-					const threadLastReplyMap = new SvelteMap<string, number>();
-
-					// Group all replies by thread
-					replies.forEach((reply) => {
-						const threadIdTag = reply.tags?.find((tag) => tag[0] === 'E');
-						if (threadIdTag && threadIdTag[1] && reply.created_at) {
-							const currentLast = threadLastReplyMap.get(threadIdTag[1]) || 0;
-							if (reply.created_at > currentLast) {
-								threadLastReplyMap.set(threadIdTag[1], reply.created_at);
-							}
-						}
-					});
-
-					// Filter threads based on last activity time
+					// Filter threads using pre-computed time data from threadMetadata
 					filteredThreads = filteredThreads.filter((thread) => {
-						const lastReplyTime = threadLastReplyMap.get(thread.id);
+						const meta = threadMetadata.get(thread.id);
+						const lastReplyTime = meta?.latestReply?.created_at || 0;
 
 						// If thread has any replies
-						if (lastReplyTime) {
+						if (lastReplyTime > 0) {
 							const timeSinceLastReply = now - lastReplyTime;
 							// Show threads that have had a reply within the selected timeframe
 							return timeSinceLastReply <= threshold;
@@ -217,6 +208,7 @@
 			return bTime - aTime;
 		});
 
+		console.log(`[sortedThreads] filtered: ${filteredThreads.length}, time: ${(performance.now() - start).toFixed(2)}ms`);
 		return sorted;
 	});
 

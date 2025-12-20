@@ -39,6 +39,12 @@
 			// Add p-tag for the author of the original event
 			replyEvent.tags.push(["p", event.pubkey]);
 
+			// Add the conversation's E tag (uppercase) for root reference
+			const rootETag = event.tags.find((tag) => tag[0] === "E");
+			if (rootETag) {
+				replyEvent.tags.push(rootETag);
+			}
+
 			// If this is in a project context, add the project tag
 			const projectTag = event.tags.find(
 				(tag) =>
