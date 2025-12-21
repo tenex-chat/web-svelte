@@ -178,6 +178,28 @@ export class ConversationState {
 		return events;
 	});
 
+	// Map of replies indexed by parent event ID for O(1) lookups
+	// Key: parent event ID (from lowercase 'e' tag)
+	// Value: array of direct replies to that event
+	repliesByParent = $derived.by(() => {
+		const map = new Map<string, Message[]>();
+
+		for (const message of this.displayMessages) {
+			// Find immediate parent via lowercase 'e' tag (not uppercase 'E' which is root reference)
+			const eTags = message.event.getMatchingTags('e');
+			for (const tag of eTags) {
+				const parentId = tag[1];
+				if (parentId) {
+					const replies = map.get(parentId) || [];
+					replies.push(message);
+					map.set(parentId, replies);
+				}
+			}
+		}
+
+		return map;
+	});
+
 	constructor(
 		private ndk: NDKSvelte,
 		rootEvent: NDKEvent | null,
@@ -366,9 +388,9 @@ export class ConversationState {
 			return;
 		}
 
-		// Apply view mode filtering
-		if (this.viewMode === 'threaded' && !this.isDirectReplyToRoot(event)) {
-			this.log('Event filtered out by threaded view mode', { eventId: event.id });
+		// Apply view mode filtering - check conversation membership via E tag
+		if (this.viewMode === 'threaded' && !this.belongsToConversation(event)) {
+			this.log('Event filtered out - not part of conversation', { eventId: event.id });
 			return;
 		}
 
@@ -523,12 +545,21 @@ export class ConversationState {
 	}
 
 	/**
-	 * Check if event is a direct reply to root
+	 * Check if event belongs to this conversation
+	 * Uses uppercase 'E' tag (root reference) for conversation membership
+	 * This allows nested replies to be included, not just direct replies to root
 	 */
-	private isDirectReplyToRoot(event: NDKEvent): boolean {
+	private belongsToConversation(event: NDKEvent): boolean {
 		if (!this.rootEvent) return true;
 		if (event.id === this.rootEvent.id) return true;
 
+		// Check uppercase 'E' tag for conversation root reference
+		const ETags = event.getMatchingTags('E');
+		if (ETags.some((tag) => tag[1] === this.rootEvent!.id)) {
+			return true;
+		}
+
+		// Also check lowercase 'e' in case event directly references root
 		const eTags = event.getMatchingTags('e');
 		return eTags.some((tag) => tag[1] === this.rootEvent!.id);
 	}

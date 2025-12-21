@@ -351,3 +351,4 @@ export function getUniquePubkeys(messages: Message[]): string[] {
 	}
 	return Array.from(uniquePubkeys);
 }
+

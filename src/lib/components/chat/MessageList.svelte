@@ -94,6 +94,7 @@
 	// Use reactive messages from ConversationState
 	const flatMessages = $derived(conversationState?.displayMessages || []);
 	const eventsWithMetadata = $derived(conversationState?.displayEventsWithMetadata || []);
+	const repliesByParent = $derived(conversationState?.repliesByParent || new Map());
 
 	// Create unified display model using $derived
 	const displayList = $derived<DisplayItem[]>(
@@ -156,7 +157,7 @@
 		{:else if viewMode === 'threaded'}
 			<!-- Threaded view: Use recursive ThreadedMessage component -->
 			<div class="flex flex-col pb-52">
-				<ThreadedMessage {rootEvent} eventId={rootEvent.id} depth={0} {onTimeClick} {onReply} {onQuote} />
+				<ThreadedMessage {rootEvent} eventId={rootEvent.id} {repliesByParent} depth={0} {onTimeClick} {onReply} {onQuote} />
 			</div>
 		{:else}
 			<!-- Flattened view: Render from unified display model -->
@@ -171,6 +172,9 @@
 							isActive={item.isActive}
 							isConsecutive={item.isConsecutive}
 							hasNextConsecutive={item.hasNextConsecutive}
+							{onReply}
+							{onQuote}
+							{onTimeClick}
 						/>
 					{:else if item.type === 'visible'}
 						<Message

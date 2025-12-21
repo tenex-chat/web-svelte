@@ -7,7 +7,6 @@
 	import { User } from '$lib/ndk/ui/user';
 	import Message from './Message.svelte';
 	import ThreadedMessage from './ThreadedMessage.svelte';
-	import { ConversationState } from '$lib/stores/conversation-state.svelte';
 	import {
 		type Message as MessageType,
 		type DisplayItem,
@@ -32,6 +31,7 @@
 		eventId?: string;
 		message?: MessageType;
 		rootEvent: NDKEvent;
+		repliesByParent: Map<string, MessageType[]>; // O(1) lookup map: parent event ID -> replies
 		depth: number;
 		project?: NDKProject | null;
 		onTimeClick?: (event: NDKEvent) => void;
@@ -47,6 +47,7 @@
 		eventId,
 		message,
 		rootEvent,
+		repliesByParent,
 		depth,
 		project = null,
 		onTimeClick,
@@ -68,50 +69,10 @@
 		message || (currentEvent ? { id: currentEvent.id, event: currentEvent } : { id: '', event: rootEvent })
 	);
 
-	// Track the actual currentEvent ID to avoid unnecessary recreations
-	let currentEventId = $state<string | null>(null);
-	let repliesState = $state<ConversationState | null>(null);
-
-	// Create ConversationState only once when currentEvent is available
-	$effect(() => {
-		const newEventId = currentEvent?.id || null;
-
-		// Only recreate if the event ID has actually changed
-		if (newEventId !== currentEventId) {
-			// Destroy old state if it exists
-			if (repliesState) {
-				repliesState.destroy();
-				repliesState = null;
-			}
-
-			// Create new state with current event
-			if (currentEvent) {
-				repliesState = new ConversationState(ndk, currentEvent, {
-					viewMode: 'threaded',
-					currentUserPubkey: ndk.$currentUser?.pubkey,
-					directRepliesOnly: true, // Only fetch direct replies to this event
-					debug: false // Disable debug logging
-				});
-
-				repliesState.start();
-			}
-
-			// Update the tracked ID
-			currentEventId = newEventId;
-		}
-	});
-
-	// Cleanup on unmount only - no dependencies
-	$effect(() => {
-		return () => {
-			if (repliesState) {
-				repliesState.destroy();
-			}
-		};
-	});
-
-	// Get replies from conversation state
-	const replies = $derived(repliesState?.displayMessages || []);
+	// Get replies via O(1) map lookup - no filtering needed
+	const replies = $derived(
+		currentEvent ? (repliesByParent.get(currentEvent.id) || []) : []
+	);
 
 	// Create display model for replies (handles collapsing)
 	const displayItems = $derived<DisplayItem[]>(createDisplayModel(replies));
@@ -154,11 +115,15 @@
 					isActive={item.isActive}
 					isConsecutive={item.isConsecutive}
 					hasNextConsecutive={item.hasNextConsecutive}
+					{onReply}
+					{onQuote}
+					{onTimeClick}
 				/>
 			{:else if item.type === 'visible'}
 				<ThreadedMessage
 					message={item.message}
 					{rootEvent}
+					{repliesByParent}
 					depth={1}
 					{project}
 					{onTimeClick}
@@ -240,11 +205,15 @@
 								isActive={item.isActive}
 								isConsecutive={item.isConsecutive}
 								hasNextConsecutive={item.hasNextConsecutive}
+								{onReply}
+								{onQuote}
+								{onTimeClick}
 							/>
 						{:else if item.type === 'visible'}
 							<ThreadedMessage
 								message={item.message}
 								{rootEvent}
+								{repliesByParent}
 								depth={depth + 1}
 								{project}
 								{onTimeClick}
