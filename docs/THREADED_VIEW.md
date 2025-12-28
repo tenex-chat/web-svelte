@@ -102,7 +102,7 @@ const messageTree = $derived.by(() => {
 
 **Process:**
 1. Subscribe to all conversation events
-2. Process events to flat message list (with streaming)
+2. Process events to flat message list
 3. Build tree structure if threaded mode
 4. Render with appropriate component
 
@@ -270,7 +270,6 @@ const reply = rootEvent.reply();
 - **Solution**: Max depth limit of 5 prevents UI issues
 
 ### Mixed Event Types
-- Streaming responses (kind:21111)
 - Metadata events (kind:513)
 - Reactions (kind:7)
 - **Solution**: All processed uniformly in flat list first
@@ -335,7 +334,6 @@ src/lib/components/chat/
 1. Message with missing parent → shows at root
 2. Very deep nesting (6+ levels) → stops at max depth
 3. Rapid message arrival → tree rebuilds correctly
-4. Streaming responses → integrated properly
 
 ## Best Practices
 

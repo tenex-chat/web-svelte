@@ -2,36 +2,25 @@ import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { NDKEvent, type NDKSubscription, type NDKFilter } from '@nostr-dev-kit/ndk';
 import type { NDKSvelte } from '@nostr-dev-kit/svelte';
 import { NDKKind } from '$lib/kinds';
-import { DeltaContentAccumulator } from '$lib/utils/DeltaContentAccumulator';
 import type { Message, ThreadViewMode } from '$lib/utils/messageUtils';
 import { conversationMetadataStore } from './conversationMetadata.svelte';
 import { processConversationMetadataEvent } from '$lib/utils/conversationMetadataProcessor';
 import { performanceMetrics, type ConversationStateMetrics } from './performance-metrics.svelte';
 import { uiSettingsStore } from './uiSettings.svelte';
 
-interface StreamingSession {
-	syntheticId: string;
-	accumulator: DeltaContentAccumulator;
-	latestEvent: NDKEvent;
-	reconstructedContent: string;
-}
-
 interface ConversationOptions {
 	viewMode?: ThreadViewMode;
 	currentUserPubkey?: string;
 	directRepliesOnly?: boolean;
-	debug?: boolean; // Enable debug logging
-	maxReconnectAttempts?: number; // Max reconnection attempts (default: 5)
-	reconnectDelay?: number; // Initial reconnect delay in ms (default: 1000)
+	debug?: boolean;
+	maxReconnectAttempts?: number;
+	reconnectDelay?: number;
 }
 
 export class ConversationState {
 	// Reactive maps using SvelteMap for proper Svelte 5 reactivity
 	private messages = $state(new SvelteMap<string, Message>());
-	private streamingSessions = $state(new SvelteMap<string, StreamingSession>());
 	private metadataEvents = $state(new SvelteMap<string, NDKEvent>());
-	// Index for fast late-chunk detection: pubkey+created_at -> finalized message id
-	private finalizedMessageIndex = new Map<string, string>();
 
 	// Options
 	private rootEvent: NDKEvent | null;
@@ -54,7 +43,6 @@ export class ConversationState {
 	private conversationId: string;
 	private metrics = {
 		eventsProcessed: 0,
-		streamingEvents: 0,
 		displayMessagesComputations: 0,
 		displayMessagesComputeTime: 0,
 		lastComputeTime: 0,
@@ -70,35 +58,6 @@ export class ConversationState {
 		// Add all final messages from the map
 		for (const message of this.messages.values()) {
 			allMessages.push(message);
-		}
-
-		// Add active streaming sessions as synthetic messages or typing indicators
-		// If stream has no content, show typing indicator; otherwise show streaming content
-		for (const session of this.streamingSessions.values()) {
-			const hasContent = session.reconstructedContent.trim().length > 0;
-
-			if (hasContent) {
-				// Show streaming content
-				const syntheticEvent = new NDKEvent(session.latestEvent.ndk);
-				syntheticEvent.kind = session.latestEvent.kind;
-				syntheticEvent.pubkey = session.latestEvent.pubkey;
-				syntheticEvent.created_at = session.latestEvent.created_at;
-				syntheticEvent.tags = session.latestEvent.tags;
-				syntheticEvent.content = session.reconstructedContent;
-				syntheticEvent.id = session.latestEvent.id;
-				syntheticEvent.sig = session.latestEvent.sig;
-
-				allMessages.push({
-					id: session.syntheticId,
-					event: syntheticEvent
-				});
-			} else {
-				// Show typing indicator (stream has no content yet)
-				allMessages.push({
-					id: `typing-${session.latestEvent.pubkey}`,
-					event: session.latestEvent
-				});
-			}
 		}
 
 		// Sort by timestamp (with tag priority for same timestamp)
@@ -179,13 +138,10 @@ export class ConversationState {
 	});
 
 	// Map of replies indexed by parent event ID for O(1) lookups
-	// Key: parent event ID (from lowercase 'e' tag)
-	// Value: array of direct replies to that event
 	repliesByParent = $derived.by(() => {
 		const map = new Map<string, Message[]>();
 
 		for (const message of this.displayMessages) {
-			// Find immediate parent via lowercase 'e' tag (not uppercase 'E' which is root reference)
 			const eTags = message.event.getMatchingTags('e');
 			for (const tag of eTags) {
 				const parentId = tag[1];
@@ -215,18 +171,12 @@ export class ConversationState {
 		this.conversationId = rootEvent?.id || `conversation-${crypto.randomUUID()}`;
 	}
 
-	/**
-	 * Log debug messages if debug mode is enabled
-	 */
 	private log(message: string, data?: any): void {
 		if (this.debug) {
 			console.log(`[ConversationState] ${message}`, data || '');
 		}
 	}
 
-	/**
-	 * Start the subscription and begin processing events
-	 */
 	start(): void {
 		if (!this.rootEvent) {
 			this.log('No root event, skipping subscription');
@@ -239,8 +189,6 @@ export class ConversationState {
 		}
 
 		// Add the root event itself to messages ONLY if NOT directRepliesOnly
-		// When directRepliesOnly=true (used by ThreadedMessage), we only want replies, not the root itself
-		// This prevents the message from appearing as its own reply, which caused infinite recursion
 		if (!this.directRepliesOnly && !this.messages.has(this.rootEvent.id)) {
 			this.messages.set(this.rootEvent.id, {
 				id: this.rootEvent.id,
@@ -261,7 +209,6 @@ export class ConversationState {
 			const filters = this.buildFilters();
 			this.log('Starting subscription with filters', filters);
 
-			// Use event-driven subscription with onEvent callback
 			this.subscription = this.ndk.subscribe(filters, {
 				closeOnEose: false,
 				onEvents: (events: NDKEvent[]) => {
@@ -279,7 +226,6 @@ export class ConversationState {
 				}
 			});
 
-			// Reset reconnection attempts on successful start
 			this.reconnectAttempts = 0;
 		} catch (error) {
 			console.error('[ConversationState] Failed to start subscription:', error);
@@ -287,13 +233,9 @@ export class ConversationState {
 		}
 	}
 
-	/**
-	 * Handle subscription errors with exponential backoff reconnection
-	 */
 	private handleSubscriptionError(): void {
 		if (this.isDestroyed) return;
 
-		// Clean up existing subscription
 		if (this.subscription) {
 			try {
 				this.subscription.stop();
@@ -303,27 +245,23 @@ export class ConversationState {
 			this.subscription = null;
 		}
 
-		// Check if we should attempt reconnection
 		if (this.reconnectAttempts >= this.maxReconnectAttempts) {
 			console.error('[ConversationState] Max reconnection attempts reached');
 			return;
 		}
 
-		// Calculate delay with exponential backoff
 		const delay = Math.min(
 			this.reconnectDelay * Math.pow(2, this.reconnectAttempts),
-			30000 // Max 30 seconds
+			30000
 		);
 
 		this.reconnectAttempts++;
 		this.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
 
-		// Clear any existing timeout
 		if (this.reconnectTimeout) {
 			clearTimeout(this.reconnectTimeout);
 		}
 
-		// Schedule reconnection
 		this.reconnectTimeout = setTimeout(() => {
 			if (!this.isDestroyed) {
 				this.log('Attempting to reconnect...');
@@ -332,54 +270,28 @@ export class ConversationState {
 		}, delay);
 	}
 
-	/**
-	 * Build NDK filters based on conversation type
-	 */
 	private buildFilters(): NDKFilter[] {
 		if (!this.rootEvent) return [];
 
 		const filters: NDKFilter[] = [];
 
-		// Streaming kinds
-		const streamingKinds: number[] = [
-			NDKKind.TenexStreamingResponse
-		];
-
-		// Streaming events are ephemeral - only fetch from the last minute
-		const streamingSince = Math.floor(Date.now() / 1000) - 60;
-
 		if (this.directRepliesOnly) {
-			// Direct replies only (for threaded view)
-			filters.push(
-				{
-					kinds: [NDKKind.GenericReply],
-					'#e': [this.rootEvent.id],
-					limit: 100
-				},
-				{
-					kinds: streamingKinds,
-					'#e': [this.rootEvent.id],
-					limit: 100,
-					since: streamingSince
-				}
-			);
+			filters.push({
+				kinds: [NDKKind.GenericReply],
+				'#e': [this.rootEvent.id],
+				limit: 100
+			});
 		} else {
-			// Regular conversation filters
 			filters.push(
 				{ kinds: [11, NDKKind.GenericReply, NDKKind.TenexConversationMetadata as number], ...this.rootEvent.filter() },
-				{ kinds: [11, NDKKind.GenericReply, NDKKind.TenexConversationMetadata as number], ...this.rootEvent.nip22Filter() },
-				{ kinds: streamingKinds, limit: 100, since: streamingSince, ...this.rootEvent.nip22Filter() }
+				{ kinds: [11, NDKKind.GenericReply, NDKKind.TenexConversationMetadata as number], ...this.rootEvent.nip22Filter() }
 			);
 		}
 
 		return filters;
 	}
 
-	/**
-	 * Process a single event - O(1) complexity
-	 */
 	private processEvent(event: NDKEvent): void {
-		// Track event processing
 		this.metrics.eventsProcessed++;
 
 		// Skip operations events
@@ -388,7 +300,7 @@ export class ConversationState {
 			return;
 		}
 
-		// Apply view mode filtering - check conversation membership via E tag
+		// Apply view mode filtering
 		if (this.viewMode === 'threaded' && !this.belongsToConversation(event)) {
 			this.log('Event filtered out - not part of conversation', { eventId: event.id });
 			return;
@@ -397,14 +309,9 @@ export class ConversationState {
 		const pubkey = event.pubkey;
 		this.log(`Processing event kind ${event.kind} from ${pubkey}`, { eventId: event.id });
 
-		// Handle different event types with O(1) map operations
 		switch (event.kind) {
 			case NDKKind.GenericReply: // 1111 - Final message
 				this.handleFinalMessage(event, pubkey);
-				break;
-
-			case NDKKind.TenexStreamingResponse: // 21111 - Streaming delta
-				this.handleStreamingEvent(event, pubkey);
 				break;
 
 			case NDKKind.TenexConversationMetadata: // 513 - Conversation metadata
@@ -416,7 +323,6 @@ export class ConversationState {
 				break;
 
 			default:
-				// All other message types
 				this.handleRegularMessage(event);
 				this.log(`Handling event kind ${event.kind} as regular message`);
 				break;
@@ -426,92 +332,18 @@ export class ConversationState {
 	/**
 	 * Handle final message (kind 1111)
 	 */
-	private handleFinalMessage(event: NDKEvent, pubkey: string): void {
+	private handleFinalMessage(event: NDKEvent, _pubkey: string): void {
 		const message: Message = { id: event.id, event };
-		this.log('Added final message', { eventId: event.id, pubkey });
+		this.log('Added final message', { eventId: event.id });
 
-		// Add to messages map (O(1))
+		// Add to messages map
 		this.messages.set(event.id, message);
-
-		// Index for late-chunk detection
-		const indexKey = `${pubkey}:${event.created_at}`;
-		this.finalizedMessageIndex.set(indexKey, event.id);
-
-		// Delay clearing streaming session for 1000ms to ignore late-arriving chunks
-		// This prevents late 21111 chunks from creating duplicate messages after finalization
-		if (this.streamingSessions.has(pubkey)) {
-			setTimeout(() => {
-				this.streamingSessions.delete(pubkey);
-				this.log('Cleared streaming session for pubkey (delayed)', { pubkey });
-			}, 1000);
-		}
-
 	}
 
-	/**
-	 * Handle streaming event (kind 21111)
-	 */
-	private handleStreamingEvent(event: NDKEvent, pubkey: string): void {
-		// Track streaming events
-		this.metrics.streamingEvents++;
-
-		// O(1) check for late-arriving streaming chunks using index
-		const indexKey = `${pubkey}:${event.created_at}`;
-		if (this.finalizedMessageIndex.has(indexKey)) {
-			this.log('Ignoring late streaming chunk, finalized message exists');
-			return;
-		}
-
-		let session = this.streamingSessions.get(pubkey);
-
-		if (!session) {
-			// Create new streaming session with unique ID
-			const syntheticId = `streaming-${crypto.randomUUID()}`;
-			const accumulator = new DeltaContentAccumulator(syntheticId);
-			const reconstructedContent = accumulator.addEvent(event);
-
-			session = {
-				syntheticId,
-				accumulator,
-				latestEvent: event,
-				reconstructedContent
-			};
-
-			this.streamingSessions.set(pubkey, session);
-			this.log('Created new streaming session', { pubkey, syntheticId });
-		} else {
-			// Update existing session
-			const reconstructedContent = session.accumulator.addEvent(event);
-
-			// Create NEW session object to trigger SvelteMap reactivity
-			// Setting same object reference doesn't trigger reactivity in Svelte 5
-			const updatedSession: StreamingSession = {
-				syntheticId: session.syntheticId,
-				accumulator: session.accumulator,
-				latestEvent: event,
-				reconstructedContent
-			};
-
-			this.streamingSessions.set(pubkey, updatedSession);
-
-			this.log('Updated streaming session', {
-				pubkey,
-				syntheticId: updatedSession.syntheticId,
-				contentLength: updatedSession.reconstructedContent.length
-			});
-		}
-	}
-
-	/**
-	 * Handle regular message events
-	 */
 	private handleRegularMessage(event: NDKEvent): void {
 		this.messages.set(event.id, { id: event.id, event });
 	}
 
-	/**
-	 * Handle conversation metadata event (kind 513)
-	 */
 	private handleMetadataEvent(event: NDKEvent): void {
 		const conversationId = event.tags.find((tag) => tag[0] === 'e')?.[1];
 		if (!conversationId) {
@@ -519,7 +351,6 @@ export class ConversationState {
 			return;
 		}
 
-		// Store the metadata event for rendering as a system message
 		this.metadataEvents.set(event.id, event);
 
 		const currentMetadata = conversationMetadataStore.getMetadata(conversationId);
@@ -544,40 +375,28 @@ export class ConversationState {
 		}
 	}
 
-	/**
-	 * Check if event belongs to this conversation
-	 * Uses uppercase 'E' tag (root reference) for conversation membership
-	 * This allows nested replies to be included, not just direct replies to root
-	 */
 	private belongsToConversation(event: NDKEvent): boolean {
 		if (!this.rootEvent) return true;
 		if (event.id === this.rootEvent.id) return true;
 
-		// Check uppercase 'E' tag for conversation root reference
 		const ETags = event.getMatchingTags('E');
 		if (ETags.some((tag) => tag[1] === this.rootEvent!.id)) {
 			return true;
 		}
 
-		// Also check lowercase 'e' in case event directly references root
 		const eTags = event.getMatchingTags('e');
 		return eTags.some((tag) => tag[1] === this.rootEvent!.id);
 	}
 
-	/**
-	 * Clean up and destroy the conversation state
-	 */
 	destroy(): void {
 		this.log('Destroying ConversationState');
 		this.isDestroyed = true;
 
-		// Clear reconnection timeout
 		if (this.reconnectTimeout) {
 			clearTimeout(this.reconnectTimeout);
 			this.reconnectTimeout = null;
 		}
 
-		// Stop subscription
 		if (this.subscription) {
 			try {
 				this.subscription.stop();
@@ -587,17 +406,11 @@ export class ConversationState {
 			this.subscription = null;
 		}
 
-		// Clear all maps
 		this.messages.clear();
-		this.streamingSessions.clear();
-		this.finalizedMessageIndex.clear();
 
 		this.log('ConversationState destroyed successfully');
 	}
 
-	/**
-	 * Get performance metrics for this conversation
-	 */
 	getMetrics(): ConversationStateMetrics {
 		return {
 			...this.metrics,

@@ -1,22 +1,12 @@
 /**
- * Central performance metrics store for tracking application performance
+ * Central performance metrics store for tracking application performance.
+ * Simplified after removing streaming event processing.
  */
 
 import { untrack } from 'svelte';
 
-export interface AccumulatorMetrics {
-	totalEvents: number;
-	fastPathHits: number;
-	slowPathHits: number;
-	totalReconstructTime: number;
-	avgReconstructTime: number;
-	maxContentLength: number;
-	slowReconstructionCount: number; // >10ms
-}
-
 export interface ConversationStateMetrics {
 	eventsProcessed: number;
-	streamingEvents: number;
 	displayMessagesComputations: number;
 	displayMessagesComputeTime: number;
 	avgComputeTime: number;
@@ -33,14 +23,12 @@ export interface MessageRenderMetrics {
 }
 
 export interface AggregatedMetrics {
-	accumulator: Map<string, AccumulatorMetrics>; // keyed by session ID
 	conversationState: Map<string, ConversationStateMetrics>; // keyed by conversation ID
 	messageRenders: MessageRenderMetrics;
 	lastUpdateTime: number;
 }
 
 class PerformanceMetricsStore {
-	private accumulatorMetrics = new Map<string, AccumulatorMetrics>();
 	private conversationStateMetrics = new Map<string, ConversationStateMetrics>();
 
 	// Message render metrics (global)
@@ -57,38 +45,12 @@ class PerformanceMetricsStore {
 	lastUpdateTime = $state(Date.now());
 
 	/**
-	 * Update accumulator metrics for a specific session
-	 */
-	updateAccumulatorMetrics(sessionId: string, metrics: Partial<AccumulatorMetrics>): void {
-		untrack(() => {
-			const existing = this.accumulatorMetrics.get(sessionId) || {
-				totalEvents: 0,
-				fastPathHits: 0,
-				slowPathHits: 0,
-				totalReconstructTime: 0,
-				avgReconstructTime: 0,
-				maxContentLength: 0,
-				slowReconstructionCount: 0
-			};
-
-			const updated = { ...existing, ...metrics };
-			if (updated.totalEvents > 0) {
-				updated.avgReconstructTime = updated.totalReconstructTime / updated.totalEvents;
-			}
-
-			this.accumulatorMetrics.set(sessionId, updated);
-			this.lastUpdateTime = Date.now();
-		});
-	}
-
-	/**
 	 * Update conversation state metrics
 	 */
 	updateConversationStateMetrics(conversationId: string, metrics: Partial<ConversationStateMetrics>): void {
 		untrack(() => {
 			const existing = this.conversationStateMetrics.get(conversationId) || {
 				eventsProcessed: 0,
-				streamingEvents: 0,
 				displayMessagesComputations: 0,
 				displayMessagesComputeTime: 0,
 				avgComputeTime: 0,
@@ -127,7 +89,6 @@ class PerformanceMetricsStore {
 	 */
 	getAggregatedMetrics(): AggregatedMetrics {
 		return {
-			accumulator: new Map(this.accumulatorMetrics),
 			conversationState: new Map(this.conversationStateMetrics),
 			messageRenders: { ...this.messageRenderMetrics },
 			lastUpdateTime: this.lastUpdateTime
@@ -138,35 +99,9 @@ class PerformanceMetricsStore {
 	 * Get summary statistics across all sessions
 	 */
 	getSummaryStats() {
-		const accumulatorStats = {
-			totalSessions: this.accumulatorMetrics.size,
-			totalEvents: 0,
-			totalFastPath: 0,
-			totalSlowPath: 0,
-			totalSlowReconstructions: 0,
-			avgReconstructTime: 0
-		};
-
-		let totalReconstructTime = 0;
-		let totalEvents = 0;
-
-		for (const metrics of this.accumulatorMetrics.values()) {
-			accumulatorStats.totalEvents += metrics.totalEvents;
-			accumulatorStats.totalFastPath += metrics.fastPathHits;
-			accumulatorStats.totalSlowPath += metrics.slowPathHits;
-			accumulatorStats.totalSlowReconstructions += metrics.slowReconstructionCount;
-			totalReconstructTime += metrics.totalReconstructTime;
-			totalEvents += metrics.totalEvents;
-		}
-
-		if (totalEvents > 0) {
-			accumulatorStats.avgReconstructTime = totalReconstructTime / totalEvents;
-		}
-
 		const conversationStats = {
 			totalConversations: this.conversationStateMetrics.size,
 			totalEventsProcessed: 0,
-			totalStreamingEvents: 0,
 			totalComputations: 0,
 			totalSlowComputations: 0,
 			avgComputeTime: 0
@@ -177,7 +112,6 @@ class PerformanceMetricsStore {
 
 		for (const metrics of this.conversationStateMetrics.values()) {
 			conversationStats.totalEventsProcessed += metrics.eventsProcessed;
-			conversationStats.totalStreamingEvents += metrics.streamingEvents;
 			conversationStats.totalComputations += metrics.displayMessagesComputations;
 			conversationStats.totalSlowComputations += metrics.slowComputationCount;
 			totalComputeTime += metrics.displayMessagesComputeTime;
@@ -189,7 +123,6 @@ class PerformanceMetricsStore {
 		}
 
 		return {
-			accumulator: accumulatorStats,
 			conversationState: conversationStats,
 			messageRenders: { ...this.messageRenderMetrics }
 		};
@@ -199,7 +132,6 @@ class PerformanceMetricsStore {
 	 * Clear all metrics
 	 */
 	reset(): void {
-		this.accumulatorMetrics.clear();
 		this.conversationStateMetrics.clear();
 		this.messageRenderMetrics = {
 			renderCount: 0,

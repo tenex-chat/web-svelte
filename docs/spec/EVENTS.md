@@ -55,7 +55,6 @@ This is the most critical concept in the TENEX data model.
 | `24101` | LLM Config | `TenexLLMConfigChange` | Changing the underlying LLM provider/model. |
 | `24111` | Typing Start | `TenexAgentTypingStart` | Ephemeral: Agent has started generating. |
 | `24112` | Typing Stop | `TenexAgentTypingStop` | Ephemeral: Agent stopped generating. |
-| `21111` | Streaming Delta | `TenexStreamingResponse`| **Real-time.** Chunks of generated text (tokens). |
 | `24133` | Operations Status | `TenexOperationsStatus` | Incoming: Tracks which agents are working on what. |
 | `24134` | Stop Command | `TenexStopCommand` | Outgoing: Request to halt an agent's operation. |
 | `513` | Conversation Meta | `TenexConversationMetadata`| Titles, summaries, and metadata for a thread. |
@@ -110,14 +109,6 @@ Used for **Logical Grouping** (The "Thread").
 
 #### 4. The `p` Tag (Routing)
 *   `['p', <Recipient_Pubkey>]`: Directs the message to a specific user or **Agent Instance**.
-
-### Streaming Response (Kind `21111`)
-
-Used to stream LLM tokens to the client for a "chat-like" feel.
-
-*   `e`: Reference to the user prompt event ID.
-*   `content`: A small delta string (token).
-*   **Reassembly:** The client accumulates these events by `pubkey` + `created_at` window to rebuild the full message before the final Kind `1111` arrives.
 
 ### Agent Definition (Kind `4199`)
 

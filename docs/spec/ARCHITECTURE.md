@@ -38,9 +38,8 @@ The frontend relies heavily on **Runes** (Svelte 5 reactivity) and specialized S
 ### C. Conversation State (`conversation-state.svelte.ts`)
 *   **Scope:** Instantiated per active chat view.
 *   **Responsibility:**
-    *   Subscribes to Thread messages (`11`, `1111`) + Metadata (`513`) + Operations (`24111`, `24133`).
-    *   **Deduplication:** Handles the complex logic of merging Streaming Deltas (`21111`) with Final Messages (`1111`).
-    *   **Accumulator:** Uses `DeltaContentAccumulator` to stitch token chunks together.
+    *   Subscribes to Thread messages (`11`, `1111`) + Metadata (`513`).
+    *   **Simplicity:** Handles only final messages (kind 1111), no streaming delta processing.
     *   **Optimistic Updates:** Immediate UI reflection before relay confirmation.
 
 ### D. Inbox Store (`inbox.svelte.ts`)
@@ -102,7 +101,7 @@ This is the bridge between Definition and Instance.
 ## 6. Rebuilding Guidelines
 
 To rebuild this app:
-1.  **Start with the Stores:** Replicate `ConversationState` logic first. It is the most complex part (streaming + threading).
+1.  **Start with the Stores:** Replicate `ConversationState` logic first. Focus on threading structure.
 2.  **Implement NDK:** Ensure robust connection management.
 3.  **Build the UI Shell:** Sidebar + Multi-column layout.
 4.  **Wire up the Project Status:** Crucial for "Agent Presence".

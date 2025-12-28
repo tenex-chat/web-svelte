@@ -117,39 +117,8 @@
 				<span class={getPerformanceColor(renderFPS, 30, true)}>{renderFPS}</span>
 			</div>
 			<div class="flex justify-between items-center">
-				<span class="text-gray-400">Active Sessions:</span>
-				<span class="text-white">{stats.accumulator.totalSessions}</span>
-			</div>
-		</div>
-
-		<!-- Accumulator metrics -->
-		<div class="p-3 space-y-2 border-b border-gray-700">
-			<h4 class="text-xs font-bold text-gray-300 mb-2">Delta Accumulator</h4>
-			<div class="flex justify-between items-center">
-				<span class="text-gray-400">Total Events:</span>
-				<span class="text-white">{formatNumber(stats.accumulator.totalEvents)}</span>
-			</div>
-			<div class="flex justify-between items-center">
-				<span class="text-gray-400">Fast Path:</span>
-				<span class="text-green-400">{formatNumber(stats.accumulator.totalFastPath)}</span>
-			</div>
-			<div class="flex justify-between items-center">
-				<span class="text-gray-400">Slow Path:</span>
-				<span class={stats.accumulator.totalSlowPath > 0 ? 'text-yellow-400' : 'text-white'}>
-					{formatNumber(stats.accumulator.totalSlowPath)}
-				</span>
-			</div>
-			<div class="flex justify-between items-center">
-				<span class="text-gray-400">Slow Reconstructions:</span>
-				<span class={stats.accumulator.totalSlowReconstructions > 0 ? 'text-red-400' : 'text-white'}>
-					{stats.accumulator.totalSlowReconstructions}
-				</span>
-			</div>
-			<div class="flex justify-between items-center">
-				<span class="text-gray-400">Avg Reconstruct:</span>
-				<span class={getPerformanceColor(stats.accumulator.avgReconstructTime, 10, true)}>
-					{stats.accumulator.avgReconstructTime.toFixed(2)}ms
-				</span>
+				<span class="text-gray-400">Conversations:</span>
+				<span class="text-white">{stats.conversationState.totalConversations}</span>
 			</div>
 		</div>
 
@@ -159,10 +128,6 @@
 			<div class="flex justify-between items-center">
 				<span class="text-gray-400">Events Processed:</span>
 				<span class="text-white">{formatNumber(stats.conversationState.totalEventsProcessed)}</span>
-			</div>
-			<div class="flex justify-between items-center">
-				<span class="text-gray-400">Streaming Events:</span>
-				<span class="text-white">{formatNumber(stats.conversationState.totalStreamingEvents)}</span>
 			</div>
 			<div class="flex justify-between items-center">
 				<span class="text-gray-400">Computations:</span>

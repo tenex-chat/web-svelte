@@ -106,8 +106,7 @@ $effect(() => { /* ... */ });
 │   │   │   └── ...
 │   │   └── utils/
 │   │       ├── messageProcessor.ts     # Chat message processing
-│   │       ├── threadBuilder.ts        # Threaded message trees
-│   │       └── DeltaContentAccumulator.ts # Streaming support
+│   │       └── threadBuilder.ts        # Threaded message trees
 │   ├── routes/
 │   │   ├── +layout.svelte              # Root layout
 │   │   ├── +layout.ts                  # SSR disabled
@@ -142,7 +141,6 @@ $effect(() => { /* ... */ });
 - @mention autocomplete for agents
 - P-tag routing for agent communication
 - Threaded/flattened view modes
-- Streaming response support (kind:21111)
 - Real-time subscriptions
 
 ✅ **Settings**
@@ -165,7 +163,6 @@ $effect(() => { /* ... */ });
 | 1111 | GenericReply | Replies to threads |
 | 4199 | AgentDefinition | AI agent definitions |
 | 513 | ConversationMetadata | Thread titles/summaries |
-| 21111 | StreamingResponse | Delta content from agents |
 | 24010 | ProjectStatus | Real-time agent/model status |
 | 24101 | LLMConfigChange | Model switching |
 | 31933 | Project | Project metadata (parameterized replaceable) |

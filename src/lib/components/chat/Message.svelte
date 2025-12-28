@@ -13,7 +13,6 @@
 	import TypingIndicator from './TypingIndicator.svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Copy, Reply, Quote, MoreVertical, Info, Eye, Hash } from 'lucide-svelte';
-	import { performanceMetrics } from '$lib/stores/performance-metrics.svelte';
 	import { formatTimestamp } from '$lib/utils/time';
 
 	interface Props {
@@ -28,7 +27,6 @@
 
 	let { message, isLastMessage = false, isConsecutive = false, hasNextConsecutive = false, onReply, onQuote, onTimeClick }: Props = $props();
 
-	const isStreaming = $derived(message.event.kind === NDKKind.TenexStreamingResponse);
 	const isTyping = $derived(message.event.kind === NDKKind.TenexAgentTypingStart);
 	const isReasoningEvent = $derived(message.event.hasTag('reasoning'));
 	const isToolCallEvent = $derived(
@@ -36,28 +34,6 @@
 	);
 	const hasSuggestions = $derived(message.event.tags?.some((tag) => tag[0] === 'suggestion'));
 	const uiSettings = $derived(uiSettingsStore.settings);
-
-	// Track render performance
-	$effect(() => {
-		if (isStreaming && performanceMetrics.isEnabled) {
-			const startTime = performance.now();
-
-			// Trigger effect by accessing message content
-			message.event.content;
-
-			const renderTime = performance.now() - startTime;
-
-			// Update metrics
-			const currentMetrics = performanceMetrics.messageRenderMetrics;
-			performanceMetrics.updateMessageRenderMetrics({
-				renderCount: currentMetrics.renderCount + 1,
-				totalRenderTime: currentMetrics.totalRenderTime + renderTime,
-				lastRenderTime: renderTime,
-				slowRenderCount: renderTime > 16 ? currentMetrics.slowRenderCount + 1 : currentMetrics.slowRenderCount
-			});
-		}
-	});
-
 
 	// Format timestamp
 	const timestamp = $derived.by(() => {
@@ -85,17 +61,11 @@
 
 	// Generate deterministic color from branch name
 	function getBranchColor(branchName: string): string {
-		// Simple hash function
 		let hash = 0;
 		for (let i = 0; i < branchName.length; i++) {
 			hash = branchName.charCodeAt(i) + ((hash << 5) - hash);
 		}
-
-		// Convert to hue (0-360)
 		const hue = Math.abs(hash % 360);
-
-		// Use HSL for better color consistency
-		// Saturation 65% and lightness 45% for good visibility in both light/dark modes
 		return `hsl(${hue}, 65%, 45%)`;
 	}
 
@@ -196,12 +166,6 @@
 						</div>
 					{/if}
 
-					{#if isStreaming}
-						<span class="text-xs text-primary flex items-center gap-1">
-							<span class="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-							streaming...
-						</span>
-					{/if}
 					{#if isTyping}
 						<TypingIndicator />
 					{/if}
@@ -270,7 +234,6 @@
 					{:else if isReasoningEvent}
 						<AIReasoningBlock
 							reasoningEvent={message.event}
-							{isStreaming}
 							{isLastMessage}
 							{timestamp}
 							{message}
@@ -286,18 +249,10 @@
 								content={message.event.content}
 								class="prose prose-sm text-sm max-w-none dark:prose-invert {replyingTo.length === 0 ? 'text-muted-foreground' : 'text-foreground'}"
 								parseIncompleteMarkdown={true}
-								animation={{
-									enabled: isStreaming,
-									type: 'fade',
-									duration: 300,
-									tokenize: 'word'
-								}}
+								animation={{ enabled: false }}
 								baseTheme="shadcn"
 								shikiTheme="github-dark-dimmed"
 							/>
-							{#if isStreaming}
-								<span class="inline-block w-1.5 h-4 ml-0.5 bg-primary animate-pulse"></span>
-							{/if}
 						</div>
 
 						<!-- Render suggestion buttons if they exist -->

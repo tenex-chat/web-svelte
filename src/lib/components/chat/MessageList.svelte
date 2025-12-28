@@ -3,10 +3,9 @@
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import Message from './Message.svelte';
 	import SystemMessage from './SystemMessage.svelte';
-	import ThreadedMessage from './ThreadedMessage.svelte';
-	import ToolGroupDisplay from './ToolGroupDisplay.svelte';
+	import AgentMessageGroup from './AgentMessageGroup.svelte';
 	import { ConversationState } from '$lib/stores/conversation-state.svelte';
-	import { type Message as MessageType, createDisplayModel, type DisplayItem } from '$lib/utils/messageUtils';
+	import { type Message as MessageType, createSimplifiedDisplayModel, type DisplayItem } from '$lib/utils/messageUtils';
 	import { scrollManager } from '$lib/actions/scrollManager';
 	import { ChevronDown } from 'lucide-svelte';
 	import PerformanceMonitor from './PerformanceMonitor.svelte';
@@ -15,8 +14,8 @@
 	function getDisplayItemKey(item: DisplayItem, index: number): string {
 		if (item.type === 'visible') {
 			return `visible-${item.message.id}`;
-		} else if (item.type === 'tool_group') {
-			return `tool_group-${item.tools[0]?.id || index}`;
+		} else if (item.type === 'agent_group') {
+			return `agent_group-${item.messages[0]?.id || index}`;
 		} else {
 			return `metadata-${item.event.id}`;
 		}
@@ -94,13 +93,10 @@
 	// Use reactive messages from ConversationState
 	const flatMessages = $derived(conversationState?.displayMessages || []);
 	const eventsWithMetadata = $derived(conversationState?.displayEventsWithMetadata || []);
-	const repliesByParent = $derived(conversationState?.repliesByParent || new Map());
 
-	// Create unified display model using $derived
+	// Create unified display model using $derived - ALWAYS use simplified model
 	const displayList = $derived<DisplayItem[]>(
-		viewMode === 'flattened'
-			? createDisplayModel(flatMessages, eventsWithMetadata)
-			: []
+		createSimplifiedDisplayModel(flatMessages, eventsWithMetadata)
 	);
 
 	// Sync to bindable messages prop
@@ -154,22 +150,15 @@
 			<div class="flex items-center justify-center h-full text-muted-foreground text-sm">
 				No messages yet. Start the conversation!
 			</div>
-		{:else if viewMode === 'threaded'}
-			<!-- Threaded view: Use recursive ThreadedMessage component -->
-			<div class="flex flex-col pb-52">
-				<ThreadedMessage {rootEvent} eventId={rootEvent.id} {repliesByParent} depth={0} {onTimeClick} {onReply} {onQuote} />
-			</div>
 		{:else}
-			<!-- Flattened view: Render from unified display model -->
+			<!-- Render from unified display model with agent grouping -->
 			<div class="flex flex-col">
 				{#each displayList as item, index (getDisplayItemKey(item, index))}
 					{#if item.type === 'metadata'}
 						<SystemMessage event={item.event} />
-					{:else if item.type === 'tool_group'}
-						<ToolGroupDisplay
-							tools={item.tools}
-							thinking={item.thinking}
-							isActive={item.isActive}
+					{:else if item.type === 'agent_group'}
+						<AgentMessageGroup
+							messages={item.messages}
 							isConsecutive={item.isConsecutive}
 							hasNextConsecutive={item.hasNextConsecutive}
 							{onReply}

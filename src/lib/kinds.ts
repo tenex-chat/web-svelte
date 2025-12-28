@@ -20,7 +20,6 @@ export const CustomKinds = {
     MCPTool: 4200 as const,
 
     // Tenex custom kinds (2xxxx range)
-    TenexStreamingResponse: 21111 as const,
     TenexProjectStatus: 24010 as const,
     ProjectStatus: 24010 as const, // Alias for TenexProjectStatus
     TenexAgentConfigUpdate: 24020 as const,

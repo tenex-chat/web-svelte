@@ -118,13 +118,11 @@ The app follows a "Telegram-like" navigation model with three main levels:
 3.  **Unread:** Highlighted based on `lastVisit` timestamp.
 4.  **Action:** Clicking an item navigates to the specific Project -> Chat -> Thread.
 
-### Real-time Streaming
+### Agent Response Flow
 1.  User sends prompt.
 2.  **UI State:** Shows "Agent Typing..." (Kind `24111`).
-3.  **Streaming:** Receives Kind `21111` deltas.
-    *   UI accumulates deltas locally to show text appearing.
-4.  **Completion:** Receives Kind `1111` (Final).
-    *   UI replaces streaming placeholder with final event.
+3.  **Completion:** Receives Kind `1111` (Final response).
+    *   UI displays the final message.
 
 ---
 

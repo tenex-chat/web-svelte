@@ -2,12 +2,11 @@
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { ndk } from '$lib/ndk.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
-	import { projectFiltersStore } from '$lib/stores/projectFilters.svelte';
+	import { globalFilterStore } from '$lib/stores/globalFilter.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { cn } from '$lib/utils/cn';
 	import { generateColorFromString } from '$lib/utils/colors';
-	import { MessageSquare, FileText, Bot, Hash, Rss, Settings as SettingsIcon, Filter, Clock, MoreVertical, MessageCircleQuestion, Plus, Phone } from 'lucide-svelte';
-	import * as DropdownMenu from './ui/dropdown-menu';
+	import { MessageSquare, FileText, Bot, Hash, Rss, Settings as SettingsIcon, Plus, Phone } from 'lucide-svelte';
 	import { User } from "$lib/ndk/ui/user";
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKKind } from '$lib/kinds';
@@ -23,7 +22,6 @@
 	type TabType = 'conversations' | 'docs' | 'agents' | 'hashtags' | 'feed';
 
 	let activeTab = $state<TabType>('conversations');
-	let filterDropdownOpen = $state(false);
 	let showCreateDocDialog = $state(false);
 
 	// Get project status from centralized store
@@ -31,13 +29,8 @@
 	const isOnline = $derived(projectStatusStore.isProjectOnline(projectId));
 	const onlineAgents = $derived(projectStatusStore.getOnlineAgents(projectId));
 
-	// Load time filter from store and make it reactive
-	const timeFilter = $derived(projectFiltersStore.getFilter(projectId));
-
-	// Function to update the time filter
-	function setTimeFilter(filter: string | null) {
-		projectFiltersStore.setFilter(projectId, filter);
-	}
+	// Get global time filter
+	const timeFilter = $derived(globalFilterStore.value);
 
 	// Handle status indicator click to start project
 	async function handleStatusClick() {
@@ -165,67 +158,6 @@
 					>
 						<Phone class="w-3.5 h-3.5" />
 					</button>
-
-					<!-- Activity Filter Button (only for conversations tab) -->
-					<DropdownMenu.Root bind:open={filterDropdownOpen}>
-						<DropdownMenu.Trigger>
-							{#snippet child({ props })}
-								<button
-									{...props}
-									class={cn(
-										'h-6 w-6 p-0 flex items-center justify-center text-muted-foreground hover:text-foreground dark:hover:text-foreground rounded hover:bg-muted transition-colors',
-										timeFilter && 'text-primary'
-									)}
-									title="Activity filters"
-									aria-label="Activity filters"
-								>
-									{#if timeFilter}
-										<Filter class="h-3.5 w-3.5" />
-									{:else}
-										<MoreVertical class="h-3.5 w-3.5" />
-									{/if}
-								</button>
-							{/snippet}
-						</DropdownMenu.Trigger>
-						<DropdownMenu.Content align="end" class="w-56">
-							<DropdownMenu.Item onclick={() => setTimeFilter(null)}>
-								<Clock class="mr-2 h-4 w-4" />
-								<span>All conversations</span>
-							</DropdownMenu.Item>
-							<DropdownMenu.Separator />
-							<DropdownMenu.Group>
-								<DropdownMenu.GroupHeading>Activity filters</DropdownMenu.GroupHeading>
-							<DropdownMenu.Item onclick={() => setTimeFilter('1h')}>
-								<Clock class="mr-2 h-4 w-4" />
-								<span>Active in last hour</span>
-							</DropdownMenu.Item>
-							<DropdownMenu.Item onclick={() => setTimeFilter('4h')}>
-								<Clock class="mr-2 h-4 w-4" />
-								<span>Active in last 4 hours</span>
-							</DropdownMenu.Item>
-							<DropdownMenu.Item onclick={() => setTimeFilter('1d')}>
-								<Clock class="mr-2 h-4 w-4" />
-								<span>Active in last 24 hours</span>
-							</DropdownMenu.Item>
-							</DropdownMenu.Group>
-							<DropdownMenu.Separator />
-							<DropdownMenu.Group>
-								<DropdownMenu.GroupHeading>Response filters</DropdownMenu.GroupHeading>
-							<DropdownMenu.Item onclick={() => setTimeFilter('needs-response-1h')}>
-								<MessageCircleQuestion class="mr-2 h-4 w-4" />
-								<span>Needs response (1h)</span>
-							</DropdownMenu.Item>
-							<DropdownMenu.Item onclick={() => setTimeFilter('needs-response-4h')}>
-								<MessageCircleQuestion class="mr-2 h-4 w-4" />
-								<span>Needs response (4h)</span>
-							</DropdownMenu.Item>
-							<DropdownMenu.Item onclick={() => setTimeFilter('needs-response-1d')}>
-								<MessageCircleQuestion class="mr-2 h-4 w-4" />
-								<span>Needs response (24h)</span>
-							</DropdownMenu.Item>
-							</DropdownMenu.Group>
-						</DropdownMenu.Content>
-					</DropdownMenu.Root>
 				{:else if activeTab === 'docs'}
 					<button
 						onclick={() => showCreateDocDialog = true}

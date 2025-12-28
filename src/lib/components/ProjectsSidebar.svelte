@@ -29,8 +29,12 @@
 		Layers,
 		ChevronDown,
 		Pencil,
-		Pin
+		Pin,
+		Filter,
+		Clock,
+		MessageCircleQuestion
 	} from 'lucide-svelte';
+	import { globalFilterStore } from '$lib/stores/globalFilter.svelte';
 	import {
 		projectGroupsStore,
 		selectedProjectGroupStore,
@@ -85,6 +89,23 @@
 
 	// Get pinned groups
 	const pinnedGroups = $derived(projectGroups.filter((g) => g.pinned));
+
+	// Get current global filter
+	const currentFilter = $derived(globalFilterStore.value);
+
+	// Helper to get filter label
+	function getFilterLabel(filter: string | null): string {
+		if (!filter) return 'All conversations';
+		switch (filter) {
+			case '1h': return 'Active in last hour';
+			case '4h': return 'Active in last 4 hours';
+			case '1d': return 'Active in last 24 hours';
+			case 'needs-response-1h': return 'Needs response (1h)';
+			case 'needs-response-4h': return 'Needs response (4h)';
+			case 'needs-response-1d': return 'Needs response (24h)';
+			default: return 'Custom filter';
+		}
+	}
 
 	// Calculate popover position
 	const popoverPosition = $derived(() => {
@@ -477,6 +498,74 @@
 					<span>Settings</span>
 				</DropdownMenu.Item>
 				<DropdownMenu.Separator />
+				<DropdownMenu.Sub>
+					<DropdownMenu.SubTrigger>
+						<Filter class="mr-2 h-4 w-4" />
+						<span>Filter</span>
+						{#if currentFilter}
+							<span class="ml-auto text-xs text-muted-foreground">{getFilterLabel(currentFilter)}</span>
+						{/if}
+					</DropdownMenu.SubTrigger>
+					<DropdownMenu.SubContent class="w-56">
+						<DropdownMenu.Item onclick={() => globalFilterStore.set(null)}>
+							<Clock class="mr-2 h-4 w-4" />
+							<span>All conversations</span>
+							{#if !currentFilter}
+								<span class="ml-auto">✓</span>
+							{/if}
+						</DropdownMenu.Item>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Group>
+							<DropdownMenu.GroupHeading>Activity filters</DropdownMenu.GroupHeading>
+							<DropdownMenu.Item onclick={() => globalFilterStore.set('1h')}>
+								<Clock class="mr-2 h-4 w-4" />
+								<span>Active in last hour</span>
+								{#if currentFilter === '1h'}
+									<span class="ml-auto">✓</span>
+								{/if}
+							</DropdownMenu.Item>
+							<DropdownMenu.Item onclick={() => globalFilterStore.set('4h')}>
+								<Clock class="mr-2 h-4 w-4" />
+								<span>Active in last 4 hours</span>
+								{#if currentFilter === '4h'}
+									<span class="ml-auto">✓</span>
+								{/if}
+							</DropdownMenu.Item>
+							<DropdownMenu.Item onclick={() => globalFilterStore.set('1d')}>
+								<Clock class="mr-2 h-4 w-4" />
+								<span>Active in last 24 hours</span>
+								{#if currentFilter === '1d'}
+									<span class="ml-auto">✓</span>
+								{/if}
+							</DropdownMenu.Item>
+						</DropdownMenu.Group>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Group>
+							<DropdownMenu.GroupHeading>Response filters</DropdownMenu.GroupHeading>
+							<DropdownMenu.Item onclick={() => globalFilterStore.set('needs-response-1h')}>
+								<MessageCircleQuestion class="mr-2 h-4 w-4" />
+								<span>Needs response (1h)</span>
+								{#if currentFilter === 'needs-response-1h'}
+									<span class="ml-auto">✓</span>
+								{/if}
+							</DropdownMenu.Item>
+							<DropdownMenu.Item onclick={() => globalFilterStore.set('needs-response-4h')}>
+								<MessageCircleQuestion class="mr-2 h-4 w-4" />
+								<span>Needs response (4h)</span>
+								{#if currentFilter === 'needs-response-4h'}
+									<span class="ml-auto">✓</span>
+								{/if}
+							</DropdownMenu.Item>
+							<DropdownMenu.Item onclick={() => globalFilterStore.set('needs-response-1d')}>
+								<MessageCircleQuestion class="mr-2 h-4 w-4" />
+								<span>Needs response (24h)</span>
+								{#if currentFilter === 'needs-response-1d'}
+									<span class="ml-auto">✓</span>
+								{/if}
+							</DropdownMenu.Item>
+						</DropdownMenu.Group>
+					</DropdownMenu.SubContent>
+				</DropdownMenu.Sub>
 				<DropdownMenu.Sub>
 					<DropdownMenu.SubTrigger>
 						<Moon class="mr-2 h-4 w-4" />

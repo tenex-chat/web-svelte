@@ -8,7 +8,6 @@
 
 	interface Props {
 		reasoningEvent: NDKEvent;
-		isStreaming?: boolean;
 		isLastMessage?: boolean;
 		timestamp?: string;
 		message?: Message;
@@ -21,7 +20,6 @@
 
 	let {
 		reasoningEvent,
-		isStreaming = false,
 		isLastMessage = false,
 		timestamp = '',
 		message,
@@ -74,7 +72,7 @@
 						/>
 					</svg>
 
-					<span class="text-sm text-muted-foreground inline-flex items-center gap-1.5">Thinking{#if isStreaming}<span class="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>{/if}</span>
+					<span class="text-sm text-muted-foreground inline-flex items-center gap-1.5">Thinking</span>
 				</button>
 
 				<!-- Time + Dropdown -->
@@ -164,9 +162,6 @@
 							shikiTheme="github-dark-dimmed"
 						/>
 					</div>
-					{#if isStreaming}
-						<span class="inline-block w-1.5 h-4 ml-0.5 bg-primary animate-pulse"></span>
-					{/if}
 				</div>
 			{/if}
 		</div>

@@ -145,7 +145,6 @@
 			1111: 'Generic Reply',
 			4199: 'Agent Definition',
 			513: 'Conversation Metadata',
-			21111: 'Streaming Response',
 			24010: 'Project Status',
 			24111: 'Agent Typing Start',
 			24112: 'Agent Typing Stop',

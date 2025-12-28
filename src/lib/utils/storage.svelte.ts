@@ -48,6 +48,7 @@ export type StorageSchema = {
 	// Project management
 	'tenex:openProjects': string[];
 	'project-filters': Record<string, string | null>;
+	'global-filter': string | null;
 	'tenex:projectGroups': Array<{
 		id: string;
 		name: string;
@@ -132,6 +133,7 @@ class StorageService {
 			'draft-timestamps',
 			'tenex:openProjects',
 			'project-filters',
+			'global-filter',
 			'tenex:projectGroups',
 			'tenex:selectedProjectGroup',
 			'blossom-settings',

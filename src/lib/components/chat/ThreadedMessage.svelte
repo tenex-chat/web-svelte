@@ -7,21 +7,21 @@
 	import { User } from '$lib/ndk/ui/user';
 	import Message from './Message.svelte';
 	import ThreadedMessage from './ThreadedMessage.svelte';
+	import AgentMessageGroup from './AgentMessageGroup.svelte';
 	import {
 		type Message as MessageType,
 		type DisplayItem,
-		createDisplayModel,
+		createSimplifiedDisplayModel,
 		getUniquePubkeys
 	} from '$lib/utils/messageUtils';
-	import ToolGroupDisplay from './ToolGroupDisplay.svelte';
 	import EventCardInline from '$lib/ndk/components/event-card-inline/event-card-inline.svelte';
 
 	// Helper to generate unique keys for display items
 	function getDisplayItemKey(item: DisplayItem, index: number): string {
 		if (item.type === 'visible') {
 			return item.message.id;
-		} else if (item.type === 'tool_group') {
-			return `tool_group-${item.tools[0]?.id || index}`;
+		} else if (item.type === 'agent_group') {
+			return `agent_group-${item.messages[0]?.id || index}`;
 		} else {
 			return `metadata-${index}`;
 		}
@@ -75,7 +75,7 @@
 	);
 
 	// Create display model for replies (handles collapsing)
-	const displayItems = $derived<DisplayItem[]>(createDisplayModel(replies));
+	const displayItems = $derived<DisplayItem[]>(createSimplifiedDisplayModel(replies));
 
 	// Get unique author pubkeys for collapse button avatars
 	const uniquePubkeys = $derived(getUniquePubkeys(replies));
@@ -108,11 +108,9 @@
 
 		<!-- Render direct replies recursively -->
 		{#each displayItems as item, index (getDisplayItemKey(item, index))}
-			{#if item.type === 'tool_group'}
-				<ToolGroupDisplay
-					tools={item.tools}
-					thinking={item.thinking}
-					isActive={item.isActive}
+			{#if item.type === 'agent_group'}
+				<AgentMessageGroup
+					messages={item.messages}
 					isConsecutive={item.isConsecutive}
 					hasNextConsecutive={item.hasNextConsecutive}
 					{onReply}
@@ -198,11 +196,9 @@
 			{#if isExpanded}
 				<div class="ml-12 mt-2">
 					{#each displayItems as item, index (getDisplayItemKey(item, index))}
-						{#if item.type === 'tool_group'}
-							<ToolGroupDisplay
-								tools={item.tools}
-								thinking={item.thinking}
-								isActive={item.isActive}
+						{#if item.type === 'agent_group'}
+							<AgentMessageGroup
+								messages={item.messages}
 								isConsecutive={item.isConsecutive}
 								hasNextConsecutive={item.hasNextConsecutive}
 								{onReply}

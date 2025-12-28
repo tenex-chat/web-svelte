@@ -211,7 +211,8 @@ export function getToolGroupDisplayText(options: ToolGroupDisplayOptions): strin
 			if (action.detail) {
 				return `${actionVerbs.activeVerb} ${action.detail}`;
 			}
-			return `${actionVerbs.activeVerb} 1 ${actionVerbs.noun}`;
+			// For single tools without detail, show the tool name instead of "1 tool"
+			return `${actionVerbs.activeVerb} ${action.toolName}`;
 		} else {
 			// Multiple tools: aggregate
 			const noun = verbs.pluralNoun;
@@ -226,7 +227,8 @@ export function getToolGroupDisplayText(options: ToolGroupDisplayOptions): strin
 			if (action.detail) {
 				return `${actionVerbs.pastVerb} ${action.detail}`;
 			}
-			return `${actionVerbs.pastVerb} 1 ${actionVerbs.noun}`;
+			// For single tools without detail, show the tool name instead of "1 tool"
+			return `${actionVerbs.pastVerb} ${action.toolName}`;
 		} else {
 			// Multiple tools
 			const noun = verbs.pluralNoun;

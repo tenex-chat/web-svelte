@@ -15,6 +15,8 @@
 	import BashToolRenderer from './renderers/BashToolRenderer.svelte';
 	import ShellToolRenderer from './renderers/ShellToolRenderer.svelte';
 	import TodoWriteToolRenderer from './renderers/TodoWriteToolRenderer.svelte';
+	import TodoAddToolRenderer from './renderers/TodoAddToolRenderer.svelte';
+	import TodoUpdateToolRenderer from './renderers/TodoUpdateToolRenderer.svelte';
 	import LessonLearnToolRenderer from './renderers/LessonLearnToolRenderer.svelte';
 	import CodebaseSearchToolRenderer from './renderers/CodebaseSearchToolRenderer.svelte';
 	import DelegateToolRenderer from './renderers/DelegateToolRenderer.svelte';
@@ -60,6 +62,16 @@
 	<ShellToolRenderer command={(args?.command as string) || ''} />
 {:else if toolName === 'TodoWrite'}
 	<TodoWriteToolRenderer todos={(args?.todos as Array<{content: string; status: 'pending' | 'in_progress' | 'completed'; activeForm: string}>) || []} />
+{:else if toolName === 'todo_add'}
+	<TodoAddToolRenderer
+		items={(args?.items as Array<{title: string; description?: string}>) || []}
+		content={event.content}
+	/>
+{:else if toolName === 'todo_update'}
+	<TodoUpdateToolRenderer
+		items={(args?.items as Array<{id: string; status?: string; title?: string; description?: string}>) || []}
+		content={event.content}
+	/>
 {:else if toolName === 'lesson_learn'}
 	<LessonLearnToolRenderer {args} />
 {:else if toolName === 'codebase_search'}
