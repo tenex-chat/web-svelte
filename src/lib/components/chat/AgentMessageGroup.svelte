@@ -3,6 +3,7 @@
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { ndk } from '$lib/ndk.svelte';
 	import { User } from '$lib/ndk/ui/user';
+	import { Streamdown } from 'svelte-streamdown';
 	import { ChevronDown, ChevronRight } from 'lucide-svelte';
 	import { slide } from 'svelte/transition';
 	import { aggregateTodoState, type AggregatedTodoState } from '$lib/utils/todoAggregator';
@@ -138,7 +139,16 @@
 									{:else if toolName}
 										<ToolRenderer event={msg.event} />
 									{:else}
-										<div class="text-muted-foreground whitespace-pre-wrap">{msg.event.content}</div>
+										<div class="prose prose-sm text-sm max-w-none dark:prose-invert text-muted-foreground">
+											<Streamdown
+												content={msg.event.content}
+												class="prose prose-sm text-sm max-w-none dark:prose-invert text-muted-foreground"
+												parseIncompleteMarkdown={true}
+												animation={{ enabled: false }}
+												baseTheme="shadcn"
+												shikiTheme="github-dark-dimmed"
+											/>
+										</div>
 									{/if}
 								</div>
 							{/each}
@@ -175,7 +185,16 @@
 									</button>
 								{/if}
 							{:else}
-								<div class="text-sm whitespace-pre-wrap">{msg.event.content}</div>
+								<div class="prose prose-sm text-sm max-w-none dark:prose-invert text-foreground">
+									<Streamdown
+										content={msg.event.content}
+										class="prose prose-sm text-sm max-w-none dark:prose-invert text-foreground"
+										parseIncompleteMarkdown={true}
+										animation={{ enabled: false }}
+										baseTheme="shadcn"
+										shikiTheme="github-dark-dimmed"
+									/>
+								</div>
 								{#if isLast && msg.event.created_at}
 									<button
 										type="button"
