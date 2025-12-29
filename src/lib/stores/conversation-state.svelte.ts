@@ -54,10 +54,23 @@ export class ConversationState {
 		const startTime = performance.now();
 		this.metrics.displayMessagesComputations++;
 		const allMessages: Message[] = [];
+		const rootEventId = this.rootEvent?.id;
 
-		// Add all final messages from the map
+		// Add messages from the map, filtering out nested replies
+		// A message is a nested reply if it has an 'e' tag pointing to a non-root event
 		for (const message of this.messages.values()) {
-			allMessages.push(message);
+			// Check if this message replies to a non-root event
+			const eTags = message.event.getMatchingTags('e');
+			const isNestedReply = eTags.some(tag => {
+				const parentId = tag[1];
+				// If it points to something other than root AND that something exists in our messages, it's nested
+				return parentId && parentId !== rootEventId && this.messages.has(parentId);
+			});
+
+			// Only include in flat list if NOT a nested reply
+			if (!isNestedReply) {
+				allMessages.push(message);
+			}
 		}
 
 		// Sort by timestamp (with tag priority for same timestamp)
@@ -101,12 +114,18 @@ export class ConversationState {
 			});
 		}
 
-		// Filter reasoning events based on user preference
+		// Filter events based on user preferences
+		let filteredMessages = allMessages;
+
 		if (!uiSettingsStore.settings.showReasoningEvents) {
-			return allMessages.filter(msg => !msg.event.hasTag('reasoning'));
+			filteredMessages = filteredMessages.filter(msg => !msg.event.hasTag('reasoning'));
 		}
 
-		return allMessages;
+		if (!uiSettingsStore.settings.showToolEvents) {
+			filteredMessages = filteredMessages.filter(msg => !msg.event.hasTag('tool'));
+		}
+
+		return filteredMessages;
 	});
 
 	// Combined messages and metadata events for rendering
@@ -138,10 +157,11 @@ export class ConversationState {
 	});
 
 	// Map of replies indexed by parent event ID for O(1) lookups
+	// Uses ALL messages (not just displayMessages) so nested replies can be found
 	repliesByParent = $derived.by(() => {
 		const map = new Map<string, Message[]>();
 
-		for (const message of this.displayMessages) {
+		for (const message of this.messages.values()) {
 			const eTags = message.event.getMatchingTags('e');
 			for (const tag of eTags) {
 				const parentId = tag[1];
@@ -151,6 +171,11 @@ export class ConversationState {
 					map.set(parentId, replies);
 				}
 			}
+		}
+
+		// Sort replies by timestamp within each parent
+		for (const [parentId, replies] of map.entries()) {
+			replies.sort((a, b) => (a.event.created_at ?? 0) - (b.event.created_at ?? 0));
 		}
 
 		return map;

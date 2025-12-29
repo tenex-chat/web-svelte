@@ -260,6 +260,33 @@
 				</button>
 			</div>
 
+			<!-- Show Tool Events -->
+			<div class="flex items-center justify-between">
+				<div>
+					<label for="show-tool-events" class="text-sm font-medium text-foreground">
+						Show Tool Events
+					</label>
+					<p class="text-xs text-muted-foreground">Display tool calls (Read, Write, Bash, etc.) in conversations</p>
+				</div>
+				<button
+					id="show-tool-events"
+					onclick={() => uiSettingsStore.setShowToolEvents(!settings.showToolEvents)}
+					class={cn(
+						'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+						settings.showToolEvents ? 'bg-primary' : 'bg-secondary'
+					)}
+					role="switch"
+					aria-checked={settings.showToolEvents}
+				>
+					<span
+						class={cn(
+							'inline-block h-4 w-4 transform rounded-full bg-background transition-transform',
+							settings.showToolEvents ? 'translate-x-6' : 'translate-x-1'
+						)}
+					></span>
+				</button>
+			</div>
+
 			<!-- Show Message Info -->
 			<div class="flex items-center justify-between">
 				<div>

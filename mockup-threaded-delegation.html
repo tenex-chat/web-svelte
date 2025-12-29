@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Threaded Delegation Mockup</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a1a;
+      color: #e5e5e5;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h2 {
+      color: #888;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 30px 0 15px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #333;
+    }
+    .message {
+      display: flex;
+      gap: 12px;
+      padding: 8px 16px;
+    }
+    .message:hover {
+      background: rgba(255,255,255,0.03);
+    }
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+    .avatar.pablo { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .avatar.expert { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+    .avatar.claude { background: linear-gradient(135deg, #10b981, #059669); }
+    .avatar-placeholder {
+      width: 36px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .avatar-placeholder::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: #333;
+    }
+    .content {
+      flex: 1;
+      min-width: 0;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .name.pablo { color: #fbbf24; }
+    .name.expert { color: #60a5fa; }
+    .name.claude { color: #34d399; }
+    .time {
+      font-size: 12px;
+      color: #666;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #365314;
+      color: #a3e635;
+    }
+    .text {
+      font-size: 14px;
+      color: #999;
+      line-height: 1.5;
+    }
+    .text.reply {
+      color: #e5e5e5;
+    }
+    .delegation {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #888;
+      padding: 4px 0;
+    }
+    .delegation svg {
+      width: 16px;
+      height: 16px;
+    }
+    .delegation code {
+      background: #2a2a2a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .collapse-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #666;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 0;
+    }
+    .collapse-btn:hover {
+      color: #999;
+    }
+    .collapse-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+    .todo-list {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 8px 0;
+    }
+    .todo-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .todo-header svg {
+      width: 14px;
+      height: 14px;
+      color: #3b82f6;
+    }
+    .todo-count {
+      margin-left: auto;
+      font-size: 11px;
+      color: #666;
+    }
+    .todo-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      padding: 4px 0;
+    }
+    .todo-item.done {
+      color: #666;
+      text-decoration: line-through;
+    }
+    .todo-item svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .todo-item svg.pending { color: #666; }
+    .todo-item svg.done { color: #22c55e; }
+    .todo-item svg.progress { color: #3b82f6; }
+
+    /* THREADING: Nested replies */
+    .thread-replies {
+      margin-left: 48px; /* avatar width + gap */
+      border-left: 2px solid #333;
+      padding-left: 16px;
+      margin-top: 8px;
+    }
+    .thread-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      margin-left: 48px;
+    }
+    .thread-toggle button {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .thread-toggle button:hover {
+      background: rgba(255,255,255,0.05);
+      color: #999;
+    }
+    .thread-toggle .avatars {
+      display: flex;
+      margin-left: -4px;
+    }
+    .thread-toggle .mini-avatar {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid #1a1a1a;
+      margin-left: -6px;
+    }
+
+    .section-label {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+      font-size: 13px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Current Behavior (Broken)</h2>
+<p style="color: #888; font-size: 13px; margin-bottom: 20px;">
+  Messages from delegated agent (claude-code) appear in the flat stream as if they're from Expert Creator's conversation.
+</p>
+
+<div class="message">
+  <div class="avatar pablo"></div>
+  <div class="content">
+    <div class="header">
+      <span class="name pablo">Pablo Testing Pubkey</span>
+      <span class="time">06:06 PM</span>
+      <span class="badge">master</span>
+    </div>
+    <div class="text">create an agent expert in nostr's NIP-60 and NIP-61...</div>
+  </div>
+</div>
+
+<div class="message">
+  <div class="avatar expert"></div>
+  <div class="content">
+    <div class="header">
+      <span class="name expert">Expert Creator</span>
+      <span class="time">06:06 PM</span>
+    </div>
+    <div class="text">Adding todo: "Define Agent Specification"</div>
+    <div class="todo-list">
+      <div class="todo-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Todo List
+        <span class="todo-count">2/10 done</span>
+      </div>
+      <div class="todo-item done"><svg class="done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> define-agent-specification</div>
+      <div class="todo-item done"><svg class="done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> acquire-nip-60-documentation</div>
+      <div class="todo-item"><svg class="pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg> Build Code Map for Nostr Libraries</div>
+    </div>
+  </div>
+</div>
+
+<div class="message">
+  <div class="avatar-placeholder"></div>
+  <div class="content">
+    <button class="collapse-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+      43 messages
+    </button>
+  </div>
+</div>
+
+<!-- This is WRONG - claude-code messages showing in flat stream -->
+<div class="message" style="background: rgba(255,0,0,0.1); border-left: 3px solid #ef4444;">
+  <div class="avatar-placeholder"></div>
+  <div class="content">
+    <div class="text" style="color: #ef4444;">
+      <strong>PROBLEM:</strong> These are claude-code's responses to delegation, but they appear here in the flat stream as if they're from Expert Creator!
+    </div>
+  </div>
+</div>
+
+<div class="message">
+  <div class="avatar-placeholder"></div>
+  <div class="content">
+    <div class="delegation">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Delegating to <code>claude-code</code>
+    </div>
+  </div>
+</div>
+
+<div class="message">
+  <div class="avatar-placeholder"></div>
+  <div class="content">
+    <div class="text">Please provide an overview and code examples for working with Nostr events...</div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+
+<h2>Expected Behavior (Correct)</h2>
+<p style="color: #888; font-size: 13px; margin-bottom: 20px;">
+  <strong>Key changes:</strong><br>
+  1. No "Adding todo" messages shown - just the aggregated todo list<br>
+  2. Delegated agent's responses (todo + messages) are nested under the delegation
+</p>
+
+<div class="message">
+  <div class="avatar pablo"></div>
+  <div class="content">
+    <div class="header">
+      <span class="name pablo">Pablo Testing Pubkey</span>
+      <span class="time">06:06 PM</span>
+      <span class="badge">master</span>
+    </div>
+    <div class="text reply">create an agent expert in nostr's NIP-60 and NIP-61...</div>
+  </div>
+</div>
+
+<!-- Expert Creator's first message - NO "Adding todo" text, just avatar+name -->
+<div class="message">
+  <div class="avatar expert"></div>
+  <div class="content">
+    <div class="header">
+      <span class="name expert">Expert Creator</span>
+      <span class="time">06:06 PM</span>
+    </div>
+    <!-- Aggregated todo list (NO individual "Adding todo" message) -->
+    <div class="todo-list">
+      <div class="todo-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Todo List
+        <span class="todo-count">8/10 done</span>
+      </div>
+      <div class="todo-item done"><svg class="done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> define-agent-specification</div>
+      <div class="todo-item done"><svg class="done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> acquire-nip-60-documentation</div>
+      <div class="todo-item"><svg class="progress" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Build Code Map for Nostr Libraries</div>
+    </div>
+  </div>
+</div>
+
+<!-- Collapse button for Expert Creator's middle messages -->
+<div class="message">
+  <div class="avatar-placeholder"></div>
+  <div class="content">
+    <button class="collapse-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+      12 messages
+    </button>
+  </div>
+</div>
+
+<!-- Expert Creator's delegation message (second-to-last visible) -->
+<div class="message">
+  <div class="avatar-placeholder"></div>
+  <div class="content">
+    <div class="delegation">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Delegating to <code>claude-code</code>
+    </div>
+    <div class="text" style="font-size: 13px; margin-top: 4px;">Please provide an overview and code examples for working with Nostr events...</div>
+
+    <!-- NESTED: claude-code's entire response block -->
+    <div class="thread-replies" style="background: rgba(16, 185, 129, 0.05); border-radius: 8px; padding: 12px; margin-top: 12px; border: 1px solid rgba(16, 185, 129, 0.2);">
+
+      <!-- claude-code's first message (with avatar) -->
+      <div class="message" style="padding: 4px 0;">
+        <div class="avatar claude"></div>
+        <div class="content">
+          <div class="header">
+            <span class="name claude">claude-code</span>
+            <span class="time">06:07 PM</span>
+          </div>
+          <!-- claude-code's aggregated todo list -->
+          <div class="todo-list" style="margin-top: 8px;">
+            <div class="todo-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              Todo List
+              <span class="todo-count">2/3 done</span>
+            </div>
+            <div class="todo-item done"><svg class="done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> Analyze library structure</div>
+            <div class="todo-item done"><svg class="done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> Generate code examples</div>
+            <div class="todo-item"><svg class="progress" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Write documentation</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- claude-code's collapse button -->
+      <div class="message" style="padding: 4px 0;">
+        <div class="avatar-placeholder"></div>
+        <div class="content">
+          <button class="collapse-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+            28 messages
+          </button>
+        </div>
+      </div>
+
+      <!-- claude-code's last 2 messages (always visible) -->
+      <div class="message" style="padding: 4px 0;">
+        <div class="avatar-placeholder"></div>
+        <div class="content">
+          <div class="text reply">Here's the complete code example for handling NIP-60 wallet events...</div>
+        </div>
+      </div>
+
+      <div class="message" style="padding: 4px 0;">
+        <div class="avatar-placeholder"></div>
+        <div class="content">
+          <div class="text reply">The implementation is complete. The examples cover event creation, signing, and publishing.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Expert Creator's last message (continues after delegation response) -->
+<div class="message">
+  <div class="avatar-placeholder"></div>
+  <div class="content">
+    <div class="text">All tasks completed. The agent specification is ready.</div>
+  </div>
+</div>
+
+<div class="section-label">
+  <strong>Key points:</strong><br>
+  1. No "Adding todo" messages - just aggregated todo lists<br>
+  2. claude-code's response (todo + collapse + last 2) is nested inside the delegation message
+</div>
+
+</body>
+</html>

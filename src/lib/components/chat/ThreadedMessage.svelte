@@ -7,7 +7,7 @@
 	import { User } from '$lib/ndk/ui/user';
 	import Message from './Message.svelte';
 	import ThreadedMessage from './ThreadedMessage.svelte';
-	import AgentMessageGroup from './AgentMessageGroup.svelte';
+	import AgentMessageBlock from './AgentMessageBlock.svelte';
 	import {
 		type Message as MessageType,
 		type DisplayItem,
@@ -83,6 +83,9 @@
 	// Get the most recent reply event
 	const mostRecentReply = $derived(replies.length > 0 ? replies[replies.length - 1].event : null);
 
+	// Root event ID for nested reply logic
+	const rootEventId = $derived(rootEvent?.id || '');
+
 	// LOCAL COMPONENT STATE - each ThreadedMessage manages its own expansion
 	let isExpanded = $state(false);
 
@@ -109,10 +112,13 @@
 		<!-- Render direct replies recursively -->
 		{#each displayItems as item, index (getDisplayItemKey(item, index))}
 			{#if item.type === 'agent_group'}
-				<AgentMessageGroup
+				<AgentMessageBlock
 					messages={item.messages}
+					{repliesByParent}
+					{rootEventId}
 					isConsecutive={item.isConsecutive}
 					hasNextConsecutive={item.hasNextConsecutive}
+					isLastInParent={index === displayItems.length - 1}
 					{onReply}
 					{onQuote}
 					{onTimeClick}
@@ -197,10 +203,13 @@
 				<div class="ml-12 mt-2">
 					{#each displayItems as item, index (getDisplayItemKey(item, index))}
 						{#if item.type === 'agent_group'}
-							<AgentMessageGroup
+							<AgentMessageBlock
 								messages={item.messages}
+								{repliesByParent}
+								{rootEventId}
 								isConsecutive={item.isConsecutive}
 								hasNextConsecutive={item.hasNextConsecutive}
+								isLastInParent={index === displayItems.length - 1}
 								{onReply}
 								{onQuote}
 								{onTimeClick}

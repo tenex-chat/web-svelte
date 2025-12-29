@@ -23,24 +23,6 @@
 
 	let { project = $bindable(), projectId, rootEvent = $bindable(null), threadId, onlineAgents = [], onThreadCreated, viewMode = $bindable<ChatViewMode>('threaded'), hideHeader = false, messages = $bindable([]) }: Props = $props();
 
-	// Fetch project if projectId provided but project not available
-	$effect(() => {
-		if (projectId && !project) {
-			// This is probably not needed -- if it is we're masking a problem
-			alert('FIXME: this is a bug')
-			// ndk
-			// 	.fetchEvent({
-			// 		kinds: [31933],
-			// 		'#d': [projectId]
-			// 	})
-			// 	.then((event) => {
-			// 		if (event) {
-			// 			project = new NDKProject(ndk, event.rawEvent());
-			// 		}
-			// 	});
-		}
-	});
-
 	// Fetch thread if threadId provided but rootEvent not available
 	$effect(() => {
 		if (threadId && !rootEvent) {

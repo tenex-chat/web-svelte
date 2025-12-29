@@ -150,7 +150,7 @@
 <div class="relative flex-1">
 	<div
 		bind:this={scrollContainer}
-		class="absolute inset-0 overflow-y-auto"
+		class="absolute inset-0 overflow-y-auto pb-48"
 	>
 		{#if messages.length === 0}
 			<div class="flex items-center justify-center h-full text-muted-foreground text-sm">
