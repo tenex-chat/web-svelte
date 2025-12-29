@@ -118,7 +118,15 @@ export function scrollManager(
 
 	// Handle item count changes (new messages)
 	function handleItemCountChange(newCount: number) {
-		if (previousItemCount > 0 && newCount > previousItemCount) {
+		// Initial load: scroll to bottom when first messages arrive
+		if (previousItemCount === 0 && newCount > 0) {
+			requestAnimationFrame(() => scrollToBottom(false));
+			previousItemCount = newCount;
+			return;
+		}
+
+		// Subsequent updates: only scroll if user is at bottom
+		if (newCount > previousItemCount) {
 			const newItemsCount = newCount - previousItemCount;
 
 			// Only auto-scroll if user is at bottom AND not actively scrolling
@@ -132,11 +140,6 @@ export function scrollManager(
 		}
 
 		previousItemCount = newCount;
-	}
-
-	// Initial scroll to bottom
-	if (options.itemCount && options.itemCount > 0) {
-		scrollToBottom(false);
 	}
 
 	// Attach scroll listener

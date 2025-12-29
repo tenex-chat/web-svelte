@@ -3,7 +3,7 @@
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import Message from './Message.svelte';
 	import SystemMessage from './SystemMessage.svelte';
-	import AgentMessageGroup from './AgentMessageGroup.svelte';
+	import AgentMessageBlock from './AgentMessageBlock.svelte';
 	import { ConversationState } from '$lib/stores/conversation-state.svelte';
 	import { type Message as MessageType, createSimplifiedDisplayModel, type DisplayItem } from '$lib/utils/messageUtils';
 	import { scrollManager } from '$lib/actions/scrollManager';
@@ -93,11 +93,15 @@
 	// Use reactive messages from ConversationState
 	const flatMessages = $derived(conversationState?.displayMessages || []);
 	const eventsWithMetadata = $derived(conversationState?.displayEventsWithMetadata || []);
+	const repliesByParent = $derived(conversationState?.repliesByParent || new Map<string, MessageType[]>());
 
 	// Create unified display model using $derived - ALWAYS use simplified model
 	const displayList = $derived<DisplayItem[]>(
 		createSimplifiedDisplayModel(flatMessages, eventsWithMetadata)
 	);
+
+	// Root event ID for determining when to nest replies
+	const rootEventId = $derived(rootEvent?.id || '');
 
 	// Sync to bindable messages prop
 	$effect(() => {
@@ -116,11 +120,13 @@
 	}
 
 	// Initialize scroll manager when container is available
+	// IMPORTANT: Do NOT reference messages.length here - it would create a dependency
+	// that re-runs this effect on every message change, recreating the scroll manager
+	// and triggering unwanted scroll-to-bottom
 	$effect(() => {
 		if (scrollContainer) {
 			scrollManagerInstance = scrollManager(scrollContainer, {
 				onScrollChange: handleScrollChange,
-				itemCount: messages.length,
 				scrollThreshold: 150,
 				scrollDebounceMs: 150
 			});
@@ -157,20 +163,25 @@
 					{#if item.type === 'metadata'}
 						<SystemMessage event={item.event} />
 					{:else if item.type === 'agent_group'}
-						<AgentMessageGroup
+						<AgentMessageBlock
 							messages={item.messages}
+							{repliesByParent}
+							{rootEventId}
 							isConsecutive={item.isConsecutive}
 							hasNextConsecutive={item.hasNextConsecutive}
+							isLastInParent={index === displayList.length - 1}
 							{onReply}
 							{onQuote}
 							{onTimeClick}
 						/>
 					{:else if item.type === 'visible'}
-						<Message
-							message={item.message}
-							isLastMessage={index === displayList.length - 1}
+						<AgentMessageBlock
+							messages={[item.message]}
+							{repliesByParent}
+							{rootEventId}
 							isConsecutive={item.isConsecutive}
 							hasNextConsecutive={item.hasNextConsecutive}
+							isLastInParent={index === displayList.length - 1}
 							{onReply}
 							{onQuote}
 							{onTimeClick}
@@ -183,7 +194,7 @@
 
 	<!-- Scroll to bottom button -->
 	{#if showScrollButton}
-		<div class="absolute bottom-4 right-4 z-10">
+		<div class="absolute bottom-32 right-4 z-[10000]">
 			<button
 				type="button"
 				class="relative rounded-full shadow-lg h-10 w-10 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors flex items-center justify-center"
