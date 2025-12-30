@@ -16,27 +16,21 @@
 	// Determine event type and rendering details based on actual kind
 	const eventDetails = $derived.by(() => {
 		switch (event.kind) {
-			case 1: // kind 1 - text note
+			case 1: { // kind 1 - message (note or reply based on e-tags)
+				const hasETags = event.tags.some(t => t[0] === 'e');
 				return {
 					icon: MessageSquare,
-					label: 'Note',
+					label: hasETags ? 'Reply' : 'Note',
 					title:
 						event.content.length > 100 ? event.content.slice(0, 100) + '...' : event.content
 				};
+			}
 
 			case 30023: // kind 30023 - long-form content
 				return {
 					icon: FileText,
 					label: 'Article',
 					title: event.tagValue('title') || event.tagValue('name') || 'Untitled'
-				};
-
-			case 1111: // kind 1111 - generic reply
-				return {
-					icon: MessageSquare,
-					label: 'Reply',
-					title:
-						event.content.length > 100 ? event.content.slice(0, 100) + '...' : event.content
 				};
 
 			case 29000: // kind 29000 - call event

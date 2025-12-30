@@ -17,11 +17,11 @@
 	"registration": {
 		"autoRegister": true,
 		"priority": 10,
-		"kinds": [1, 1111]
+		"kinds": [1]
 	},
 	"apiDoc": {
 		"name": "EventCardInline",
-		"description": "A compact, horizontal event card designed for inline embedding within content. Shows avatar, author name, timestamp, and truncated content on a single line. Automatically registered with the content renderer for kinds 1 and 1111 with high priority (10). Features a subtle muted background with hover effects. Perfect for displaying quoted notes or replies within other content.",
+		"description": "A compact, horizontal event card designed for inline embedding within content. Shows avatar, author name, timestamp, and truncated content on a single line. Automatically registered with the content renderer for kind 1 with high priority (10). Features a subtle muted background with hover effects. Perfect for displaying quoted notes or replies within other content.",
 		"importPath": "import { EventCardInline } from '$lib/registry/components/event-card-inline'",
 		"props": [
 			{

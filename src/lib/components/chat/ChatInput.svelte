@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKThread, type NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
@@ -325,10 +325,10 @@
 			messageInput = ''; // Clear immediately for better UX
 
 			if (!rootEvent) {
-				// CREATE NEW THREAD (kind:11)
-				const thread = new NDKThread(ndk);
+				// CREATE NEW THREAD (kind:1)
+				const thread = new NDKEvent(ndk);
+				thread.kind = 1;
 				thread.content = content;
-				thread.title = content.slice(0, 50);
 
 				// Add project reference
 				if (project) {
@@ -385,12 +385,11 @@
 					onThreadCreated(thread);
 				}
 			} else {
-				// SEND REPLY (kind:1111)
-				const reply = (replyToEvent||rootEvent).reply();
+				// SEND REPLY (kind:1) - always e-tag the root
+				const reply = new NDKEvent(ndk);
+				reply.kind = 1;
 				reply.content = content;
-
-				// Remove NDK's auto p-tags
-				reply.tags = reply.tags.filter((tag) => tag[0] !== 'p');
+				reply.tags = [['e', rootEvent.id]]; // Always e-tag the root (OP)
 
 				// Add project reference
 				if (project) {
@@ -400,14 +399,8 @@
 					}
 				}
 
-				// If replying to a specific message, add e-tag for that event
+				// If replying to a specific message, add p-tag for that author
 				if (replyToEvent) {
-					// Check if e-tag doesn't already exist
-					const hasETag = reply.tags.some((tag) => tag[0] === 'e' && tag[1] === replyToEvent.id);
-					// if (!hasETag) {
-					// 	reply.tags.push(['e', replyToEvent.id, '', 'reply']);
-					// }
-					// Also add p-tag for the author of the message being replied to
 					const hasReplyAuthorPTag = reply.tags.some(
 						(tag) => tag[0] === 'p' && tag[1] === replyToEvent.pubkey
 					);

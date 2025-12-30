@@ -201,8 +201,8 @@ export class ContentRenderer {
 	 * ```ts
 	 * import NoteEmbedded from './note-embedded.svelte';
 	 *
-	 * defaultContentRenderer.addKind([1, 1111], NoteEmbedded, 5);
-	 * // Registers kinds 1 and 1111 without wrapping
+	 * defaultContentRenderer.addKind([1], NoteEmbedded, 5);
+	 * // Registers kind 1 without wrapping
 	 * ```
 	 */
 	addKind(

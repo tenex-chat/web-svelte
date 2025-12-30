@@ -30,7 +30,7 @@
 	const isTyping = $derived(message.event.kind === NDKKind.TenexAgentTypingStart);
 	const isReasoningEvent = $derived(message.event.hasTag('reasoning'));
 	const isToolCallEvent = $derived(
-		message.event.kind === NDKKind.GenericReply && message.event.hasTag('tool')
+		message.event.kind === 1 && message.event.hasTag('tool')
 	);
 	const hasSuggestions = $derived(message.event.tags?.some((tag) => tag[0] === 'suggestion'));
 	const uiSettings = $derived(uiSettingsStore.settings);

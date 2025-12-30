@@ -21,7 +21,6 @@
 	const EVENT_KIND_NAMES: Record<number, string> = {
 		[NDKKind.Text]: 'Note',
 		[NDKKind.AgentLesson]: 'Lesson',
-		[NDKKind.GenericReply]: 'Generic Reply',
 		[NDKKind.Article]: 'Long-form Article'
 	};
 

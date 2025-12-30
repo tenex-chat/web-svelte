@@ -49,28 +49,15 @@ export class ConversationState {
 		slowComputationCount: 0
 	};
 
-	// Reactive display messages for UI
+	// Reactive display messages for UI - flat list, all messages included
 	displayMessages = $derived.by(() => {
 		const startTime = performance.now();
 		this.metrics.displayMessagesComputations++;
 		const allMessages: Message[] = [];
-		const rootEventId = this.rootEvent?.id;
 
-		// Add messages from the map, filtering out nested replies
-		// A message is a nested reply if it has an 'e' tag pointing to a non-root event
+		// All messages display flat - no nested reply filtering needed
 		for (const message of this.messages.values()) {
-			// Check if this message replies to a non-root event
-			const eTags = message.event.getMatchingTags('e');
-			const isNestedReply = eTags.some(tag => {
-				const parentId = tag[1];
-				// If it points to something other than root AND that something exists in our messages, it's nested
-				return parentId && parentId !== rootEventId && this.messages.has(parentId);
-			});
-
-			// Only include in flat list if NOT a nested reply
-			if (!isNestedReply) {
-				allMessages.push(message);
-			}
+			allMessages.push(message);
 		}
 
 		// Sort by timestamp (with tag priority for same timestamp)
@@ -156,31 +143,6 @@ export class ConversationState {
 		return events;
 	});
 
-	// Map of replies indexed by parent event ID for O(1) lookups
-	// Uses ALL messages (not just displayMessages) so nested replies can be found
-	repliesByParent = $derived.by(() => {
-		const map = new Map<string, Message[]>();
-
-		for (const message of this.messages.values()) {
-			const eTags = message.event.getMatchingTags('e');
-			for (const tag of eTags) {
-				const parentId = tag[1];
-				if (parentId) {
-					const replies = map.get(parentId) || [];
-					replies.push(message);
-					map.set(parentId, replies);
-				}
-			}
-		}
-
-		// Sort replies by timestamp within each parent
-		for (const [parentId, replies] of map.entries()) {
-			replies.sort((a, b) => (a.event.created_at ?? 0) - (b.event.created_at ?? 0));
-		}
-
-		return map;
-	});
-
 	constructor(
 		private ndk: NDKSvelte,
 		rootEvent: NDKEvent | null,
@@ -238,8 +200,7 @@ export class ConversationState {
 				closeOnEose: false,
 				onEvents: (events: NDKEvent[]) => {
 					for (const e of events) {
-						if (e.kind === NDKKind.GenericReply)
-							onEvent(e);
+						onEvent(e);
 					}
 				},
 				onEvent,
@@ -302,15 +263,16 @@ export class ConversationState {
 
 		if (this.directRepliesOnly) {
 			filters.push({
-				kinds: [NDKKind.GenericReply],
+				kinds: [1],
 				'#e': [this.rootEvent.id],
 				limit: 100
 			});
 		} else {
-			filters.push(
-				{ kinds: [11, NDKKind.GenericReply, NDKKind.TenexConversationMetadata as number], ...this.rootEvent.filter() },
-				{ kinds: [11, NDKKind.GenericReply, NDKKind.TenexConversationMetadata as number], ...this.rootEvent.nip22Filter() }
-			);
+			// Subscribe to kind:1 (all messages) and metadata
+			filters.push({
+				kinds: [1, NDKKind.TenexConversationMetadata as number],
+				'#e': [this.rootEvent.id]
+			});
 		}
 
 		return filters;
@@ -331,41 +293,21 @@ export class ConversationState {
 			return;
 		}
 
-		const pubkey = event.pubkey;
-		this.log(`Processing event kind ${event.kind} from ${pubkey}`, { eventId: event.id });
+		this.log(`Processing event kind ${event.kind}`, { eventId: event.id });
 
 		switch (event.kind) {
-			case NDKKind.GenericReply: // 1111 - Final message
-				this.handleFinalMessage(event, pubkey);
-				break;
-
 			case NDKKind.TenexConversationMetadata: // 513 - Conversation metadata
 				this.handleMetadataEvent(event);
 				break;
 
-			case 11: // Thread/conversation root
-				this.handleRegularMessage(event);
-				break;
-
+			case 1: // All messages are kind:1
 			default:
-				this.handleRegularMessage(event);
-				this.log(`Handling event kind ${event.kind} as regular message`);
+				this.handleMessage(event);
 				break;
 		}
 	}
 
-	/**
-	 * Handle final message (kind 1111)
-	 */
-	private handleFinalMessage(event: NDKEvent, _pubkey: string): void {
-		const message: Message = { id: event.id, event };
-		this.log('Added final message', { eventId: event.id });
-
-		// Add to messages map
-		this.messages.set(event.id, message);
-	}
-
-	private handleRegularMessage(event: NDKEvent): void {
+	private handleMessage(event: NDKEvent): void {
 		this.messages.set(event.id, { id: event.id, event });
 	}
 
@@ -404,11 +346,7 @@ export class ConversationState {
 		if (!this.rootEvent) return true;
 		if (event.id === this.rootEvent.id) return true;
 
-		const ETags = event.getMatchingTags('E');
-		if (ETags.some((tag) => tag[1] === this.rootEvent!.id)) {
-			return true;
-		}
-
+		// Check if event e-tags the root
 		const eTags = event.getMatchingTags('e');
 		return eTags.some((tag) => tag[1] === this.rootEvent!.id);
 	}

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { NDKEvent, NDKKind, NDKProject } from '@nostr-dev-kit/ndk';
+	import { NDKEvent, NDKProject } from '@nostr-dev-kit/ndk';
 	import { cn } from '$lib/utils/cn';
     import ndk from '$lib/ndk.svelte';
 
@@ -26,24 +26,17 @@
 		}
 
 		try {
-			// Create a kind:1111 (GenericReply) event with the selected suggestion as content
+			// Create a kind:1 reply with the selected suggestion as content
 			const replyEvent = new NDKEvent(ndk);
-			replyEvent.kind = NDKKind.GenericReply;
+			replyEvent.kind = 1;
 			replyEvent.content = suggestion;
 
-			// Add necessary tags for the reply
-			replyEvent.tags = [
-				["e", event.id], // Reply to the event with suggestions
-			];
+			// Find the root event ID - it's either in the e-tag of the parent, or the parent is the root
+			const rootId = event.tags.find(t => t[0] === 'e')?.[1] || event.id;
+			replyEvent.tags = [["e", rootId]]; // Always e-tag the root
 
 			// Add p-tag for the author of the original event
 			replyEvent.tags.push(["p", event.pubkey]);
-
-			// Add the conversation's E tag (uppercase) for root reference
-			const rootETag = event.tags.find((tag) => tag[0] === "E");
-			if (rootETag) {
-				replyEvent.tags.push(rootETag);
-			}
 
 			// If this is in a project context, add the project tag
 			const projectTag = event.tags.find(

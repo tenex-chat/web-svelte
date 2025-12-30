@@ -81,8 +81,8 @@
 					Format: {#if kind === NDKKind.YourKind}
 				-->
 
-				{#if kind === 1111}
-					<!-- Generic Reply (kind 1111) - Chat message -->
+				{#if kind === 1}
+					<!-- kind:1 - Chat message -->
 					<Message message={{ id: event.id, event }} />
 				{:else if kind === 4129}
 					<!-- Agent Lesson (kind 4129) - Learning events -->

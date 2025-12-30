@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { NDKKind } from '$lib/kinds';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { MessageSquare } from 'lucide-svelte';
 	import VirtualList from '@humanspeak/svelte-virtual-list';
@@ -20,25 +19,11 @@
 	// Get current user from NDK sessions
 	const currentUser = $derived(ndk.$sessions?.currentUser);
 
-	// Subscribe to all threads (kind:11) for this project
-	const threadsSubscription = ndk.$subscribe(() => ({
+	// Subscribe to all kind:1 events for this project
+	const allEventsSubscription = ndk.$subscribe(() => ({
 		filters: [
 			{
-				kinds: [NDKKind.Thread],
-				'#a': [project.tagId()],
-				limit: 50
-			}
-		],
-		closeOnEose: false
-	}));
-
-	const threads = $derived(threadsSubscription.events);
-
-	// Subscribe to all replies (kind:1111) for this project
-	const repliesSubscription = ndk.$subscribe(() => ({
-		filters: [
-			{
-				kinds: [NDKKind.GenericReply],
+				kinds: [1],
 				'#a': [project.tagId()],
 				limit: 500
 			}
@@ -46,7 +31,15 @@
 		closeOnEose: false
 	}));
 
-	const replies = $derived(repliesSubscription.events);
+	// Threads are kind:1 with NO e-tags (root events)
+	const threads = $derived(
+		allEventsSubscription.events.filter(e => !e.tags.some(t => t[0] === 'e'))
+	);
+
+	// Replies are kind:1 WITH e-tags (reply events)
+	const replies = $derived(
+		allEventsSubscription.events.filter(e => e.tags.some(t => t[0] === 'e'))
+	);
 
 	// Build thread metadata (reply count, participants, latest reply, time tracking for filters)
 	// Using regular Map instead of SvelteMap - we create a new map each time anyway,
@@ -79,8 +72,8 @@
 
 		// Process replies - single pass for all metadata including time tracking
 		for (const reply of replies) {
-			// Find which thread this reply belongs to
-			const eTags = reply.tags.filter((tag) => tag[0] === 'E');
+			// Find which thread this reply belongs to via e-tag
+			const eTags = reply.tags.filter((tag) => tag[0] === 'e');
 			for (const eTag of eTags) {
 				const threadId = eTag[1];
 				const meta = metadata.get(threadId);

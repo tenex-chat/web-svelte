@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKThread, type NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { ConversationState } from '$lib/stores/conversation-state.svelte';
@@ -163,9 +163,9 @@
 		_autoTTS: boolean, // always true for voice mode
 		selectedAgent: string | null
 	): Promise<NDKEvent | null> {
-		const thread = new NDKThread(ndk);
+		const thread = new NDKEvent(ndk);
+		thread.kind = 1;
 		thread.content = content;
-		thread.title = content.slice(0, 50);
 
 		// Add project reference
 		const projectRef = project.tagReference();
@@ -211,11 +211,11 @@
 			return createThread(content, _mentions, _images, _autoTTS, selectedAgent);
 		}
 
-		const reply = localRootEvent.reply();
+		// Create kind:1 reply - always e-tag the root
+		const reply = new NDKEvent(ndk);
+		reply.kind = 1;
 		reply.content = content;
-
-		// Remove auto p-tags
-		reply.tags = reply.tags.filter((tag) => tag[0] !== 'p');
+		reply.tags = [['e', localRootEvent.id]]; // Always e-tag the root
 
 		// Add project reference
 		const tagId = project.tagId();

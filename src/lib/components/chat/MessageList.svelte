@@ -93,15 +93,11 @@
 	// Use reactive messages from ConversationState
 	const flatMessages = $derived(conversationState?.displayMessages || []);
 	const eventsWithMetadata = $derived(conversationState?.displayEventsWithMetadata || []);
-	const repliesByParent = $derived(conversationState?.repliesByParent || new Map<string, MessageType[]>());
 
 	// Create unified display model using $derived - ALWAYS use simplified model
 	const displayList = $derived<DisplayItem[]>(
 		createSimplifiedDisplayModel(flatMessages, eventsWithMetadata)
 	);
-
-	// Root event ID for determining when to nest replies
-	const rootEventId = $derived(rootEvent?.id || '');
 
 	// Sync to bindable messages prop
 	$effect(() => {
@@ -165,8 +161,6 @@
 					{:else if item.type === 'agent_group'}
 						<AgentMessageBlock
 							messages={item.messages}
-							{repliesByParent}
-							{rootEventId}
 							isConsecutive={item.isConsecutive}
 							hasNextConsecutive={item.hasNextConsecutive}
 							isLastInParent={index === displayList.length - 1}
@@ -177,8 +171,6 @@
 					{:else if item.type === 'visible'}
 						<AgentMessageBlock
 							messages={[item.message]}
-							{repliesByParent}
-							{rootEventId}
 							isConsecutive={item.isConsecutive}
 							hasNextConsecutive={item.hasNextConsecutive}
 							isLastInParent={index === displayList.length - 1}

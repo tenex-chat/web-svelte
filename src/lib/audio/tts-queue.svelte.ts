@@ -90,7 +90,7 @@ export class TTSQueue {
 				const isAgentMessage = msg.event.pubkey !== this.options.userPubkey;
 				const isNotPlayed = !this.playedMessageIds.has(msg.id);
 				const isNotReasoning = !msg.event.tags.some((tag) => tag[0] === 'reasoning');
-				const isCorrectKind = msg.event.kind === 1111;
+				const isCorrectKind = msg.event.kind === 1;
 
 				if (!isAgentMessage)
 					console.log(`[${now.toFixed(2)}ms] [TTSQueue] Skipping user message:`, msg.id);

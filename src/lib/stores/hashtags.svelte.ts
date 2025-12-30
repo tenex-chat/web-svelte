@@ -1,9 +1,9 @@
 import type { NDKSvelte } from '@nostr-dev-kit/svelte';
-import { NDKKind, type NDKFilter, type NDKEvent } from '@nostr-dev-kit/ndk';
+import type { NDKFilter, NDKEvent } from '@nostr-dev-kit/ndk';
 import type { NDKProject } from '$lib/events/NDKProject';
 
 /**
- * Store for tracking hashtags observed in kind:11 and kind:513 events
+ * Store for tracking hashtags observed in kind:1 and kind:513 events
  * Provides a hot set of hashtags that have been seen in conversations
  */
 export class HashtagStore {
@@ -28,14 +28,14 @@ export class HashtagStore {
 	}
 
 	/**
-	 * Start subscribing to kind:11 and kind:513 events
+	 * Start subscribing to kind:1 and kind:513 events
 	 */
 	private startSubscription() {
 		if (!this.project || this.subscription) return;
 
 		const filters: NDKFilter[] = [
 			{
-				kinds: [NDKKind.Thread as number, 513], // kind:11 (Thread) and kind:513 (ConversationMetadata)
+				kinds: [1 as number, 513 as number], // kind:1 (messages) and kind:513 (ConversationMetadata)
 				'#a': [this.project.tagId()]
 			}
 		];

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { NDKKind } from '$lib/kinds';
 	import type { Message } from '$lib/utils/messageUtils';
 	import { formatThreadAsMarkdown, formatThreadAsJSON, formatThreadAsJSONL } from '$lib/utils/copyThread';
 	import { clickOutside } from '$lib/utils/clickOutside';
@@ -19,8 +18,8 @@
 			? {
 					filters: [
 						{
-							kinds: [NDKKind.GenericReply],
-							'#E': [rootEvent.id] // Get all events that reference this thread root
+							kinds: [1],
+							'#e': [rootEvent.id] // Get all events that reference this thread root
 						}
 					],
 					closeOnEose: false

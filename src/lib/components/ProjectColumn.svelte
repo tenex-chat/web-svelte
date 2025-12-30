@@ -228,21 +228,19 @@
 				<FeedTab
 					{project}
 					onEventClick={async (event) => {
-						if (event.kind === 1111) {
-							// Reply event - find and open the parent conversation
-							const eTags = event.tags.filter((tag) => tag[0] === 'e');
-							if (eTags.length > 0) {
-								const parentId = eTags[0][1];
-								if (parentId) {
-									// Fetch the parent event and open it
-									const parentEvent = await ndk.fetchEvent(parentId);
-									if (parentEvent) {
-										windowManager.openChat(project, parentEvent);
-									}
+						// Check if this is a reply (has e-tags) or a root (no e-tags)
+						const eTags = event.tags.filter((tag) => tag[0] === 'e');
+						if (eTags.length > 0) {
+							// Reply event - find and open the root conversation
+							const rootId = eTags[0][1];
+							if (rootId) {
+								const rootEvent = await ndk.fetchEvent(rootId);
+								if (rootEvent) {
+									windowManager.openChat(project, rootEvent);
 								}
 							}
 						} else {
-							// For other events (kind 1, kind 24133, etc), open directly
+							// Root event or other kinds - open directly
 							windowManager.openChat(project, event);
 						}
 					}}

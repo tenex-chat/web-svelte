@@ -2,7 +2,6 @@
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import Message from './Message.svelte';
 	import AgentTodoList from './AgentTodoList.svelte';
-	import AgentMessageBlock from './AgentMessageBlock.svelte';
 	import { type Message as MessageType } from '$lib/utils/messageUtils';
 	import { aggregateTodoState } from '$lib/utils/todoAggregator';
 	import { ChevronDown, ChevronRight } from 'lucide-svelte';
@@ -10,11 +9,8 @@
 
 	interface Props {
 		messages: MessageType[];
-		repliesByParent: Map<string, MessageType[]>;
-		rootEventId: string;
 		isConsecutive?: boolean;
 		hasNextConsecutive?: boolean;
-		isNested?: boolean;
 		isLastInParent?: boolean;
 		onReply?: (message: MessageType) => void;
 		onQuote?: (message: MessageType) => void;
@@ -23,11 +19,8 @@
 
 	let {
 		messages,
-		repliesByParent,
-		rootEventId,
 		isConsecutive = false,
 		hasNextConsecutive = false,
-		isNested = false,
 		isLastInParent = false,
 		onReply,
 		onQuote,
@@ -50,8 +43,7 @@
 	const groupKey = $derived(messages[0]?.id || 'unknown');
 	const isExpanded = $derived(expandedGroups.has(groupKey));
 	const firstMessage = $derived(messages[0]);
-	// For nested blocks, show only last 1 message; for root level, show last 2
-	const lastVisibleCount = $derived(isNested ? 1 : 2);
+	const lastVisibleCount = 2;
 	// Exclude firstMessage from lastMessages to prevent duplicates for small groups
 	const lastMessages = $derived(
 		messages.length > lastVisibleCount ? messages.slice(-lastVisibleCount) : messages.slice(1)
@@ -59,72 +51,20 @@
 	const middleMessages = $derived(messages.slice(1, -lastVisibleCount));
 	const collapsibleCount = $derived(middleMessages.length);
 	const todoState = $derived(aggregateTodoState(messages.map(m => m.event)));
-
-	// Get replies for a specific message (excluding root level replies)
-	function getRepliesFor(messageId: string): MessageType[] {
-		if (messageId === rootEventId) return []; // Root replies are siblings, not nested
-		return repliesByParent.get(messageId) || [];
-	}
-
-	// Group replies by author for nested rendering
-	function groupRepliesByAuthor(replies: MessageType[]): MessageType[][] {
-		if (replies.length === 0) return [];
-
-		const groups: MessageType[][] = [];
-		let currentGroup: MessageType[] = [];
-		let currentPubkey: string | null = null;
-
-		for (const reply of replies) {
-			const pubkey = reply.event.pubkey;
-			if (pubkey !== currentPubkey) {
-				if (currentGroup.length > 0) {
-					groups.push(currentGroup);
-				}
-				currentGroup = [reply];
-				currentPubkey = pubkey;
-			} else {
-				currentGroup.push(reply);
-			}
-		}
-
-		if (currentGroup.length > 0) {
-			groups.push(currentGroup);
-		}
-
-		return groups;
-	}
 </script>
 
 {#if messages.length > 0}
-	<div class={isNested ? 'nested-replies' : ''}>
+	<div>
 		<!-- 1. First message (establishes who's speaking) -->
 		<Message
 			message={firstMessage}
 			isLastMessage={false}
-			isConsecutive={isNested ? false : isConsecutive}
+			{isConsecutive}
 			hasNextConsecutive={true}
 			{onReply}
 			{onQuote}
 			{onTimeClick}
 		/>
-
-		<!-- Check for nested replies to first message -->
-		{#if getRepliesFor(firstMessage.id).length > 0}
-			{@const firstMessageReplies = getRepliesFor(firstMessage.id)}
-			{@const replyGroups = groupRepliesByAuthor(firstMessageReplies)}
-			{#each replyGroups as replyGroup, idx}
-				<AgentMessageBlock
-					messages={replyGroup}
-					{repliesByParent}
-					{rootEventId}
-					isNested={true}
-					isLastInParent={idx === replyGroups.length - 1}
-					{onReply}
-					{onQuote}
-					{onTimeClick}
-				/>
-			{/each}
-		{/if}
 
 		<!-- 2. Todo list (if any) -->
 		{#if todoState.hasTodos}
@@ -173,29 +113,11 @@
 						{onQuote}
 						{onTimeClick}
 					/>
-
-					<!-- Check for nested replies to this message -->
-					{#if getRepliesFor(msg.id).length > 0}
-						{@const msgReplies = getRepliesFor(msg.id)}
-						{@const replyGroups = groupRepliesByAuthor(msgReplies)}
-						{#each replyGroups as replyGroup, idx}
-							<AgentMessageBlock
-								messages={replyGroup}
-								{repliesByParent}
-								{rootEventId}
-								isNested={true}
-								isLastInParent={idx === replyGroups.length - 1}
-								{onReply}
-								{onQuote}
-								{onTimeClick}
-							/>
-						{/each}
-					{/if}
 				</div>
 			{/each}
 		{/if}
 
-		<!-- 5. Last message(s) always visible (1 for nested, 2 for root level) -->
+		<!-- 5. Last message(s) always visible -->
 		{#each lastMessages as msg, msgIdx (msg.id)}
 			{@const isLastInGroup = msgIdx === lastMessages.length - 1}
 			<Message
@@ -207,34 +129,6 @@
 				{onQuote}
 				{onTimeClick}
 			/>
-
-			<!-- Check for nested replies to this message -->
-			{#if getRepliesFor(msg.id).length > 0}
-				{@const msgReplies = getRepliesFor(msg.id)}
-				{@const replyGroups = groupRepliesByAuthor(msgReplies)}
-				{#each replyGroups as replyGroup, idx}
-					<AgentMessageBlock
-						messages={replyGroup}
-						{repliesByParent}
-						{rootEventId}
-						isNested={true}
-						isLastInParent={idx === replyGroups.length - 1 && isLastInGroup}
-						{onReply}
-						{onQuote}
-						{onTimeClick}
-					/>
-				{/each}
-			{/if}
 		{/each}
 	</div>
 {/if}
-
-<style>
-	.nested-replies {
-		background: hsl(var(--muted) / 0.3);
-		border: 1px solid hsl(var(--border) / 0.5);
-		border-radius: 8px;
-		padding: 8px 0;
-		margin: 8px 0 8px 48px;
-	}
-</style>

@@ -43,32 +43,10 @@
   let loading = $state(true);
 
   // Determine what this event is replying to
+  // With flat threading, all replies have a single e-tag pointing to the root
   const replyToTag = $derived.by(() => {
-    // First, check for explicit 'reply' marker (NIP-10)
-    const replyTag = event.tags.find(tag =>
-      tag[0] === 'e' && tag[3] === 'reply'
-    );
-
-    if (replyTag) {
-      return replyTag;
-    }
-
-    // Check for 'root' marker as fallback
-    const rootTag = event.tags.find(tag =>
-      tag[0] === 'e' && tag[3] === 'root'
-    );
-
-    if (rootTag) {
-      return rootTag;
-    }
-
-    // If there's only a single 'e' tag with no marker, it's likely a reply to that event
     const eTags = event.tags.filter(tag => tag[0] === 'e');
-    if (eTags.length === 1) {
-      return eTags[0];
-    }
-
-    return undefined;
+    return eTags.length > 0 ? eTags[0] : undefined;
   });
 
   // Fetch the event being replied to
