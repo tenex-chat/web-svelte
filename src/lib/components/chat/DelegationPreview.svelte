@@ -11,11 +11,9 @@
 
 	interface Props {
 		conversationId: string;
-		recipientName?: string;
-		prompt?: string;
 	}
 
-	let { conversationId, recipientName, prompt }: Props = $props();
+	let { conversationId }: Props = $props();
 
 	let events = $state<NDKEvent[]>([]);
 	let subscription: NDKSubscription | null = null;
@@ -224,16 +222,19 @@
 		{#if agentPubkey}
 			<User.Root {ndk} pubkey={agentPubkey}>
 				<User.Avatar class="w-6 h-6 rounded-full flex-shrink-0" />
+				<div class="delegation-title">
+					<div class="agent-name"><User.Name /></div>
+					{#if rootEvent?.content}
+						<div class="prompt-preview" title={rootEvent.content}>{rootEvent.content}</div>
+					{/if}
+				</div>
 			</User.Root>
 		{:else}
 			<div class="agent-avatar">?</div>
+			<div class="delegation-title">
+				<div class="agent-name">Agent</div>
+			</div>
 		{/if}
-		<div class="delegation-title">
-			<div class="agent-name">{recipientName || 'Agent'}</div>
-			{#if prompt}
-				<div class="prompt-preview" title={prompt}>{prompt}</div>
-			{/if}
-		</div>
 		<span class="delegation-status" class:working={status === 'working'}>
 			{status}
 		</span>

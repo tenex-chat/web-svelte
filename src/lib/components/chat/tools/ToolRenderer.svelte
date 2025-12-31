@@ -77,7 +77,7 @@
 {:else if toolName === 'codebase_search'}
 	<CodebaseSearchToolRenderer {args} />
 {:else if toolName === 'delegate'}
-	<DelegateToolRenderer {args} {event} />
+	<DelegateToolRenderer {event} />
 {:else if toolName === 'delegate_external'}
 	<DelegateExternalToolRenderer {args} />
 {:else if toolName}
