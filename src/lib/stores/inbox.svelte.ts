@@ -13,25 +13,41 @@ export const INBOX_EVENT_KINDS = [
 ];
 
 /**
- * Groups events by their E tag and deduplicates them
- * For events with the same E tag, only the most recent one is kept
+ * Groups events by their thread root and deduplicates them.
+ * Root events are identified by having NO lowercase "e" tags.
+ * For events in the same thread, only the most recent one is kept.
  */
-function deduplicateEventsByETag(events: NDKEvent[]): NDKEvent[] {
-	const eventsByETag = new Map<string | null, NDKEvent[]>();
+function deduplicateEventsByThread(events: NDKEvent[]): NDKEvent[] {
+	const eventsByThread = new Map<string, NDKEvent[]>();
 
 	events.forEach((event) => {
-		const eTag = event.tags.find((tag) => tag[0] === 'E')?.[1] || null;
-		const existing = eventsByETag.get(eTag) || [];
-		existing.push(event);
-		eventsByETag.set(eTag, existing);
+		// Check if this event has any lowercase "e" tags (making it a reply)
+		const eTag = event.tags.find((tag) => tag[0] === 'e')?.[1];
+
+		if (!eTag) {
+			// No "e" tag means this IS a root event - use its own ID as the thread key
+			const existing = eventsByThread.get(event.id) || [];
+			existing.push(event);
+			eventsByThread.set(event.id, existing);
+		} else {
+			// Has "e" tag - this is a reply, group by the referenced event ID
+			const existing = eventsByThread.get(eTag) || [];
+			existing.push(event);
+			eventsByThread.set(eTag, existing);
+		}
 	});
 
 	const deduplicatedEvents: NDKEvent[] = [];
 
-	eventsByETag.forEach((groupedEvents, eTag) => {
-		if (eTag === null) {
-			deduplicatedEvents.push(...groupedEvents);
+	eventsByThread.forEach((groupedEvents, threadId) => {
+		// Find root events in this group (events with no "e" tags)
+		const rootEvents = groupedEvents.filter((e) => !e.tags.some((t) => t[0] === 'e'));
+
+		if (rootEvents.length > 0) {
+			// If there are root events, include all of them
+			deduplicatedEvents.push(...rootEvents);
 		} else {
+			// No root event in group - include only the most recent reply
 			const mostRecent = groupedEvents.reduce((latest, current) => {
 				const latestTime = latest.created_at || 0;
 				const currentTime = current.created_at || 0;
@@ -113,9 +129,9 @@ class InboxStore {
 			// Add to map (automatically handles updates/duplicates)
 			this.eventMap.set(event.id, event);
 
-			// Convert map to array, deduplicate, and sort
+			// Convert map to array, deduplicate by thread, and sort
 			const allEvents = Array.from(this.eventMap.values());
-			const deduplicated = deduplicateEventsByETag(allEvents);
+			const deduplicated = deduplicateEventsByThread(allEvents);
 			const sorted = sortEventsByTime(deduplicated);
 
 			// Calculate unread count

@@ -11,18 +11,21 @@ export interface MetadataField {
 
 /**
  * Extracts the conversation ID from an event.
- * Returns the 'E' tag value if present, otherwise the event's own ID.
+ * If the event has an "e" tag (lowercase), it's a reply and returns the referenced event ID.
+ * If no "e" tag, this is a root event and returns its own ID.
  */
 export function extractConversationId(event: NDKEvent | undefined): string | undefined {
 	if (!event) return undefined;
 
 	if (event.tags) {
-		const conversationIdTag = event.tags.find((tag) => tag[0] === 'E');
-		if (conversationIdTag) {
-			return conversationIdTag[1];
+		// Look for lowercase "e" tag - root events have no "e" tags
+		const eTag = event.tags.find((tag) => tag[0] === 'e');
+		if (eTag) {
+			return eTag[1];
 		}
 	}
 
+	// No "e" tag means this is a root event - use its own ID
 	return event.id;
 }
 

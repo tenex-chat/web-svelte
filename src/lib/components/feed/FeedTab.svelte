@@ -20,6 +20,7 @@
 	let searchQuery = $state('');
 	let selectedAuthor = $state<string | null>(null);
 	let groupThreads = $state(false);
+	let onlyByMe = $state(false);
 	let filterDropdownOpen = $state(false);
 
 
@@ -47,39 +48,50 @@
 			return true;
 		});
 
-		// If groupThreads is enabled, deduplicate by E tag
+		// If groupThreads is enabled, deduplicate by thread (group replies with their root events)
 		if (groupThreads) {
-			validEvents = deduplicateEventsByETag(validEvents);
+			validEvents = deduplicateEventsByThread(validEvents);
 		}
 
 		// Sort by timestamp (newest first)
 		return validEvents.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
 	});
 
-	// Helper function to deduplicate events by E tag (thread grouping)
-	function deduplicateEventsByETag(events: NDKEvent[]): NDKEvent[] {
-		// Group events by E tag value
-		const eventsByETag = new SvelteMap<string | null, NDKEvent[]>();
+	// Helper function to deduplicate events by thread (grouping by root event)
+	// Root events are identified by having NO lowercase "e" tags
+	function deduplicateEventsByThread(events: NDKEvent[]): NDKEvent[] {
+		// Group events by their thread root
+		const eventsByThread = new SvelteMap<string, NDKEvent[]>();
 
 		events.forEach((event) => {
-			// Get the E tag value (uppercase E tag)
-			const eTag = event.tags.find((tag) => tag[0] === 'E')?.[1] || null;
+			// Check if this event has any lowercase "e" tags (making it a reply)
+			const eTag = event.tags.find((tag) => tag[0] === 'e')?.[1];
 
-			// Group events by their E tag value (or null if no E tag)
-			const existing = eventsByETag.get(eTag) || [];
-			existing.push(event);
-			eventsByETag.set(eTag, existing);
+			if (!eTag) {
+				// No "e" tag means this IS a root event - use its own ID as the thread key
+				const existing = eventsByThread.get(event.id) || [];
+				existing.push(event);
+				eventsByThread.set(event.id, existing);
+			} else {
+				// Has "e" tag - this is a reply, group by the referenced event ID
+				const existing = eventsByThread.get(eTag) || [];
+				existing.push(event);
+				eventsByThread.set(eTag, existing);
+			}
 		});
 
-		// For each E tag group, keep only the most recent event
+		// For each thread group, keep only the most recent event
 		const deduplicatedEvents: NDKEvent[] = [];
 
-		eventsByETag.forEach((groupedEvents, eTag) => {
-			if (eTag === null) {
-				// No E tag - include all events from this group
-				deduplicatedEvents.push(...groupedEvents);
+		eventsByThread.forEach((groupedEvents, threadId) => {
+			// Find root events in this group (events with no "e" tags)
+			const rootEvents = groupedEvents.filter((e) => !e.tags.some((t) => t[0] === 'e'));
+
+			if (rootEvents.length > 0) {
+				// If there are root events, include all of them
+				deduplicatedEvents.push(...rootEvents);
 			} else {
-				// Has E tag - only include the most recent one
+				// No root event in group - include only the most recent reply
 				const mostRecent = groupedEvents.reduce((latest, current) => {
 					const latestTime = latest.created_at || 0;
 					const currentTime = current.created_at || 0;
@@ -90,6 +102,20 @@
 		});
 
 		return deduplicatedEvents;
+	}
+
+	// Function to get the root event author pubkey
+	// If the event has no lowercase "e" tag, it IS the root event
+	// If it has an "e" tag, the pubkey at index 3 is the root event author (if available)
+	function getRootEventAuthor(event: NDKEvent): string | null {
+		const eTag = event.tags.find((tag) => tag[0] === 'e');
+		if (!eTag) {
+			// This event IS the root event (no "e" tags)
+			return event.pubkey;
+		}
+		// e tag format: ["e", event_id, relay?, pubkey?]
+		// The pubkey of the root event author is at index 3
+		return eTag[3] || null;
 	}
 
 	// Function to check if an event matches the search query
@@ -153,11 +179,20 @@
 		return result;
 	});
 
-	// Filter events based on search query and author
+	// Filter events based on search query, author, and "only by me" filter
 	const filteredEvents = $derived.by(() => {
 		let filtered = sortedEvents;
 
-		// Apply author filter
+		// Apply "only by me" filter - filter by root event author
+		if (onlyByMe && ndk.$currentUser?.pubkey) {
+			const currentUserPubkey = ndk.$currentUser.pubkey;
+			filtered = filtered.filter((event) => {
+				const rootAuthor = getRootEventAuthor(event);
+				return rootAuthor === currentUserPubkey;
+			});
+		}
+
+		// Apply author filter (filters by event author, not root author)
 		if (selectedAuthor) {
 			filtered = filtered.filter((event) => event.pubkey === selectedAuthor);
 		}
@@ -207,8 +242,8 @@
 									{...props}
 									type="button"
 									class="h-9 w-9 p-0 flex items-center justify-center border border-border rounded-lg hover:bg-muted transition-colors"
-									class:bg-primary={selectedAuthor}
-									class:text-white={selectedAuthor}
+									class:bg-primary={selectedAuthor || onlyByMe}
+									class:text-white={selectedAuthor || onlyByMe}
 								>
 									{#if selectedAuthor}
 										<User.Root {ndk} pubkey={selectedAuthor}>
@@ -224,6 +259,10 @@
 							<!-- Group threads checkbox -->
 							<DropdownMenu.CheckboxItem bind:checked={groupThreads}>
 								Group threads
+							</DropdownMenu.CheckboxItem>
+							<!-- Only by me checkbox - filter by root event author -->
+							<DropdownMenu.CheckboxItem bind:checked={onlyByMe}>
+								Only by me
 							</DropdownMenu.CheckboxItem>
 							<DropdownMenu.Separator />
 
