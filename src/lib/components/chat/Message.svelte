@@ -12,7 +12,7 @@
 	import LLMMetadataDialog from './LLMMetadataDialog.svelte';
 	import TypingIndicator from './TypingIndicator.svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { Copy, Reply, Quote, MoreVertical, Info, Eye, Hash } from 'lucide-svelte';
+	import { Copy, Reply, Quote, MoreVertical, Info, Eye, Hash, ChevronDown, ChevronUp } from 'lucide-svelte';
 	import { formatTimestamp } from '$lib/utils/time';
 
 	interface Props {
@@ -73,6 +73,19 @@
 	let showRawEvent = $state(false);
 	let showLLMMetadata = $state(false);
 
+	// Truncation state for long messages
+	let isExpanded = $state(false);
+	let contentRef: HTMLDivElement | null = $state(null);
+	let needsTruncation = $state(false);
+
+	// Check if content exceeds 40vh and needs truncation
+	$effect(() => {
+		if (contentRef) {
+			const maxHeight = window.innerHeight * 0.4; // 40vh
+			needsTruncation = contentRef.scrollHeight > maxHeight;
+		}
+	});
+
 	function closeRawEventDialog() {
 		showRawEvent = false;
 	}
@@ -112,18 +125,14 @@
 					<span class="ml-2">id:{message.event.id.slice(0, 8)}</span>
 				</div>
 			{/if}
-			{#if !isConsecutive && !isReasoningEvent}
+			{#if !isConsecutive}
 				<div class="flex items-center gap-2 mb-1">
 					<User.Root {ndk} pubkey={message.event.pubkey}>
 						<span class="font-semibold text-sm text-foreground"><User.Name /></span>
 					</User.Root>
 					<button
 						type="button"
-						onclick={() => {
-							console.log('Timestamp clicked!', message.event.id);
-							console.log('onTimeClick exists?', !!onTimeClick);
-							onTimeClick?.(message.event);
-						}}
+						onclick={() => onTimeClick?.(message.event)}
 						class="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer hover:underline"
 						title="Open as root conversation"
 					>
@@ -232,27 +241,53 @@
 					{:else if isToolCallEvent}
 						<ToolCallContent event={message.event} />
 					{:else if isReasoningEvent}
-						<AIReasoningBlock
-							reasoningEvent={message.event}
-							{isLastMessage}
-							{timestamp}
-							{message}
-							{onReply}
-							{onQuote}
-							{onTimeClick}
-							onShowLLMMetadata={() => (showLLMMetadata = true)}
-							onShowRawEvent={() => (showRawEvent = true)}
-						/>
+						<AIReasoningBlock reasoningEvent={message.event} />
 					{:else}
-						<div class="prose prose-sm text-sm max-w-none dark:prose-invert {replyingTo.length === 0 ? 'text-muted-foreground' : 'text-foreground'}">
-							<Streamdown
-								content={message.event.content}
-								class="prose prose-sm text-sm max-w-none dark:prose-invert {replyingTo.length === 0 ? 'text-muted-foreground' : 'text-foreground'}"
-								parseIncompleteMarkdown={true}
-								animation={{ enabled: false }}
-								baseTheme="shadcn"
-								shikiTheme="github-dark-dimmed"
-							/>
+						<div class="relative">
+							<!-- Truncatable content wrapper -->
+							<div
+								bind:this={contentRef}
+								class="prose prose-sm text-sm max-w-none dark:prose-invert {replyingTo.length === 0 ? 'text-muted-foreground' : 'text-foreground'} transition-all duration-300 ease-in-out overflow-hidden"
+								style={needsTruncation && !isExpanded ? 'max-height: 40vh;' : ''}
+							>
+								<Streamdown
+									content={message.event.content}
+									class="prose prose-sm text-sm max-w-none dark:prose-invert {replyingTo.length === 0 ? 'text-muted-foreground' : 'text-foreground'}"
+									parseIncompleteMarkdown={true}
+									animation={{ enabled: false }}
+									baseTheme="shadcn"
+									shikiTheme="github-dark-dimmed"
+								/>
+							</div>
+
+							<!-- Gradient overlay and Read More button -->
+							{#if needsTruncation && !isExpanded}
+								<div class="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none"></div>
+								<div class="absolute bottom-0 left-0 right-0 flex justify-center pb-2">
+									<button
+										type="button"
+										onclick={() => isExpanded = true}
+										class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-background border border-border rounded-full shadow-sm hover:bg-muted transition-colors pointer-events-auto"
+									>
+										<ChevronDown class="w-3.5 h-3.5" />
+										Read more
+									</button>
+								</div>
+							{/if}
+
+							<!-- Collapse button when expanded -->
+							{#if needsTruncation && isExpanded}
+								<div class="flex justify-center mt-2">
+									<button
+										type="button"
+										onclick={() => isExpanded = false}
+										class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 border border-border rounded-full hover:bg-muted transition-colors"
+									>
+										<ChevronUp class="w-3.5 h-3.5" />
+										Show less
+									</button>
+								</div>
+							{/if}
 						</div>
 
 						<!-- Render suggestion buttons if they exist -->

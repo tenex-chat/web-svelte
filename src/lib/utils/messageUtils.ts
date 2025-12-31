@@ -46,6 +46,27 @@ export function isToolCall(message: Message): boolean {
 }
 
 /**
+ * Check if a message is a delegation tool call (should never be collapsed)
+ */
+export function isDelegationToolCall(message: Message): boolean {
+	const toolName = message.event.tagValue('tool');
+	return toolName === 'delegate' || toolName === 'delegate_external';
+}
+
+/**
+ * Check if a message is collapsible.
+ * Non-collapsible: delegations (always visible regardless of position)
+ * Collapsible: everything else (regular messages, tool calls, reasoning events)
+ */
+export function isCollapsible(message: Message): boolean {
+	// Delegations are never collapsible
+	if (isDelegationToolCall(message)) return false;
+
+	// Everything else is collapsible
+	return true;
+}
+
+/**
  * Get unique author pubkeys from a list of messages
  */
 export function getUniquePubkeys(messages: Message[]): string[] {
@@ -99,11 +120,13 @@ function groupConsecutiveAgentMessages(messages: Message[]): DisplayItem[] {
 	for (const msg of messages) {
 		const msgPubkey = msg.event.pubkey;
 		const msgHasPTag = hasPTag(msg.event);
+		const msgIsDelegation = isDelegationToolCall(msg);
 
 		// Check if this message should break the current group
 		const shouldBreak =
 			msgPubkey !== currentPubkey || // Different author
 			msgHasPTag || // Message mentions someone (p-tag)
+			msgIsDelegation || // Delegation tool call (should never be collapsed)
 			isMetadataEvent(msg); // Metadata event
 
 		if (shouldBreak) {
