@@ -57,12 +57,42 @@
 
 	const metadataEvent = $derived(metadataSubscription.events?.[0]);
 
-	// Parse agent metadata from kind:0 event
+	// Check if kind:0 event has agent-specific tags (instructions, description, use-criteria)
+	const hasAgentTags = $derived.by(() => {
+		if (!metadataEvent) return false;
+		return !!metadataEvent.tagValue('instructions');
+	});
+
+	// Parse agent metadata from kind:0 event (from tags or JSON content)
 	const agentMetadata = $derived.by(() => {
 		if (!metadataEvent) return null;
+
+		// First check for agent tags (instructions, description, use-criteria)
+		if (hasAgentTags) {
+			try {
+				const content = JSON.parse(metadataEvent.content);
+				return {
+					name: content.name || content.display_name,
+					about: content.about,
+					role: content.role,
+					// Prefer tag values over JSON content
+					instructions: metadataEvent.tagValue('instructions') || content.instructions || content.systemPrompt,
+					description: metadataEvent.tagValue('description') || content.about,
+					useCriteria: metadataEvent.tagValue('use-criteria')
+				};
+			} catch {
+				// Even if JSON parsing fails, we can use tag values
+				return {
+					instructions: metadataEvent.tagValue('instructions'),
+					description: metadataEvent.tagValue('description'),
+					useCriteria: metadataEvent.tagValue('use-criteria')
+				};
+			}
+		}
+
+		// Fallback: check JSON content for agent-specific fields
 		try {
 			const content = JSON.parse(metadataEvent.content);
-			// Check if it has agent-specific fields
 			if (
 				content.role ||
 				content.instructions ||
@@ -90,12 +120,23 @@
 		const baseName = agentMetadata.name || profile?.displayName || profile?.name || 'Unnamed Agent';
 		const baseSlug = baseName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
+		// Handle useCriteria - can be string (from tag) or array
+		let useCriteriaArray: string[] = [];
+		if (agentMetadata.useCriteria) {
+			if (typeof agentMetadata.useCriteria === 'string') {
+				// If it's a string from a tag, split by newlines
+				useCriteriaArray = agentMetadata.useCriteria.split('\n').filter((s: string) => s.trim());
+			} else if (Array.isArray(agentMetadata.useCriteria)) {
+				useCriteriaArray = agentMetadata.useCriteria;
+			}
+		}
+
 		return {
 			name: baseName,
-			description: agentMetadata.about || '',
+			description: agentMetadata.description || agentMetadata.about || '',
 			role: agentMetadata.role || 'assistant',
 			instructions: agentMetadata.instructions || agentMetadata.systemPrompt || '',
-			useCriteria: agentMetadata.useCriteria || [],
+			useCriteria: useCriteriaArray,
 			version: '1',
 			slug: baseSlug,
 			tools: [],
@@ -178,7 +219,7 @@
 						class="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors text-sm font-medium text-foreground"
 					>
 						<Sparkles class="w-4 h-4" />
-						Convert to Agent Definition
+						{hasAgentTags ? 'Create Agent from Definition' : 'Convert to Agent Definition'}
 					</button>
 				{/if}
 			</div>
