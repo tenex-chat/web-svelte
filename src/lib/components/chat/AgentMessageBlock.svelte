@@ -15,9 +15,12 @@
 		isConsecutive?: boolean;
 		hasNextConsecutive?: boolean;
 		isLastInParent?: boolean;
+		showTodoList?: boolean;
+		rootEventId?: string;
 		onReply?: (message: MessageType) => void;
 		onQuote?: (message: MessageType) => void;
 		onTimeClick?: (event: NDKEvent) => void;
+		onSendAgain: (message: MessageType) => void;
 	}
 
 	let {
@@ -25,9 +28,12 @@
 		isConsecutive = false,
 		hasNextConsecutive = false,
 		isLastInParent = false,
+		showTodoList = true,
+		rootEventId,
 		onReply,
 		onQuote,
-		onTimeClick
+		onTimeClick,
+		onSendAgain
 	}: Props = $props();
 
 	// Track which groups are manually expanded
@@ -183,8 +189,8 @@
 			</div>
 		{/if}
 
-		<!-- Todo list (if any) - always visible -->
-		{#if todoState.hasTodos}
+		<!-- Todo list (if any) - only rendered when showTodoList is true -->
+		{#if showTodoList && todoState.hasTodos}
 			<div class="px-4 py-1">
 				<div class="flex gap-3">
 					<div class="w-9 flex-shrink-0 relative">
@@ -219,6 +225,7 @@
 		<!-- All messages (rendered based on visibility) -->
 		{#each messageVisibility as { message: msg, visible }, idx (msg.id)}
 			{@const isLastInGroup = idx === messageVisibility.length - 1}
+			{@const isRootMessage = rootEventId ? msg.id === rootEventId : false}
 			{#if visible || isManuallyExpanded}
 				<div transition:slide={{ duration: 150 }}>
 					<Message
@@ -226,9 +233,11 @@
 						isLastMessage={isLastInGroup && isLastInParent}
 						isConsecutive={true}
 						hasNextConsecutive={!isLastInGroup || hasNextConsecutive}
+						{isRootMessage}
 						{onReply}
 						{onQuote}
 						{onTimeClick}
+						{onSendAgain}
 					/>
 				</div>
 			{/if}

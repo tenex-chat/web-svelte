@@ -193,6 +193,7 @@
 				bind:viewMode
 				hideHeader={true}
 				bind:messages
+				windowId={window.id}
 			/>
 		{:else if window.type === 'settings' && window.project}
 			<SettingsTab project={window.project} {onlineAgents} />

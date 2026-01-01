@@ -4,8 +4,10 @@
 	import Message from './Message.svelte';
 	import SystemMessage from './SystemMessage.svelte';
 	import AgentMessageBlock from './AgentMessageBlock.svelte';
+	import AgentTodoList from './AgentTodoList.svelte';
 	import { ConversationState } from '$lib/stores/conversation-state.svelte';
 	import { type Message as MessageType, createSimplifiedDisplayModel, type DisplayItem } from '$lib/utils/messageUtils';
+	import { aggregateTodoState, type AggregatedTodoState } from '$lib/utils/todoAggregator';
 	import { scrollManager } from '$lib/actions/scrollManager';
 	import { ChevronDown } from 'lucide-svelte';
 	import PerformanceMonitor from './PerformanceMonitor.svelte';
@@ -27,6 +29,7 @@
 		onReply?: (message: MessageType) => void;
 		onQuote?: (message: MessageType) => void;
 		onTimeClick?: (event: NDKEvent) => void;
+		onSendAgain: (message: MessageType) => void;
 		messages?: MessageType[];
 	}
 
@@ -36,6 +39,7 @@
 		onReply,
 		onQuote,
 		onTimeClick,
+		onSendAgain,
 		messages = $bindable([])
 	}: Props = $props();
 
@@ -96,6 +100,31 @@
 	const displayList = $derived<DisplayItem[]>(
 		createSimplifiedDisplayModel(flatMessages)
 	);
+
+	// Aggregate todos from ALL messages (not per-group)
+	const globalTodoState = $derived<AggregatedTodoState>(
+		aggregateTodoState(flatMessages.map(m => m.event))
+	);
+
+	// Find the index of the first display item that should show the todo list
+	// (first agent group that contains a todo-related tool call)
+	const todoDisplayIndex = $derived.by(() => {
+		if (!globalTodoState.hasTodos) return -1;
+
+		for (let i = 0; i < displayList.length; i++) {
+			const item = displayList[i];
+			if (item.type === 'metadata') continue;
+
+			const msgs = item.type === 'agent_group' ? item.messages : [item.message];
+			const hasTodoEvent = msgs.some(m => {
+				const toolName = m.event.tagValue('tool');
+				return toolName === 'todo_add' || toolName === 'todo_update' || toolName === 'TodoWrite';
+			});
+
+			if (hasTodoEvent) return i;
+		}
+		return -1;
+	});
 
 	// Sync to bindable messages prop
 	$effect(() => {
@@ -162,9 +191,12 @@
 							isConsecutive={item.isConsecutive}
 							hasNextConsecutive={item.hasNextConsecutive}
 							isLastInParent={index === displayList.length - 1}
+							showTodoList={false}
+							rootEventId={rootEvent.id}
 							{onReply}
 							{onQuote}
 							{onTimeClick}
+							{onSendAgain}
 						/>
 					{:else if item.type === 'visible'}
 						<AgentMessageBlock
@@ -172,10 +204,27 @@
 							isConsecutive={item.isConsecutive}
 							hasNextConsecutive={item.hasNextConsecutive}
 							isLastInParent={index === displayList.length - 1}
+							showTodoList={false}
+							rootEventId={rootEvent.id}
 							{onReply}
 							{onQuote}
 							{onTimeClick}
+							{onSendAgain}
 						/>
+					{/if}
+
+					<!-- Render the global todo list after the first block that has todo events -->
+					{#if index === todoDisplayIndex && globalTodoState.hasTodos}
+						<div class="px-4 py-1">
+							<div class="flex gap-3">
+								<div class="w-9 flex-shrink-0 relative">
+									<div class="absolute left-1/2 -translate-x-1/2 inset-y-0 border-l border-border/60"></div>
+								</div>
+								<div class="flex-1">
+									<AgentTodoList items={globalTodoState.items} />
+								</div>
+							</div>
+						</div>
 					{/if}
 				{/each}
 			</div>

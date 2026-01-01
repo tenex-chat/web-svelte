@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { NDKEvent } from '@nostr-dev-kit/ndk';
+	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import { type ChatViewMode, type Message } from '$lib/utils/messageUtils';
@@ -8,6 +8,7 @@
 	import ChatInput from './ChatInput.svelte';
 	import ChatHeader from './ChatHeader.svelte';
 	import DelegationTreeView from './DelegationTreeView.svelte';
+	import { windowManager } from '$lib/stores/windowManager.svelte';
 
 	interface Props {
 		project?: NDKProject;
@@ -19,9 +20,10 @@
 		viewMode?: ChatViewMode;
 		hideHeader?: boolean;
 		messages?: Message[];
+		windowId?: string;
 	}
 
-	let { project = $bindable(), projectId, rootEvent = $bindable(null), threadId, onlineAgents = [], onThreadCreated, viewMode = $bindable<ChatViewMode>('threaded'), hideHeader = false, messages = $bindable([]) }: Props = $props();
+	let { project = $bindable(), projectId, rootEvent = $bindable(null), threadId, onlineAgents = [], onThreadCreated, viewMode = $bindable<ChatViewMode>('threaded'), hideHeader = false, messages = $bindable([]), windowId }: Props = $props();
 
 	// Fetch thread if threadId provided but rootEvent not available
 	$effect(() => {
@@ -86,6 +88,45 @@
 		}
 	}
 
+	/**
+	 * Handle "send again in new conversation" action.
+	 * Creates a new kind:1 event copying all tags from the original except:
+	 * - created_at, sig, id, pubkey (these are regenerated)
+	 * Then closes the current window and opens a new one with the new conversation.
+	 */
+	async function handleSendAgain(message: Message) {
+		if (!ndk || !ndk.$currentUser || !project) return;
+
+		const originalEvent = message.event;
+
+		// Create a new event copying the original's content and tags
+		const newEvent = new NDKEvent(ndk);
+		newEvent.kind = 1;
+		newEvent.content = originalEvent.content;
+
+		// Copy all tags from the original event
+		// The tags include: a-tag (project), p-tag (agents), branch, nudge, q (quote), t (hashtags), etc.
+		newEvent.tags = [...originalEvent.tags];
+
+		try {
+			// Sign and publish the new event
+			await newEvent.sign(undefined, { pTags: false });
+			await newEvent.publish();
+
+			// Close the current conversation window
+			if (windowId) {
+				windowManager.close(windowId);
+			}
+
+			// Open a new window with the new conversation
+			if (project) {
+				windowManager.openChat(project, newEvent);
+			}
+		} catch (error) {
+			console.error('Failed to send again in new conversation:', error);
+		}
+	}
+
 	const parentEvent = $derived(navigationStack.length > 0 ? navigationStack[navigationStack.length - 1] : null);
 </script>
 
@@ -108,6 +149,7 @@
 				onReply={handleReply}
 				onQuote={handleQuote}
 				onTimeClick={handleTimeClick}
+				onSendAgain={handleSendAgain}
 				bind:messages
 			/>
 		</div>

@@ -12,7 +12,7 @@
 	import LLMMetadataDialog from './LLMMetadataDialog.svelte';
 	import TypingIndicator from './TypingIndicator.svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { Copy, Reply, Quote, MoreVertical, Info, Eye, Hash, ChevronDown, ChevronUp } from 'lucide-svelte';
+	import { Copy, Reply, Quote, MoreVertical, Info, Eye, Hash, ChevronDown, ChevronUp, RefreshCw } from 'lucide-svelte';
 	import { formatTimestamp } from '$lib/utils/time';
 
 	interface Props {
@@ -20,12 +20,14 @@
 		isLastMessage?: boolean;
 		isConsecutive?: boolean;
 		hasNextConsecutive?: boolean;
+		isRootMessage?: boolean;
 		onReply?: (message: Message) => void;
 		onQuote?: (message: Message) => void;
 		onTimeClick?: (event: NDKEvent) => void;
+		onSendAgain: (message: Message) => void;
 	}
 
-	let { message, isLastMessage = false, isConsecutive = false, hasNextConsecutive = false, onReply, onQuote, onTimeClick }: Props = $props();
+	let { message, isLastMessage = false, isConsecutive = false, hasNextConsecutive = false, isRootMessage = false, onReply, onQuote, onTimeClick, onSendAgain }: Props = $props();
 
 	const isTyping = $derived(message.event.kind === NDKKind.TenexAgentTypingStart);
 	const isReasoningEvent = $derived(message.event.hasTag('reasoning'));
@@ -219,6 +221,11 @@
 									<span>Copy Hex ID</span>
 								</DropdownMenu.Item>
 								<DropdownMenu.Separator />
+								<DropdownMenu.Item onclick={() => onSendAgain(message)}>
+									<RefreshCw class="mr-2 h-4 w-4" />
+									<span>Send in new conversation</span>
+								</DropdownMenu.Item>
+								<DropdownMenu.Separator />
 								<DropdownMenu.Item onclick={() => (showLLMMetadata = true)}>
 									<Info class="mr-2 h-4 w-4" />
 									<span>View LLM metadata</span>
@@ -357,6 +364,11 @@
 									<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.id)}>
 										<Hash class="mr-2 h-4 w-4" />
 										<span>Copy Hex ID</span>
+									</DropdownMenu.Item>
+									<DropdownMenu.Separator />
+									<DropdownMenu.Item onclick={() => onSendAgain(message)}>
+										<RefreshCw class="mr-2 h-4 w-4" />
+										<span>Send in new conversation</span>
 									</DropdownMenu.Item>
 									<DropdownMenu.Separator />
 									<DropdownMenu.Item onclick={() => (showLLMMetadata = true)}>
