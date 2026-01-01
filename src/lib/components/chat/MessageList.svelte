@@ -68,7 +68,6 @@
 			if (rootEvent) {
 				conversationState = new ConversationState(ndk, rootEvent, {
 					viewMode,
-					currentUserPubkey: ndk.$currentUser?.pubkey,
 					debug: true
 				});
 
@@ -92,11 +91,10 @@
 
 	// Use reactive messages from ConversationState
 	const flatMessages = $derived(conversationState?.displayMessages || []);
-	const eventsWithMetadata = $derived(conversationState?.displayEventsWithMetadata || []);
 
-	// Create unified display model using $derived - ALWAYS use simplified model
+	// Create unified display model using $derived
 	const displayList = $derived<DisplayItem[]>(
-		createSimplifiedDisplayModel(flatMessages, eventsWithMetadata)
+		createSimplifiedDisplayModel(flatMessages)
 	);
 
 	// Sync to bindable messages prop

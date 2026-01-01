@@ -185,75 +185,17 @@ function calculateConsecutiveStates(items: DisplayItem[]): DisplayItem[] {
 }
 
 /**
- * Generate unique ID for display items
- */
-function getDisplayItemId(item: DisplayItem): string {
-	if (item.type === 'visible') {
-		return `visible-${item.message.id}`;
-	} else if (item.type === 'agent_group') {
-		return `agent_group-${item.messages.map((m) => m.id).join('-')}`;
-	} else if (item.type === 'metadata') {
-		return `metadata-${item.event.id}`;
-	}
-	return `unknown-${Date.now()}`;
-}
-
-/**
  * Create a simplified display model that groups consecutive agent messages.
  *
- * This is the main function for creating the display model in flattened view.
- * It groups all consecutive messages from the same agent together,
- * breaking only on p-tags (mentions) or metadata events.
+ * Groups all consecutive messages from the same agent together,
+ * breaking on p-tags (mentions) or metadata events.
  */
-export function createSimplifiedDisplayModel(
-	messages: Message[],
-	eventsWithMetadata?: Array<{ type: 'message' | 'metadata'; data: Message | NDKEvent }>
-): DisplayItem[] {
+export function createSimplifiedDisplayModel(messages: Message[]): DisplayItem[] {
 	if (messages.length === 0) return [];
 
-	// Step 1: Group consecutive messages from same agent
-	let items = groupConsecutiveAgentMessages(messages);
+	// Group consecutive messages from same agent (handles metadata inline)
+	const items = groupConsecutiveAgentMessages(messages);
 
-	// Step 2: Calculate consecutive states
-	items = calculateConsecutiveStates(items);
-
-	// Step 3: Handle metadata events if provided
-	if (eventsWithMetadata) {
-		const result: DisplayItem[] = [];
-		const messageToItemMap = new Map<string, DisplayItem>();
-		const processedItemIds = new Set<string>();
-
-		// Build map from message ID to display item
-		for (const item of items) {
-			if (item.type === 'visible') {
-				messageToItemMap.set(item.message.id, item);
-			} else if (item.type === 'agent_group') {
-				for (const msg of item.messages) {
-					messageToItemMap.set(msg.id, item);
-				}
-			}
-		}
-
-		// Process in order of eventsWithMetadata
-		for (const event of eventsWithMetadata) {
-			if (event.type === 'metadata') {
-				result.push({ type: 'metadata', event: event.data as NDKEvent });
-			} else {
-				const message = event.data as Message;
-				const displayItem = messageToItemMap.get(message.id);
-
-				if (displayItem) {
-					const itemId = getDisplayItemId(displayItem);
-					if (!processedItemIds.has(itemId)) {
-						result.push(displayItem);
-						processedItemIds.add(itemId);
-					}
-				}
-			}
-		}
-
-		return result;
-	}
-
-	return items;
+	// Calculate consecutive states for styling
+	return calculateConsecutiveStates(items);
 }

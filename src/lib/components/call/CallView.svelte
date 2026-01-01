@@ -130,8 +130,7 @@
 			if (localRootEvent) {
 				conversationState = new ConversationState(ndk, localRootEvent, {
 					viewMode: 'flattened',
-					currentUserPubkey: ndk.$currentUser?.pubkey,
-					debug: true // Enable debug logging
+					debug: true
 				});
 
 				conversationState.start();
