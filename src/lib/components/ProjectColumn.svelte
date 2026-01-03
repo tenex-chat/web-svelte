@@ -31,6 +31,7 @@
 
 	// Get global time filter
 	const timeFilter = $derived(globalFilterStore.value);
+	const onlyByMe = $derived(globalFilterStore.onlyByMe);
 
 	// Handle status indicator click to start project
 	async function handleStatusClick() {
@@ -176,7 +177,7 @@
 	<div class="flex-1 overflow-hidden relative">
 		{#if activeTab === 'conversations'}
 			{#await import('./chat/ConversationsTab.svelte') then { default: ConversationsTab }}
-				<ConversationsTab {project} {onlineAgents} {timeFilter} />
+				<ConversationsTab {project} {onlineAgents} {timeFilter} {onlyByMe} />
 			{/await}
 		{:else if activeTab === 'docs'}
 			{#await import('./docs/DocsTab.svelte') then { default: DocsTab }}

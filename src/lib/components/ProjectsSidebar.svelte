@@ -32,7 +32,9 @@
 		Pin,
 		Filter,
 		Clock,
-		MessageCircleQuestion
+		MessageCircleQuestion,
+		UserCircle,
+		Check
 	} from 'lucide-svelte';
 	import { globalFilterStore } from '$lib/stores/globalFilter.svelte';
 	import {
@@ -92,6 +94,7 @@
 
 	// Get current global filter
 	const currentFilter = $derived(globalFilterStore.value);
+	const onlyByMe = $derived(globalFilterStore.onlyByMe);
 
 	// Helper to get filter label
 	function getFilterLabel(filter: string | null): string {
@@ -512,6 +515,14 @@
 							<span>All conversations</span>
 							{#if !currentFilter}
 								<span class="ml-auto">✓</span>
+							{/if}
+						</DropdownMenu.Item>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item onclick={() => globalFilterStore.toggleOnlyByMe()}>
+							<UserCircle class="mr-2 h-4 w-4" />
+							<span>Only by me</span>
+							{#if onlyByMe}
+								<Check class="ml-auto h-4 w-4" />
 							{/if}
 						</DropdownMenu.Item>
 						<DropdownMenu.Separator />

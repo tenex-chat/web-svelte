@@ -4,6 +4,7 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { formatRelativeTime } from '$lib/utils/time';
 	import { cn } from '$lib/utils/cn';
+	import { Streamdown } from 'svelte-streamdown';
 	import {
 		Bot,
 		MessageCircle,
@@ -117,11 +118,27 @@
 		<!-- Content -->
 		<div class="text-sm text-muted-foreground">
 			{#if isExpanded}
-				<div class="whitespace-pre-wrap break-words">
-					{event.content}
+				<div class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground">
+					<Streamdown
+						content={event.content}
+						class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground"
+						parseIncompleteMarkdown={true}
+						animation={{ enabled: false }}
+						baseTheme="shadcn"
+						shikiTheme="github-dark-dimmed"
+					/>
 				</div>
 			{:else}
-				<div class="line-clamp-2">{contentPreview}</div>
+				<div class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground line-clamp-2">
+					<Streamdown
+						content={contentPreview}
+						class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground"
+						parseIncompleteMarkdown={true}
+						animation={{ enabled: false }}
+						baseTheme="shadcn"
+						shikiTheme="github-dark-dimmed"
+					/>
+				</div>
 			{/if}
 		</div>
 

@@ -9,7 +9,7 @@
 	import WorktreeSelector from './WorktreeSelector.svelte';
 	import NudgeSelector from './NudgeSelector.svelte';
 	import ActiveAgents from './ActiveAgents.svelte';
-	import { Maximize2, Minimize2, Phone, X } from 'lucide-svelte';
+	import { Maximize2, Minimize2, Phone, X, Loader2 } from 'lucide-svelte';
 	import { nudgeStore } from '$lib/stores/nudges.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { draftStore } from '$lib/stores/drafts.svelte';
@@ -21,6 +21,7 @@
 	import NudgeAutocomplete from './NudgeAutocomplete.svelte';
     import { cn } from '$lib/ndk/utils/cn';
 	import { HashtagStore } from '$lib/stores/hashtags.svelte';
+	import NDKBlossom from '@nostr-dev-kit/blossom';
 
 	interface Props {
 		project?: NDKProject;
@@ -78,6 +79,9 @@
 	let cursorPosition = $state(0);
 	let mentionKeyDownHandler = $state<(e: KeyboardEvent) => boolean>(() => false);
 	let nudgeKeyDownHandler = $state<(e: KeyboardEvent) => boolean>(() => false);
+	let fileInputElement: HTMLInputElement | null = $state(null);
+	let isUploading = $state(false);
+	let uploadProgress = $state(0);
 
 	// Clean up agent configuration state when dialog closes
 	$effect(() => {
@@ -513,6 +517,90 @@
 		}
 	}
 
+	// Handle file attachment button click
+	function handleAttachClick() {
+		fileInputElement?.click();
+	}
+
+	// Handle file selection and upload to Blossom
+	async function handleFileSelect(event: Event) {
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+
+		if (!file || !ndk || !ndk.$currentUser) {
+			return;
+		}
+
+		// Only accept image files
+		if (!file.type.startsWith('image/')) {
+			console.error('Only image files are supported');
+			return;
+		}
+
+		isUploading = true;
+		uploadProgress = 0;
+
+		try {
+			const blossom = new NDKBlossom(ndk);
+
+			// Track upload progress
+			blossom.onUploadProgress = (progress) => {
+				uploadProgress = Math.round((progress.loaded / progress.total) * 100);
+				return 'continue';
+			};
+
+			// Handle upload errors
+			blossom.onUploadFailed = (error, serverUrl) => {
+				console.error('Upload failed:', error, 'on server:', serverUrl);
+			};
+
+			// Upload to blossom.primal.net by default
+			const imeta = await blossom.upload(file, {
+				server: 'https://blossom.primal.net'
+			});
+
+			// Insert the URL at cursor position or append to message
+			if (imeta.url) {
+				const urlText = imeta.url;
+
+				if (textareaElement) {
+					const curPos = textareaElement.selectionStart || messageInput.length;
+					const before = messageInput.substring(0, curPos);
+					const after = messageInput.substring(curPos);
+
+					// Add space before URL if needed
+					const needsSpaceBefore = before.length > 0 && !before.endsWith(' ') && !before.endsWith('\n');
+					// Add space after URL if needed
+					const needsSpaceAfter = after.length > 0 && !after.startsWith(' ') && !after.startsWith('\n');
+
+					messageInput = before + (needsSpaceBefore ? ' ' : '') + urlText + (needsSpaceAfter ? ' ' : '') + after;
+
+					// Move cursor after the inserted URL
+					setTimeout(() => {
+						if (textareaElement) {
+							const newPos = before.length + (needsSpaceBefore ? 1 : 0) + urlText.length + (needsSpaceAfter ? 1 : 0);
+							textareaElement.focus();
+							textareaElement.setSelectionRange(newPos, newPos);
+							cursorPosition = newPos;
+						}
+					}, 0);
+				} else {
+					// Fallback: append to end
+					messageInput = messageInput + (messageInput.length > 0 ? ' ' : '') + urlText;
+				}
+			}
+		} catch (error) {
+			console.error('Failed to upload file:', error);
+		} finally {
+			isUploading = false;
+			uploadProgress = 0;
+			// Reset file input so same file can be selected again
+			if (input) {
+				input.value = '';
+			}
+		}
+	}
+
 </script>
 
 <div class="p-4">
@@ -613,20 +701,33 @@
 					</button>
 
 					<!-- Attachment Button -->
+					<input
+						bind:this={fileInputElement}
+						type="file"
+						accept="image/*"
+						class="hidden"
+						onchange={handleFileSelect}
+					/>
 					<button
-						class="p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground"
+						onclick={handleAttachClick}
+						class="p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground relative"
 						type="button"
-						title="Attach file"
-						aria-label="Attach file"
+						title={isUploading ? `Uploading... ${uploadProgress}%` : "Attach image"}
+						aria-label={isUploading ? "Uploading image" : "Attach image"}
+						disabled={isUploading || isSubmitting || !ndk.$currentUser}
 					>
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-							/>
-						</svg>
+						{#if isUploading}
+							<Loader2 class="w-5 h-5 animate-spin" />
+						{:else}
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+								/>
+							</svg>
+						{/if}
 					</button>
 
 					<!-- Expand/Collapse Toggle Button -->

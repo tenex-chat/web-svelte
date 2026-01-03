@@ -83,7 +83,7 @@
 
 				{#if kind === 1}
 					<!-- kind:1 - Chat message -->
-					<Message message={{ id: event.id, event }} />
+					<Message message={{ id: event.id, event }} onSendAgain={() => {}} />
 				{:else if kind === 4129}
 					<!-- Agent Lesson (kind 4129) - Learning events -->
 					{@const lesson = NDKAgentLesson.from(event)}

@@ -4,6 +4,7 @@
 	import { User } from '$lib/ndk/ui/user';
 	import { ndk } from '$lib/ndk.svelte';
 	import { formatRelativeTime } from '$lib/utils/time';
+	import { Streamdown } from 'svelte-streamdown';
 
 	interface Props {
 		event: NDKEvent;
@@ -93,8 +94,15 @@
 			</div>
 
 			<!-- Title/Preview - Shows actual event content -->
-			<div class="text-sm text-foreground break-words line-clamp-2">
-				{eventDetails.title}
+			<div class="prose prose-sm max-w-none dark:prose-invert text-foreground break-words line-clamp-2">
+				<Streamdown
+					content={eventDetails.title}
+					class="prose prose-sm max-w-none dark:prose-invert text-foreground"
+					parseIncompleteMarkdown={true}
+					animation={{ enabled: false }}
+					baseTheme="shadcn"
+					shikiTheme="github-dark-dimmed"
+				/>
 			</div>
 
 			<!-- Hashtags if present -->

@@ -12,9 +12,10 @@
 		selectedThread?: NDKEvent;
 		onThreadSelect?: (thread: NDKEvent) => void;
 		timeFilter?: string | null;
+		onlyByMe?: boolean;
 	}
 
-	let { project, selectedThread, onThreadSelect, timeFilter = null }: Props = $props();
+	let { project, selectedThread, onThreadSelect, timeFilter = null, onlyByMe = true }: Props = $props();
 
 	// Get current user from NDK sessions
 	const currentUser = $derived(ndk.$sessions?.currentUser);
@@ -105,13 +106,18 @@
 		return metadata;
 	});
 
-	// Sort and filter threads based on timeFilter
+	// Sort and filter threads based on timeFilter and onlyByMe
 	// Uses pre-computed time data from threadMetadata to avoid duplicate reply iteration
 	const sortedThreads = $derived.by(() => {
 		const start = performance.now();
 		if (threads.length === 0) return [];
 
 		let filteredThreads = [...threads].filter((thread) => thread.created_at !== undefined);
+
+		// Apply "only by me" filter - show only threads started by the current user
+		if (onlyByMe && currentUser?.pubkey) {
+			filteredThreads = filteredThreads.filter((thread) => thread.pubkey === currentUser.pubkey);
+		}
 
 		// Apply time filter if set - uses pre-computed data from threadMetadata
 		if (timeFilter) {

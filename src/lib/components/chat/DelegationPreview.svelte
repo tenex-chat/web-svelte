@@ -159,18 +159,15 @@
 		];
 
 		subscription = ndk.subscribe(filters, {
-			closeOnEose: false,
-		});
-
-		subscription.on('event', (event: NDKEvent) => {
-			// Avoid duplicates
-			if (!events.find(e => e.id === event.id)) {
+			onEvent: (event: NDKEvent) => {
 				events = [...events, event];
+			},
+			onEvents: (e: NDKEvent[]) => {
+				events = e
+			},
+			onEose: () => {
+				isLoading = false;
 			}
-		});
-
-		subscription.on('eose', () => {
-			isLoading = false;
 		});
 
 		return () => {

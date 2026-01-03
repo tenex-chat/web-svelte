@@ -4,6 +4,7 @@
 	import { formatRelativeTime } from '$lib/utils/time';
 	import { cn } from '$lib/utils/cn';
 	import CreateAgentDialog from '../dialogs/CreateAgentDialog.svelte';
+	import { Streamdown } from 'svelte-streamdown';
 
 	interface Props {
 		event: NDKEvent;
@@ -218,9 +219,16 @@
 
 	<!-- Content -->
 	<div class="px-4 py-3">
-		<p class="text-sm text-muted-foreground line-clamp-3">
-			{preview}
-		</p>
+		<div class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground line-clamp-3">
+			<Streamdown
+				content={preview}
+				class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground"
+				parseIncompleteMarkdown={true}
+				animation={{ enabled: false }}
+				baseTheme="shadcn"
+				shikiTheme="github-dark-dimmed"
+			/>
+		</div>
 		{#if event.tags.length > 0}
 			<div class="mt-2 flex flex-wrap gap-1">
 				{#each event.tags.slice(0, 5) as tag, idx (idx)}
