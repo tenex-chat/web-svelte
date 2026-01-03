@@ -7,9 +7,10 @@ import { voiceDiscovery } from './voice-discovery';
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 import { generateText } from 'ai';
 import { providerRegistry, type ProviderConfig } from './provider-registry';
+import type { TTSProvider, STTProvider } from '$lib/stores/aiConfig.svelte';
 
-export type TTSProvider = 'openai' | 'elevenlabs';
-export type STTProvider = 'whisper' | 'elevenlabs';
+// Re-export types for backwards compatibility
+export type { TTSProvider, STTProvider };
 
 class AIService {
 	/**
