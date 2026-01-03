@@ -51,28 +51,31 @@ class ProjectStatusStore {
           wrap: true
         },
         {
+          onEvents: (events: NDKEvent[]) => {
+            for (const event of events) {
+              this.processStatusEvent(event);
+            }
+          },
           onEvent: (event: NDKEvent) => {
-            // Use NDKProjectStatus.from() to properly convert the event
-            const statusEvent = NDKProjectStatus.from(event);
-            const projectId = statusEvent.projectId;
-            if (!projectId) {
-              return;
-            }
-
-            // Extract dTag as key
-            const key = this.extractDTag(projectId);
-
-            // Last-write-wins: only update if this event is newer
-            const existing = this.statusMap.get(key);
-            if (!existing || (statusEvent.created_at || 0) > (existing.created_at || 0)) {
-              this.statusMap.set(key, statusEvent);
-            }
+            this.processStatusEvent(event);
           }
         }
       );
 
       subscription.start();
     });
+  }
+
+  private processStatusEvent(event: NDKEvent) {
+    const statusEvent = NDKProjectStatus.from(event);
+    const projectId = statusEvent.projectId;
+    if (!projectId) return;
+
+    const key = this.extractDTag(projectId);
+    const existing = this.statusMap.get(key);
+    if (!existing || (statusEvent.created_at || 0) > (existing.created_at || 0)) {
+      this.statusMap.set(key, statusEvent);
+    }
   }
 
   /**

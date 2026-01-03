@@ -40,21 +40,38 @@ export class HashtagStore {
 			}
 		];
 
-		this.subscription = this.ndk.subscribe(filters, { closeOnEose: false });
-
-		this.subscription.on('event', (event: NDKEvent) => {
-			this.extractHashtags(event);
+		this.subscription = this.ndk.subscribe(filters, {
+			closeOnEose: false,
+			onEvents: (events: NDKEvent[]) => {
+				this.extractHashtagsBulk(events);
+			},
+			onEvent: (event: NDKEvent) => {
+				this.extractHashtags(event);
+			}
 		});
 	}
 
-	/**
-	 * Extract hashtags from an event and add them to the store
-	 */
+	private extractHashtagsBulk(events: NDKEvent[]) {
+		const newHashtags: string[] = [];
+		for (const event of events) {
+			for (const tag of event.tags) {
+				if (tag[0] === 't' && tag[1]) {
+					const hashtag = tag[1].toLowerCase();
+					if (hashtag && !this.hashtags.has(hashtag) && !newHashtags.includes(hashtag)) {
+						newHashtags.push(hashtag);
+					}
+				}
+			}
+		}
+		if (newHashtags.length > 0) {
+			this.hashtags = new Set([...this.hashtags, ...newHashtags]);
+		}
+	}
+
 	private extractHashtags(event: NDKEvent) {
 		const tTags = event.tags.filter((tag) => tag[0] === 't' && tag[1]);
 		if (tTags.length === 0) return;
 
-		// Check if any new hashtags to add
 		const newHashtags: string[] = [];
 		for (const tag of tTags) {
 			const hashtag = tag[1].toLowerCase();
@@ -63,7 +80,6 @@ export class HashtagStore {
 			}
 		}
 
-		// Reassign Set to trigger Svelte reactivity (Set mutations aren't tracked)
 		if (newHashtags.length > 0) {
 			this.hashtags = new Set([...this.hashtags, ...newHashtags]);
 		}
