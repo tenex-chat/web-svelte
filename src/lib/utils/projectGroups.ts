@@ -130,13 +130,6 @@ export function deleteProjectGroup(groupId: string): boolean {
 }
 
 /**
- * Toggle the pinned status of a project group (backwards compatibility wrapper)
- */
-export function toggleGroupPin(groupId: string): boolean {
-	return projectGroupsStore.togglePin(groupId);
-}
-
-/**
  * Get the currently selected project group ID
  */
 export function getSelectedProjectGroup(): string | null {
