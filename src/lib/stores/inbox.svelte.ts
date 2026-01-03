@@ -93,10 +93,20 @@ function persistLastVisit(timestamp: number): void {
 class InboxStore {
 	events = $state<NDKEvent[]>([]);
 	lastVisit = $state<number>(getPersistedLastVisit());
-	isLoading = $state<boolean>(false);
 	unreadCount = $state<number>(0);
 	private subscription: NDKSubscription | null = null;
 	private eventMap = new Map<string, NDKEvent>();
+
+	private updateState() {
+		const allEvents = Array.from(this.eventMap.values());
+		const deduplicated = deduplicateEventsByThread(allEvents);
+		const sorted = sortEventsByTime(deduplicated);
+		const unreadCount = sorted.filter(
+			(e) => e.created_at && e.created_at > this.lastVisit
+		).length;
+		this.events = sorted;
+		this.unreadCount = unreadCount;
+	}
 
 	init() {
 		if (!browser) return;
@@ -106,8 +116,6 @@ class InboxStore {
 
 		const currentUser = ndk.$sessions?.currentUser;
 		if (!currentUser?.pubkey) return;
-
-		this.isLoading = true;
 
 		// Create filter for events that p-tag the current user
 		const filter: NDKFilter = {
@@ -121,32 +129,18 @@ class InboxStore {
 		this.subscription = ndk.subscribe(filter, {
 			closeOnEose: false,
 			groupable: false,
-			subId: 'inbox-events-store'
-		});
-
-		// Handle incoming events
-		this.subscription?.on('event', (event: NDKEvent) => {
-			// Add to map (automatically handles updates/duplicates)
-			this.eventMap.set(event.id, event);
-
-			// Convert map to array, deduplicate by thread, and sort
-			const allEvents = Array.from(this.eventMap.values());
-			const deduplicated = deduplicateEventsByThread(allEvents);
-			const sorted = sortEventsByTime(deduplicated);
-
-			// Calculate unread count
-			const unreadCount = sorted.filter(
-				(e) => e.created_at && e.created_at > this.lastVisit
-			).length;
-
-			// Update state
-			this.events = sorted;
-			this.unreadCount = unreadCount;
-			this.isLoading = false;
-		});
-
-		this.subscription?.on('eose', () => {
-			this.isLoading = false;
+			subId: 'inbox-events-store',
+			onEvents: (events: NDKEvent[]) => {
+				// Bulk add all events to map
+				for (const event of events) {
+					this.eventMap.set(event.id, event);
+				}
+				this.updateState();
+			},
+			onEvent: (event: NDKEvent) => {
+				this.eventMap.set(event.id, event);
+				this.updateState();
+			}
 		});
 	}
 

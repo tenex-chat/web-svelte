@@ -4,7 +4,7 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import * as d3 from 'd3';
-	import { GitFork, ZoomIn, ZoomOut, Maximize2, Loader2, ArrowLeft } from 'lucide-svelte';
+	import { GitFork, ZoomIn, ZoomOut, Maximize2, ArrowLeft } from 'lucide-svelte';
 
 	// Layout constants
 	const NODE_WIDTH = 200;
@@ -40,7 +40,6 @@
 	interface Props {
 		rootEvent: NDKEvent;
 		messages: Message[];
-		isLoading?: boolean;
 		currentUserPubkey?: string;
 		parentEvent?: NDKEvent | null;
 		onNodeClick?: (event: NDKEvent) => void;
@@ -50,7 +49,6 @@
 	let {
 		rootEvent,
 		messages,
-		isLoading = false,
 		currentUserPubkey = ndk.$currentUser?.pubkey,
 		parentEvent = null,
 		onNodeClick,
@@ -417,14 +415,7 @@
 
 	<!-- Main Content Area -->
 	<div class="flex-1 overflow-hidden relative" bind:this={containerElement}>
-		{#if isLoading}
-			<div class="absolute inset-0 flex items-center justify-center">
-				<div class="text-center text-muted-foreground">
-					<Loader2 class="h-8 w-8 mx-auto mb-2 animate-spin" />
-					<p class="text-sm">Loading conversation tree...</p>
-				</div>
-			</div>
-		{:else if !tree || layoutNodes.length === 0}
+		{#if !tree || layoutNodes.length === 0}
 			<div class="absolute inset-0 flex items-center justify-center">
 				<div class="text-center text-muted-foreground">
 					<GitFork class="h-12 w-12 mx-auto mb-3 opacity-50" />

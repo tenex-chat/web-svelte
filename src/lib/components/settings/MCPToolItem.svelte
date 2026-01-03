@@ -21,17 +21,10 @@
 		if (events.length === 0) return null;
 		return NDKMCPTool.from(events[0]);
 	});
-
-	const isLoading = $derived(!tool);
 </script>
 
 <div class="p-4 border border-border rounded-lg bg-card">
-	{#if isLoading}
-		<div class="animate-pulse">
-			<div class="h-5 bg-muted rounded w-3/4 mb-2"></div>
-			<div class="h-4 bg-muted rounded w-1/2"></div>
-		</div>
-	{:else if tool}
+	{#if tool}
 		<div class="flex items-start justify-between gap-3">
 			<div class="flex-1 min-w-0">
 				<div class="font-medium text-foreground mb-1 font-mono text-sm">
@@ -58,7 +51,5 @@
 				<Trash class="w-4 h-4" />
 			</button>
 		</div>
-	{:else}
-		<div class="text-sm text-muted-foreground">Tool not found</div>
 	{/if}
 </div>

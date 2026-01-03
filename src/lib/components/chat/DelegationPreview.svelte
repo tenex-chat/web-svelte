@@ -18,7 +18,6 @@
 	let events = $state<NDKEvent[]>([]);
 	let subscription: NDKSubscription | null = null;
 	let operationsSubscription: NDKSubscription | null = null;
-	let isLoading = $state(true);
 
 	// Track latest operations status (kind 24133)
 	let latestOperations = $state<{ agentPubkeys: string[]; createdAt: number } | null>(null);
@@ -151,7 +150,6 @@
 
 		// Clear previous state
 		events = [];
-		isLoading = true;
 
 		const filters: NDKFilter[] = [
 			{ ids: [conversationId] },
@@ -164,9 +162,6 @@
 			},
 			onEvents: (e: NDKEvent[]) => {
 				events = e
-			},
-			onEose: () => {
-				isLoading = false;
 			}
 		});
 
@@ -185,21 +180,22 @@
 				'#a': [projectId],
 				'#e': [conversationId]
 			}],
-			{ closeOnEose: false }
-		);
+			{
+				closeOnEose: false,
+				onEvent: (event: NDKEvent) => {
+					const snapshot = parseKind24133(event);
+					if (!snapshot) return;
 
-		operationsSubscription.on('event', (event: NDKEvent) => {
-			const snapshot = parseKind24133(event);
-			if (!snapshot) return;
-
-			// Last-write-wins: only update if newer
-			if (!latestOperations || snapshot.createdAt > latestOperations.createdAt) {
-				latestOperations = {
-					agentPubkeys: snapshot.agentPubkeys,
-					createdAt: snapshot.createdAt
-				};
+					// Last-write-wins: only update if newer
+					if (!latestOperations || snapshot.createdAt > latestOperations.createdAt) {
+						latestOperations = {
+							agentPubkeys: snapshot.agentPubkeys,
+							createdAt: snapshot.createdAt
+						};
+					}
+				}
 			}
-		});
+		);
 
 		return () => {
 			operationsSubscription?.stop();
@@ -246,12 +242,7 @@
 		{/if}
 	</div>
 
-	{#if isLoading}
-		<div class="loading-section">
-			<div class="skeleton skeleton-text"></div>
-			<div class="skeleton skeleton-text short"></div>
-		</div>
-	{:else}
+	{#if events.length > 0}
 		{#if todoState.hasTodos}
 			<div class="todo-section">
 				<div class="todo-section-header">
@@ -300,6 +291,11 @@
 				<span>Waiting for activity...</span>
 			</div>
 		{/if}
+	{:else}
+		<div class="empty-state">
+			<Circle class="w-4 h-4 animate-pulse" />
+			<span>Waiting for activity...</span>
+		</div>
 	{/if}
 </div>
 
@@ -398,28 +394,6 @@
 	@keyframes pulse {
 		0%, 100% { opacity: 1; }
 		50% { opacity: 0.6; }
-	}
-
-	.loading-section {
-		padding: 12px;
-	}
-
-	.skeleton {
-		background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--border)) 50%, hsl(var(--muted)) 75%);
-		background-size: 200% 100%;
-		animation: shimmer 1.5s infinite;
-		border-radius: 4px;
-		height: 12px;
-		margin-bottom: 6px;
-	}
-
-	.skeleton.short {
-		width: 60%;
-	}
-
-	@keyframes shimmer {
-		0% { background-position: 200% 0; }
-		100% { background-position: -200% 0; }
 	}
 
 	.todo-section {

@@ -5,7 +5,7 @@
 	import { NDKAgentLesson } from '$lib/events/NDKAgentLesson';
 	import { createFetchEvent } from '@nostr-dev-kit/svelte';
 	import LessonView from '$lib/components/lessons/LessonView.svelte';
-	import { LoadingState, ErrorState } from '$lib/components/ui';
+	import { ErrorState } from '$lib/components/ui';
 	import { BookOpen } from 'lucide-svelte';
 
 	const lessonId = $derived($page.params.id);
@@ -18,22 +18,17 @@
 		return NDKAgentLesson.from(lessonEventFetcher.event);
 	});
 
-	// Track loading state with a timeout for better UX
-	// The fetcher doesn't expose eose/eosed, so we use a simple approach
+	// Timeout to show "not found" if event doesn't arrive
 	let hasTimedOut = $state(false);
 	$effect(() => {
 		hasTimedOut = false;
 		const timer = setTimeout(() => {
 			hasTimedOut = true;
-		}, 5000); // 5 second timeout for "not found" state
+		}, 5000);
 		return () => clearTimeout(timer);
 	});
 
-	// We're loading if there's no event yet and we haven't timed out
-	const isLoading = $derived(!fetchedLesson && !hasTimedOut);
-
 	function handleBack(): void {
-		// Try to go back, or navigate to home
 		if (window.history.length > 1) {
 			window.history.back();
 		} else {
@@ -45,11 +40,7 @@
 <div class="flex-1 flex flex-col h-full">
 	{#if fetchedLesson}
 		<LessonView lesson={fetchedLesson} onBack={handleBack} />
-	{:else if isLoading}
-		<div class="flex-1 flex items-center justify-center bg-background">
-			<LoadingState message="Loading lesson..." />
-		</div>
-	{:else}
+	{:else if hasTimedOut}
 		<div class="flex-1 flex items-center justify-center bg-background">
 			<ErrorState title="Lesson not found" message="This lesson could not be found or may have been deleted.">
 				{#snippet icon()}

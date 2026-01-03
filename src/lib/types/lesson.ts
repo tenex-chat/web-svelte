@@ -84,12 +84,8 @@ export interface LessonComment {
  * Subscription state for async data loading.
  */
 export interface SubscriptionState {
-	/** Whether the initial data is still loading */
-	isLoading: boolean;
 	/** Error message if subscription failed */
 	error: string | null;
-	/** Whether the subscription has received initial data */
-	hasReceivedEose: boolean;
 }
 
 /**

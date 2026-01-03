@@ -39,9 +39,6 @@
 		})
 	);
 
-	// Subscription state tracking
-	const isLoadingComments = $derived(!commentsSubscription.eosed);
-
 	// Transform raw events to typed comments
 	const lessonComments: LessonComment[] = $derived.by(() => {
 		const rawEvents = commentsSubscription.events || [];
@@ -94,9 +91,6 @@
 		<h3 class="font-semibold text-foreground">
 			Comments ({lessonComments.length})
 		</h3>
-		{#if isLoadingComments}
-			<Spinner size="sm" />
-		{/if}
 	</div>
 
 	<!-- Comment Form -->
@@ -178,7 +172,7 @@
 				</div>
 			{/if}
 		</div>
-	{:else if !isLoadingComments}
+	{:else}
 		<div class="text-center py-8">
 			<MessageCircle class="h-8 w-8 text-muted-foreground mx-auto mb-2" />
 			<p class="text-sm text-muted-foreground">No comments yet. Be the first to comment!</p>

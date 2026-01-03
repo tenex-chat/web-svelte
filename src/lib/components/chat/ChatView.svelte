@@ -158,7 +158,6 @@
 			<DelegationTreeView
 				rootEvent={localRootEvent}
 				{messages}
-				isLoading={messages.length === 0}
 				onNodeClick={handleTimeClick}
 				{parentEvent}
 				onNavigateBack={handleNavigateBack}

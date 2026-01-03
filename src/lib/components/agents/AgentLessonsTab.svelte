@@ -3,7 +3,7 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKAgentLesson } from '$lib/events/NDKAgentLesson';
 	import { BookOpen } from 'lucide-svelte';
-	import { LoadingState, EmptyState } from '$lib/components/ui';
+	import { EmptyState } from '$lib/components/ui';
 	import LessonCard from './LessonCard.svelte';
 	import {
 		createLessonSubscriptionOptions,
@@ -30,9 +30,6 @@
 		})
 	);
 
-	// Subscription state tracking
-	const isLoadingLessons = $derived(!lessonsSubscription.eosed);
-
 	// Transform raw events to typed lessons, sorted by newest first
 	const agentLessons = $derived.by(() => {
 		const rawEvents = lessonsSubscription.events || [];
@@ -54,9 +51,7 @@
 </script>
 
 <div class="space-y-4">
-	{#if isLoadingLessons && agentLessons.length === 0}
-		<LoadingState message="Loading lessons..." />
-	{:else if agentLessons.length === 0}
+	{#if agentLessons.length === 0}
 		<EmptyState
 			icon={BookOpen}
 			title="No lessons yet"
