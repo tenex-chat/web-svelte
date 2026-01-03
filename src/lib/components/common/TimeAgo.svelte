@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createTimeAgo } from '$lib/ndk/utils/time-ago/index.svelte';
-	import { cn } from '$lib/ndk/utils/cn';
+	import { cn } from '$lib/utils/cn';
 
 	interface Props {
 		timestamp: number;
