@@ -17,9 +17,6 @@
 
 	let { project, selectedThread, onThreadSelect, timeFilter = null, onlyByMe = true }: Props = $props();
 
-	// Get current user from NDK sessions
-	const currentUser = $derived(ndk.$sessions?.currentUser);
-
 	// Subscribe to all kind:1 events for this project
 	const allEventsSubscription = ndk.$subscribe(() => ({
 		filters: [
@@ -29,6 +26,7 @@
 				limit: 500
 			}
 		],
+		cacheUnconstrainFilter: [],
 		closeOnEose: false
 	}));
 
@@ -48,7 +46,6 @@
 	// Also includes lastUserReplyTime and lastOtherReplyTime to avoid duplicate iteration in sortedThreads
 	const threadMetadata = $derived.by(() => {
 		const start = performance.now();
-		const currentUserPubkey = currentUser?.pubkey;
 		const metadata = new Map<
 			string,
 			{
@@ -89,7 +86,7 @@
 					}
 
 					// Track user vs other reply times for "needs response" filter
-					if (currentUserPubkey && reply.pubkey === currentUserPubkey) {
+					if (ndk.$currentPubkey && reply.pubkey === ndk.$currentPubkey) {
 						if (replyTime > meta.lastUserReplyTime) {
 							meta.lastUserReplyTime = replyTime;
 						}
@@ -115,8 +112,8 @@
 		let filteredThreads = [...threads].filter((thread) => thread.created_at !== undefined);
 
 		// Apply "only by me" filter - show only threads started by the current user
-		if (onlyByMe && currentUser?.pubkey) {
-			filteredThreads = filteredThreads.filter((thread) => thread.pubkey === currentUser.pubkey);
+		if (onlyByMe && ndk.$currentPubkey) {
+			filteredThreads = filteredThreads.filter((thread) => thread.pubkey === ndk.$currentPubkey);
 		}
 
 		// Apply time filter if set - uses pre-computed data from threadMetadata
@@ -126,13 +123,13 @@
 			// Check if this is a "needs response" filter
 			const isNeedsResponseFilter = timeFilter.startsWith('needs-response-');
 
-			if (isNeedsResponseFilter && currentUser) {
+			if (isNeedsResponseFilter && ndk.$currentPubkey) {
 				// Handle "needs response" filters - shows threads where others have replied but user hasn't
-				const filterTime = timeFilter.replace('needs-response-', '');
+				const filterTime = timeFilter.replace("needs-response-", "");
 				const thresholds: Record<string, number> = {
-					'1h': 60 * 60,
-					'4h': 4 * 60 * 60,
-					'1d': 24 * 60 * 60
+					"1h": 60 * 60,
+					"4h": 4 * 60 * 60,
+					"1d": 24 * 60 * 60,
 				};
 				const threshold = thresholds[filterTime];
 
@@ -148,7 +145,10 @@
 						// If someone else has replied
 						if (lastOtherReplyTime > 0) {
 							// Check if user has already responded after this reply
-							if (lastUserReplyTime > 0 && lastUserReplyTime > lastOtherReplyTime) {
+							if (
+								lastUserReplyTime > 0 &&
+								lastUserReplyTime > lastOtherReplyTime
+							) {
 								// User has already responded, don't show
 								return false;
 							}
@@ -171,9 +171,9 @@
 			} else {
 				// Handle regular activity filters - shows threads with any activity within the time frame
 				const thresholds: Record<string, number> = {
-					'1h': 60 * 60,
-					'4h': 4 * 60 * 60,
-					'1d': 24 * 60 * 60
+					"1h": 60 * 60,
+					"4h": 4 * 60 * 60,
+					"1d": 24 * 60 * 60,
 				};
 				const threshold = thresholds[timeFilter];
 
