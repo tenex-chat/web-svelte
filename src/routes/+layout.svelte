@@ -2,6 +2,7 @@
 	import { ndk, ndkReady } from '$lib/ndk.svelte';
 	import { browser } from '$app/environment';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
+	import { operationsStatusStore } from '$lib/stores/operationsStatus.svelte';
 	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import LoginModal from '$lib/components/LoginModal.svelte';
 	import WindowManagerOverlay from '$lib/components/window-manager/WindowManagerOverlay.svelte';
@@ -28,10 +29,11 @@
 		ready = true;
 	}
 
-	// Initialize project status store when component mounts
+	// Initialize stores when component mounts
 	$effect(() => {
 		if (ready && browser) {
 			projectStatusStore.init();
+			operationsStatusStore.init();
 		}
 	});
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import { createOperationsSubscription } from '$lib/stores/activeOperations.svelte';
+	import { operationsStatusStore } from '$lib/stores/operationsStatus.svelte';
 	import { stopAgentOperation, stopConversation } from '$lib/ndk-events/operations';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import { User } from '$lib/ndk/ui/user';
@@ -14,14 +14,10 @@
 
 	let { eventId, projectId, onlineAgents }: Props = $props();
 
-	// Create subscription function for this event - recreate when props change
-	let getActiveAgents = $state(() => [] as string[]);
-	$effect(() => {
-		getActiveAgents = createOperationsSubscription(eventId, projectId);
-	});
-
-	// Subscribe to active operations for this event
-	const activeAgentPubkeys = $derived(getActiveAgents());
+	// Get active agents from centralized store
+	const activeAgentPubkeys = $derived(
+		eventId ? operationsStatusStore.getWorkingAgents(eventId) : []
+	);
 
 	// Get agent data for active agents
 	const activeAgents = $derived.by(() => {

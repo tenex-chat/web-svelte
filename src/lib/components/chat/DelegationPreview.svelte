@@ -2,12 +2,13 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import type { NDKEvent, NDKSubscription, NDKFilter } from '@nostr-dev-kit/ndk';
 	import { aggregateTodoState } from '$lib/utils/todoAggregator';
-	import { parseKind24133, stopEvent } from '$lib/ndk-events/operations';
+	import { stopEvent } from '$lib/ndk-events/operations';
 	import { onDestroy } from 'svelte';
 	import { Check, Circle, Loader2, Square } from 'lucide-svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { NDKProject } from '$lib/events/NDKProject';
 	import { User } from '$lib/ndk/ui/user';
+	import { operationsStatusStore } from '$lib/stores/operationsStatus.svelte';
 
 	interface Props {
 		conversationId: string;
@@ -17,10 +18,6 @@
 
 	let events = $state<NDKEvent[]>([]);
 	let subscription: NDKSubscription | null = null;
-	let operationsSubscription: NDKSubscription | null = null;
-
-	// Track latest operations status (kind 24133)
-	let latestOperations = $state<{ agentPubkeys: string[]; createdAt: number } | null>(null);
 
 	// Root event (the delegation conversation itself)
 	const rootEvent = $derived(events.find(e => e.id === conversationId));
@@ -63,29 +60,30 @@
 
 	// Status: done if no agents working (from 24133) OR if last message is delegatee p-tagging delegator
 	const status = $derived.by(() => {
-		// If we have operations status and no agents are working, it's done
-		if (latestOperations && latestOperations.agentPubkeys.length === 0) {
-			return 'done';
-		}
+		// Check centralized operations store
+		const workingAgents = operationsStatusStore.getWorkingAgents(conversationId);
+		if (workingAgents.length === 0) {
+			// Fallback: check message pattern
+			if (!rootEvent || !mostRecentEvent) return 'working';
 
-		// Fallback: check message pattern
-		if (!rootEvent || !mostRecentEvent) return 'working';
+			// Delegator = author of the root event
+			const delegatorPubkey = rootEvent.pubkey;
+			// Delegated-to agent = p-tagged in the root event
+			const delegatedToPubkey = rootEvent.tags?.find(t => t[0] === 'p')?.[1];
 
-		// Delegator = author of the root event
-		const delegatorPubkey = rootEvent.pubkey;
-		// Delegated-to agent = p-tagged in the root event
-		const delegatedToPubkey = rootEvent.tags?.find(t => t[0] === 'p')?.[1];
+			if (!delegatedToPubkey) return 'working';
 
-		if (!delegatedToPubkey) return 'working';
+			// Check if last event is from delegated agent and p-tags the delegator
+			const lastEventFromDelegate = mostRecentEvent.pubkey === delegatedToPubkey;
+			const lastEventTagsDelegator = mostRecentEvent.tags?.some(
+				t => t[0] === 'p' && t[1] === delegatorPubkey
+			);
 
-		// Check if last event is from delegated agent and p-tags the delegator
-		const lastEventFromDelegate = mostRecentEvent.pubkey === delegatedToPubkey;
-		const lastEventTagsDelegator = mostRecentEvent.tags?.some(
-			t => t[0] === 'p' && t[1] === delegatorPubkey
-		);
+			if (lastEventFromDelegate && lastEventTagsDelegator) {
+				return 'done';
+			}
 
-		if (lastEventFromDelegate && lastEventTagsDelegator) {
-			return 'done';
+			return 'working';
 		}
 
 		return 'working';
@@ -170,41 +168,8 @@
 		};
 	});
 
-	// Subscribe to operations status (kind 24133)
-	$effect(() => {
-		if (!conversationId || !projectId) return;
-
-		operationsSubscription = ndk.subscribe(
-			[{
-				kinds: [24133],
-				'#a': [projectId],
-				'#e': [conversationId]
-			}],
-			{
-				closeOnEose: false,
-				onEvent: (event: NDKEvent) => {
-					const snapshot = parseKind24133(event);
-					if (!snapshot) return;
-
-					// Last-write-wins: only update if newer
-					if (!latestOperations || snapshot.createdAt > latestOperations.createdAt) {
-						latestOperations = {
-							agentPubkeys: snapshot.agentPubkeys,
-							createdAt: snapshot.createdAt
-						};
-					}
-				}
-			}
-		);
-
-		return () => {
-			operationsSubscription?.stop();
-		};
-	});
-
 	onDestroy(() => {
 		subscription?.stop();
-		operationsSubscription?.stop();
 	});
 </script>
 
