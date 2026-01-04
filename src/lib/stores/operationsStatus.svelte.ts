@@ -44,8 +44,6 @@ class OperationsStatusStore {
           onEvents: (events: NDKEvent[]) => events.forEach(e => this.processEvent(e))
         }
       );
-
-      subscription.start();
     });
   }
 

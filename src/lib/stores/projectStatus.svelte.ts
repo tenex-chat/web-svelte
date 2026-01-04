@@ -61,8 +61,6 @@ class ProjectStatusStore {
           }
         }
       );
-
-      subscription.start();
     });
   }
 
