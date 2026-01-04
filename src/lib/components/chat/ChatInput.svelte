@@ -624,7 +624,7 @@
 					disabled={isSubmitting || !ndk.$currentUser}
 					class={cn(
 						"w-full bg-transparent text-foreground rounded-lg resize-none focus:outline-none disabled:cursor-not-allowed placeholder:text-muted-foreground transition-all duration-300",
-						messageInput.length > 5 && !isExpanded ? 'h-12' : '',
+						'h-12',
 						isExpanded ? 'font-mono' : ''
 					)}
 					rows={isExpanded ? 30 : 1}
@@ -651,7 +651,7 @@
 			</div>
 
 			<!-- Controls Row: Agent Selector, Active Agents, Attachment -->
-			<div class="flex items-center justify-between gap-2 border-t border-border/30 pt-2">
+			<div class="flex items-center justify-between gap-2 pt-2">
 				<!-- Left side controls -->
 				<div class="flex items-center gap-2">
 					<!-- Nudge Selector -->

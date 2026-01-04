@@ -1,15 +1,13 @@
 <script lang="ts">
-	import { ndk, ndkReady } from '$lib/ndk.svelte';
+	import { ndkReady } from '$lib/ndk.svelte';
 	import { browser } from '$app/environment';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { operationsStatusStore } from '$lib/stores/operationsStatus.svelte';
+	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
 	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import LoginModal from '$lib/components/LoginModal.svelte';
 	import WindowManagerOverlay from '$lib/components/window-manager/WindowManagerOverlay.svelte';
 	import ToastContainer from '$lib/components/ui/ToastContainer.svelte';
-	import { NDKKind } from '$lib/kinds';
-	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
-	import { processConversationMetadataEvent } from '$lib/utils/conversationMetadataProcessor';
 	import '../app.css';
 
 	// Initialize UI settings (including theme)
@@ -34,32 +32,7 @@
 		if (ready && browser) {
 			projectStatusStore.init();
 			operationsStatusStore.init();
-		}
-	});
-
-	// Global subscription for conversation metadata (kind 513)
-	const metadataSubscription = ndk.$subscribe(() => ({
-		filters: [{ kinds: [NDKKind.TenexConversationMetadata as number] }],
-		closeOnEose: false
-	}));
-
-	$effect(() => {
-		const events = metadataSubscription.events;
-		if (events && events.length > 0) {
-			events.forEach((event) => {
-				const conversationId = event.tags.find((tag) => tag[0] === 'e')?.[1];
-				if (conversationId) {
-					const currentMetadata = conversationMetadataStore.getMetadata(conversationId);
-					const result = processConversationMetadataEvent(event, currentMetadata);
-
-					if (result.success && (result.title || result.summary)) {
-						conversationMetadataStore.setMetadata(result.conversationId, {
-							title: result.title,
-							summary: result.summary
-						});
-					}
-				}
-			});
+			conversationMetadataStore.init();
 		}
 	});
 </script>

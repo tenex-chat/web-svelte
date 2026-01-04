@@ -1,10 +1,7 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { NDKEvent, type NDKSubscription, type NDKFilter } from '@nostr-dev-kit/ndk';
 import type { NDKSvelte } from '@nostr-dev-kit/svelte';
-import { NDKKind } from '$lib/kinds';
 import type { Message, ThreadViewMode } from '$lib/utils/messageUtils';
-import { conversationMetadataStore } from './conversationMetadata.svelte';
-import { processConversationMetadataEvent } from '$lib/utils/conversationMetadataProcessor';
 import { uiSettingsStore } from './uiSettings.svelte';
 
 interface ConversationOptions {
@@ -131,7 +128,7 @@ export class ConversationState {
 		}
 
 		return [{
-			kinds: [1, NDKKind.TenexConversationMetadata as number],
+			kinds: [1],
 			'#e': [this.rootEvent.id]
 		}];
 	}
@@ -143,28 +140,7 @@ export class ConversationState {
 		// Apply view mode filtering
 		if (this.viewMode === 'threaded' && !this.belongsToConversation(event)) return;
 
-		// Handle metadata events (update global store)
-		if (event.kind === NDKKind.TenexConversationMetadata) {
-			this.handleMetadataEvent(event);
-		}
-
-		// Store all events in messages map (including metadata for display)
 		this.messages.set(event.id, { id: event.id, event });
-	}
-
-	private handleMetadataEvent(event: NDKEvent): void {
-		const conversationId = event.tags.find((tag) => tag[0] === 'e')?.[1];
-		if (!conversationId) return;
-
-		const currentMetadata = conversationMetadataStore.getMetadata(conversationId);
-		const result = processConversationMetadataEvent(event, currentMetadata);
-
-		if (result.success && (result.title || result.summary)) {
-			conversationMetadataStore.setMetadata(result.conversationId, {
-				title: result.title,
-				summary: result.summary
-			});
-		}
 	}
 
 	private belongsToConversation(event: NDKEvent): boolean {

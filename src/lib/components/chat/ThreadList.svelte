@@ -30,14 +30,27 @@
 		closeOnEose: false
 	}));
 
+	// Debounced events snapshot - batches rapid event updates into single recomputation
+	// Without this, every single incoming event triggers full recomputation of threads/replies/metadata
+	let debouncedEvents = $state<NDKEvent[]>([]);
+	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+	$effect(() => {
+		const events = allEventsSubscription.events;
+		if (debounceTimer) clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
+			debouncedEvents = events;
+		}, 150);
+	});
+
 	// Threads are kind:1 with NO e-tags (root events)
 	const threads = $derived(
-		allEventsSubscription.events.filter(e => !e.tags.some(t => t[0] === 'e'))
+		debouncedEvents.filter(e => !e.tags.some(t => t[0] === 'e'))
 	);
 
 	// Replies are kind:1 WITH e-tags (reply events)
 	const replies = $derived(
-		allEventsSubscription.events.filter(e => e.tags.some(t => t[0] === 'e'))
+		debouncedEvents.filter(e => e.tags.some(t => t[0] === 'e'))
 	);
 
 	// Build thread metadata (reply count, participants, latest reply, time tracking for filters)

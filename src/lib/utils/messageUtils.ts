@@ -1,5 +1,4 @@
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
-import { NDKKind } from '$lib/kinds';
 
 export type ThreadViewMode = 'threaded' | 'flattened';
 export type ChatViewMode = 'threaded' | 'flattened' | 'delegation';
@@ -14,21 +13,13 @@ export interface Message {
  */
 export type DisplayItem =
 	| { type: 'visible'; message: Message; isConsecutive: boolean; hasNextConsecutive: boolean; isLastReasoningMessage: boolean }
-	| { type: 'agent_group'; messages: Message[]; isConsecutive: boolean; hasNextConsecutive: boolean }
-	| { type: 'metadata'; event: NDKEvent };
+	| { type: 'agent_group'; messages: Message[]; isConsecutive: boolean; hasNextConsecutive: boolean };
 
 /**
  * Check if an event has p-tags (mentions)
  */
 export function hasPTag(event: NDKEvent): boolean {
 	return event.tags?.some((tag) => tag[0] === 'p') ?? false;
-}
-
-/**
- * Check if a message is a metadata event
- */
-export function isMetadataEvent(message: Message): boolean {
-	return message.event.kind === NDKKind.TenexConversationMetadata;
 }
 
 /**
@@ -83,7 +74,7 @@ export function getUniquePubkeys(messages: Message[]): string[] {
  * Rules:
  * - Messages from the same pubkey are grouped together
  * - A p-tag in a message breaks the group (that message starts a new group or is standalone)
- * - Metadata events are passed through as-is
+ * - Delegation tool calls break the group (should never be collapsed)
  */
 function groupConsecutiveAgentMessages(messages: Message[]): DisplayItem[] {
 	if (messages.length === 0) return [];
@@ -126,21 +117,14 @@ function groupConsecutiveAgentMessages(messages: Message[]): DisplayItem[] {
 		const shouldBreak =
 			msgPubkey !== currentPubkey || // Different author
 			msgHasPTag || // Message mentions someone (p-tag)
-			msgIsDelegation || // Delegation tool call (should never be collapsed)
-			isMetadataEvent(msg); // Metadata event
+			msgIsDelegation; // Delegation tool call (should never be collapsed)
 
 		if (shouldBreak) {
 			flushGroup();
 		}
 
-		if (isMetadataEvent(msg)) {
-			// Metadata events are standalone
-			result.push({ type: 'metadata', event: msg.event });
-		} else {
-			// Add to current group
-			currentGroup.push(msg);
-			currentPubkey = msgPubkey;
-		}
+		currentGroup.push(msg);
+		currentPubkey = msgPubkey;
 	}
 
 	flushGroup();
@@ -162,8 +146,6 @@ function calculateConsecutiveStates(items: DisplayItem[]): DisplayItem[] {
 
 	for (let i = 0; i < result.length; i++) {
 		const item = result[i];
-		if (item.type === 'metadata') continue;
-
 		const prevItem = i > 0 ? result[i - 1] : undefined;
 		const nextItem = i < result.length - 1 ? result[i + 1] : undefined;
 
@@ -188,12 +170,11 @@ function calculateConsecutiveStates(items: DisplayItem[]): DisplayItem[] {
  * Create a simplified display model that groups consecutive agent messages.
  *
  * Groups all consecutive messages from the same agent together,
- * breaking on p-tags (mentions) or metadata events.
+ * breaking on p-tags (mentions) or delegation tool calls.
  */
 export function createSimplifiedDisplayModel(messages: Message[]): DisplayItem[] {
 	if (messages.length === 0) return [];
 
-	// Group consecutive messages from same agent (handles metadata inline)
 	const items = groupConsecutiveAgentMessages(messages);
 
 	// Calculate consecutive states for styling

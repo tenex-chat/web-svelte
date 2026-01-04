@@ -2,7 +2,6 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import Message from './Message.svelte';
-	import SystemMessage from './SystemMessage.svelte';
 	import AgentMessageBlock from './AgentMessageBlock.svelte';
 	import AgentTodoList from './AgentTodoList.svelte';
 	import { ConversationState } from '$lib/stores/conversation-state.svelte';
@@ -16,10 +15,8 @@
 	function getDisplayItemKey(item: DisplayItem, index: number): string {
 		if (item.type === 'visible') {
 			return `visible-${item.message.id}`;
-		} else if (item.type === 'agent_group') {
-			return `agent_group-${item.messages[0]?.id || index}`;
 		} else {
-			return `metadata-${item.event.id}`;
+			return `agent_group-${item.messages[0]?.id || index}`;
 		}
 	}
 
@@ -113,8 +110,6 @@
 
 		for (let i = 0; i < displayList.length; i++) {
 			const item = displayList[i];
-			if (item.type === 'metadata') continue;
-
 			const msgs = item.type === 'agent_group' ? item.messages : [item.message];
 			const hasTodoEvent = msgs.some(m => {
 				const toolName = m.event.tagValue('tool');
@@ -183,9 +178,7 @@
 			<!-- Render from unified display model with agent grouping -->
 			<div class="flex flex-col">
 				{#each displayList as item, index (getDisplayItemKey(item, index))}
-					{#if item.type === 'metadata'}
-						<SystemMessage event={item.event} />
-					{:else if item.type === 'agent_group'}
+					{#if item.type === 'agent_group'}
 						<AgentMessageBlock
 							messages={item.messages}
 							isConsecutive={item.isConsecutive}
@@ -198,7 +191,7 @@
 							{onTimeClick}
 							{onSendAgain}
 						/>
-					{:else if item.type === 'visible'}
+					{:else}
 						<AgentMessageBlock
 							messages={[item.message]}
 							isConsecutive={item.isConsecutive}
