@@ -34,8 +34,11 @@
 		Clock,
 		MessageCircleQuestion,
 		UserCircle,
-		Check
+		Check,
+		LayoutGrid,
+		Columns
 	} from 'lucide-svelte';
+	import { viewModeStore } from '$lib/stores/viewMode.svelte';
 	import { globalFilterStore } from '$lib/stores/globalFilter.svelte';
 	import {
 		projectGroupsStore,
@@ -96,6 +99,9 @@
 	const currentFilter = $derived(globalFilterStore.value);
 	const onlyByMe = $derived(globalFilterStore.onlyByMe);
 
+	// View mode
+	const viewMode = $derived(viewModeStore.value);
+
 	// Helper to get filter label
 	function getFilterLabel(filter: string | null): string {
 		if (!filter) return 'All conversations';
@@ -103,6 +109,8 @@
 			case '1h': return 'Active in last hour';
 			case '4h': return 'Active in last 4 hours';
 			case '1d': return 'Active in last 24 hours';
+			case '3d': return 'Active in last 3 days';
+			case '7d': return 'Active in last 7 days';
 			case 'needs-response-1h': return 'Needs response (1h)';
 			case 'needs-response-4h': return 'Needs response (4h)';
 			case 'needs-response-1d': return 'Needs response (24h)';
@@ -239,20 +247,39 @@
 				</a>
 			{/if}
 
-			<button
-				onclick={() => sidebarCollapsedStore.toggle()}
-				class="w-8 h-8 flex items-center justify-center rounded hover:bg-muted transition-colors text-foreground"
-				aria-label="Toggle sidebar"
-			>
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d={collapsed ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'}
-					/>
-				</svg>
-			</button>
+			<div class="flex items-center gap-1">
+				<!-- View Mode Toggle -->
+				<button
+					onclick={() => viewModeStore.toggle()}
+					class={cn(
+						'w-8 h-8 flex items-center justify-center rounded hover:bg-muted transition-colors',
+						viewMode === 'status' ? 'text-primary' : 'text-foreground'
+					)}
+					aria-label={viewMode === 'status' ? 'Switch to projects view' : 'Switch to status dashboard'}
+					title={viewMode === 'status' ? 'Switch to projects view' : 'Switch to status dashboard'}
+				>
+					{#if viewMode === 'status'}
+						<Columns class="w-4 h-4" />
+					{:else}
+						<LayoutGrid class="w-4 h-4" />
+					{/if}
+				</button>
+
+				<button
+					onclick={() => sidebarCollapsedStore.toggle()}
+					class="w-8 h-8 flex items-center justify-center rounded hover:bg-muted transition-colors text-foreground"
+					aria-label="Toggle sidebar"
+				>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d={collapsed ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'}
+						/>
+					</svg>
+				</button>
+			</div>
 		</div>
 	</div>
 
@@ -546,6 +573,20 @@
 								<Clock class="mr-2 h-4 w-4" />
 								<span>Active in last 24 hours</span>
 								{#if currentFilter === '1d'}
+									<span class="ml-auto">✓</span>
+								{/if}
+							</DropdownMenu.Item>
+							<DropdownMenu.Item onclick={() => globalFilterStore.set('3d')}>
+								<Clock class="mr-2 h-4 w-4" />
+								<span>Active in last 3 days</span>
+								{#if currentFilter === '3d'}
+									<span class="ml-auto">✓</span>
+								{/if}
+							</DropdownMenu.Item>
+							<DropdownMenu.Item onclick={() => globalFilterStore.set('7d')}>
+								<Clock class="mr-2 h-4 w-4" />
+								<span>Active in last 7 days</span>
+								{#if currentFilter === '7d'}
 									<span class="ml-auto">✓</span>
 								{/if}
 							</DropdownMenu.Item>

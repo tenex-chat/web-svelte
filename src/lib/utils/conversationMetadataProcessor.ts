@@ -1,7 +1,7 @@
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
 
 export type ProcessedMetadataResult =
-	| { success: true; conversationId: string; title?: MetadataField; summary?: MetadataField }
+	| { success: true; conversationId: string; title?: MetadataField; summary?: MetadataField; statusLabel?: MetadataField; statusCurrentActivity?: MetadataField }
 	| { success: false; error: string; eventId?: string };
 
 export interface MetadataField {
@@ -35,7 +35,7 @@ export function extractConversationId(event: NDKEvent | undefined): string | und
  */
 export function processConversationMetadataEvent(
 	event: NDKEvent,
-	currentMetadata?: { title?: MetadataField; summary?: MetadataField }
+	currentMetadata?: { title?: MetadataField; summary?: MetadataField; statusLabel?: MetadataField; statusCurrentActivity?: MetadataField }
 ): ProcessedMetadataResult {
 	// Find the "e" tag to get the conversation ID
 	const eTag = event.tags?.find((tag) => tag[0] === 'e');
@@ -61,6 +61,8 @@ export function processConversationMetadataEvent(
 
 	let titleToUpdate: MetadataField | undefined;
 	let summaryToUpdate: MetadataField | undefined;
+	let statusLabelToUpdate: MetadataField | undefined;
+	let statusCurrentActivityToUpdate: MetadataField | undefined;
 
 	// Extract title from 'title' tag if present
 	const titleTag = event.tags.find((tag) => tag[0] === 'title');
@@ -78,12 +80,30 @@ export function processConversationMetadataEvent(
 		}
 	}
 
-	if (titleToUpdate || summaryToUpdate) {
+	// Extract status-label from 'status-label' tag if present
+	const statusLabelTag = event.tags.find((tag) => tag[0] === 'status-label');
+	if (statusLabelTag && typeof statusLabelTag[1] === 'string') {
+		if (!currentMetadata?.statusLabel || eventTimestamp > currentMetadata.statusLabel.timestamp) {
+			statusLabelToUpdate = { value: statusLabelTag[1], timestamp: eventTimestamp };
+		}
+	}
+
+	// Extract status-current-activity from 'status-current-activity' tag if present
+	const statusCurrentActivityTag = event.tags.find((tag) => tag[0] === 'status-current-activity');
+	if (statusCurrentActivityTag && typeof statusCurrentActivityTag[1] === 'string') {
+		if (!currentMetadata?.statusCurrentActivity || eventTimestamp > currentMetadata.statusCurrentActivity.timestamp) {
+			statusCurrentActivityToUpdate = { value: statusCurrentActivityTag[1], timestamp: eventTimestamp };
+		}
+	}
+
+	if (titleToUpdate || summaryToUpdate || statusLabelToUpdate || statusCurrentActivityToUpdate) {
 		return {
 			success: true,
 			conversationId,
 			title: titleToUpdate,
-			summary: summaryToUpdate
+			summary: summaryToUpdate,
+			statusLabel: statusLabelToUpdate,
+			statusCurrentActivity: statusCurrentActivityToUpdate
 		};
 	}
 
@@ -91,6 +111,8 @@ export function processConversationMetadataEvent(
 		success: true,
 		conversationId,
 		title: undefined,
-		summary: undefined
+		summary: undefined,
+		statusLabel: undefined,
+		statusCurrentActivity: undefined
 	};
 }

@@ -47,6 +47,7 @@ export type StorageSchema = {
 
 	// Project management
 	'tenex:openProjects': string[];
+	'tenex:viewMode': 'projects' | 'status';
 	'project-filters': Record<string, string | null>;
 	'global-filter': string | null;
 	'global-filter-only-by-me': boolean;
@@ -133,6 +134,7 @@ class StorageService {
 			'message-drafts',
 			'draft-timestamps',
 			'tenex:openProjects',
+			'tenex:viewMode',
 			'project-filters',
 			'global-filter',
 			'global-filter-only-by-me',

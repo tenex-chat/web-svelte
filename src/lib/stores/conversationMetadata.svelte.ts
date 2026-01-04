@@ -8,6 +8,9 @@ export interface ConversationMetadataResult {
 	id: string;
 	title: string | undefined;
 	summary: string | undefined;
+	statusLabel: string | undefined;
+	statusCurrentActivity: string | undefined;
+	statusCurrentActivityTimestamp: number | undefined;
 	hasTitle: boolean;
 	hasSummary: boolean;
 }
@@ -21,6 +24,8 @@ class ConversationMetadataEntry {
 	id: string;
 	title = $state<MetadataField | undefined>(undefined);
 	summary = $state<MetadataField | undefined>(undefined);
+	statusLabel = $state<MetadataField | undefined>(undefined);
+	statusCurrentActivity = $state<MetadataField | undefined>(undefined);
 
 	constructor(id: string) {
 		this.id = id;
@@ -75,8 +80,8 @@ class ConversationMetadataStore {
 		if (!conversationId) return;
 
 		const entry = this.getOrCreateEntry(conversationId);
-		const currentMetadata = entry.title || entry.summary
-			? { id: conversationId, title: entry.title, summary: entry.summary }
+		const currentMetadata = entry.title || entry.summary || entry.statusLabel || entry.statusCurrentActivity
+			? { id: conversationId, title: entry.title, summary: entry.summary, statusLabel: entry.statusLabel, statusCurrentActivity: entry.statusCurrentActivity }
 			: undefined;
 
 		const result = processConversationMetadataEvent(event, currentMetadata);
@@ -84,6 +89,8 @@ class ConversationMetadataStore {
 		if (result.success) {
 			if (result.title) entry.title = result.title;
 			if (result.summary) entry.summary = result.summary;
+			if (result.statusLabel) entry.statusLabel = result.statusLabel;
+			if (result.statusCurrentActivity) entry.statusCurrentActivity = result.statusCurrentActivity;
 		}
 	}
 
@@ -101,20 +108,26 @@ class ConversationMetadataStore {
 		data: {
 			title?: MetadataField;
 			summary?: MetadataField;
+			statusLabel?: MetadataField;
+			statusCurrentActivity?: MetadataField;
 		}
 	): void {
 		const entry = this.getOrCreateEntry(conversationId);
 		if (data.title) entry.title = data.title;
 		if (data.summary) entry.summary = data.summary;
+		if (data.statusLabel) entry.statusLabel = data.statusLabel;
+		if (data.statusCurrentActivity) entry.statusCurrentActivity = data.statusCurrentActivity;
 	}
 
-	getMetadata(conversationId: string): { id: string; title?: MetadataField; summary?: MetadataField } | undefined {
+	getMetadata(conversationId: string): { id: string; title?: MetadataField; summary?: MetadataField; statusLabel?: MetadataField; statusCurrentActivity?: MetadataField } | undefined {
 		const entry = this.entries.get(conversationId);
 		if (!entry) return undefined;
 		return {
 			id: conversationId,
 			title: entry.title,
-			summary: entry.summary
+			summary: entry.summary,
+			statusLabel: entry.statusLabel,
+			statusCurrentActivity: entry.statusCurrentActivity
 		};
 	}
 
@@ -124,6 +137,9 @@ class ConversationMetadataStore {
 				id: '',
 				title: undefined,
 				summary: undefined,
+				statusLabel: undefined,
+				statusCurrentActivity: undefined,
+				statusCurrentActivityTimestamp: undefined,
 				hasTitle: false,
 				hasSummary: false
 			};
@@ -135,6 +151,9 @@ class ConversationMetadataStore {
 			id: conversationId,
 			title: entry.title?.value,
 			summary: entry.summary?.value,
+			statusLabel: entry.statusLabel?.value,
+			statusCurrentActivity: entry.statusCurrentActivity?.value,
+			statusCurrentActivityTimestamp: entry.statusCurrentActivity?.timestamp,
 			hasTitle: !!entry.title,
 			hasSummary: !!entry.summary
 		};
