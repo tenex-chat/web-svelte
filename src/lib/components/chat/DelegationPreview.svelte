@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import type { NDKEvent, NDKSubscription, NDKFilter } from '@nostr-dev-kit/ndk';
-	import { aggregateTodoState } from '$lib/utils/todoAggregator';
 	import { stopEvent } from '$lib/ndk-events/operations';
 	import { onDestroy } from 'svelte';
-	import { Check, Circle, Loader2, Square } from 'lucide-svelte';
+	import { Circle, Square } from 'lucide-svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { NDKProject } from '$lib/events/NDKProject';
 	import { User } from '$lib/ndk/ui/user';
 	import { operationsStatusStore } from '$lib/stores/operationsStatus.svelte';
+	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
+	import { generateColorFromString } from '$lib/utils/colors';
 
 	interface Props {
 		conversationId: string;
@@ -25,65 +26,28 @@
 	// Delegated-to agent pubkey (from root event's p-tag)
 	const agentPubkey = $derived(rootEvent?.tags?.find(t => t[0] === 'p')?.[1]);
 
-	// Aggregate todos from events
-	const todoState = $derived.by(() => {
-		const sortedEvents = [...events].sort((a, b) => (a.created_at ?? 0) - (b.created_at ?? 0));
-		return aggregateTodoState(sortedEvents);
-	});
+	// Get metadata from centralized store (reactive per-conversation)
+	const metadata = $derived(conversationMetadataStore.getConversationData(conversationId));
 
-	// Get most recent kind:1 event
-	const mostRecentEvent = $derived.by(() => {
-		return [...events]
-			.filter(e => e.kind === 1)
-			.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0))[0] || null;
-	});
+	// Generate dynamic color from status label
+	const statusColor = $derived(metadata.statusLabel ? generateColorFromString(metadata.statusLabel) : null);
 
-	// Get most recent message (non-tool event with content) for display
-	const recentMessage = $derived.by(() => {
-		const sortedEvents = [...events]
-			.filter(e => {
-				// Exclude tool events
-				const hasToolTag = e.tags?.some(t => t[0] === 'tool');
-				return !hasToolTag && e.content && e.content.trim().length > 0;
-			})
-			.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
-		return sortedEvents[0] || null;
-	});
-
-	// Calculate progress
-	const progress = $derived.by(() => {
-		if (!todoState.hasTodos) return null;
-		const completed = todoState.items.filter(t => t.status === 'done' || t.status === 'completed').length;
-		const total = todoState.items.length;
-		return { completed, total, percent: Math.round((completed / total) * 100) };
-	});
-
-	// Status: done if no agents working (from 24133) OR if last message is delegatee p-tagging delegator
+	// Status: prefer metadata store's statusLabel, fallback to heuristics
 	const status = $derived.by(() => {
+		if (metadata.statusLabel) {
+			const label = metadata.statusLabel.toLowerCase();
+			if (label.includes('completed') || label.includes('done') || label.includes('finished')) {
+				return 'done';
+			}
+			if (label.includes('progress') || label.includes('working') || label.includes('running')) {
+				return 'working';
+			}
+		}
+
 		// Check centralized operations store
 		const workingAgents = operationsStatusStore.getWorkingAgents(conversationId);
 		if (workingAgents.length === 0) {
-			// Fallback: check message pattern
-			if (!rootEvent || !mostRecentEvent) return 'working';
-
-			// Delegator = author of the root event
-			const delegatorPubkey = rootEvent.pubkey;
-			// Delegated-to agent = p-tagged in the root event
-			const delegatedToPubkey = rootEvent.tags?.find(t => t[0] === 'p')?.[1];
-
-			if (!delegatedToPubkey) return 'working';
-
-			// Check if last event is from delegated agent and p-tags the delegator
-			const lastEventFromDelegate = mostRecentEvent.pubkey === delegatedToPubkey;
-			const lastEventTagsDelegator = mostRecentEvent.tags?.some(
-				t => t[0] === 'p' && t[1] === delegatorPubkey
-			);
-
-			if (lastEventFromDelegate && lastEventTagsDelegator) {
-				return 'done';
-			}
-
-			return 'working';
+			return 'done';
 		}
 
 		return 'working';
@@ -104,7 +68,6 @@
 	async function handleClick() {
 		if (!rootEvent) return;
 
-		// Extract project from 'a' tag (format: kind:pubkey:d-tag)
 		const aTag = rootEvent.tags?.find(t => t[0] === 'a')?.[1];
 		let project: NDKProject | null = null;
 
@@ -123,9 +86,7 @@
 		}
 
 		if (project) {
-			// Open chat and immediately detach it
 			const windowId = windowManager.openChat(project, rootEvent);
-			// Position near center of screen
 			const x = Math.max(100, (globalThis.innerWidth - 600) / 2);
 			const y = Math.max(50, (globalThis.innerHeight - 700) / 2);
 			windowManager.detach(windowId, { x, y });
@@ -134,7 +95,7 @@
 
 	// Stop the delegated work
 	async function handleStop(e: MouseEvent) {
-		e.stopPropagation(); // Don't trigger the card click
+		e.stopPropagation();
 		if (!projectId || !conversationId) return;
 		await stopEvent(ndk, projectId, conversationId);
 	}
@@ -146,7 +107,6 @@
 	$effect(() => {
 		if (!conversationId) return;
 
-		// Clear previous state
 		events = [];
 
 		const filters: NDKFilter[] = [
@@ -179,89 +139,70 @@
 	<div class="delegation-header">
 		{#if agentPubkey}
 			<User.Root {ndk} pubkey={agentPubkey}>
-				<User.Avatar class="w-6 h-6 rounded-full flex-shrink-0" />
-				<div class="delegation-title">
+				<User.Avatar class="avatar" />
+				<div class="header-content">
 					<div class="agent-name"><User.Name /></div>
-					{#if rootEvent?.content}
-						<div class="prompt-preview" title={rootEvent.content}>{rootEvent.content}</div>
+					{#if metadata.title}
+						<div class="title" title={metadata.title}>{metadata.title}</div>
+					{:else if rootEvent?.content}
+						<div class="prompt-line" title={rootEvent.content}>{rootEvent.content}</div>
 					{/if}
 				</div>
 			</User.Root>
 		{:else}
-			<div class="agent-avatar">?</div>
-			<div class="delegation-title">
+			<div class="avatar-placeholder">?</div>
+			<div class="header-content">
 				<div class="agent-name">Agent</div>
 			</div>
 		{/if}
-		<span class="delegation-status" class:working={status === 'working'}>
-			{status}
-		</span>
-		{#if status === 'working'}
-			<button
-				class="stop-button"
-				onclick={handleStop}
-				title="Stop delegation"
-			>
-				<Square class="w-3 h-3" />
-			</button>
-		{/if}
+		<div class="header-right">
+			{#if metadata.statusLabel && statusColor}
+				<span
+					class="status-badge"
+					style="background-color: {statusColor.replace(')', ', 0.2)')}; color: {statusColor}; border-color: {statusColor.replace(')', ', 0.3)')}"
+				>
+					{metadata.statusLabel}
+				</span>
+			{:else}
+				<span class="status-badge status-fallback" class:working={status === 'working'}>
+					{status}
+				</span>
+			{/if}
+			{#if status === 'working'}
+				<button
+					class="stop-button"
+					onclick={handleStop}
+					title="Stop delegation"
+				>
+					<Square class="w-3 h-3" />
+				</button>
+			{/if}
+		</div>
 	</div>
 
-	{#if events.length > 0}
-		{#if todoState.hasTodos}
-			<div class="todo-section">
-				<div class="todo-section-header">
-					{#if progress}
-						Progress ({progress.completed}/{progress.total})
-					{:else}
-						Tasks
-					{/if}
-				</div>
-				<ul class="todo-list">
-					{#each todoState.items as item (item.id)}
-						<li class="todo-item">
-							<div class="todo-checkbox"
-								class:completed={item.status === 'done' || item.status === 'completed'}
-								class:in-progress={item.status === 'in_progress'}>
-								{#if item.status === 'done' || item.status === 'completed'}
-									<Check class="w-2.5 h-2.5" />
-								{:else if item.status === 'in_progress'}
-									<Loader2 class="w-2 h-2 animate-spin" />
-								{/if}
-							</div>
-							<span class="todo-text" class:completed={item.status === 'done' || item.status === 'completed'}>
-								{item.title}
-							</span>
-						</li>
-					{/each}
-				</ul>
-			</div>
-		{/if}
-
-		{#if recentMessage}
-			<div class="recent-message">
-				<div class="recent-message-header">Latest Activity</div>
-				<div class="message-content">
-					{recentMessage.content}
-				</div>
-				{#if recentMessage.created_at}
-					<div class="message-timestamp">
-						{formatRelativeTime(recentMessage.created_at)}
-					</div>
+	<div class="content">
+		{#if metadata.statusCurrentActivity}
+			<div class="activity-main" style={statusColor ? `color: ${statusColor}` : ''}>
+				{#if status === 'working'}
+					<span class="pulse" style={statusColor ? `background: ${statusColor}` : ''}></span>
 				{/if}
+				<span class="activity-text">{metadata.statusCurrentActivity}</span>
 			</div>
-		{:else if !todoState.hasTodos}
+			{#if metadata.summary}
+				<div class="summary-muted">{metadata.summary}</div>
+			{/if}
+			{#if metadata.statusCurrentActivityTimestamp}
+				<div class="timestamp">{formatRelativeTime(metadata.statusCurrentActivityTimestamp)}</div>
+			{/if}
+		{:else if metadata.summary}
+			<div class="summary-only">{metadata.summary}</div>
+		{:else}
 			<div class="empty-state">
 				<Circle class="w-4 h-4 animate-pulse" />
 				<span>Waiting for activity...</span>
 			</div>
 		{/if}
-	{:else}
-		<div class="empty-state">
-			<Circle class="w-4 h-4 animate-pulse" />
-			<span>Waiting for activity...</span>
-		</div>
-	{/if}
+	</div>
 </div>
 
 <style>
@@ -283,66 +224,100 @@
 
 	.delegation-header {
 		display: flex;
-		align-items: center;
 		gap: 10px;
 		padding: 10px 12px;
 		border-bottom: 1px solid hsl(var(--border));
 		background: hsl(var(--muted) / 0.3);
 	}
 
-	.agent-avatar {
-		width: 26px;
-		height: 26px;
+	:global(.delegation-header .avatar) {
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		flex-shrink: 0;
+		align-self: flex-start;
+		margin-top: 2px;
+	}
+
+	.avatar-placeholder {
+		width: 32px;
+		height: 32px;
 		border-radius: 50%;
 		background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.7));
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 11px;
+		font-size: 12px;
 		font-weight: 600;
 		color: hsl(var(--primary-foreground));
 		flex-shrink: 0;
 	}
 
-	.delegation-title {
+	.header-content {
 		flex: 1;
 		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
 	}
 
-	.delegation-title .agent-name {
+	.agent-name {
+		font-size: 9px;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.title {
 		font-weight: 600;
 		font-size: 12px;
-	}
-
-	.delegation-title .prompt-preview {
-		color: hsl(var(--muted-foreground));
-		font-size: 10px;
+		color: hsl(var(--foreground));
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 
-	.delegation-status {
-		font-size: 9px;
-		padding: 2px 8px;
-		border-radius: 10px;
-		background: hsl(142 76% 36% / 0.2);
-		color: hsl(142 76% 46%);
+	.prompt-line {
+		font-size: 10px;
+		color: hsl(var(--muted-foreground));
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.header-right {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 4px;
 		flex-shrink: 0;
 	}
 
-	.delegation-status.working {
+	.status-badge {
+		font-size: 9px;
+		padding: 2px 8px;
+		border-radius: 10px;
+		font-weight: 600;
+		white-space: nowrap;
+		border: 1px solid;
+	}
+
+	.status-fallback {
+		background: hsl(142 76% 36% / 0.2);
+		color: hsl(142 76% 46%);
+		border-color: hsl(142 76% 36% / 0.3);
+	}
+
+	.status-fallback.working {
 		background: hsl(45 93% 47% / 0.2);
 		color: hsl(45 93% 47%);
-		animation: pulse 2s infinite;
+		border-color: hsl(45 93% 47% / 0.3);
 	}
 
 	.stop-button {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 22px;
-		height: 22px;
+		width: 20px;
+		height: 20px;
 		border-radius: 4px;
 		border: none;
 		background: hsl(0 84% 60% / 0.15);
@@ -356,107 +331,72 @@
 		background: hsl(0 84% 60% / 0.3);
 	}
 
-	@keyframes pulse {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.6; }
-	}
-
-	.todo-section {
+	.content {
 		padding: 10px 12px;
-		border-bottom: 1px solid hsl(var(--border));
 	}
 
-	.todo-section-header {
-		font-size: 9px;
-		text-transform: uppercase;
-		color: hsl(var(--muted-foreground));
-		margin-bottom: 6px;
-		letter-spacing: 0.5px;
-	}
-
-	.todo-list {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-	}
-
-	.todo-item {
+	.activity-main {
+		font-size: 11px;
+		line-height: 1.4;
 		display: flex;
 		align-items: flex-start;
 		gap: 6px;
-		padding: 3px 0;
-		font-size: 11px;
 	}
 
-	.todo-checkbox {
-		width: 14px;
-		height: 14px;
-		border: 1.5px solid hsl(var(--border));
-		border-radius: 3px;
+	.pulse {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
 		flex-shrink: 0;
-		margin-top: 1px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: hsl(var(--background));
+		margin-top: 5px;
+		animation: pulse 2s infinite;
 	}
 
-	.todo-checkbox.completed {
-		background: hsl(142 76% 36%);
-		border-color: hsl(142 76% 36%);
-	}
-
-	.todo-checkbox.in-progress {
-		border-color: hsl(45 93% 47%);
-		color: hsl(45 93% 47%);
-	}
-
-	.todo-text {
-		color: hsl(var(--foreground));
-		line-height: 1.3;
-	}
-
-	.todo-text.completed {
-		color: hsl(var(--muted-foreground));
-		text-decoration: line-through;
-	}
-
-	.recent-message {
-		padding: 10px 12px;
-	}
-
-	.recent-message-header {
-		font-size: 9px;
-		text-transform: uppercase;
-		color: hsl(var(--muted-foreground));
-		margin-bottom: 6px;
-		letter-spacing: 0.5px;
-	}
-
-	.message-content {
-		font-size: 11px;
-		line-height: 1.4;
-		color: hsl(var(--foreground));
-		max-height: 50px;
+	.activity-text {
+		flex: 1;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
 		overflow: hidden;
-		position: relative;
+	}
+
+	.summary-muted {
+		font-size: 10px;
+		color: hsl(var(--muted-foreground));
+		margin-top: 6px;
+		font-style: italic;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.summary-only {
+		font-size: 11px;
+		color: hsl(var(--muted-foreground));
+		font-style: italic;
 		display: -webkit-box;
 		-webkit-line-clamp: 3;
 		-webkit-box-orient: vertical;
+		overflow: hidden;
 	}
 
-	.message-timestamp {
+	.timestamp {
 		font-size: 9px;
-		color: hsl(var(--muted-foreground));
+		color: hsl(var(--muted-foreground) / 0.7);
 		margin-top: 4px;
 	}
 
 	.empty-state {
-		padding: 16px 12px;
 		display: flex;
 		align-items: center;
 		gap: 8px;
 		color: hsl(var(--muted-foreground));
 		font-size: 11px;
+	}
+
+	@keyframes pulse {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0.5; }
 	}
 </style>
