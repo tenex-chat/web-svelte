@@ -32,6 +32,7 @@
 	const args = $derived(parseToolArgs(event));
 	const projectDTag = $derived(extractProjectDTag(event));
 	const branch = $derived(extractBranch(event));
+	const hasDelegations = $derived(event.getMatchingTags('q').length > 0);
 
 	// Helper to get display path for file-based tools
 	function getFilePath(argName: string): string {
@@ -76,10 +77,10 @@
 	<LessonLearnToolRenderer {args} />
 {:else if toolName === 'codebase_search'}
 	<CodebaseSearchToolRenderer {args} />
-{:else if toolName === 'delegate'}
+{:else if hasDelegations}
 	<DelegateToolRenderer {event} />
 {:else if toolName === 'delegate_external'}
 	<DelegateExternalToolRenderer {args} />
 {:else if toolName}
-	<DefaultToolRenderer {toolName} />
+	<DefaultToolRenderer {toolName} content={event.content} />
 {/if}
