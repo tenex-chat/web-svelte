@@ -27,9 +27,10 @@
 		hideHeader?: boolean;
 		messages?: Message[];
 		windowId?: string;
+		documentRef?: string;
 	}
 
-	let { project = $bindable(), projectId, rootEvent = $bindable(null), threadId, onlineAgents = [], onThreadCreated, viewMode = $bindable<ChatViewMode>('threaded'), hideHeader = false, messages = $bindable([]), windowId }: Props = $props();
+	let { project = $bindable(), projectId, rootEvent = $bindable(null), threadId, onlineAgents = [], onThreadCreated, viewMode = $bindable<ChatViewMode>('threaded'), hideHeader = false, messages = $bindable([]), windowId, documentRef }: Props = $props();
 
 	// Set window context for child components (like DelegationPreview) to know if they're in a drawer or detached window
 	setContext(WINDOW_CONTEXT_KEY, {
@@ -196,14 +197,15 @@
 				{replyToEvent}
 				{quoteEvent}
 				onCancelReply={handleCancelReply}
+				{documentRef}
 			/>
-		</div>	
+		</div>
 	{:else}
 		<!-- New Conversation -->
 		<div class="flex-1 flex items-center justify-center text-muted-foreground">
 			Start a new conversation
 		</div>
 
-		<ChatInput {project} {onlineAgents} onThreadCreated={handleThreadCreated} />
+		<ChatInput {project} {onlineAgents} onThreadCreated={handleThreadCreated} {documentRef} />
 	{/if}
 </div>

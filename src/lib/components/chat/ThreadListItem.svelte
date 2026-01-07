@@ -190,11 +190,12 @@
 			<User.Root {ndk} pubkey={thread.pubkey}>
 				<div class="flex items-center gap-1.5">
 					<User.Avatar class="w-4 h-4 rounded-full" />
-					<User.Name class="truncate max-w-[80px]" />
+					{#if thread.pubkey !== ndk.$currentPubkey}
+						<User.Name class="truncate max-w-[80px]" />
+					{/if}
 				</div>
 			</User.Root>
 			{#if recipientPubkey}
-				<span class="text-muted-foreground/60">→</span>
 				<User.Root {ndk} pubkey={recipientPubkey}>
 					<div class="flex items-center gap-1">
 						<User.Avatar class="w-4 h-4 rounded-full" />

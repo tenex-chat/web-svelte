@@ -12,9 +12,9 @@
 	import TypingIndicator from './TypingIndicator.svelte';
 	import AskQuestionsBlock from './AskQuestionsBlock.svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { Copy, Reply, Quote, MoreVertical, Info, Eye, Hash, ChevronDown, ChevronUp, RefreshCw, ExternalLink, AlertCircle, HelpingHand } from 'lucide-svelte';
+	import { Copy, Reply, Quote, MoreVertical, Info, Eye, Hash, ChevronDown, ChevronUp, RefreshCw, ExternalLink, AlertCircle, Braces } from 'lucide-svelte';
 	import { formatTimestamp } from '$lib/utils/time';
-	import { isAskEvent, getAskTLDR, getAskContext, hasAskContext, hasAskQuestions, getAskQuestions } from '$lib/utils/askTags';
+	import { isAskEvent, hasAskQuestions, getAskQuestions } from '$lib/utils/askTags';
 	import InlineImage from './InlineImage.svelte';
 
 	interface Props {
@@ -40,16 +40,8 @@
 
 	// Ask event support
 	const isAsk = $derived(isAskEvent(message.event));
-	const askTLDR = $derived(getAskTLDR(message.event));
-	const askContext = $derived(getAskContext(message.event));
-	const hasAskCtx = $derived(hasAskContext(message.event));
-
-	// Multi-question ask support
 	const hasMultiQuestions = $derived(hasAskQuestions(message.event));
 	const askQuestions = $derived(getAskQuestions(message.event));
-
-	// State for ask context collapsible
-	let showAskContext = $state(false);
 
 	// Format timestamp
 	const timestamp = $derived.by(() => {
@@ -161,7 +153,7 @@
 
 			// Sign and publish the event
 			await replyEvent.sign();
-			await replyEvent.publish();
+			replyEvent.publish();
 
 			console.log('Question response sent:', content);
 		} catch (error) {
@@ -294,12 +286,12 @@
 									<span>Copy content</span>
 								</DropdownMenu.Item>
 								<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.inspect)}>
-									<Copy class="mr-2 h-4 w-4" />
+									<Braces class="mr-2 h-4 w-4" />
 									<span>Copy raw event</span>
 								</DropdownMenu.Item>
 								<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.encode())}>
-									<Hash class="mr-2 h-4 w-4" />
-									<span>Copy ID</span>
+									<span class="mr-2 h-4 w-4" />
+									<span>Copy nevent</span>
 								</DropdownMenu.Item>
 								<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.id)}>
 									<Hash class="mr-2 h-4 w-4" />
@@ -341,53 +333,6 @@
 					{:else if isAsk && hasMultiQuestions && askQuestions}
 						<!-- Multi-question ask events - title, content, and questions are all in the component -->
 						<AskQuestionsBlock questions={askQuestions} content={message.event.content} onResponse={handleQuestionResponse} />
-					{:else if isAsk && askTLDR}
-						<!-- Ask events with tldr tag: show only structured display, not raw content -->
-						<div class="space-y-2">
-							<!-- TLDR section - prominent display -->
-							<div class="p-3 bg-muted/50 border border-border rounded-md">
-								<div class="flex items-start gap-2">
-									<AlertCircle class="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-									<div class="flex-1 min-w-0">
-										<p class="text-xs font-semibold text-foreground">Summary</p>
-										<p class="text-sm text-muted-foreground mt-1">
-											{askTLDR}
-										</p>
-									</div>
-								</div>
-							</div>
-
-							<!-- Context section - collapsible -->
-							{#if hasAskCtx && askContext}
-								<div class="border border-border rounded-md overflow-hidden">
-									<button
-										type="button"
-										onclick={() => (showAskContext = !showAskContext)}
-										class="w-full px-3 py-2 flex items-center justify-between bg-muted/50 hover:bg-muted transition-colors"
-									>
-										<span class="text-xs font-semibold text-foreground flex items-center gap-2">
-											<HelpingHand class="h-3 w-3" />
-											Additional Context
-										</span>
-										<ChevronDown class="h-3 w-3 {showAskContext ? 'rotate-180' : ''} transition-transform" />
-									</button>
-									{#if showAskContext}
-										<div class="px-3 py-2 bg-muted/30 border-t border-border">
-											<p class="text-xs text-muted-foreground whitespace-pre-wrap break-words">
-												{askContext}
-											</p>
-											<button
-												type="button"
-												onclick={() => navigator.clipboard.writeText(askContext ?? '')}
-												class="mt-2 px-2 py-1 text-xs rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-											>
-												Copy context
-											</button>
-										</div>
-									{/if}
-								</div>
-							{/if}
-						</div>
 					{:else}
 						<div class="relative">
 							<!-- Truncatable content wrapper -->
@@ -498,12 +443,12 @@
 										<span>Copy content</span>
 									</DropdownMenu.Item>
 									<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.inspect)}>
-										<Copy class="mr-2 h-4 w-4" />
+										<Braces class="mr-2 h-4 w-4" />
 										<span>Copy raw event</span>
 									</DropdownMenu.Item>
 									<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.encode())}>
-										<Hash class="mr-2 h-4 w-4" />
-										<span>Copy ID</span>
+										<span class="mr-2 h-4 w-4" />
+										<span>Copy nevent</span>
 									</DropdownMenu.Item>
 									<DropdownMenu.Item onclick={() => navigator.clipboard.writeText(message.event.id)}>
 										<Hash class="mr-2 h-4 w-4" />

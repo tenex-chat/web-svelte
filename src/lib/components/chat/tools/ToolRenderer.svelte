@@ -22,6 +22,7 @@
 	import DelegateToolRenderer from './renderers/DelegateToolRenderer.svelte';
 	import DelegateExternalToolRenderer from './renderers/DelegateExternalToolRenderer.svelte';
 import ScheduleTaskRenderer from './renderers/ScheduleTaskRenderer.svelte';
+import ReportWriteToolRenderer from './renderers/ReportWriteToolRenderer.svelte';
 
 	interface Props {
 		event: NDKEvent;
@@ -34,6 +35,21 @@ import ScheduleTaskRenderer from './renderers/ScheduleTaskRenderer.svelte';
 	const projectDTag = $derived(extractProjectDTag(event));
 	const branch = $derived(extractBranch(event));
 	const hasDelegations = $derived(event.getMatchingTags('q').length > 0);
+
+	// Helper to extract document "a" tag (kind 30023)
+	function extractDocumentATag(event: NDKEvent): string | null {
+		const aTag = event.tags.find((tag) => tag[0] === 'a' && tag[1]?.startsWith('30023:'));
+		return aTag?.[1] || null;
+	}
+
+	// Helper to extract project "a" tag (kind 31933)
+	function extractProjectATag(event: NDKEvent): string | null {
+		const aTag = event.tags.find((tag) => tag[0] === 'a' && tag[1]?.startsWith('31933:'));
+		return aTag?.[1] || null;
+	}
+
+	const documentATag = $derived(extractDocumentATag(event));
+	const projectATag = $derived(extractProjectATag(event));
 
 	// Helper to get display path for file-based tools
 	function getFilePath(argName: string): string {
@@ -80,6 +96,12 @@ import ScheduleTaskRenderer from './renderers/ScheduleTaskRenderer.svelte';
 	<CodebaseSearchToolRenderer {args} />
 {:else if toolName === 'schedule_task'}
 	<ScheduleTaskRenderer {args} />
+{:else if toolName === 'report_write'}
+	<ReportWriteToolRenderer
+		title={(args?.title as string) || 'Untitled Report'}
+		{documentATag}
+		{projectATag}
+	/>
 {:else if hasDelegations}
 	<DelegateToolRenderer {event} />
 {:else if toolName === 'delegate_external'}

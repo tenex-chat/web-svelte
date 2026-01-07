@@ -2,9 +2,9 @@
 	import ndk from '$lib/ndk.svelte';
 	import { NDKAgentDefinitionPack } from '$lib/events/NDKAgentDefinitionPack';
 	import { NDKAgentDefinition } from '$lib/events/NDKAgentDefinition';
-	import { NDKKind } from '$lib/kinds';
 	import PackCard from '$lib/components/agents/PackCard.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
+	import { agentStore } from '$lib/stores/agents.svelte';
 
 	interface Props {
 		selectedAgents: SvelteSet<NDKAgentDefinition>;
@@ -24,15 +24,8 @@
 		packsSubscription.events.map(event => NDKAgentDefinitionPack.from(event))
 	);
 
-	// Subscribe to all agents (needed to resolve pack's agent IDs)
-	const agentsSubscription = ndk.$subscribe(() => ({
-		filters: [{ kinds: [NDKKind.AgentDefinition as number] }],
-		closeOnEose: true
-	}));
-
-	const allAgents = $derived(
-		agentsSubscription.events.map(event => NDKAgentDefinition.from(event))
-	);
+	// Use centralized agent store (already deduplicated)
+	const allAgents = $derived(agentStore.allAgents);
 
 	function handleSelectPack(packId: string) {
 		// Toggle pack selection

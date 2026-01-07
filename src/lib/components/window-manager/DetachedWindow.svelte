@@ -10,6 +10,7 @@
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import type { ChatViewMode, Message } from '$lib/utils/messageUtils';
 	import ChatHeaderActions from '../chat/ChatHeaderActions.svelte';
+	import { MessageSquare, Copy } from 'lucide-svelte';
 
 	interface Props {
 		window: WindowConfig;
@@ -19,6 +20,18 @@
 
 	let viewMode = $state<ChatViewMode>('threaded');
 	let messages = $state<Message[]>([]);
+	let documentSidebarOpen = $state(false);
+
+	async function handleCopyDocumentLink() {
+		const doc = window.data?.document;
+		if (!doc) return;
+		try {
+			const encoded = doc.encode();
+			await navigator.clipboard.writeText(encoded);
+		} catch (error) {
+			console.error('Failed to copy link:', error);
+		}
+	}
 
 	const onlineAgents = $derived(
 		window.project ? projectStatusStore.getOnlineAgents(window.project.tagId()) : []
@@ -155,6 +168,21 @@
 					{messages}
 					bind:viewMode
 				/>
+			{:else if window.type === 'document'}
+				<button
+					onclick={() => documentSidebarOpen = !documentSidebarOpen}
+					class="p-2 hover:bg-secondary rounded transition-colors"
+					title={documentSidebarOpen ? "Close chat sidebar" : "Open chat sidebar"}
+				>
+					<MessageSquare class="w-4 h-4 text-muted-foreground" />
+				</button>
+				<button
+					onclick={handleCopyDocumentLink}
+					class="p-2 hover:bg-secondary rounded transition-colors"
+					title="Copy link"
+				>
+					<Copy class="w-4 h-4 text-muted-foreground" />
+				</button>
 			{/if}
 
 			<!-- Re-attach button -->
@@ -220,6 +248,8 @@
 				document={window.data?.document}
 				project={window.project}
 				onBack={handleClose}
+				hideHeader={true}
+				bind:sidebarOpen={documentSidebarOpen}
 			/>
 		{:else if window.type === 'call' && window.project}
 			<CallView

@@ -2,7 +2,6 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKKind } from '$lib/kinds';
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { onMount } from 'svelte';
 	import { clickOutside } from '$lib/utils/clickOutside';
 	import Portal from 'svelte-portal';
 	import { Plus, SquareSlash } from 'lucide-svelte';
@@ -25,10 +24,6 @@
 		description: '',
 		content: '',
 		tags: ''
-	});
-
-	onMount(async () => {
-		await nudgeStore.loadNudges();
 	});
 
 	const displayNudges = $derived(nudgeStore.getDisplayNudges(ndk.activeUser?.pubkey));
@@ -108,7 +103,6 @@
 			}
 
 			await event.publish();
-			await nudgeStore.loadNudges();
 			handleCloseModal();
 		} catch (error) {
 			console.error('Failed to create nudge:', error);
@@ -151,9 +145,7 @@
 				class="fixed w-80 bg-card border border-border rounded-lg shadow-lg overflow-hidden"
 				style="top: {dropdownPosition.top}px; left: {dropdownPosition.left}px; z-index: 9999; transform: translateY(-100%);"
 			>
-				{#if nudgeStore.loading}
-					<div class="p-4 text-center text-sm text-muted-foreground">Loading nudges...</div>
-				{:else if displayNudges.length === 0}
+				{#if displayNudges.length === 0}
 					<div class="p-4 text-center text-sm text-muted-foreground">No nudges available</div>
 				{:else}
 					<div class="max-h-96 overflow-y-auto">

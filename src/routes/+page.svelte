@@ -2,11 +2,13 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKProject } from '$lib/events/NDKProject';
 	import { openProjects } from '$lib/stores/openProjects.svelte';
+	import { inboxColumnStore } from '$lib/stores/inboxColumn.svelte';
 	import { loginModal } from '$lib/stores/loginModal.svelte';
 	import { viewModeStore } from '$lib/stores/viewMode.svelte';
 	import MultiProjectView from '$lib/components/MultiProjectView.svelte';
 	import GlobalStatusView from '$lib/components/GlobalStatusView.svelte';
 	import ProjectsSidebar from '$lib/components/ProjectsSidebar.svelte';
+	import InboxColumn from '$lib/components/InboxColumn.svelte';
 
 	// Subscribe to user's projects
 	const projectsSubscription = ndk.$subscribe(
@@ -67,29 +69,37 @@
 				{/if}
 			{:else}
 				<!-- Multi-Project Column View -->
-				{#if openProjects.filteredProjects.length > 0}
-					<MultiProjectView projects={openProjects.filteredProjects} />
-				{:else}
-					<div class="flex-1 flex items-center justify-center">
-						<div class="text-center">
-							<svg
-								class="w-16 h-16 text-muted-foreground mx-auto mb-4"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-								/>
-							</svg>
-							<h2 class="text-xl font-semibold text-foreground mb-2">Select projects to view</h2>
-							<p class="text-muted-foreground">Click projects in the sidebar to open them in columns</p>
+				<div class="flex h-full overflow-x-auto">
+					<!-- Inbox Column (when open) -->
+					{#if inboxColumnStore.isOpen}
+						<InboxColumn />
+					{/if}
+
+					<!-- Project Columns -->
+					{#if openProjects.filteredProjects.length > 0}
+						<MultiProjectView projects={openProjects.filteredProjects} />
+					{:else if !inboxColumnStore.isOpen}
+						<div class="flex-1 flex items-center justify-center">
+							<div class="text-center">
+								<svg
+									class="w-16 h-16 text-muted-foreground mx-auto mb-4"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+									/>
+								</svg>
+								<h2 class="text-xl font-semibold text-foreground mb-2">Select projects to view</h2>
+								<p class="text-muted-foreground">Click projects in the sidebar to open them in columns</p>
+							</div>
 						</div>
-					</div>
-				{/if}
+					{/if}
+				</div>
 			{/if}
 		</div>
 	</div>

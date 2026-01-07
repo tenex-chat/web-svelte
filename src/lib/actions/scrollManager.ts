@@ -57,6 +57,7 @@ export function scrollManager(
 	let isProgrammaticScroll = false;
 	let scrollDebounceTimer: number | undefined;
 	let previousItemCount = 0;
+	let isInitialLoad = true;
 
 	// Check if user is at bottom of scroll container
 	function checkScrollPosition() {
@@ -118,10 +119,14 @@ export function scrollManager(
 
 	// Handle item count changes (new messages)
 	function handleItemCountChange(newCount: number) {
-		// Initial load: scroll to bottom when first messages arrive
+		// Initial load: scroll to bottom instantly when first messages arrive
 		if (previousItemCount === 0 && newCount > 0) {
 			requestAnimationFrame(() => scrollToBottom(false));
 			previousItemCount = newCount;
+			// End initial load phase after a brief delay to handle batched message loading
+			setTimeout(() => {
+				isInitialLoad = false;
+			}, 500);
 			return;
 		}
 
@@ -131,7 +136,10 @@ export function scrollManager(
 
 			// Only auto-scroll if user is at bottom AND not actively scrolling
 			if (isUserAtBottom && !isUserScrolling) {
-				requestAnimationFrame(() => scrollToBottom(true));
+				// Use instant scroll during initial load (opening conversation),
+				// smooth scroll for new messages during active conversation
+				const useSmooth = !isInitialLoad;
+				requestAnimationFrame(() => scrollToBottom(useSmooth));
 			} else {
 				// User is scrolled up OR actively scrolling, increment unread count
 				unreadMessageCount += newItemsCount;

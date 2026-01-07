@@ -6,6 +6,9 @@
 	import { User } from '$lib/ndk/ui/user';
 	import { sidebarCollapsedStore } from '$lib/stores/sidebarCollapsed.svelte';
 	import { inboxStore } from '$lib/stores/inbox.svelte';
+	import { inboxColumnStore } from '$lib/stores/inboxColumn.svelte';
+	import { nudgeStore } from '$lib/stores/nudges.svelte';
+	import { agentStore } from '$lib/stores/agents.svelte';
 	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import { cn } from '$lib/utils/cn';
 	import { registerShortcut } from '$lib/utils/keyboardShortcuts';
@@ -13,7 +16,6 @@
 	import CreateProjectDialog from './dialogs/CreateProjectDialog.svelte';
 	import CreateProjectGroupDialog from './dialogs/CreateProjectGroupDialog.svelte';
 	import GlobalSearchDialog from './dialogs/GlobalSearchDialog.svelte';
-	import InboxPopover from './inbox/InboxPopover.svelte';
 	import ProjectStatusDebug from './debug/ProjectStatusDebug.svelte';
 	import ProjectListItem from './projects/ProjectListItem.svelte';
 	import {
@@ -56,7 +58,6 @@
 	let createDialogOpen = $state(false);
 	let createGroupDialogOpen = $state(false);
 	let searchDialogOpen = $state(false);
-	let inboxPopoverOpen = $state(false);
 	let debugDialogOpen = $state(false);
 	let userMenuOpen = $state(false);
 	let projectGroupMenuOpen = $state(false);
@@ -137,16 +138,22 @@
 		});
 	});
 
-	// Initialize inbox
+	// Initialize centralized stores
 	$effect(() => {
 		inboxStore.init();
-		return () => inboxStore.destroy();
+		nudgeStore.init();
+		agentStore.init();
+		return () => {
+			inboxStore.destroy();
+			nudgeStore.destroy();
+			agentStore.destroy();
+		};
 	});
 
 	// Keyboard shortcuts
 	$effect(() => {
 		const cleanupSearch = registerShortcut('k', () => (searchDialogOpen = true), { metaKey: true });
-		const cleanupInbox = registerShortcut('i', () => (inboxPopoverOpen = !inboxPopoverOpen), {
+		const cleanupInbox = registerShortcut('i', () => inboxColumnStore.toggle(), {
 			metaKey: true
 		});
 		const cleanupSidebar = registerShortcut('b', () => sidebarCollapsedStore.toggle(), {
@@ -437,46 +444,47 @@
 
 	<!-- Inbox Section -->
 	<div class="border-t border-border px-3 py-2 relative z-10">
-		<InboxPopover bind:open={inboxPopoverOpen}>
-			<button
-				class={cn(
-					'flex items-center rounded hover:bg-muted transition-colors text-foreground',
-					collapsed ? 'w-10 h-10 justify-center' : 'w-full gap-2 px-3 py-2'
-				)}
-				aria-label="Inbox"
-			>
-				<div class="relative">
-					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-						/>
-					</svg>
-					{#if inboxStore.unreadCount > 0}
-						<div
-							class="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg animate-pulse"
-						>
-							{inboxStore.unreadCount > 9 ? '9+' : inboxStore.unreadCount}
-						</div>
-					{/if}
-				</div>
-				{#if !collapsed}
-					<span class="flex-1 text-left text-sm">Inbox</span>
-					{#if inboxStore.unreadCount > 0}
-						<span class="px-1.5 py-0.5 text-xs font-medium bg-muted text-foreground rounded">
-							{inboxStore.unreadCount}
-						</span>
-					{/if}
-					<kbd
-						class="px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground bg-muted border border-border rounded"
+		<button
+			onclick={() => inboxColumnStore.toggle()}
+			class={cn(
+				'flex items-center rounded transition-colors text-foreground',
+				collapsed ? 'w-10 h-10 justify-center' : 'w-full gap-2 px-3 py-2',
+				inboxColumnStore.isOpen ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'
+			)}
+			aria-label="Toggle Inbox"
+			aria-pressed={inboxColumnStore.isOpen}
+		>
+			<div class="relative">
+				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+					/>
+				</svg>
+				{#if inboxStore.unreadCount > 0}
+					<div
+						class="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg animate-pulse"
 					>
-						⌘I
-					</kbd>
+						{inboxStore.unreadCount > 9 ? '9+' : inboxStore.unreadCount}
+					</div>
 				{/if}
-			</button>
-		</InboxPopover>
+			</div>
+			{#if !collapsed}
+				<span class="flex-1 text-left text-sm">Inbox</span>
+				{#if inboxStore.unreadCount > 0}
+					<span class="px-1.5 py-0.5 text-xs font-medium bg-muted text-foreground rounded">
+						{inboxStore.unreadCount}
+					</span>
+				{/if}
+				<kbd
+					class="px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground bg-muted border border-border rounded"
+				>
+					⌘I
+				</kbd>
+			{/if}
+		</button>
 	</div>
 
 	<!-- Footer - User Profile -->

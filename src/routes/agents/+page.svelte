@@ -4,52 +4,15 @@
 	import AgentDefinitionCard from '$lib/components/agents/AgentDefinitionCard.svelte';
 	import CreateAgentDialog from '$lib/components/dialogs/CreateAgentDialog.svelte';
 	import { goto } from '$app/navigation';
-	import { SvelteMap } from 'svelte/reactivity';
 	import { Plus, Monitor, Package } from 'lucide-svelte';
+	import { agentStore } from '$lib/stores/agents.svelte';
 
 	let searchQuery = $state('');
 	let activeFilter = $state<'all' | 'owned' | 'subscribed'>('all');
 	let createDialogOpen = $state(false);
 
-	const agentSubscription = ndk.$subscribe(() => ({ filters: [{ kinds: [NDKAgentDefinition.kind] } ], subId: 'agent-definitions' }));
-
-	const agents = $derived.by(() => {
-		const events = agentSubscription.events || [];
-		const agentEvents = events.map((event) => NDKAgentDefinition.from(event));
-
-		const agentGroups = new SvelteMap<string, NDKAgentDefinition[]>();
-
-		agentEvents.forEach((agent) => {
-			const identifier = agent.slug || agent.dTag || agent.name || agent.id;
-			const key = `${agent.pubkey}:${identifier}`;
-			if (!agentGroups.has(key)) {
-				agentGroups.set(key, []);
-			}
-			agentGroups.get(key)?.push(agent);
-		});
-
-		const latestAgents: NDKAgentDefinition[] = [];
-
-		agentGroups.forEach((groupAgents) => {
-			if (groupAgents.length === 1) {
-				latestAgents.push(groupAgents[0]);
-			} else {
-				const sorted = groupAgents.sort((a, b) => {
-					const timeA = a.created_at || 0;
-					const timeB = b.created_at || 0;
-					if (timeA !== timeB) {
-						return timeB - timeA;
-					}
-					const versionA = parseInt(a.version || '0');
-					const versionB = parseInt(b.version || '0');
-					return versionB - versionA;
-				});
-				latestAgents.push(sorted[0]);
-			}
-		});
-
-		return latestAgents;
-	});
+	// Use the centralized agent store (already deduplicated)
+	const agents = $derived(agentStore.agents);
 
 	const filteredAgents = $derived.by(() => {
 		let filtered = agents;

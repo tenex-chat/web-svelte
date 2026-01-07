@@ -1,16 +1,15 @@
 import { ndk } from '$lib/ndk.svelte';
 import type { NDKEvent, NDKSubscription, NDKFilter } from '@nostr-dev-kit/ndk';
 import { browser } from '$app/environment';
-import { annotateEventWithAskMeta } from '$lib/utils/askTags';
+import { isAskEvent } from '$lib/utils/askTags';
 
 /**
- * Event kinds to include in the inbox
+ * Event kinds to include in the inbox subscription.
+ * Events are further filtered to only show "ask" events.
  */
 export const INBOX_EVENT_KINDS = [
 	1, // Regular text notes/mentions
-	1111, // Generic replies (including agent responses)
-	30023, // Long-form content mentions
-	7 // Reactions that p-tag the user
+	1111 // Generic replies (including agent responses)
 ];
 
 /**
@@ -118,9 +117,10 @@ class InboxStore {
 		const currentUser = ndk.$sessions?.currentUser;
 		if (!currentUser?.pubkey) return;
 
-		// Create filter for events that p-tag the current user
+		// Create filter for ask events that p-tag the current user
 		const filter: NDKFilter = {
 			'#p': [currentUser.pubkey],
+			'#t': ['ask'],
 			kinds: INBOX_EVENT_KINDS,
 			// Get events from the last 7 days by default
 			since: Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60
@@ -132,17 +132,21 @@ class InboxStore {
 			groupable: false,
 			subId: 'inbox-events-store',
 			onEvents: (events: NDKEvent[]) => {
-				// Bulk add all events to map with ask metadata annotation
+				// Bulk add all events to map, filtering to only include ask events
 				for (const event of events) {
-					annotateEventWithAskMeta(event);
-					this.eventMap.set(event.id, event);
+					// Only include events that have the "ask" tag
+					if (isAskEvent(event)) {
+						this.eventMap.set(event.id, event);
+					}
 				}
 				this.updateState();
 			},
 			onEvent: (event: NDKEvent) => {
-				annotateEventWithAskMeta(event);
-				this.eventMap.set(event.id, event);
-				this.updateState();
+				// Only include events that have the "ask" tag
+				if (isAskEvent(event)) {
+					this.eventMap.set(event.id, event);
+					this.updateState();
+				}
 			}
 		});
 	}

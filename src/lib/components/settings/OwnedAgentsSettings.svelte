@@ -1,17 +1,12 @@
 <script lang="ts">
 	import ndk from '$lib/ndk.svelte';
-	import { NDKAgentDefinition } from '$lib/events/NDKAgentDefinition';
+	import { agentStore } from '$lib/stores/agents.svelte';
 
-	const agentsSubscription = ndk.$subscribe(() =>
-		ndk.$currentPubkey ? {
-			filters: [{ kinds: [4199 as number], authors: [ndk.$currentPubkey] }],
-			closeOnEose: true
-		} : undefined
-	);
-
-	const agents = $derived(
-		agentsSubscription.events.map(event => NDKAgentDefinition.from(event))
-	);
+	// Use the centralized agent store, filtered by current user
+	const agents = $derived.by(() => {
+		if (!ndk.$currentPubkey) return [];
+		return agentStore.getByOwner(ndk.$currentPubkey);
+	});
 </script>
 
 <div class="space-y-6">

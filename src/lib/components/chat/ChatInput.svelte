@@ -39,6 +39,7 @@
 		replyToEvent?: NDKEvent | null;
 		quoteEvent?: NDKEvent | null;
 		onCancelReply?: () => void;
+		documentRef?: string;
 	}
 
 	let {
@@ -49,7 +50,8 @@
 		onThreadCreated,
 		replyToEvent = null,
 		quoteEvent = null,
-		onCancelReply
+		onCancelReply,
+		documentRef
 	}: Props = $props();
 
 	const projectId = $derived(project?.tagId());
@@ -133,11 +135,6 @@
 			const storageKey = `nudges_${conversationId}`;
 			localStorage.setItem(storageKey, JSON.stringify(selectedNudges));
 		}
-	});
-
-	// Load nudges on mount
-	$effect(() => {
-		nudgeStore.loadNudges();
 	});
 
 	// Autofocus on mount
@@ -404,6 +401,11 @@
 				// Add quote tag if quoting an event
 				if (quoteEvent) {
 					thread.tags.push(['q', quoteEvent.id, '', quoteEvent.pubkey]);
+				}
+
+				// Add document reference if provided
+				if (documentRef) {
+					thread.tags.push(['a', documentRef]);
 				}
 
 				// Sign and publish

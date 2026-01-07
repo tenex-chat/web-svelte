@@ -89,10 +89,12 @@ export type StorageSchema = {
 	'tenex-windows': any[];
 	'last-inbox-visit': number;
 	'saved_nudges': string[];
+	'tenex:inboxColumnOpen': boolean;
 
 	// Component-level settings
 	'agent-voice-configs': Record<string, any>; // { [agentPubkey]: voiceConfig }
 	'drawer-width': number;
+	'doc-chat-sidebar-width': number; // percentage width of document chat sidebar
 	'doc-drafts': Record<string, { title: string; content: string; hashtags: string[] }>; // { [projectId]: draft }
 };
 
@@ -145,8 +147,10 @@ class StorageService {
 			'tenex-windows',
 			'last-inbox-visit',
 			'saved_nudges',
+			'tenex:inboxColumnOpen',
 			'agent-voice-configs',
 			'drawer-width',
+			'doc-chat-sidebar-width',
 			'doc-drafts',
 			'conversation-nudges'
 		];

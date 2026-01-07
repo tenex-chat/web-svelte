@@ -64,17 +64,23 @@
 			{
 				participants: Set<string>;
 				latestReply: NDKEvent | null;
+				replyCount: number;
+				lastUserReplyTime: number | null;
+				lastOtherReplyTime: number | null;
 			}
 		>();
-
+	
 		// Initialize metadata for each thread
 		for (const thread of threads) {
 			metadata.set(thread.id, {
 				participants: new Set([thread.pubkey]),
-				latestReply: null
+				latestReply: null,
+				replyCount: 0,
+				lastUserReplyTime: null,
+				lastOtherReplyTime: null
 			});
 		}
-
+	
 		// Process replies
 		for (const reply of replies) {
 			// Find which thread this reply belongs to via e-tag
@@ -85,15 +91,25 @@
 				if (meta) {
 					meta.participants.add(reply.pubkey);
 					const replyTime = reply.created_at || 0;
-
+	
 					// Update latest reply if this is newer
 					if (!meta.latestReply || replyTime > (meta.latestReply.created_at || 0)) {
 						meta.latestReply = reply;
 					}
+	
+					// Increment reply count
+					meta.replyCount += 1;
+	
+					// Track last reply times by current user vs others (based on ndk.$currentPubkey)
+					if (ndk.$currentPubkey && reply.pubkey === ndk.$currentPubkey) {
+						meta.lastUserReplyTime = Math.max(meta.lastUserReplyTime || 0, replyTime);
+					} else {
+						meta.lastOtherReplyTime = Math.max(meta.lastOtherReplyTime || 0, replyTime);
+					}
 				}
 			}
 		}
-
+	
 		console.log(`[threadMetadata] threads: ${threads.length}, replies: ${replies.length}, time: ${(performance.now() - start).toFixed(2)}ms`);
 		return metadata;
 	});

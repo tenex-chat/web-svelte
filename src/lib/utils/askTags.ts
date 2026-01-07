@@ -1,18 +1,6 @@
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
 
 /**
- * Extracts and parses the ask tag from an NDK event
- * The ask tag is used to mark events that are asking for user input/feedback
- * Format: ["ask", "true"] or just ["ask"]
- */
-export interface AskTagInfo {
-	isAsk: boolean;
-	tldr: string | null;
-	context: string | null;
-	rawTag: string[] | undefined;
-}
-
-/**
  * Represents a single question in a multi-question ask event
  * Format: ["question", "ID", "Text", "Opt1", ...] or ["multiselect", "ID", "Text", "Opt1", ...]
  */
@@ -42,64 +30,12 @@ export interface QuestionResponse {
 }
 
 /**
- * Parses ask-related tags from an event
- * Supports:
- * - ask tag: marks if event is asking a question
- * - tldr tag: brief summary of the context
- * - context tag: detailed context/background information
- */
-export function parseAskTags(event: NDKEvent): AskTagInfo {
-	const askTag = event.tags.find((tag) => tag[0] === 'ask');
-	const tldrTag = event.tags.find((tag) => tag[0] === 'tldr');
-	const contextTag = event.tags.find((tag) => tag[0] === 'context');
-
-	const isAsk =
-		askTag !== undefined && (askTag[1] === 'true' || askTag[1] === '1' || askTag.length === 1);
-
-	return {
-		isAsk,
-		tldr: tldrTag?.[1] ?? null,
-		context: contextTag?.[1] ?? null,
-		rawTag: askTag
-	};
-}
-
-/**
  * Checks if an event has the ask tag set to true
+ * Supports: ["ask", "true"], ["ask", "1"], or just ["ask"]
  */
 export function isAskEvent(event: NDKEvent): boolean {
-	return parseAskTags(event).isAsk;
-}
-
-/**
- * Gets the TLDR (Too Long; Didn't Read) summary for an ask event
- */
-export function getAskTLDR(event: NDKEvent): string | null {
-	return parseAskTags(event).tldr;
-}
-
-/**
- * Gets the context/background information for an ask event
- */
-export function getAskContext(event: NDKEvent): string | null {
-	return parseAskTags(event).context;
-}
-
-/**
- * Checks if an ask event has context that can be collapsed
- */
-export function hasAskContext(event: NDKEvent): boolean {
-	return getAskContext(event) !== null;
-}
-
-/**
- * Metadata attached to an event after parsing ask tags
- */
-export interface AskMetadata {
-	isAsk: boolean;
-	tldr: string | null;
-	context: string | null;
-	questions?: AskQuestions;
+	const askTag = event.tags.find((tag) => tag[0] === 'ask');
+	return askTag !== undefined && (askTag[1] === 'true' || askTag[1] === '1' || askTag.length === 1);
 }
 
 /**
@@ -187,24 +123,4 @@ export function formatQuestionResponses(
 	}
 
 	return lines.join('\n\n');
-}
-
-/**
- * Annotates an event with ask metadata by directly attaching it as a property.
- * This should be called once when the event is loaded, before display.
- * The metadata is then available as event.askMeta in components.
- *
- * @param event The NDKEvent to annotate
- * @returns The same event with askMeta property attached
- */
-export function annotateEventWithAskMeta(event: NDKEvent): NDKEvent {
-	const askInfo = parseAskTags(event);
-	const questions = parseAskQuestions(event);
-	(event as any).askMeta = {
-		isAsk: askInfo.isAsk,
-		tldr: askInfo.tldr,
-		context: askInfo.context,
-		questions: questions ?? undefined
-	} as AskMetadata;
-	return event;
 }

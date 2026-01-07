@@ -5,7 +5,7 @@
 	import { formatRelativeTime } from '$lib/utils/time';
 	import { cn } from '$lib/utils/cn';
 	import { Streamdown } from 'svelte-streamdown';
-	import { isAskEvent, getAskTLDR, hasAskContext } from '$lib/utils/askTags';
+	import { isAskEvent } from '$lib/utils/askTags';
 	import {
 		Bot,
 		MessageCircle,
@@ -15,8 +15,7 @@
 		ChevronRight,
 		HelpCircle,
 		ChevronDown,
-		AlertCircle,
-		ArrowRight
+		AlertCircle
 	} from 'lucide-svelte';
 
 	interface Props {
@@ -28,10 +27,8 @@
 
 	let isExpanded = $state(false);
 
-	// Parse ask tags
+	// Check if this is an ask event
 	const isAsk = $derived(isAskEvent(event));
-	const askTLDR = $derived(getAskTLDR(event));
-	const hasContext = $derived(hasAskContext(event));
 
 	// Get event type info
 	const eventTypeInfo = $derived.by(() => {
@@ -144,41 +141,28 @@
 
 		<!-- Content -->
 		<div class="text-sm text-muted-foreground">
-			{#if isAsk && askTLDR}
-				<!-- Ask events: show only TLDR, with option to expand context -->
-				<div class="p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-700/30 rounded">
-					<div class="text-sm text-amber-800 dark:text-amber-300">{askTLDR}</div>
+			{#if isExpanded}
+				<div class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground">
+					<Streamdown
+						content={event.content}
+						class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground"
+						parseIncompleteMarkdown={true}
+						animation={{ enabled: false }}
+						baseTheme="shadcn"
+						shikiTheme="github-dark-dimmed"
+					/>
 				</div>
-				{#if hasContext && isExpanded}
-					<div class="mt-2 text-xs text-muted-foreground whitespace-pre-wrap">
-						{event.tagValue('context')}
-					</div>
-				{/if}
 			{:else}
-				<!-- Regular events: show content preview -->
-				{#if isExpanded}
-					<div class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground">
-						<Streamdown
-							content={event.content}
-							class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground"
-							parseIncompleteMarkdown={true}
-							animation={{ enabled: false }}
-							baseTheme="shadcn"
-							shikiTheme="github-dark-dimmed"
-						/>
-					</div>
-				{:else}
-					<div class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground line-clamp-2">
-						<Streamdown
-							content={contentPreview}
-							class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground"
-							parseIncompleteMarkdown={true}
-							animation={{ enabled: false }}
-							baseTheme="shadcn"
-							shikiTheme="github-dark-dimmed"
-						/>
-					</div>
-				{/if}
+				<div class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground line-clamp-2">
+					<Streamdown
+						content={contentPreview}
+						class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground"
+						parseIncompleteMarkdown={true}
+						animation={{ enabled: false }}
+						baseTheme="shadcn"
+						shikiTheme="github-dark-dimmed"
+					/>
+				</div>
 			{/if}
 		</div>
 
@@ -199,7 +183,7 @@
 
 		<!-- Action buttons (shown on hover) -->
 		<div class="mt-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-			{#if (isAsk && hasContext) || (!isAsk && event.content)}
+			{#if event.content}
 				<button
 					onclick={(e) => {
 						e.stopPropagation();
@@ -209,8 +193,6 @@
 				>
 					{#if isExpanded}
 						Collapse
-					{:else if isAsk && hasContext}
-						Show Details
 					{:else}
 						View Full
 					{/if}

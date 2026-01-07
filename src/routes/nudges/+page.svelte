@@ -2,21 +2,21 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKKind } from '$lib/kinds';
-	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { Trash2, Plus, ArrowLeft, Search, Star, X } from 'lucide-svelte';
 	import { User } from '$lib/ndk/ui/user';
 	import Portal from 'svelte-portal';
-	import { storage } from '$lib/utils/storage.svelte';
+	import { nudgeStore } from '$lib/stores/nudges.svelte';
 
-	let nudges = $state<NDKEvent[]>([]);
-	let loading = $state(true);
+	// Use the centralized nudge store
+	const nudges = $derived(nudgeStore.nudges);
+	const savedNudges = $derived(nudgeStore.savedNudges);
+
 	let showCreateModal = $state(false);
 	let creating = $state(false);
 	let searchQuery = $state('');
 	let selectedAuthors = $state<string[]>([]);
 	let selectedHashtags = $state<string[]>([]);
-	let savedNudges = $state<string[]>([]);
 
 	let newNudge = $state({
 		title: '',
@@ -24,31 +24,6 @@
 		content: '',
 		tags: ''
 	});
-
-	// Load saved nudges from storage
-	onMount(async () => {
-		savedNudges = storage.get('saved_nudges') ?? [];
-		await fetchNudges();
-	});
-
-	async function fetchNudges() {
-		loading = true;
-		try {
-			const nudgeEvents = await ndk.fetchEvents({
-				kinds: [NDKKind.AgentNudge as number]
-			});
-
-			nudges = Array.from(nudgeEvents).sort((a, b) => {
-				const aTime = a.created_at || 0;
-				const bTime = b.created_at || 0;
-				return bTime - aTime;
-			});
-		} catch (error) {
-			console.error('Failed to fetch nudges:', error);
-		} finally {
-			loading = false;
-		}
-	}
 
 	function handleCloseModal() {
 		showCreateModal = false;
@@ -90,8 +65,6 @@
 
 			await event.sign();
 			await event.publish();
-
-			await fetchNudges();
 			handleCloseModal();
 		} catch (error) {
 			console.error('Failed to create nudge:', error);
@@ -130,12 +103,7 @@
 	}
 
 	function toggleSaveNudge(nudgeId: string) {
-		if (savedNudges.includes(nudgeId)) {
-			savedNudges = savedNudges.filter(id => id !== nudgeId);
-		} else {
-			savedNudges = [...savedNudges, nudgeId];
-		}
-		storage.set('saved_nudges', savedNudges);
+		nudgeStore.toggleSaved(nudgeId);
 	}
 
 	function getNudgeTitle(nudge: NDKEvent): string {
@@ -335,9 +303,7 @@
 		<!-- Nudge List -->
 		<div class="flex-1 overflow-y-auto p-6">
 			<div class="max-w-5xl mx-auto">
-				{#if loading}
-					<div class="text-center py-12 text-muted-foreground">Loading nudges...</div>
-				{:else if filteredNudges.length === 0}
+				{#if filteredNudges.length === 0}
 					<div class="text-center py-12 space-y-2">
 						{#if searchQuery || selectedAuthors.length > 0 || selectedHashtags.length > 0}
 							<p class="text-muted-foreground">No nudges match your filters</p>

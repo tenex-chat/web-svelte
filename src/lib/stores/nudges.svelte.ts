@@ -1,12 +1,15 @@
 import { ndk } from '$lib/ndk.svelte';
 import { NDKKind } from '$lib/kinds';
-import type { NDKEvent } from '@nostr-dev-kit/ndk';
+import type { NDKEvent, NDKSubscription } from '@nostr-dev-kit/ndk';
 import { storage } from '$lib/utils/storage.svelte';
+import { browser } from '$app/environment';
 
 class NudgeStore {
 	nudges = $state<NDKEvent[]>([]);
 	savedNudges = $state<string[]>([]);
-	loading = $state(false);
+	private subscription: NDKSubscription | null = null;
+	private eventMap = new Map<string, NDKEvent>();
+	private initialized = false;
 
 	constructor() {
 		// Load saved nudges from storage
@@ -15,22 +18,49 @@ class NudgeStore {
 		}
 	}
 
-	async loadNudges() {
-		this.loading = true;
-		try {
-			const nudgeEvents = await ndk.fetchEvents({
-				kinds: [NDKKind.AgentNudge as number]
-			});
-			this.nudges = Array.from(nudgeEvents).sort((a, b) => {
-				const aTime = a.created_at || 0;
-				const bTime = b.created_at || 0;
-				return bTime - aTime;
-			});
-		} catch (error) {
-			console.error('Failed to fetch nudges:', error);
-		} finally {
-			this.loading = false;
+	private updateState() {
+		const allEvents = Array.from(this.eventMap.values());
+		// Sort by created_at, newest first
+		this.nudges = allEvents.sort((a, b) => {
+			const aTime = a.created_at || 0;
+			const bTime = b.created_at || 0;
+			return bTime - aTime;
+		});
+	}
+
+	init() {
+		if (!browser || this.initialized) return;
+		this.initialized = true;
+
+		// Create persistent subscription for nudge events
+		this.subscription = ndk.subscribe(
+			{ kinds: [NDKKind.AgentNudge as number] },
+			{
+				closeOnEose: false,
+				groupable: false,
+				subId: 'nudges-store',
+				onEvents: (events: NDKEvent[]) => {
+					for (const event of events) {
+						this.eventMap.set(event.id, event);
+					}
+					this.updateState();
+				},
+				onEvent: (event: NDKEvent) => {
+					this.eventMap.set(event.id, event);
+					this.updateState();
+				}
+			}
+		);
+	}
+
+	destroy() {
+		if (this.subscription) {
+			this.subscription.stop();
+			this.subscription = null;
 		}
+		this.eventMap.clear();
+		this.nudges = [];
+		this.initialized = false;
 	}
 
 	toggleSaved(nudgeId: string) {

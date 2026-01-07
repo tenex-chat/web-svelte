@@ -5,6 +5,7 @@
 	import AgentDefinitionItem from './AgentDefinitionItem.svelte';
 	import AgentDefinitionCard from '$lib/components/agents/AgentDefinitionCard.svelte';
 	import { Plus, X, Search } from 'lucide-svelte';
+	import { agentStore } from '$lib/stores/agents.svelte';
 
 	interface Props {
 		project: NDKProject;
@@ -19,15 +20,15 @@
 			.map(tag => tag[1]);
 	});
 
-	// Local state for pending changes
-	let pendingAgentIds = $state<string[]>([]);
-	let pendingPmId = $state<string | null>(null);
+	// Local state for pending changes - initialized once from project on mount.
+	// We capture the initial values directly to avoid reactive dependencies,
+	// so incoming project updates (e.g., from 24010 events) don't reset user's choices.
+	const initialAgentIds = project.tags
+		.filter(tag => tag[0] === 'agent')
+		.map(tag => tag[1]);
 
-	// Initialize pending state from project
-	$effect(() => {
-		pendingAgentIds = [...originalAgentIds];
-		pendingPmId = originalAgentIds.length > 0 ? originalAgentIds[0] : null;
-	});
+	let pendingAgentIds = $state<string[]>([...initialAgentIds]);
+	let pendingPmId = $state<string | null>(initialAgentIds.length > 0 ? initialAgentIds[0] : null);
 
 	// Detect if there are unsaved changes
 	const hasChanges = $derived.by(() => {
@@ -45,27 +46,19 @@
 	let showAddDialog = $state(false);
 	let searchQuery = $state('');
 
-	// Get all available agent definitions
-	const allAgentsSubscription = ndk.$subscribe<NDKAgentDefinition>(() => ({
-		kinds: [4199 as number],
-	}));
-
+	// Get available agents from the centralized store
 	const availableAgents = $derived.by(() => {
-		const agents = Array.from(allAgentsSubscription.events || []);
 		// Filter out agents that are already added
-		let filtered = agents.filter(event => !pendingAgentIds.includes(event.id));
+		let filtered = agentStore.excludeIds(pendingAgentIds);
 
 		// Apply search filter
 		if (searchQuery.trim()) {
 			const query = searchQuery.toLowerCase();
-			filtered = filtered.filter(event => {
-				const agent = NDKAgentDefinition.from(event);
-				return (
-					agent.name?.toLowerCase().includes(query) ||
-					agent.description?.toLowerCase().includes(query) ||
-					agent.role?.toLowerCase().includes(query)
-				);
-			});
+			filtered = filtered.filter(agent =>
+				agent.name?.toLowerCase().includes(query) ||
+				agent.description?.toLowerCase().includes(query) ||
+				agent.role?.toLowerCase().includes(query)
+			);
 		}
 
 		return filtered;

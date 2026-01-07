@@ -3,7 +3,6 @@ import { NDKEvent, type NDKSubscription, type NDKFilter } from '@nostr-dev-kit/n
 import type { NDKSvelte } from '@nostr-dev-kit/svelte';
 import type { Message, ThreadViewMode } from '$lib/utils/messageUtils';
 import { uiSettingsStore } from './uiSettings.svelte';
-import { annotateEventWithAskMeta } from '$lib/utils/askTags';
 
 interface ConversationOptions {
 	viewMode?: ThreadViewMode;
@@ -99,7 +98,6 @@ export class ConversationState {
 
 		// Add root event to messages (unless directRepliesOnly mode)
 		if (!this.directRepliesOnly && !this.messages.has(this.rootEvent.id)) {
-			annotateEventWithAskMeta(this.rootEvent);
 			this.messages.set(this.rootEvent.id, {
 				id: this.rootEvent.id,
 				event: this.rootEvent
@@ -141,9 +139,6 @@ export class ConversationState {
 
 		// Apply view mode filtering
 		if (this.viewMode === 'threaded' && !this.belongsToConversation(event)) return;
-
-		// Annotate event with ask metadata before storing
-		annotateEventWithAskMeta(event);
 
 		this.messages.set(event.id, { id: event.id, event });
 	}

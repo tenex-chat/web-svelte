@@ -1,10 +1,9 @@
 <script lang="ts">
-	import ndk from '$lib/ndk.svelte';
 	import { NDKAgentDefinition } from '$lib/events/NDKAgentDefinition';
-	import { NDKKind } from '$lib/kinds';
 	import AgentDefinitionCard from '$lib/components/agents/AgentDefinitionCard.svelte';
-	import { SvelteSet, SvelteMap } from 'svelte/reactivity';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { cn } from '$lib/utils/cn';
+	import { agentStore } from '$lib/stores/agents.svelte';
 
 	interface Props {
 		selectedAgents: SvelteSet<NDKAgentDefinition>;
@@ -12,57 +11,8 @@
 
 	let { selectedAgents = $bindable(new SvelteSet()) }: Props = $props();
 
-	// Subscribe to all agent definitions
-	const agentsSubscription = ndk.$subscribe(() => ({
-		filters: [{ kinds: [NDKKind.AgentDefinition as number] }],
-		closeOnEose: true
-	}));
-
-	// Transform and deduplicate agents by slug/name (keep latest version)
-	const agents = $derived.by(() => {
-		const allAgents = agentsSubscription.events.map(event => NDKAgentDefinition.from(event));
-
-		// Group agents by slug or name
-		const agentGroups = new SvelteMap<string, NDKAgentDefinition[]>();
-
-		allAgents.forEach((agent) => {
-			const groupKey = agent.slug || agent.name || agent.id;
-
-			if (!agentGroups.has(groupKey)) {
-				agentGroups.set(groupKey, []);
-			}
-			const group = agentGroups.get(groupKey);
-			if (group) {
-				group.push(agent);
-			}
-		});
-
-		// For each group, keep only the latest version
-		const latestAgents: NDKAgentDefinition[] = [];
-
-		agentGroups.forEach((groupAgents) => {
-			if (groupAgents.length === 1) {
-				latestAgents.push(groupAgents[0]);
-			} else {
-				// Sort by created_at timestamp (newest first) and version number
-				const sorted = groupAgents.sort((a, b) => {
-					const timeA = a.created_at || 0;
-					const timeB = b.created_at || 0;
-					if (timeA !== timeB) {
-						return timeB - timeA;
-					}
-
-					const versionA = parseInt(a.version || '0');
-					const versionB = parseInt(b.version || '0');
-					return versionB - versionA;
-				});
-
-				latestAgents.push(sorted[0]);
-			}
-		});
-
-		return latestAgents;
-	});
+	// Use the centralized agent store (already deduplicated)
+	const agents = $derived(agentStore.agents);
 
 	function toggleAgent(agent: NDKAgentDefinition) {
 		const newSelected = new SvelteSet(selectedAgents);

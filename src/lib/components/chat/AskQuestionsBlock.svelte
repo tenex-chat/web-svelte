@@ -3,6 +3,7 @@
 	import { formatQuestionResponses } from '$lib/utils/askTags';
 	import { cn } from '$lib/utils/cn';
 	import { Send } from 'lucide-svelte';
+	import { Streamdown } from 'svelte-streamdown';
 
 	interface Props {
 		questions: AskQuestions;
@@ -126,9 +127,16 @@
 
 	<!-- Context/explanation from the event content -->
 	{#if content}
-		<p class="text-sm text-muted-foreground">
-			{content}
-		</p>
+		<div class="prose prose-sm text-sm max-w-none dark:prose-invert text-muted-foreground">
+			<Streamdown
+				{content}
+				class="prose prose-sm text-sm max-w-none dark:prose-invert text-muted-foreground"
+				parseIncompleteMarkdown={true}
+				animation={{ enabled: false }}
+				baseTheme="shadcn"
+				shikiTheme="github-dark-dimmed"
+			/>
+		</div>
 	{/if}
 
 	<!-- Questions -->
