@@ -2,7 +2,7 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import type { NDKEvent, NDKSubscription, NDKFilter } from '@nostr-dev-kit/ndk';
 	import { stopEvent } from '$lib/ndk-events/operations';
-	import { onDestroy } from 'svelte';
+	import { onDestroy, getContext } from 'svelte';
 	import { Circle, Square } from 'lucide-svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { NDKProject } from '$lib/events/NDKProject';
@@ -11,6 +11,10 @@
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
 	import { generateColorFromString } from '$lib/utils/colors';
 	import { openProjects } from '$lib/stores/openProjects.svelte';
+	import { WINDOW_CONTEXT_KEY } from './ChatView.svelte';
+
+	// Get window context to determine if we're in a drawer or detached window
+	const windowContext = getContext<{ windowId?: string; isDetached: boolean } | undefined>(WINDOW_CONTEXT_KEY);
 
 	interface Props {
 		conversationId: string;
@@ -86,7 +90,7 @@
 		return null;
 	}
 
-	// Open delegation in the drawer (pushes onto stack)
+	// Open delegation - context-aware: drawer pushes to stack, detached replaces window
 	async function handleClick() {
 		if (!rootEvent) {
 			console.warn('No root event to open delegation for');
@@ -106,8 +110,13 @@
 		}
 
 		if (project) {
-			// Push onto drawer stack instead of creating detached window
-			windowManager.openChat(project, rootEvent);
+			// Check if we're in a detached window - if so, replace the window content
+			if (windowContext?.isDetached && windowContext.windowId) {
+				windowManager.replaceDetachedWindow(windowContext.windowId, project, rootEvent);
+			} else {
+				// In drawer or no context - push onto drawer stack
+				windowManager.openChat(project, rootEvent);
+			}
 		} else {
 			console.warn('Could not determine project for delegation preview');
 			console.log(rootEvent.tagValue("a"));
@@ -167,20 +176,6 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="delegation-preview" onclick={handleClick}>
 	<User.Root {ndk} pubkey={agentPubkey}>
-	<div class="delegation-header flex-col">
-		<div class="flex flex-row gap-4">
-			{#if status === 'working'}
-				<button
-					class="stop-button"
-					onclick={handleStop}
-					title="Stop delegation"
-				>
-					<Square class="w-3 h-3" />
-				</button>
-			{/if}
-		</div>
-	</div>
-
 	<div class="content">
 		<div class="flex flex-row w-full justify-between">
 			<div class="flex flex-row gap-4 items-start">
@@ -204,6 +199,15 @@
 				<div class="flex flex-row gap-2 items-center">
 					<User.Avatar class="w-5 h-5" />
 					<div class="text-xs text-muted-foreground"><User.Name /></div>
+					{#if status === 'working'}
+						<button
+							class="stop-button"
+							onclick={handleStop}
+							title="Stop delegation"
+						>
+							<Square class="w-3 h-3" />
+						</button>
+					{/if}
 				</div>
 				{#if metadata.statusCurrentActivityTimestamp}
 					<div class="timestamp">{formatRelativeTime(metadata.statusCurrentActivityTimestamp)}</div>

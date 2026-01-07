@@ -1,3 +1,8 @@
+<script lang="ts" module>
+	// Context key for window context - exported so child components can use getContext
+	export const WINDOW_CONTEXT_KEY = 'window-context';
+</script>
+
 <script lang="ts">
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKProject } from '$lib/events/NDKProject';
@@ -9,6 +14,7 @@
 	import ChatHeader from './ChatHeader.svelte';
 	import SwimlaneDelegationView from './SwimlaneDelegationView.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
+	import { setContext } from 'svelte';
 
 	interface Props {
 		project?: NDKProject;
@@ -24,6 +30,14 @@
 	}
 
 	let { project = $bindable(), projectId, rootEvent = $bindable(null), threadId, onlineAgents = [], onThreadCreated, viewMode = $bindable<ChatViewMode>('threaded'), hideHeader = false, messages = $bindable([]), windowId }: Props = $props();
+
+	// Set window context for child components (like DelegationPreview) to know if they're in a drawer or detached window
+	setContext(WINDOW_CONTEXT_KEY, {
+		windowId,
+		get isDetached() {
+			return windowId ? windowManager.isDetached(windowId) : false;
+		}
+	});
 
 	// Fetch thread if threadId provided but rootEvent not available
 	$effect(() => {

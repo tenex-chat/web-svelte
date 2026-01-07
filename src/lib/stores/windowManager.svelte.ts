@@ -8,6 +8,9 @@ import { NDKKind } from '$lib/kinds';
 
 export type WindowType = 'chat' | 'settings' | 'agent' | 'document' | 'hashtag' | 'call' | 'debug-events';
 
+// Maximum number of items in the drawer stack before trimming old entries
+const MAX_DRAWER_STACK_SIZE = 5;
+
 export interface WindowConfig {
 	id: string;
 	type: WindowType;
@@ -76,8 +79,50 @@ class WindowManager {
 	/**
 	 * Open a window (drawer or detached)
 	 * For drawers, this pushes onto the stack instead of creating separate drawers
+	 * - Prevents duplicates: if same conversation exists, moves it to top instead
+	 * - Enforces max stack size by trimming oldest entries
 	 */
 	open(config: Omit<WindowConfig, 'id' | 'zIndex' | 'isDetached'>) {
+		// Check for existing window with same content (prevent duplicates)
+		const existingWindow = this.windowsArray.find((w) => {
+			if (w.isDetached) return false;
+			if (w.type !== config.type) return false;
+			// For chat windows, compare by thread ID
+			if (config.type === 'chat') {
+				const configThreadId = config.data?.thread?.id;
+				const windowThreadId = w.data?.thread?.id;
+				// Both have threads: compare IDs
+				if (configThreadId && windowThreadId) {
+					return configThreadId === windowThreadId;
+				}
+				// Both are new conversations (no thread) for same project
+				if (!configThreadId && !windowThreadId && config.project && w.project) {
+					return config.project.tagId() === w.project.tagId();
+				}
+				return false;
+			}
+			// For settings, compare by project
+			if (config.type === 'settings' && config.project && w.project) {
+				return config.project.tagId() === w.project.tagId();
+			}
+			// For agents, compare by pubkey
+			if (config.type === 'agent' && config.data?.agentPubkey) {
+				return config.data.agentPubkey === w.data?.agentPubkey;
+			}
+			return false;
+		});
+
+		if (existingWindow) {
+			// Move existing window to top of stack (remove from current position, add to end)
+			this.drawerStack = [
+				...this.drawerStack.filter((id) => id !== existingWindow.id),
+				existingWindow.id
+			];
+			this.drawerVisible = true;
+			return existingWindow.id;
+		}
+
+		// Create new window
 		const id = crypto.randomUUID();
 		const window: WindowConfig = {
 			...config,
@@ -87,10 +132,18 @@ class WindowManager {
 		};
 		this.windowsArray = [...this.windowsArray, window];
 
-		// Push to drawer stack and make visible
+		// Push to drawer stack
 		this.drawerStack = [...this.drawerStack, id];
-		this.drawerVisible = true;
 
+		// Enforce max stack size - trim oldest entries if needed
+		while (this.drawerStack.length > MAX_DRAWER_STACK_SIZE) {
+			const oldestId = this.drawerStack[0];
+			this.drawerStack = this.drawerStack.slice(1);
+			// Also remove the window config for the trimmed item
+			this.windowsArray = this.windowsArray.filter((w) => w.id !== oldestId);
+		}
+
+		this.drawerVisible = true;
 		this.saveToStorage();
 		return id;
 	}
@@ -265,11 +318,17 @@ class WindowManager {
 	}
 
 	/**
-	 * Close the drawer panel (hides it but preserves the stack)
-	 * The stack remains intact so reopening will show the top item
+	 * Close the drawer panel and clear the stack
+	 * This ensures a fresh state when reopening
 	 */
 	closeDrawer() {
 		this.drawerVisible = false;
+		// Clean up all drawer windows from windowsArray
+		const drawerWindowIds = new Set(this.drawerStack);
+		this.windowsArray = this.windowsArray.filter((w) => !drawerWindowIds.has(w.id));
+		// Clear the stack
+		this.drawerStack = [];
+		this.saveToStorage();
 	}
 
 	/**
@@ -278,8 +337,15 @@ class WindowManager {
 	 */
 	navigateBack() {
 		if (this.drawerStack.length <= 1) {
-			// At bottom of stack, close the drawer
+			// At bottom of stack, close the drawer and clear everything
 			this.drawerVisible = false;
+			// Clean up the last window in the stack
+			if (this.drawerStack.length === 1) {
+				const lastId = this.drawerStack[0];
+				this.windowsArray = this.windowsArray.filter((w) => w.id !== lastId);
+			}
+			this.drawerStack = [];
+			this.saveToStorage();
 			return;
 		}
 
@@ -494,6 +560,42 @@ class WindowManager {
 	 */
 	get(id: string): WindowConfig | undefined {
 		return this.windowsArray.find((w) => w.id === id);
+	}
+
+	/**
+	 * Check if a window is detached (floating window vs drawer)
+	 */
+	isDetached(id: string): boolean {
+		const window = this.windowsArray.find((w) => w.id === id);
+		return window?.isDetached ?? false;
+	}
+
+	/**
+	 * Replace a detached window's content with a new chat
+	 * This allows opening delegations in the same detached window
+	 */
+	replaceDetachedWindow(windowId: string, project: NDKProject, thread?: NDKEvent) {
+		const index = this.windowsArray.findIndex((w) => w.id === windowId);
+		if (index === -1) return;
+
+		const existingWindow = this.windowsArray[index];
+		if (!existingWindow.isDetached) return;
+
+		const title = thread?.tagValue('title') || 'New Conversation';
+		const updatedWindow = {
+			...existingWindow,
+			type: 'chat' as const,
+			title,
+			project,
+			data: { thread }
+		};
+
+		this.windowsArray = [
+			...this.windowsArray.slice(0, index),
+			updatedWindow,
+			...this.windowsArray.slice(index + 1)
+		];
+		this.saveToStorage();
 	}
 
 	/**
