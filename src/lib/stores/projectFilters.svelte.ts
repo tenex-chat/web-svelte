@@ -3,7 +3,7 @@ import { storage } from '$lib/utils/storage.svelte';
 
 /**
  * Store to persist project-specific filter settings.
- * Each project can have its own time filter preference (e.g., "4h", "1d", "needs-response-1h", etc.)
+ * Each project can have its own time filter preference (e.g., "4h", "1d", etc.)
  */
 
 interface ProjectFilters {

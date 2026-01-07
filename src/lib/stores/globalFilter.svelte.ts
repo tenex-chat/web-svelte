@@ -3,7 +3,7 @@ import { storage } from '$lib/utils/storage.svelte';
 
 /**
  * Store to persist global conversation filter setting.
- * A single filter that applies to all projects (e.g., "4h", "1d", "needs-response-1h", etc.)
+ * A single filter that applies to all projects (e.g., "4h", "1d", etc.)
  * Also includes a toggle for filtering to only show conversations started by the current user.
  */
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { MessageSquare, AlertCircle } from 'lucide-svelte';
+	import { AlertCircle } from 'lucide-svelte';
 	import ConversationMetadataDisplay from './ConversationMetadataDisplay.svelte';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
 	import TimeAgo from '$lib/components/common/TimeAgo.svelte';
@@ -11,10 +11,7 @@
 
 	interface ThreadMetadata {
 		latestReply: NDKEvent | null;
-		replyCount: number;
 		participants: Set<string>;
-		lastUserReplyTime: number;
-		lastOtherReplyTime: number;
 	}
 
 	interface Props {
@@ -91,7 +88,6 @@
 	const statusCurrentActivity = $derived(metadata.statusCurrentActivity);
 	const meta = $derived(threadMetadata.get(thread.id));
 	const latestReply = $derived(meta?.latestReply);
-	const replyCount = $derived(meta?.replyCount || 0);
 	const displayTime = $derived(latestReply?.created_at || thread.created_at || 0);
 	const hashtags = $derived(thread.tags.filter((tag) => tag[0] === 't').map((tag) => tag[1]));
 
@@ -193,10 +189,6 @@
 				<User.Name class="truncate max-w-[100px]" />
 			</div>
 		</User.Root>
-		<div class="flex items-center gap-1">
-			<MessageSquare class="w-3 h-3" />
-			<span>{replyCount}</span>
-		</div>
 		{#if hashtags.length > 0}
 			{@const maxHashtags = 3}
 			{@const displayedHashtags = hashtags.slice(0, maxHashtags)}

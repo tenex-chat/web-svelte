@@ -32,7 +32,6 @@
 		Pin,
 		Filter,
 		Clock,
-		MessageCircleQuestion,
 		UserCircle,
 		Check,
 		LayoutGrid,
@@ -111,9 +110,6 @@
 			case '1d': return 'Active in last 24 hours';
 			case '3d': return 'Active in last 3 days';
 			case '7d': return 'Active in last 7 days';
-			case 'needs-response-1h': return 'Needs response (1h)';
-			case 'needs-response-4h': return 'Needs response (4h)';
-			case 'needs-response-1d': return 'Needs response (24h)';
 			default: return 'Custom filter';
 		}
 	}
@@ -587,31 +583,6 @@
 								<Clock class="mr-2 h-4 w-4" />
 								<span>Active in last 7 days</span>
 								{#if currentFilter === '7d'}
-									<span class="ml-auto">✓</span>
-								{/if}
-							</DropdownMenu.Item>
-						</DropdownMenu.Group>
-						<DropdownMenu.Separator />
-						<DropdownMenu.Group>
-							<DropdownMenu.GroupHeading>Response filters</DropdownMenu.GroupHeading>
-							<DropdownMenu.Item onclick={() => globalFilterStore.set('needs-response-1h')}>
-								<MessageCircleQuestion class="mr-2 h-4 w-4" />
-								<span>Needs response (1h)</span>
-								{#if currentFilter === 'needs-response-1h'}
-									<span class="ml-auto">✓</span>
-								{/if}
-							</DropdownMenu.Item>
-							<DropdownMenu.Item onclick={() => globalFilterStore.set('needs-response-4h')}>
-								<MessageCircleQuestion class="mr-2 h-4 w-4" />
-								<span>Needs response (4h)</span>
-								{#if currentFilter === 'needs-response-4h'}
-									<span class="ml-auto">✓</span>
-								{/if}
-							</DropdownMenu.Item>
-							<DropdownMenu.Item onclick={() => globalFilterStore.set('needs-response-1d')}>
-								<MessageCircleQuestion class="mr-2 h-4 w-4" />
-								<span>Needs response (24h)</span>
-								{#if currentFilter === 'needs-response-1d'}
 									<span class="ml-auto">✓</span>
 								{/if}
 							</DropdownMenu.Item>

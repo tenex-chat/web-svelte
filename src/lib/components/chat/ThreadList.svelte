@@ -54,7 +54,7 @@
 		debouncedEvents.filter(e => e.tags.some(t => t[0] === 'e'))
 	);
 
-	// Build thread metadata (reply count, participants, latest reply)
+	// Build thread metadata (participants, latest reply)
 	// Using regular Map instead of SvelteMap - we create a new map each time anyway,
 	// and SvelteMap's reactivity tracking inside $derived causes massive overhead
 	const threadMetadata = $derived.by(() => {
@@ -62,7 +62,6 @@
 		const metadata = new Map<
 			string,
 			{
-				replyCount: number;
 				participants: Set<string>;
 				latestReply: NDKEvent | null;
 			}
@@ -71,7 +70,6 @@
 		// Initialize metadata for each thread
 		for (const thread of threads) {
 			metadata.set(thread.id, {
-				replyCount: 0,
 				participants: new Set([thread.pubkey]),
 				latestReply: null
 			});
@@ -85,7 +83,6 @@
 				const threadId = eTag[1];
 				const meta = metadata.get(threadId);
 				if (meta) {
-					meta.replyCount++;
 					meta.participants.add(reply.pubkey);
 					const replyTime = reply.created_at || 0;
 
@@ -102,7 +99,6 @@
 	});
 
 	// Sort and filter threads based on timeFilter and onlyByMe
-	// Uses pre-computed time data from threadMetadata to avoid duplicate reply iteration
 	const sortedThreads = $derived.by(() => {
 		const start = performance.now();
 		if (threads.length === 0) return [];
@@ -114,89 +110,34 @@
 			filteredThreads = filteredThreads.filter((thread) => thread.pubkey === ndk.$currentPubkey);
 		}
 
-		// Apply time filter if set - uses pre-computed data from threadMetadata
+		// Apply time filter if set
 		if (timeFilter) {
 			const now = Math.floor(Date.now() / 1000);
+			const thresholds: Record<string, number> = {
+				"1h": 60 * 60,
+				"4h": 4 * 60 * 60,
+				"1d": 24 * 60 * 60,
+				"3d": 3 * 24 * 60 * 60,
+				"7d": 7 * 24 * 60 * 60,
+			};
+			const threshold = thresholds[timeFilter];
 
-			// Check if this is a "needs response" filter
-			const isNeedsResponseFilter = timeFilter.startsWith('needs-response-');
+			if (threshold) {
+				filteredThreads = filteredThreads.filter((thread) => {
+					const meta = threadMetadata.get(thread.id);
+					const lastReplyTime = meta?.latestReply?.created_at || 0;
 
-			if (isNeedsResponseFilter && ndk.$currentPubkey) {
-				// Handle "needs response" filters - shows threads where others have replied but user hasn't
-				const filterTime = timeFilter.replace("needs-response-", "");
-				const thresholds: Record<string, number> = {
-					"1h": 60 * 60,
-					"4h": 4 * 60 * 60,
-					"1d": 24 * 60 * 60,
-					"3d": 3 * 24 * 60 * 60,
-					"7d": 7 * 24 * 60 * 60,
-				};
-				const threshold = thresholds[filterTime];
+					// If thread has any replies
+					if (lastReplyTime > 0) {
+						const timeSinceLastReply = now - lastReplyTime;
+						// Show threads that have had a reply within the selected timeframe
+						return timeSinceLastReply <= threshold;
+					}
 
-				if (threshold) {
-					// Filter threads using pre-computed time data from threadMetadata
-					filteredThreads = filteredThreads.filter((thread) => {
-						const meta = threadMetadata.get(thread.id);
-						if (!meta) return false;
-
-						const lastOtherReplyTime = meta.lastOtherReplyTime;
-						const lastUserReplyTime = meta.lastUserReplyTime;
-
-						// If someone else has replied
-						if (lastOtherReplyTime > 0) {
-							// Check if user has already responded after this reply
-							if (
-								lastUserReplyTime > 0 &&
-								lastUserReplyTime > lastOtherReplyTime
-							) {
-								// User has already responded, don't show
-								return false;
-							}
-
-							// Check if the time since the other person's reply exceeds the threshold
-							const timeSinceLastOtherReply = now - lastOtherReplyTime;
-							if (timeSinceLastOtherReply < threshold) {
-								// Reply is still within the threshold time, don't show yet
-								return false;
-							}
-
-							// Someone replied more than threshold ago and user hasn't responded yet
-							return true;
-						}
-
-						// Don't include threads without replies from others
-						return false;
-					});
-				}
-			} else {
-				// Handle regular activity filters - shows threads with any activity within the time frame
-				const thresholds: Record<string, number> = {
-					"1h": 60 * 60,
-					"4h": 4 * 60 * 60,
-					"1d": 24 * 60 * 60,
-					"3d": 3 * 24 * 60 * 60,
-					"7d": 7 * 24 * 60 * 60,
-				};
-				const threshold = thresholds[timeFilter];
-
-				if (threshold) {
-					// Filter threads using pre-computed time data from threadMetadata
-					filteredThreads = filteredThreads.filter((thread) => {
-						const meta = threadMetadata.get(thread.id);
-						const lastReplyTime = meta?.latestReply?.created_at || 0;
-
-						// If thread has any replies
-						if (lastReplyTime > 0) {
-							const timeSinceLastReply = now - lastReplyTime;
-							// Show threads that have had a reply within the selected timeframe
-							return timeSinceLastReply <= threshold;
-						}
-
-						// Also include threads created within the timeframe (even if no replies yet)
-						const timeSinceCreation = now - (thread.created_at || 0);
-						return timeSinceCreation <= threshold;
-					});
-				}
+					// Also include threads created within the timeframe (even if no replies yet)
+					const timeSinceCreation = now - (thread.created_at || 0);
+					return timeSinceCreation <= threshold;
+				});
 			}
 		}
 
@@ -223,11 +164,7 @@
 				<MessageSquare class="w-12 h-12 text-muted-foreground mb-2" />
 				<p class="text-sm text-foreground">
 					{#if timeFilter}
-						{#if timeFilter.startsWith('needs-response-')}
-							No conversations need your response
-						{:else}
-							No active conversations
-						{/if}
+						No active conversations
 					{:else}
 						No conversations yet
 					{/if}
@@ -235,10 +172,6 @@
 				<p class="text-xs text-muted-foreground mt-1">
 					{#if !timeFilter}
 						Click "New" to start
-					{:else if timeFilter.startsWith('needs-response-')}
-						{@const time = timeFilter.replace('needs-response-', '')}
-						{@const timeLabel = time === '1h' ? '1 hour' : time === '4h' ? '4 hours' : time === '1d' ? '24 hours' : time === '3d' ? '3 days' : '7 days'}
-						All caught up! No threads waiting for your response longer than {timeLabel}
 					{:else}
 						{@const timeLabel = timeFilter === '1h' ? 'hour' : timeFilter === '4h' ? '4 hours' : timeFilter === '1d' ? '24 hours' : timeFilter === '3d' ? '3 days' : '7 days'}
 						No conversations with activity in the last {timeLabel}
