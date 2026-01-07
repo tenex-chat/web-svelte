@@ -91,6 +91,9 @@
 	const displayTime = $derived(latestReply?.created_at || thread.created_at || 0);
 	const hashtags = $derived(thread.tags.filter((tag) => tag[0] === 't').map((tag) => tag[1]));
 
+	// Get the recipient (first p-tag from the original post)
+	const recipientPubkey = $derived(thread.tags.find((tag) => tag[0] === 'p')?.[1]);
+
 	// Check if thread or latest reply is an ask (needs attention)
 	const hasAsk = $derived(isAskEvent(thread) || (latestReply && isAskEvent(latestReply)));
 
@@ -183,12 +186,23 @@
 		{/if}
 	{/if}
 	<div class="flex items-center gap-3 text-xs text-muted-foreground">
-		<User.Root {ndk} pubkey={thread.pubkey}>
-			<div class="flex items-center gap-1.5">
-				<User.Avatar class="w-4 h-4 rounded-full" />
-				<User.Name class="truncate max-w-[100px]" />
-			</div>
-		</User.Root>
+		<div class="flex items-center gap-1.5">
+			<User.Root {ndk} pubkey={thread.pubkey}>
+				<div class="flex items-center gap-1.5">
+					<User.Avatar class="w-4 h-4 rounded-full" />
+					<User.Name class="truncate max-w-[80px]" />
+				</div>
+			</User.Root>
+			{#if recipientPubkey}
+				<span class="text-muted-foreground/60">→</span>
+				<User.Root {ndk} pubkey={recipientPubkey}>
+					<div class="flex items-center gap-1">
+						<User.Avatar class="w-4 h-4 rounded-full" />
+						<User.Name class="truncate max-w-[80px]" />
+					</div>
+				</User.Root>
+			{/if}
+		</div>
 		{#if hashtags.length > 0}
 			{@const maxHashtags = 3}
 			{@const displayedHashtags = hashtags.slice(0, maxHashtags)}
