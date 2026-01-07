@@ -54,10 +54,9 @@
 		debouncedEvents.filter(e => e.tags.some(t => t[0] === 'e'))
 	);
 
-	// Build thread metadata (reply count, participants, latest reply, time tracking for filters)
+	// Build thread metadata (reply count, participants, latest reply)
 	// Using regular Map instead of SvelteMap - we create a new map each time anyway,
 	// and SvelteMap's reactivity tracking inside $derived causes massive overhead
-	// Also includes lastUserReplyTime and lastOtherReplyTime to avoid duplicate iteration in sortedThreads
 	const threadMetadata = $derived.by(() => {
 		const start = performance.now();
 		const metadata = new Map<
@@ -66,8 +65,6 @@
 				replyCount: number;
 				participants: Set<string>;
 				latestReply: NDKEvent | null;
-				lastUserReplyTime: number;
-				lastOtherReplyTime: number;
 			}
 		>();
 
@@ -76,13 +73,11 @@
 			metadata.set(thread.id, {
 				replyCount: 0,
 				participants: new Set([thread.pubkey]),
-				latestReply: null,
-				lastUserReplyTime: 0,
-				lastOtherReplyTime: 0
+				latestReply: null
 			});
 		}
 
-		// Process replies - single pass for all metadata including time tracking
+		// Process replies
 		for (const reply of replies) {
 			// Find which thread this reply belongs to via e-tag
 			const eTags = reply.tags.filter((tag) => tag[0] === 'e');
@@ -97,17 +92,6 @@
 					// Update latest reply if this is newer
 					if (!meta.latestReply || replyTime > (meta.latestReply.created_at || 0)) {
 						meta.latestReply = reply;
-					}
-
-					// Track user vs other reply times for "needs response" filter
-					if (ndk.$currentPubkey && reply.pubkey === ndk.$currentPubkey) {
-						if (replyTime > meta.lastUserReplyTime) {
-							meta.lastUserReplyTime = replyTime;
-						}
-					} else {
-						if (replyTime > meta.lastOtherReplyTime) {
-							meta.lastOtherReplyTime = replyTime;
-						}
 					}
 				}
 			}
