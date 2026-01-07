@@ -10,6 +10,7 @@
 	import { operationsStatusStore } from '$lib/stores/operationsStatus.svelte';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
 	import { generateColorFromString } from '$lib/utils/colors';
+	import { openProjects } from '$lib/stores/openProjects.svelte';
 
 	interface Props {
 		conversationId: string;
@@ -21,7 +22,7 @@
 	let subscription: NDKSubscription | null = null;
 
 	// Root event (the delegation conversation itself)
-	const rootEvent = $derived(events.find(e => e.id === conversationId));
+	let rootEvent = $state<NDKEvent | null>(null);
 
 	// Delegated-to agent pubkey (from root event's p-tag)
 	const agentPubkey = $derived(rootEvent?.tags?.find(t => t[0] === 'p')?.[1]);
@@ -32,26 +33,10 @@
 	// Generate dynamic color from status label
 	const statusColor = $derived(metadata.statusLabel ? generateColorFromString(metadata.statusLabel) : null);
 
-	// Status: prefer metadata store's statusLabel, fallback to heuristics
-	const status = $derived.by(() => {
-		if (metadata.statusLabel) {
-			const label = metadata.statusLabel.toLowerCase();
-			if (label.includes('completed') || label.includes('done') || label.includes('finished')) {
-				return 'done';
-			}
-			if (label.includes('progress') || label.includes('working') || label.includes('running')) {
-				return 'working';
-			}
-		}
-
-		// Check centralized operations store
-		const workingAgents = operationsStatusStore.getWorkingAgents(conversationId);
-		if (workingAgents.length === 0) {
-			return 'done';
-		}
-
-		return 'working';
-	});
+	// Status: use centralized operations store as single source of truth
+	const status = $derived(
+		operationsStatusStore.getWorkingAgents(conversationId).length > 0 ? 'working' : 'done'
+	);
 
 	// Format relative time
 	function formatRelativeTime(timestamp: number): string {
@@ -64,32 +49,68 @@
 		return `${Math.floor(diff / 86400)}d ago`;
 	}
 
-	// Open delegation in detached window
+	/**
+	 * Find project from local store first, avoiding network fetch
+	 * Falls back to network fetch only if not found locally
+	 */
+	function findProject(aTag: string): NDKProject | null {
+		const [kindStr, pubkey, dTag] = aTag.split(':');
+		if (!kindStr || !pubkey || !dTag) return null;
+
+		// First try to find in openProjects (already loaded)
+		const localProject = openProjects.projects.find(p =>
+			p.dTag === dTag && p.pubkey === pubkey
+		);
+		if (localProject) {
+			return localProject;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Async fallback to fetch project from network if not found locally
+	 */
+	async function fetchProject(aTag: string): Promise<NDKProject | null> {
+		const [kindStr, pubkey, dTag] = aTag.split(':');
+		if (!kindStr || !pubkey || !dTag) return null;
+
+		const projectEvent = await ndk.fetchEvent({
+			kinds: [parseInt(kindStr)],
+			authors: [pubkey],
+			'#d': [dTag]
+		});
+		if (projectEvent) {
+			return NDKProject.from(projectEvent);
+		}
+		return null;
+	}
+
+	// Open delegation in the drawer (pushes onto stack)
 	async function handleClick() {
-		if (!rootEvent) return;
+		if (!rootEvent) {
+			console.warn('No root event to open delegation for');
+			return;
+		}
 
 		const aTag = rootEvent.tags?.find(t => t[0] === 'a')?.[1];
-		let project: NDKProject | null = null;
+		if (!aTag) {
+			console.warn('Could not determine project for delegation preview: no a-tag');
+			return;
+		}
 
-		if (aTag) {
-			const [kindStr, pubkey, dTag] = aTag.split(':');
-			if (kindStr && pubkey && dTag) {
-				const projectEvent = await ndk.fetchEvent({
-					kinds: [parseInt(kindStr)],
-					authors: [pubkey],
-					'#d': [dTag]
-				});
-				if (projectEvent) {
-					project = NDKProject.from(projectEvent);
-				}
-			}
+		// Try local lookup first (instant), fall back to network fetch
+		let project = findProject(aTag);
+		if (!project) {
+			project = await fetchProject(aTag);
 		}
 
 		if (project) {
-			const windowId = windowManager.openChat(project, rootEvent);
-			const x = Math.max(100, (globalThis.innerWidth - 600) / 2);
-			const y = Math.max(50, (globalThis.innerHeight - 700) / 2);
-			windowManager.detach(windowId, { x, y });
+			// Push onto drawer stack instead of creating detached window
+			windowManager.openChat(project, rootEvent);
+		} else {
+			console.warn('Could not determine project for delegation preview');
+			console.log(rootEvent.tagValue("a"));
 		}
 	}
 
@@ -105,6 +126,7 @@
 
 	// Subscribe to conversation events
 	$effect(() => {
+		console.log('Subscribing to delegation preview for conversation:', conversationId);
 		if (!conversationId) return;
 
 		events = [];
@@ -115,10 +137,18 @@
 		];
 
 		subscription = ndk.subscribe(filters, {
+			subId: 'delegation-preview',
 			onEvent: (event: NDKEvent) => {
+				if (rootEvent === null && event.id === conversationId) {
+					rootEvent = event;
+				}
 				events = [...events, event];
 			},
 			onEvents: (e: NDKEvent[]) => {
+				if (rootEvent === null) {
+					const root = e.find(ev => ev.id === conversationId) || null;
+					rootEvent = root;
+				}
 				events = e
 			}
 		});
@@ -136,38 +166,9 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="delegation-preview" onclick={handleClick}>
-	<div class="delegation-header">
-		{#if agentPubkey}
-			<User.Root {ndk} pubkey={agentPubkey}>
-				<User.Avatar class="avatar" />
-				<div class="header-content">
-					<div class="agent-name"><User.Name /></div>
-					{#if metadata.title}
-						<div class="title" title={metadata.title}>{metadata.title}</div>
-					{:else if rootEvent?.content}
-						<div class="prompt-line" title={rootEvent.content}>{rootEvent.content}</div>
-					{/if}
-				</div>
-			</User.Root>
-		{:else}
-			<div class="avatar-placeholder">?</div>
-			<div class="header-content">
-				<div class="agent-name">Agent</div>
-			</div>
-		{/if}
-		<div class="header-right">
-			{#if metadata.statusLabel && statusColor}
-				<span
-					class="status-badge"
-					style="background-color: {statusColor.replace(')', ', 0.2)')}; color: {statusColor}; border-color: {statusColor.replace(')', ', 0.3)')}"
-				>
-					{metadata.statusLabel}
-				</span>
-			{:else}
-				<span class="status-badge status-fallback" class:working={status === 'working'}>
-					{status}
-				</span>
-			{/if}
+	<User.Root {ndk} pubkey={agentPubkey}>
+	<div class="delegation-header flex-col">
+		<div class="flex flex-row gap-4">
 			{#if status === 'working'}
 				<button
 					class="stop-button"
@@ -181,6 +182,34 @@
 	</div>
 
 	<div class="content">
+		<div class="flex flex-row w-full justify-between">
+			<div class="flex flex-row gap-4 items-start">
+				{#if metadata.title}
+					<div class="text-base text-foreground" title={metadata.title}>{metadata.title}</div>
+				{/if}
+				{#if metadata.statusLabel && statusColor}
+					<span
+						class="status-badge"
+						style="background-color: {statusColor.replace(')', ', 0.2)')}; color: {statusColor}; border-color: {statusColor.replace(')', ', 0.3)')}"
+					>
+						{metadata.statusLabel}
+					</span>
+				{:else}
+					<span class="status-badge status-fallback" class:working={status === 'working'}>
+						{status}
+					</span>
+				{/if}
+			</div>
+			<div class="flex flex-col items-end">
+				<div class="flex flex-row gap-2 items-center">
+					<User.Avatar class="w-5 h-5" />
+					<div class="text-xs text-muted-foreground"><User.Name /></div>
+				</div>
+				{#if metadata.statusCurrentActivityTimestamp}
+					<div class="timestamp">{formatRelativeTime(metadata.statusCurrentActivityTimestamp)}</div>
+				{/if}
+			</div>
+		</div>
 		{#if metadata.statusCurrentActivity}
 			<div class="activity-main" style={statusColor ? `color: ${statusColor}` : ''}>
 				{#if status === 'working'}
@@ -191,9 +220,6 @@
 			{#if metadata.summary}
 				<div class="summary-muted">{metadata.summary}</div>
 			{/if}
-			{#if metadata.statusCurrentActivityTimestamp}
-				<div class="timestamp">{formatRelativeTime(metadata.statusCurrentActivityTimestamp)}</div>
-			{/if}
 		{:else if metadata.summary}
 			<div class="summary-only">{metadata.summary}</div>
 		{:else}
@@ -203,15 +229,17 @@
 			</div>
 		{/if}
 	</div>
+	</User.Root>
 </div>
 
 <style>
 	.delegation-preview {
+		display: flex;
+		flex-direction: row;
 		background: hsl(var(--card));
 		border: 1px solid hsl(var(--border));
 		border-radius: 8px;
 		overflow: hidden;
-		max-width: 320px;
 		margin-top: 8px;
 		cursor: pointer;
 		transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -226,8 +254,9 @@
 		display: flex;
 		gap: 10px;
 		padding: 10px 12px;
-		border-bottom: 1px solid hsl(var(--border));
+		border-right: 1px solid hsl(var(--border));
 		background: hsl(var(--muted) / 0.3);
+		flex-shrink: 0;
 	}
 
 	:global(.delegation-header .avatar) {
@@ -333,6 +362,11 @@
 
 	.content {
 		padding: 10px 12px;
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
 	}
 
 	.activity-main {

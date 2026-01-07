@@ -5,6 +5,7 @@
 	import { formatRelativeTime } from '$lib/utils/time';
 	import { cn } from '$lib/utils/cn';
 	import { Streamdown } from 'svelte-streamdown';
+	import { isAskEvent, getAskTLDR, hasAskContext } from '$lib/utils/askTags';
 	import {
 		Bot,
 		MessageCircle,
@@ -13,7 +14,9 @@
 		FileText,
 		ChevronRight,
 		HelpCircle,
-		ChevronDown
+		ChevronDown,
+		AlertCircle,
+		ArrowRight
 	} from 'lucide-svelte';
 
 	interface Props {
@@ -24,6 +27,11 @@
 	let { event, isUnread = false }: Props = $props();
 
 	let isExpanded = $state(false);
+
+	// Parse ask tags
+	const isAsk = $derived(isAskEvent(event));
+	const askTLDR = $derived(getAskTLDR(event));
+	const hasContext = $derived(hasAskContext(event));
 
 	// Get event type info
 	const eventTypeInfo = $derived.by(() => {
@@ -80,11 +88,21 @@
 			class="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-r from-primary/30 to-transparent"
 			aria-hidden="true"
 		></div>
+	{:else if isAsk}
+		<div
+			class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"
+			style="box-shadow: 0 0 10px rgba(245, 158, 11, 0.6)"
+			aria-label="Question waiting for response"
+		></div>
+		<div
+			class="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-r from-amber-500/30 to-transparent"
+			aria-hidden="true"
+		></div>
 	{/if}
 
 	<!-- Avatar -->
 	<User.Root {ndk} pubkey={event.pubkey}>
-		<div class={cn('flex-shrink-0', isUnread && 'ml-3')}>
+		<div class={cn('flex-shrink-0', (isUnread || isAsk) && 'ml-3')}>
 			<User.Avatar class="w-10 h-10 rounded-full" />
 		</div>
 
@@ -104,6 +122,15 @@
 					{@render iconBadge()}
 					<span class="text-xs">{eventTypeInfo.label}</span>
 				</div>
+				{#if isAsk}
+					<span
+						class="px-2 py-0.5 text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full flex items-center gap-1 border border-amber-200 dark:border-amber-700/50"
+						title="This message is asking for feedback or input"
+					>
+						<AlertCircle class="h-3 w-3" />
+						Asking
+					</span>
+				{/if}
 				{#if isUnread}
 					<span
 						class="px-2 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded-full animate-pulse shadow-lg"
@@ -117,28 +144,41 @@
 
 		<!-- Content -->
 		<div class="text-sm text-muted-foreground">
-			{#if isExpanded}
-				<div class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground">
-					<Streamdown
-						content={event.content}
-						class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground"
-						parseIncompleteMarkdown={true}
-						animation={{ enabled: false }}
-						baseTheme="shadcn"
-						shikiTheme="github-dark-dimmed"
-					/>
+			{#if isAsk && askTLDR}
+				<!-- Ask events: show only TLDR, with option to expand context -->
+				<div class="p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-700/30 rounded">
+					<div class="text-sm text-amber-800 dark:text-amber-300">{askTLDR}</div>
 				</div>
+				{#if hasContext && isExpanded}
+					<div class="mt-2 text-xs text-muted-foreground whitespace-pre-wrap">
+						{event.tagValue('context')}
+					</div>
+				{/if}
 			{:else}
-				<div class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground line-clamp-2">
-					<Streamdown
-						content={contentPreview}
-						class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground"
-						parseIncompleteMarkdown={true}
-						animation={{ enabled: false }}
-						baseTheme="shadcn"
-						shikiTheme="github-dark-dimmed"
-					/>
-				</div>
+				<!-- Regular events: show content preview -->
+				{#if isExpanded}
+					<div class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground">
+						<Streamdown
+							content={event.content}
+							class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground"
+							parseIncompleteMarkdown={true}
+							animation={{ enabled: false }}
+							baseTheme="shadcn"
+							shikiTheme="github-dark-dimmed"
+						/>
+					</div>
+				{:else}
+					<div class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground line-clamp-2">
+						<Streamdown
+							content={contentPreview}
+							class="prose prose-sm max-w-none dark:prose-invert text-muted-foreground"
+							parseIncompleteMarkdown={true}
+							animation={{ enabled: false }}
+							baseTheme="shadcn"
+							shikiTheme="github-dark-dimmed"
+						/>
+					</div>
+				{/if}
 			{/if}
 		</div>
 
@@ -159,16 +199,24 @@
 
 		<!-- Action buttons (shown on hover) -->
 		<div class="mt-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-			<button
-				onclick={(e) => {
-					e.stopPropagation();
-					isExpanded = !isExpanded;
-				}}
-				class="h-7 px-3 text-xs rounded-md hover:bg-muted flex items-center gap-1"
-			>
-				{isExpanded ? 'Collapse' : 'View Context'}
-				<ChevronRight class="ml-1 h-3 w-3" />
-			</button>
+			{#if (isAsk && hasContext) || (!isAsk && event.content)}
+				<button
+					onclick={(e) => {
+						e.stopPropagation();
+						isExpanded = !isExpanded;
+					}}
+					class="h-7 px-3 text-xs rounded-md hover:bg-muted flex items-center gap-1"
+				>
+					{#if isExpanded}
+						Collapse
+					{:else if isAsk && hasContext}
+						Show Details
+					{:else}
+						View Full
+					{/if}
+					<ChevronRight class="ml-1 h-3 w-3 {isExpanded ? 'rotate-90' : ''} transition-transform" />
+				</button>
+			{/if}
 		</div>
 	</div>
 	</User.Root>

@@ -8,7 +8,9 @@ interface OperationStatus {
   agentPubkeys: string[];
   createdAt: number;
   eventId: string;  // For tiebreaker
+  projectId: string;
 }
+
 
 /**
  * Centralized store for operations status (kind:24133)
@@ -60,7 +62,8 @@ class OperationsStatusStore {
       this.statusMap.set(snapshot.eId, {
         agentPubkeys: snapshot.agentPubkeys,
         createdAt: snapshot.createdAt,
-        eventId: snapshot.eventId
+        eventId: snapshot.eventId,
+        projectId: snapshot.projectId
       });
     }
   }
@@ -78,6 +81,36 @@ class OperationsStatusStore {
   isWorking(eventId: string): boolean {
     const agents = this.getWorkingAgents(eventId);
     return agents.length > 0;
+  }
+
+  /**
+   * Get count of distinct events being actively worked on for a project
+   */
+  getActiveEventCount(projectId: string): number {
+    let count = 0;
+    for (const status of this.statusMap.values()) {
+      if (status.projectId === projectId && status.agentPubkeys.length > 0) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /**
+   * Get all active operations for a project (event IDs and agent pubkeys)
+   */
+  getActiveOperations(projectId: string): { eventIds: string[], agentPubkeys: string[] } {
+    const eventIds: string[] = [];
+    const agentPubkeysSet = new Set<string>();
+
+    for (const [eventId, status] of this.statusMap.entries()) {
+      if (status.projectId === projectId && status.agentPubkeys.length > 0) {
+        eventIds.push(eventId);
+        status.agentPubkeys.forEach(pk => agentPubkeysSet.add(pk));
+      }
+    }
+
+    return { eventIds, agentPubkeys: [...agentPubkeysSet] };
   }
 }
 

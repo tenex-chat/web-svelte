@@ -4,6 +4,7 @@
 	import Message from './Message.svelte';
 	import AgentMessageBlock from './AgentMessageBlock.svelte';
 	import AgentTodoList from './AgentTodoList.svelte';
+	import StickyTodoHeader from './StickyTodoHeader.svelte';
 	import { ConversationState } from '$lib/stores/conversation-state.svelte';
 	import { type Message as MessageType, createSimplifiedDisplayModel, type DisplayItem } from '$lib/utils/messageUtils';
 	import { aggregateTodoState, type AggregatedTodoState } from '$lib/utils/todoAggregator';
@@ -170,6 +171,11 @@
 		bind:this={scrollContainer}
 		class="absolute inset-0 overflow-y-auto pb-48"
 	>
+		<!-- Sticky Todo Header - pinned to top when there are todos -->
+		{#if globalTodoState.hasTodos}
+			<StickyTodoHeader items={globalTodoState.items} />
+		{/if}
+
 		{#if messages.length === 0}
 			<div class="flex items-center justify-center h-full text-muted-foreground text-sm">
 				No messages yet. Start the conversation!
@@ -210,7 +216,7 @@
 					{#if index === todoDisplayIndex && globalTodoState.hasTodos}
 						<div class="px-4 py-1">
 							<div class="flex gap-3">
-								<div class="w-9 flex-shrink-0 relative">
+								<div class="w-4 flex-shrink-0 relative">
 									<div class="absolute left-1/2 -translate-x-1/2 inset-y-0 border-l border-border/60"></div>
 								</div>
 								<div class="flex-1">

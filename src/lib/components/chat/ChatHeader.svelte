@@ -4,7 +4,7 @@
 	import CopyThreadMenu from './CopyThreadMenu.svelte';
 	import ChatActionsMenu from './ChatActionsMenu.svelte';
 	import ConversationMetadataDisplay from './ConversationMetadataDisplay.svelte';
-	import { GitFork, MessageSquareText } from 'lucide-svelte';
+	import { Rows3, MessageSquareText } from 'lucide-svelte';
 
 	interface Props {
 		rootEvent: NDKEvent;
@@ -35,13 +35,13 @@
 			<button
 				class="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
 				onclick={() => onViewModeChange(viewMode === 'delegation' ? 'threaded' : 'delegation')}
-				aria-label={viewMode === 'delegation' ? 'Switch to thread view' : 'Switch to tree view'}
-				title={viewMode === 'delegation' ? 'Switch to thread view' : 'Switch to tree view'}
+				aria-label={viewMode === 'delegation' ? 'Switch to thread view' : 'Switch to swimlane view'}
+				title={viewMode === 'delegation' ? 'Switch to thread view' : 'Switch to swimlane view'}
 			>
 				{#if viewMode === 'delegation'}
 					<MessageSquareText class="h-5 w-5" />
 				{:else}
-					<GitFork class="h-5 w-5" />
+					<Rows3 class="h-5 w-5" />
 				{/if}
 			</button>
 

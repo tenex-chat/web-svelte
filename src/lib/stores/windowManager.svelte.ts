@@ -1,8 +1,10 @@
 import { browser } from '$app/environment';
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
-import type { NDKProject } from '$lib/events/NDKProject';
+import { NDKProject } from '$lib/events/NDKProject';
 import { isElectron } from '$lib/utils/electron';
 import { storage } from '$lib/utils/storage.svelte';
+import { ndk } from '$lib/ndk.svelte';
+import { NDKKind } from '$lib/kinds';
 
 export type WindowType = 'chat' | 'settings' | 'agent' | 'document' | 'hashtag' | 'call' | 'debug-events';
 
@@ -22,6 +24,14 @@ class WindowManager {
 	private windowsArray = $state<WindowConfig[]>([]);
 	private nextZIndex = $state(1000);
 
+	// Stack of drawer window IDs - top of stack is the currently visible drawer
+	private drawerStack = $state<string[]>([]);
+	// Flag to track if the drawer is currently visible (vs hidden/closed)
+	private drawerVisible = $state(false);
+
+	// Remember the last detached window size for new windows
+	private lastDetachedSize = $state<{ width: number; height: number }>({ width: 500, height: 700 });
+
 	constructor() {
 		if (browser) {
 			this.loadFromStorage();
@@ -33,6 +43,12 @@ class WindowManager {
 		if (saved) {
 			// Don't restore windows on load - start fresh
 			// Could restore detached windows if desired
+		}
+
+		// Load last detached window size
+		const savedSize = storage.get('tenex-detached-window-size');
+		if (savedSize && savedSize.width && savedSize.height) {
+			this.lastDetachedSize = savedSize;
 		}
 	}
 
@@ -59,6 +75,7 @@ class WindowManager {
 
 	/**
 	 * Open a window (drawer or detached)
+	 * For drawers, this pushes onto the stack instead of creating separate drawers
 	 */
 	open(config: Omit<WindowConfig, 'id' | 'zIndex' | 'isDetached'>) {
 		const id = crypto.randomUUID();
@@ -69,6 +86,11 @@ class WindowManager {
 			zIndex: this.nextZIndex++
 		};
 		this.windowsArray = [...this.windowsArray, window];
+
+		// Push to drawer stack and make visible
+		this.drawerStack = [...this.drawerStack, id];
+		this.drawerVisible = true;
+
 		this.saveToStorage();
 		return id;
 	}
@@ -84,6 +106,85 @@ class WindowManager {
 			project,
 			data: { thread }
 		});
+	}
+
+	/**
+	 * Open a chat conversation directly as a detached (floating) window
+	 */
+	openChatDetached(project: NDKProject, thread?: NDKEvent, position?: { x: number; y: number }) {
+		const id = crypto.randomUUID();
+		const title = thread?.tagValue('title') || 'New Conversation';
+
+		// Use remembered size or default
+		const width = this.lastDetachedSize.width;
+		const height = this.lastDetachedSize.height;
+
+		// Calculate position - use provided position or center on screen
+		const x = position?.x ?? Math.max(50, (globalThis.innerWidth - width) / 2);
+		const y = position?.y ?? Math.max(50, (globalThis.innerHeight - height) / 2);
+
+		// Ensure window is above all other windows
+		const maxZIndex = Math.max(...this.windowsArray.map(w => w.zIndex), this.nextZIndex - 1);
+		const zIndex = maxZIndex + 1;
+		this.nextZIndex = zIndex + 1;
+
+		const window: WindowConfig = {
+			id,
+			type: 'chat',
+			title,
+			project,
+			data: { thread },
+			isDetached: true,
+			position: { x, y },
+			size: { width, height },
+			zIndex
+		};
+
+		this.windowsArray = [...this.windowsArray, window];
+		this.saveToStorage();
+		return id;
+	}
+
+	/**
+	 * Open a chat from an event (resolves project and thread automatically)
+	 * Use this when you have an event from inbox/notifications
+	 */
+	async openChatFromEvent(event: NDKEvent): Promise<string | null> {
+		// Get project reference from 'a' tag
+		const aTag = event.tagValue('a');
+		if (!aTag) {
+			console.warn('Cannot open chat: event has no project reference (a tag)');
+			return null;
+		}
+
+		// Fetch the project
+		const projectEvent = await ndk.fetchEvent({ kinds: [NDKKind.Project], '#d': [aTag.split(':')[2]], authors: [aTag.split(':')[1]] });
+		if (!projectEvent) {
+			console.warn('Cannot open chat: project not found for', aTag);
+			return null;
+		}
+		const project = NDKProject.from(projectEvent);
+
+		// Find the root thread
+		// If the event has e-tags, look for the root; otherwise, the event itself is the root
+		const eTags = event.tags.filter(t => t[0] === 'e');
+		let thread: NDKEvent | undefined;
+
+		if (eTags.length === 0) {
+			// This event is a root thread
+			thread = event;
+		} else {
+			// Find the root event - look for e-tag with 'root' marker or use the first e-tag
+			const rootTag = eTags.find(t => t[3] === 'root') || eTags[0];
+			if (rootTag) {
+				const rootEvent = await ndk.fetchEvent(rootTag[1]);
+				thread = rootEvent || event;
+			} else {
+				thread = event;
+			}
+		}
+
+		return this.openChat(project, thread);
 	}
 
 	/**
@@ -146,10 +247,48 @@ class WindowManager {
 	}
 
 	/**
-	 * Close a window
+	 * Close a window completely (removes from stack and windows array)
+	 * For drawers: also removes from stack
 	 */
 	close(id: string) {
+		const window = this.windowsArray.find((w) => w.id === id);
+
+		// Remove from windows array
 		this.windowsArray = this.windowsArray.filter((w) => w.id !== id);
+
+		// If it was a drawer, remove from stack
+		if (window && !window.isDetached) {
+			this.drawerStack = this.drawerStack.filter((wid) => wid !== id);
+		}
+
+		this.saveToStorage();
+	}
+
+	/**
+	 * Close the drawer panel (hides it but preserves the stack)
+	 * The stack remains intact so reopening will show the top item
+	 */
+	closeDrawer() {
+		this.drawerVisible = false;
+	}
+
+	/**
+	 * Navigate back in the drawer stack (pop from stack)
+	 * If at the bottom of the stack, closes the drawer
+	 */
+	navigateBack() {
+		if (this.drawerStack.length <= 1) {
+			// At bottom of stack, close the drawer
+			this.drawerVisible = false;
+			return;
+		}
+
+		// Pop the top item from the stack
+		const poppedId = this.drawerStack[this.drawerStack.length - 1];
+		this.drawerStack = this.drawerStack.slice(0, -1);
+
+		// Also remove the window config for the popped item
+		this.windowsArray = this.windowsArray.filter((w) => w.id !== poppedId);
 		this.saveToStorage();
 	}
 
@@ -158,6 +297,8 @@ class WindowManager {
 	 */
 	closeAll() {
 		this.windowsArray = [];
+		this.drawerStack = [];
+		this.drawerVisible = false;
 		this.saveToStorage();
 	}
 
@@ -185,12 +326,15 @@ class WindowManager {
 			return;
 		}
 
-		// In browser, convert to floating window
+		// Remove from drawer stack since it's becoming detached
+		this.drawerStack = this.drawerStack.filter((wid) => wid !== id);
+
+		// In browser, convert to floating window using remembered size
 		const updatedWindow = {
 			...window,
 			isDetached: true,
 			position: position || { x: 100, y: 100 },
-			size: window.size || { width: 800, height: 600 },
+			size: window.size || this.lastDetachedSize,
 			zIndex: this.nextZIndex++
 		};
 
@@ -245,6 +389,11 @@ class WindowManager {
 			updatedWindow,
 			...this.windowsArray.slice(index + 1)
 		];
+
+		// Add back to drawer stack and make visible
+		this.drawerStack = [...this.drawerStack, id];
+		this.drawerVisible = true;
+
 		this.saveToStorage();
 	}
 
@@ -312,6 +461,10 @@ class WindowManager {
 			...this.windowsArray.slice(index + 1)
 		];
 		this.saveToStorage();
+
+		// Remember this size for new windows
+		this.lastDetachedSize = size;
+		storage.set('tenex-detached-window-size', size);
 	}
 
 	/**
@@ -352,6 +505,7 @@ class WindowManager {
 
 	/**
 	 * Get drawer windows (not detached)
+	 * @deprecated Use currentDrawer instead for the visible drawer
 	 */
 	get drawers(): WindowConfig[] {
 		return this.all.filter((w) => !w.isDetached);
@@ -365,11 +519,44 @@ class WindowManager {
 	}
 
 	/**
+	 * Get the currently visible drawer (top of stack)
+	 * Returns undefined if drawer is closed/hidden
+	 */
+	get currentDrawer(): WindowConfig | undefined {
+		if (!this.drawerVisible || this.drawerStack.length === 0) {
+			return undefined;
+		}
+		const topId = this.drawerStack[this.drawerStack.length - 1];
+		return this.windowsArray.find((w) => w.id === topId);
+	}
+
+	/**
+	 * Check if drawer is currently visible
+	 */
+	get isDrawerOpen(): boolean {
+		return this.drawerVisible && this.drawerStack.length > 0;
+	}
+
+	/**
+	 * Get the number of items in the drawer stack
+	 */
+	get drawerStackSize(): number {
+		return this.drawerStack.length;
+	}
+
+	/**
+	 * Check if we can navigate back (more than one item in stack)
+	 */
+	get canNavigateBack(): boolean {
+		return this.drawerStack.length > 1;
+	}
+
+	/**
 	 * Get the active drawer (top drawer)
+	 * @deprecated Use currentDrawer instead
 	 */
 	get activeDrawer(): WindowConfig | undefined {
-		const drawers = this.drawers;
-		return drawers.length > 0 ? drawers[drawers.length - 1] : undefined;
+		return this.currentDrawer;
 	}
 }
 

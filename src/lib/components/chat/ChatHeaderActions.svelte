@@ -4,7 +4,7 @@
 	import ChatActionsMenu from './ChatActionsMenu.svelte';
 	import CopyThreadMenu from './CopyThreadMenu.svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { GitFork, List, AlignJustify, Check, LayoutList } from 'lucide-svelte';
+	import { Rows3, List, AlignJustify, Check, LayoutList } from 'lucide-svelte';
 
 	interface Props {
 		rootEvent?: NDKEvent | null;
@@ -25,7 +25,7 @@
 			case 'flattened':
 				return AlignJustify;
 			case 'delegation':
-				return GitFork;
+				return Rows3;
 			default:
 				return List;
 		}
@@ -81,8 +81,8 @@
 		<DropdownMenu.Item onclick={() => setViewMode('delegation')}>
 			<div class="flex items-center justify-between w-full">
 				<div class="flex items-center gap-2">
-					<GitFork class="w-4 h-4" />
-					<span>Tree View</span>
+					<Rows3 class="w-4 h-4" />
+					<span>Swimlane View</span>
 				</div>
 				{#if viewMode === 'delegation'}
 					<Check class="w-4 h-4" />

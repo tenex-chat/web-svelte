@@ -35,6 +35,10 @@
 	// For agent windows, get agent pubkey
 	const agentPubkey = $derived(window.type === 'agent' ? window.data?.agentPubkey : null);
 
+	// Check if we can navigate back (more than one item in stack)
+	const canNavigateBack = $derived(windowManager.canNavigateBack);
+	const stackSize = $derived(windowManager.drawerStackSize);
+
 	$effect(() => {
 		const stored = storage.get('drawer-width');
 		if (stored && stored >= MIN_WIDTH_VW && stored <= MAX_WIDTH_VW) {
@@ -42,8 +46,27 @@
 		}
 	});
 
+	/**
+	 * Navigate back in the stack (pops current conversation)
+	 * If at bottom of stack, closes the drawer
+	 */
+	function handleBack() {
+		windowManager.navigateBack();
+	}
+
+	/**
+	 * Close the entire drawer (hides it, but stack remains intact)
+	 */
+	function handleCloseDrawer() {
+		windowManager.closeDrawer();
+	}
+
+	/**
+	 * Used by child components (DocumentView, CallView) that want to "close" themselves
+	 * This navigates back in the stack rather than closing the entire drawer
+	 */
 	function handleClose() {
-		windowManager.close(window.id);
+		windowManager.navigateBack();
 	}
 
 	function handleDetach() {
@@ -105,11 +128,12 @@
 	<!-- Drawer Header -->
 	<div class="drawer-header flex items-center justify-between px-4 py-3 border-b border-border bg-muted">
 		<div class="flex items-center gap-3 flex-1 min-w-0">
-			<!-- Back/Close button -->
+			<!-- Back button - navigates to previous conversation in stack -->
 			<button
-				onclick={handleClose}
+				onclick={handleBack}
 				class="p-1 hover:bg-secondary rounded transition-colors"
-				aria-label="Close"
+				aria-label={canNavigateBack ? "Go back" : "Close drawer"}
+				title={canNavigateBack ? `Back (${stackSize - 1} more in stack)` : "Close drawer"}
 			>
 				<svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -118,7 +142,14 @@
 
 			<!-- Title -->
 			<div class="flex-1 min-w-0">
-				<h2 class="text-sm font-semibold text-foreground truncate">{window.title}</h2>
+				<div class="flex items-center gap-2">
+					<h2 class="text-sm font-semibold text-foreground truncate">{window.title}</h2>
+					{#if stackSize > 1}
+						<span class="text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-full">
+							{stackSize}
+						</span>
+					{/if}
+				</div>
 				{#if window.type === 'chat' && window.data?.thread}
 					<ConversationMetadataDisplay
 						conversationId={window.data.thread.id}
@@ -158,11 +189,11 @@
 				</svg>
 			</button>
 
-			<!-- Close button -->
+			<!-- Close button - closes drawer but preserves stack -->
 			<button
-				onclick={handleClose}
+				onclick={handleCloseDrawer}
 				class="p-2 hover:bg-secondary rounded transition-colors"
-				title="Close"
+				title="Close drawer"
 			>
 				<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
@@ -180,23 +211,26 @@
 	<div class="drawer-content flex-1 overflow-hidden">
 		{#if window.type === 'chat'}
 			{@const thread = window.data?.thread}
-			<ChatView
-				project={window.project}
-				rootEvent={thread}
-				{onlineAgents}
-				onThreadCreated={(thread) => {
-					// Update the window data with the new thread
-					windowManager.updateWindowData(
-						window.id,
-						{ thread },
-						thread.tagValue('title') || 'Conversation'
-					);
-				}}
-				bind:viewMode
-				hideHeader={true}
-				bind:messages
-				windowId={window.id}
-			/>
+			<!-- Key by window.id to force full re-render when switching windows in the stack -->
+			{#key window.id}
+				<ChatView
+					project={window.project}
+					rootEvent={thread}
+					{onlineAgents}
+					onThreadCreated={(thread) => {
+						// Update the window data with the new thread
+						windowManager.updateWindowData(
+							window.id,
+							{ thread },
+							thread.tagValue('title') || 'Conversation'
+						);
+					}}
+					bind:viewMode
+					hideHeader={true}
+					bind:messages
+					windowId={window.id}
+				/>
+			{/key}
 		{:else if window.type === 'settings' && window.project}
 			<SettingsTab project={window.project} {onlineAgents} />
 		{:else if window.type === 'document'}

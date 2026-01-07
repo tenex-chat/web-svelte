@@ -42,6 +42,7 @@ export class HashtagStore {
 
 		this.subscription = this.ndk.subscribe(filters, {
 			closeOnEose: false,
+			cacheUnconstrainFilter: [],
 			onEvents: (events: NDKEvent[]) => {
 				this.extractHashtagsBulk(events);
 			},
@@ -69,20 +70,7 @@ export class HashtagStore {
 	}
 
 	private extractHashtags(event: NDKEvent) {
-		const tTags = event.tags.filter((tag) => tag[0] === 't' && tag[1]);
-		if (tTags.length === 0) return;
-
-		const newHashtags: string[] = [];
-		for (const tag of tTags) {
-			const hashtag = tag[1].toLowerCase();
-			if (hashtag && !this.hashtags.has(hashtag)) {
-				newHashtags.push(hashtag);
-			}
-		}
-
-		if (newHashtags.length > 0) {
-			this.hashtags = new Set([...this.hashtags, ...newHashtags]);
-		}
+		this.extractHashtagsBulk([event]);
 	}
 
 	/**

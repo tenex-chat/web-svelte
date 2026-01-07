@@ -1,5 +1,7 @@
 <script lang="ts">
+	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { inboxStore } from '$lib/stores/inbox.svelte';
+	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { goto } from '$app/navigation';
 	import InboxEventCard from './InboxEventCard.svelte';
 	import { Inbox } from 'lucide-svelte';
@@ -86,9 +88,9 @@
 		goto('/inbox');
 	}
 
-	function handleEventClick(eventId: string) {
+	async function handleEventClick(event: NDKEvent) {
 		open = false;
-		goto(`/chat/${eventId}`);
+		await windowManager.openChatFromEvent(event);
 	}
 
 	// Mark as read when opening the popover
@@ -178,12 +180,12 @@
 						{#each recentEvents as event (event.id)}
 							<div
 								class="cursor-pointer hover:bg-muted/50 transition-colors"
-								onclick={() => handleEventClick(event.id)}
+								onclick={() => handleEventClick(event)}
 								role="button"
 								tabindex="0"
 								onkeydown={(e) => {
 									if (e.key === 'Enter' || e.key === ' ') {
-										handleEventClick(event.id);
+										handleEventClick(event);
 									}
 								}}
 							>

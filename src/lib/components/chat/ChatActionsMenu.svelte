@@ -95,6 +95,13 @@
 		window.open(tracesUrl, '_blank');
 	}
 
+	function handleOpenTrace() {
+		isOpen = false;
+		const traceId = rootEvent.id.slice(0, 32);
+		const traceUrl = `http://localhost:16686/trace/${traceId}`;
+		window.open(traceUrl, '_blank');
+	}
+
 	async function handleSummarize() {
 		if (!hasSummaryProvider) {
 			toastStore.error(
@@ -198,6 +205,14 @@
 			>
 				<Bug class="w-4 h-4" />
 				<span>Debug Events</span>
+			</button>
+			<button
+				type="button"
+				onclick={handleOpenTrace}
+				class="w-full text-left px-3 py-2 hover:bg-muted transition-colors flex items-center gap-2 text-sm"
+			>
+				<ExternalLink class="w-4 h-4" />
+				<span>Open trace</span>
 			</button>
 			<button
 				type="button"

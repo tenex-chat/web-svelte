@@ -22,8 +22,13 @@
 			windowManager.openChat(project);
 		}
 	}
+
+	function handleThreadLongPress(thread: NDKEvent, position: { x: number; y: number }) {
+		// Long-press opens the conversation as a detached (floating) window
+		windowManager.openChatDetached(project, thread, position);
+	}
 </script>
 
 <div class="h-full flex flex-col">
-	<ThreadList {project} {timeFilter} {onlyByMe} onThreadSelect={handleThreadSelect} />
+	<ThreadList {project} {timeFilter} {onlyByMe} onThreadSelect={handleThreadSelect} onThreadLongPress={handleThreadLongPress} />
 </div>

@@ -21,6 +21,7 @@
 	import CodebaseSearchToolRenderer from './renderers/CodebaseSearchToolRenderer.svelte';
 	import DelegateToolRenderer from './renderers/DelegateToolRenderer.svelte';
 	import DelegateExternalToolRenderer from './renderers/DelegateExternalToolRenderer.svelte';
+import ScheduleTaskRenderer from './renderers/ScheduleTaskRenderer.svelte';
 
 	interface Props {
 		event: NDKEvent;
@@ -77,6 +78,8 @@
 	<LessonLearnToolRenderer {args} />
 {:else if toolName === 'codebase_search'}
 	<CodebaseSearchToolRenderer {args} />
+{:else if toolName === 'schedule_task'}
+	<ScheduleTaskRenderer {args} />
 {:else if hasDelegations}
 	<DelegateToolRenderer {event} />
 {:else if toolName === 'delegate_external'}

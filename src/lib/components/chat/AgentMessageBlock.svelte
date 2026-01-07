@@ -156,9 +156,9 @@
 			<div class="group px-4 py-1 hover:bg-muted/10 transition-colors">
 				<div class="flex gap-3">
 					<User.Root {ndk} pubkey={firstMessage.event.pubkey}>
-						<div class="flex-shrink-0 pt-0.5 relative">
-							<User.Avatar class="w-9 h-9 rounded-md" />
-							<div class="absolute left-1/2 -translate-x-1/2 top-9 bottom-0 border-l border-border/60"></div>
+						<div class="w-4 flex-shrink-0 relative">
+							<User.Avatar class="w-4 h-4 rounded-md" />
+							<div class="absolute left-1/2 -translate-x-1/2 top-4 bottom-0 border-l border-border/60"></div>
 						</div>
 					</User.Root>
 					<div class="flex-1 min-w-0">
@@ -193,7 +193,7 @@
 		{#if showTodoList && todoState.hasTodos}
 			<div class="px-4 py-1">
 				<div class="flex gap-3">
-					<div class="w-9 flex-shrink-0 relative">
+					<div class="w-4 flex-shrink-0 relative">
 						<div class="absolute left-1/2 -translate-x-1/2 inset-y-0 border-l border-border/60"></div>
 					</div>
 					<div class="flex-1">
@@ -207,7 +207,7 @@
 		{#if collapsedCount > 0 && !isManuallyExpanded}
 			<div class="px-4 py-1">
 				<div class="flex gap-3">
-					<div class="w-9 flex-shrink-0 relative">
+					<div class="w-4 flex-shrink-0 relative">
 						<div class="absolute left-1/2 -translate-x-1/2 inset-y-0 border-l border-border/60"></div>
 					</div>
 					<button
@@ -247,7 +247,7 @@
 		{#if isManuallyExpanded && collapsedCount > 0}
 			<div class="px-4 py-1">
 				<div class="flex gap-3">
-					<div class="w-9 flex-shrink-0 relative">
+					<div class="w-4 flex-shrink-0 relative">
 						<div class="absolute left-1/2 -translate-x-1/2 inset-y-0 border-l border-border/60"></div>
 					</div>
 					<button

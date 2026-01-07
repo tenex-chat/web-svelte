@@ -42,6 +42,7 @@
 				items: [
 					{ key: 'model', label: 'Model', value: metadata.model },
 					{ key: 'provider', label: 'Provider', value: metadata.provider },
+					{ key: 'ral', label: 'RAL #', value: metadata.ral },
 					{ key: 'api-version', label: 'API Version', value: metadata['api-version'] },
 					{ key: 'system-fingerprint', label: 'System Fingerprint', value: metadata['system-fingerprint'] }
 				].filter((item) => item.value)

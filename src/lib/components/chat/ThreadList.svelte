@@ -11,11 +11,12 @@
 		project: NDKProject;
 		selectedThread?: NDKEvent;
 		onThreadSelect?: (thread: NDKEvent) => void;
+		onThreadLongPress?: (thread: NDKEvent, position: { x: number; y: number }) => void;
 		timeFilter?: string | null;
 		onlyByMe?: boolean;
 	}
 
-	let { project, selectedThread, onThreadSelect, timeFilter = null, onlyByMe = true }: Props = $props();
+	let { project, selectedThread, onThreadSelect, onThreadLongPress, timeFilter = null, onlyByMe = true }: Props = $props();
 
 	// Subscribe to all kind:1 events for this project
 	const allEventsSubscription = ndk.$subscribe(() => ({
@@ -23,7 +24,7 @@
 			{
 				kinds: [1],
 				'#a': [project.tagId()],
-				limit: 500
+				limit: 501
 			}
 		],
 		cacheUnconstrainFilter: [],
@@ -143,6 +144,8 @@
 					"1h": 60 * 60,
 					"4h": 4 * 60 * 60,
 					"1d": 24 * 60 * 60,
+					"3d": 3 * 24 * 60 * 60,
+					"7d": 7 * 24 * 60 * 60,
 				};
 				const threshold = thresholds[filterTime];
 
@@ -187,6 +190,8 @@
 					"1h": 60 * 60,
 					"4h": 4 * 60 * 60,
 					"1d": 24 * 60 * 60,
+					"3d": 3 * 24 * 60 * 60,
+					"7d": 7 * 24 * 60 * 60,
 				};
 				const threshold = thresholds[timeFilter];
 
@@ -248,17 +253,11 @@
 						Click "New" to start
 					{:else if timeFilter.startsWith('needs-response-')}
 						{@const time = timeFilter.replace('needs-response-', '')}
-						All caught up! No threads waiting for your response longer than {time === '1h'
-							? '1 hour'
-							: time === '4h'
-								? '4 hours'
-								: '24 hours'}
+						{@const timeLabel = time === '1h' ? '1 hour' : time === '4h' ? '4 hours' : time === '1d' ? '24 hours' : time === '3d' ? '3 days' : '7 days'}
+						All caught up! No threads waiting for your response longer than {timeLabel}
 					{:else}
-						No conversations with activity in the last {timeFilter === '1h'
-							? 'hour'
-							: timeFilter === '4h'
-								? '4 hours'
-								: '24 hours'}
+						{@const timeLabel = timeFilter === '1h' ? 'hour' : timeFilter === '4h' ? '4 hours' : timeFilter === '1d' ? '24 hours' : timeFilter === '3d' ? '3 days' : '7 days'}
+						No conversations with activity in the last {timeLabel}
 					{/if}
 				</p>
 			</div>
@@ -271,6 +270,7 @@
 						{conversationMetadataStore}
 						{threadMetadata}
 						onclick={() => onThreadSelect?.(thread)}
+						onlongpress={(position) => onThreadLongPress?.(thread, position)}
 					/>
 				{/snippet}
 			</VirtualList>

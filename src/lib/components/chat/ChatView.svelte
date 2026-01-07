@@ -7,7 +7,7 @@
 	import MessageList from './MessageList.svelte';
 	import ChatInput from './ChatInput.svelte';
 	import ChatHeader from './ChatHeader.svelte';
-	import DelegationTreeView from './DelegationTreeView.svelte';
+	import SwimlaneDelegationView from './SwimlaneDelegationView.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 
 	interface Props {
@@ -50,6 +50,13 @@
 			localRootEvent = rootEvent;
 			// Clear navigation stack when explicitly setting a new root from props
 			navigationStack = [];
+		}
+	});
+
+	// Trim navigation stack when it exceeds 10 items, keeping only the 10 most recent
+	$effect(() => {
+		if (navigationStack.length > 10) {
+			navigationStack = navigationStack.slice(-10);
 		}
 	});
 
@@ -111,7 +118,7 @@
 		try {
 			// Sign and publish the new event
 			await newEvent.sign(undefined, { pTags: false });
-			await newEvent.publish();
+			newEvent.publish();
 
 			// Close the current conversation window
 			if (windowId) {
@@ -155,7 +162,7 @@
 		</div>
 
 		{#if viewMode === 'delegation'}
-			<DelegationTreeView
+			<SwimlaneDelegationView
 				rootEvent={localRootEvent}
 				{messages}
 				onNodeClick={handleTimeClick}

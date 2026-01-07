@@ -1,6 +1,7 @@
 import { ndk } from '$lib/ndk.svelte';
 import type { NDKEvent, NDKSubscription, NDKFilter } from '@nostr-dev-kit/ndk';
 import { browser } from '$app/environment';
+import { annotateEventWithAskMeta } from '$lib/utils/askTags';
 
 /**
  * Event kinds to include in the inbox
@@ -131,13 +132,15 @@ class InboxStore {
 			groupable: false,
 			subId: 'inbox-events-store',
 			onEvents: (events: NDKEvent[]) => {
-				// Bulk add all events to map
+				// Bulk add all events to map with ask metadata annotation
 				for (const event of events) {
+					annotateEventWithAskMeta(event);
 					this.eventMap.set(event.id, event);
 				}
 				this.updateState();
 			},
 			onEvent: (event: NDKEvent) => {
+				annotateEventWithAskMeta(event);
 				this.eventMap.set(event.id, event);
 				this.updateState();
 			}

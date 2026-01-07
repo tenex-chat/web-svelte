@@ -22,6 +22,13 @@
     import { cn } from '$lib/ndk/utils/cn';
 	import { HashtagStore } from '$lib/stores/hashtags.svelte';
 	import NDKBlossom from '@nostr-dev-kit/blossom';
+	import ImageAttachmentPreview from './ImageAttachmentPreview.svelte';
+
+	interface ImageAttachment {
+		url: string;
+		isUploading?: boolean;
+		progress?: number;
+	}
 
 	interface Props {
 		project?: NDKProject;
@@ -82,6 +89,7 @@
 	let fileInputElement: HTMLInputElement | null = $state(null);
 	let isUploading = $state(false);
 	let uploadProgress = $state(0);
+	let imageAttachments = $state<ImageAttachment[]>([]);
 
 	// Clean up agent configuration state when dialog closes
 	$effect(() => {
@@ -321,12 +329,30 @@
 	}
 
 	async function handleSend() {
-		if (!ndk || !ndk.$currentUser || !messageInput.trim() || isSubmitting) return;
+		// Allow sending if there's text OR image attachments
+		const hasText = messageInput.trim().length > 0;
+		const hasImages = imageAttachments.some(att => !att.isUploading && att.url);
+		if (!ndk || !ndk.$currentUser || (!hasText && !hasImages) || isSubmitting) return;
 
-		const content = messageInput.trim();
+		// Build content: text + image URLs
+		let content = messageInput.trim();
+
+		// Append image URLs to content
+		const completedImageUrls = imageAttachments
+			.filter(att => !att.isUploading && att.url && !att.url.startsWith('blob:'))
+			.map(att => att.url);
+
+		if (completedImageUrls.length > 0) {
+			const imageUrlsText = completedImageUrls.join(' ');
+			content = content ? `${content}\n\n${imageUrlsText}` : imageUrlsText;
+		}
+
 		isSubmitting = true;
+		const originalMessage = messageInput;
+		const originalAttachments = [...imageAttachments];
 		try {
 			messageInput = ''; // Clear immediately for better UX
+			imageAttachments = []; // Clear attachments
 
 			if (!rootEvent) {
 				// CREATE NEW THREAD (kind:1)
@@ -382,7 +408,7 @@
 
 				// Sign and publish
 				await thread.sign(undefined, { pTags: false });
-				await thread.publish();
+				thread.publish();
 
 				// Notify parent
 				if (onThreadCreated) {
@@ -441,7 +467,7 @@
 
 				// Sign and publish
 				await reply.sign(undefined, { pTags: false });
-				await reply.publish();
+				reply.publish();
 			}
 
 			// Clear draft
@@ -465,13 +491,21 @@
 			}, 0);
 		} catch (error) {
 			console.error('Failed to send message:', error);
-			messageInput = content; // Restore message on error
+			messageInput = originalMessage; // Restore message on error
+			imageAttachments = originalAttachments; // Restore attachments on error
 		} finally {
 			isSubmitting = false;
 		}
 	}
 
 	function handleKeyDown(e: KeyboardEvent) {
+		// Toggle expand/collapse with Cmd+Shift+E (Mac) or Ctrl+Shift+E (Windows/Linux)
+		if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'e') {
+			e.preventDefault();
+			handleToggleExpand();
+			return;
+		}
+
 		// Handle nudge autocomplete first
 		if (nudgeKeyDownHandler(e)) {
 			return;
@@ -540,12 +574,26 @@
 		isUploading = true;
 		uploadProgress = 0;
 
+		// Add a placeholder attachment showing upload progress
+		const placeholderUrl = URL.createObjectURL(file);
+		const attachmentIndex = imageAttachments.length;
+		imageAttachments = [...imageAttachments, {
+			url: placeholderUrl,
+			isUploading: true,
+			progress: 0
+		}];
+
 		try {
 			const blossom = new NDKBlossom(ndk);
 
 			// Track upload progress
 			blossom.onUploadProgress = (progress) => {
-				uploadProgress = Math.round((progress.loaded / progress.total) * 100);
+				const progressPercent = Math.round((progress.loaded / progress.total) * 100);
+				uploadProgress = progressPercent;
+				// Update the attachment progress
+				imageAttachments = imageAttachments.map((att, idx) =>
+					idx === attachmentIndex ? { ...att, progress: progressPercent } : att
+				);
 				return 'continue';
 			};
 
@@ -559,38 +607,22 @@
 				server: 'https://blossom.primal.net'
 			});
 
-			// Insert the URL at cursor position or append to message
+			// Update the attachment with the final URL
 			if (imeta.url) {
-				const urlText = imeta.url;
+				const finalUrl = imeta.url;
+				// Revoke the blob URL
+				URL.revokeObjectURL(placeholderUrl);
 
-				if (textareaElement) {
-					const curPos = textareaElement.selectionStart || messageInput.length;
-					const before = messageInput.substring(0, curPos);
-					const after = messageInput.substring(curPos);
-
-					// Add space before URL if needed
-					const needsSpaceBefore = before.length > 0 && !before.endsWith(' ') && !before.endsWith('\n');
-					// Add space after URL if needed
-					const needsSpaceAfter = after.length > 0 && !after.startsWith(' ') && !after.startsWith('\n');
-
-					messageInput = before + (needsSpaceBefore ? ' ' : '') + urlText + (needsSpaceAfter ? ' ' : '') + after;
-
-					// Move cursor after the inserted URL
-					setTimeout(() => {
-						if (textareaElement) {
-							const newPos = before.length + (needsSpaceBefore ? 1 : 0) + urlText.length + (needsSpaceAfter ? 1 : 0);
-							textareaElement.focus();
-							textareaElement.setSelectionRange(newPos, newPos);
-							cursorPosition = newPos;
-						}
-					}, 0);
-				} else {
-					// Fallback: append to end
-					messageInput = messageInput + (messageInput.length > 0 ? ' ' : '') + urlText;
-				}
+				// Update attachment with real URL
+				imageAttachments = imageAttachments.map((att, idx) =>
+					idx === attachmentIndex ? { url: finalUrl, isUploading: false, progress: 100 } : att
+				);
 			}
 		} catch (error) {
 			console.error('Failed to upload file:', error);
+			// Remove the failed attachment
+			URL.revokeObjectURL(placeholderUrl);
+			imageAttachments = imageAttachments.filter((_, idx) => idx !== attachmentIndex);
 		} finally {
 			isUploading = false;
 			uploadProgress = 0;
@@ -599,6 +631,16 @@
 				input.value = '';
 			}
 		}
+	}
+
+	// Handle removing an image attachment
+	function handleRemoveAttachment(index: number) {
+		const attachment = imageAttachments[index];
+		// Revoke blob URL if it's a local file
+		if (attachment.url.startsWith('blob:')) {
+			URL.revokeObjectURL(attachment.url);
+		}
+		imageAttachments = imageAttachments.filter((_, idx) => idx !== index);
 	}
 
 </script>
@@ -610,6 +652,14 @@
 	<!-- Glassy Input Container -->
 	<div class="relative rounded-2xl bg-card/40 backdrop-blur-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
 		<div class="flex flex-col p-3">
+			<!-- Image Attachments Preview -->
+			{#if imageAttachments.length > 0}
+				<ImageAttachmentPreview
+					attachments={imageAttachments}
+					onRemove={handleRemoveAttachment}
+				/>
+			{/if}
+
 			<!-- Textarea -->
 			<div class="flex-1 relative">
 				<textarea

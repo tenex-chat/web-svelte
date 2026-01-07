@@ -29,6 +29,7 @@
 
 	let isDragging = $state(false);
 	let isResizing = $state(false);
+	let resizeEdge = $state<'right' | 'bottom' | 'bottom-right' | null>(null);
 	let dragOffset = $state({ x: 0, y: 0 });
 	let resizeStart = $state({ x: 0, y: 0, width: 0, height: 0 });
 
@@ -54,9 +55,10 @@
 		handleFocus();
 	}
 
-	function handleMouseDownResize(e: MouseEvent) {
+	function handleEdgeResize(e: MouseEvent, edge: 'right' | 'bottom' | 'bottom-right') {
 		if (!window.position || !window.size) return;
 		isResizing = true;
+		resizeEdge = edge;
 		resizeStart = {
 			x: e.clientX,
 			y: e.clientY,
@@ -65,6 +67,7 @@
 		};
 		handleFocus();
 		e.stopPropagation();
+		e.preventDefault();
 	}
 
 	function handleMouseMove(e: MouseEvent) {
@@ -73,12 +76,23 @@
 				x: e.clientX - dragOffset.x,
 				y: e.clientY - dragOffset.y
 			});
-		} else if (isResizing && window.size) {
+		} else if (isResizing && window.size && resizeEdge) {
 			const deltaX = e.clientX - resizeStart.x;
 			const deltaY = e.clientY - resizeStart.y;
+
+			let newWidth = resizeStart.width;
+			let newHeight = resizeStart.height;
+
+			if (resizeEdge === 'right' || resizeEdge === 'bottom-right') {
+				newWidth = Math.max(400, resizeStart.width + deltaX);
+			}
+			if (resizeEdge === 'bottom' || resizeEdge === 'bottom-right') {
+				newHeight = Math.max(300, resizeStart.height + deltaY);
+			}
+
 			windowManager.updateSize(window.id, {
-				width: Math.max(400, resizeStart.width + deltaX),
-				height: Math.max(300, resizeStart.height + deltaY)
+				width: newWidth,
+				height: newHeight
 			});
 		}
 	}
@@ -86,6 +100,7 @@
 	function handleMouseUp() {
 		isDragging = false;
 		isResizing = false;
+		resizeEdge = null;
 	}
 
 	$effect(() => {
@@ -98,6 +113,7 @@
 			};
 		}
 	});
+
 </script>
 
 <div
@@ -178,23 +194,25 @@
 	<!-- Window Content -->
 	<div class="window-content flex-1 overflow-hidden">
 		{#if window.type === 'chat'}
-			<ChatView
-				project={window.project}
-				rootEvent={window.data?.thread}
-				{onlineAgents}
-				onThreadCreated={(thread) => {
-					// Update the window data with the new thread
-					windowManager.updateWindowData(
-						window.id,
-						{ thread },
-						thread.tagValue('title') || 'Conversation'
-					);
-				}}
-				bind:viewMode
-				hideHeader={true}
-				bind:messages
-				windowId={window.id}
-			/>
+			{#key window.id}
+				<ChatView
+					project={window.project}
+					rootEvent={window.data?.thread}
+					{onlineAgents}
+					onThreadCreated={(thread) => {
+						// Update the window data with the new thread
+						windowManager.updateWindowData(
+							window.id,
+							{ thread },
+							thread.tagValue('title') || 'Conversation'
+						);
+					}}
+					bind:viewMode
+					hideHeader={true}
+					bind:messages
+					windowId={window.id}
+				/>
+			{/key}
 		{:else if window.type === 'settings' && window.project}
 			<SettingsTab project={window.project} {onlineAgents} />
 		{:else if window.type === 'document'}
@@ -231,30 +249,62 @@
 		{/if}
 	</div>
 
-	<!-- Resize Handle -->
+	<!-- Resize Handles -->
+	<!-- Right edge -->
 	<div
-		class="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-0 hover:opacity-100 transition-opacity"
-		onmousedown={handleMouseDownResize}
+		class="resize-edge absolute top-0 right-0 w-2 hover:bg-primary/30 transition-colors z-[200]"
+		style="cursor: ew-resize; bottom: 16px;"
+		onmousedown={(e) => handleEdgeResize(e, 'right')}
+		role="separator"
+		aria-label="Resize window horizontally"
+	></div>
+	<!-- Bottom edge -->
+	<div
+		class="resize-edge absolute bottom-0 left-0 h-2 hover:bg-primary/30 transition-colors z-[200]"
+		style="cursor: ns-resize; right: 12px;"
+		onmousedown={(e) => handleEdgeResize(e, 'bottom')}
+		role="separator"
+		aria-label="Resize window vertically"
+	></div>
+	<!-- Bottom-right corner - larger hit area -->
+	<div
+		class="resize-corner absolute bottom-0 right-0 w-4 h-4 z-[200]"
+		style="cursor: nwse-resize;"
+		onmousedown={(e) => handleEdgeResize(e, 'bottom-right')}
 		role="button"
 		tabindex="-1"
 		aria-label="Resize window"
-	>
-		<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-		</svg>
-	</div>
+	></div>
 </div>
 
 <style>
 	.detached-window {
 		user-select: none;
+		min-width: 400px;
+		min-height: 300px;
 	}
 
-	.resize-handle {
-		background: linear-gradient(135deg, transparent 50%, #9ca3af 50%);
+	/* Resize edge handles - invisible but with larger hit area */
+	.resize-edge {
+		/* Expand hit area beyond visible element */
+		padding: 4px;
+		margin: -4px;
 	}
 
-	:global(.dark) .resize-handle {
-		background: linear-gradient(135deg, transparent 50%, #6b7280 50%);
+	/* Corner resize handle with visual indicator */
+	.resize-corner {
+		background: linear-gradient(135deg, transparent 50%, rgba(156, 163, 175, 0.5) 50%);
+	}
+
+	.resize-corner:hover {
+		background: linear-gradient(135deg, transparent 50%, rgba(59, 130, 246, 0.6) 50%);
+	}
+
+	:global(.dark) .resize-corner {
+		background: linear-gradient(135deg, transparent 50%, rgba(107, 114, 128, 0.5) 50%);
+	}
+
+	:global(.dark) .resize-corner:hover {
+		background: linear-gradient(135deg, transparent 50%, rgba(59, 130, 246, 0.6) 50%);
 	}
 </style>

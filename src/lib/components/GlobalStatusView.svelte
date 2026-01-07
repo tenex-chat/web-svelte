@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import type { NDKEvent, NDKSubscription } from '@nostr-dev-kit/ndk';
+	import { NDKSubscriptionCacheUsage, type NDKEvent } from '@nostr-dev-kit/ndk';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { openProjects } from '$lib/stores/openProjects.svelte';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
@@ -19,69 +19,72 @@
 		latestReplyTime: number;
 	}
 
-	// Subscribe to threads from all opened projects
+	// Subscribe to threads from all opened projects with a single subscription
 	let allThreads = $state<Map<string, NDKEvent[]>>(new Map());
 	let threadMetadataMap = $state<Map<string, { replyCount: number; latestReplyTime: number }>>(new Map());
 
-	// Create subscriptions for each project
 	$effect(() => {
 		const projects = openProjects.projects;
-		const subscriptions: NDKSubscription[] = [];
+		const projectTagIds = projects.map((p) => p.tagId()).filter((id): id is string => !!id);
+
+		if (projectTagIds.length === 0) {
+			allThreads = new Map();
+			threadMetadataMap = new Map();
+			return;
+		}
+
 		const projectThreads = new Map<string, NDKEvent[]>();
 		const metadataMap = new Map<string, { replyCount: number; latestReplyTime: number }>();
 
-		for (const project of projects) {
-			const projectTagId = project.tagId();
-			if (!projectTagId) continue;
-
-			const subscription = ndk.subscribe(
-				[
-					{
-						kinds: [1],
-						'#a': [projectTagId],
-						limit: 500
-					}
-				],
+		const subscription = ndk.subscribe(
+			[
 				{
-					closeOnEose: false,
-					subId: "global-status",
-					cacheUnconstrainFilter: []
-				},
-				{
-					onEvent: (event: NDKEvent) => {
-						const hasETag = event.tags.some((t) => t[0] === 'e');
+					kinds: [1],
+					'#a': projectTagIds,
+					limit: 500
+				}
+			],
+			{
+				cacheUsage: NDKSubscriptionCacheUsage.ONLY_CACHE,
+				groupable: false,
+				subId: 'global-status',
+				cacheUnconstrainFilter: []
+			},
+			{
+				onEvent: (event: NDKEvent) => {
+					// Find which project this event belongs to via its 'a' tag
+					const aTag = event.tags.find((t) => t[0] === 'a' && projectTagIds.includes(t[1]));
+					if (!aTag) return;
+					const projectTagId = aTag[1];
 
-						if (!hasETag) {
-							const existing = projectThreads.get(projectTagId) || [];
-							if (!existing.find((e) => e.id === event.id)) {
-								projectThreads.set(projectTagId, [...existing, event]);
-								allThreads = new Map(projectThreads);
+					const hasETag = event.tags.some((t) => t[0] === 'e');
+
+					if (!hasETag) {
+						// Root thread
+						const existing = projectThreads.get(projectTagId) || [];
+						if (!existing.find((e) => e.id === event.id)) {
+							projectThreads.set(projectTagId, [...existing, event]);
+							allThreads = new Map(projectThreads);
+						}
+					} else {
+						// Reply - update metadata
+						const eTags = event.tags.filter((t) => t[0] === 'e');
+						for (const eTag of eTags) {
+							const threadId = eTag[1];
+							const existing = metadataMap.get(threadId) || { replyCount: 0, latestReplyTime: 0 };
+							existing.replyCount++;
+							if ((event.created_at || 0) > existing.latestReplyTime) {
+								existing.latestReplyTime = event.created_at || 0;
 							}
-						} else {
-							const eTags = event.tags.filter((t) => t[0] === 'e');
-							for (const eTag of eTags) {
-								const threadId = eTag[1];
-								const existing = metadataMap.get(threadId) || { replyCount: 0, latestReplyTime: 0 };
-								existing.replyCount++;
-								if ((event.created_at || 0) > existing.latestReplyTime) {
-									existing.latestReplyTime = event.created_at || 0;
-								}
-								metadataMap.set(threadId, existing);
-								threadMetadataMap = new Map(metadataMap);
-							}
+							metadataMap.set(threadId, existing);
+							threadMetadataMap = new Map(metadataMap);
 						}
 					}
 				}
-			);
-
-			subscriptions.push(subscription);
-		}
-
-		return () => {
-			for (const sub of subscriptions) {
-				sub.stop();
 			}
-		};
+		);
+
+		return () => subscription.stop();
 	});
 
 	// Build conversations with their project info and status

@@ -23,12 +23,9 @@ export const CustomKinds = {
     TenexProjectStatus: 24010 as const,
     ProjectStatus: 24010 as const, // Alias for TenexProjectStatus
     TenexAgentConfigUpdate: 24020 as const,
-    TenexAgentTypingStart: 24111 as const,
-    TenexAgentTypingStop: 24112 as const,
     TenexOperationsStatus: 24133 as const,
     TenexStopCommand: 24134 as const,
     TenexProjectStart: 24000 as const,
-    TenexLLMConfigChange: 24101 as const,
     TenexConversationMetadata: 513 as const,
 };
 

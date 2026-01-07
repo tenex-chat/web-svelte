@@ -1,7 +1,8 @@
 <script lang="ts">
+	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { ndk } from '$lib/ndk.svelte';
 	import { inboxStore } from '$lib/stores/inbox.svelte';
-	import { goto } from '$app/navigation';
+	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import InboxEventCard from '$lib/components/inbox/InboxEventCard.svelte';
 	import { Inbox, Filter } from 'lucide-svelte';
 	import { onMount } from 'svelte';
@@ -13,8 +14,8 @@
 
 	const currentUser = $derived(ndk.$sessions?.currentUser);
 
-	function handleEventClick(eventId: string) {
-		goto(`/chat/${eventId}`);
+	async function handleEventClick(event: NDKEvent) {
+		await windowManager.openChatFromEvent(event);
 	}
 </script>
 
@@ -73,12 +74,12 @@
 					{#each inboxStore.events as event (event.id)}
 						<div
 							class="cursor-pointer hover:bg-muted/50 transition-colors"
-							onclick={() => handleEventClick(event.id)}
+							onclick={() => handleEventClick(event)}
 							role="button"
 							tabindex="0"
 							onkeydown={(e) => {
 								if (e.key === 'Enter' || e.key === ' ') {
-									handleEventClick(event.id);
+									handleEventClick(event);
 								}
 							}}
 						>
