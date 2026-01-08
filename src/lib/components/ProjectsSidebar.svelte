@@ -224,33 +224,18 @@
 
 	<!-- Header -->
 	<div class="border-b border-border px-3 py-3 relative z-10">
-		<div class="flex items-center justify-between">
+		<div class={cn(
+			'flex',
+			collapsed ? 'flex-col items-center gap-2' : 'items-center justify-between'
+		)}>
 			{#if !collapsed}
-				<a href="/projects" class="flex items-center gap-2 flex-1 hover:opacity-80 transition-opacity text-foreground">
-					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-						/>
-					</svg>
-					<span class="font-bold">TENEX</span>
-				</a>
-			{:else}
-				<a href="/projects" class="flex items-center justify-center w-10 h-10 hover:opacity-80 transition-opacity text-foreground" aria-label="TENEX home" title="TENEX">
-					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-						/>
-					</svg>
-				</a>
+				<span class="font-bold text-foreground">TENEX</span>
 			{/if}
 
-			<div class="flex items-center gap-1">
+			<div class={cn(
+				'flex gap-1',
+				collapsed ? 'flex-col items-center' : 'items-center'
+			)}>
 				<!-- View Mode Toggle -->
 				<button
 					onclick={() => viewModeStore.toggle()}
