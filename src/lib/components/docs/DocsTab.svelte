@@ -3,8 +3,8 @@
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
-	import DocumentItem from './DocumentItem.svelte';
 	import { reportsStore } from '$lib/stores/reports.svelte';
+	import DocumentItem from './DocumentItem.svelte';
 
 	interface Props {
 		project: NDKProject;
