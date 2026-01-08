@@ -1,9 +1,10 @@
 // src/lib/stores/reports.svelte.ts
 import { browser } from '$app/environment';
 import { ndk } from '$lib/ndk.svelte';
+import { projectsStore } from '$lib/stores/projects.svelte';
 import { NDKKind } from '$lib/kinds';
-import type { NDKArticle } from '@nostr-dev-kit/ndk';
-import type { NDKSubscription } from '@nostr-dev-kit/ndk';
+import { NDKArticle } from '@nostr-dev-kit/ndk';
+import type { NDKSubscription, NDKEvent } from '@nostr-dev-kit/ndk';
 
 /**
  * Centralized store for NDKArticle (kind 30023) reports/documents.
@@ -155,14 +156,6 @@ class ReportsStore {
 	}
 
 	/**
-	 * Get all reports marked for memorization
-	 * @returns Array of memorized reports
-	 */
-	getMemorized(): NDKArticle[] {
-		return this.memorizedReports;
-	}
-
-	/**
 	 * Get all versions of a report by slug, sorted newest first
 	 * @param slug - The d tag value identifying the report
 	 * @returns Array of all versions of the report
@@ -201,29 +194,56 @@ class ReportsStore {
 		this.loading = true;
 		this.error = null;
 
-		try {
-			// Create persistent subscription for article events (kind 30023)
-			this.subscription = ndk.subscribe(
-				{ kinds: [NDKKind.Article as number] },
-				{
-					closeOnEose: false,
-					groupable: false,
-					subId: 'reports-store',
-					onEvents: (events: NDKArticle[]) => {
-						this.processBulkEvents(events);
+		let subscription: NDKSubscription | undefined;
+
+		// React to project changes and re-subscribe
+		$effect(() => {
+			const projectATags = projectsStore.projectATags;
+
+			// Clean up previous subscription
+			if (subscription) {
+				subscription.stop();
+			}
+
+			// Reset state when projects change
+			this.eventMap.clear();
+			this.updateState();
+
+			// Only subscribe if there are projects to filter by
+			if (projectATags.length === 0) {
+				this.loading = false;
+				return;
+			}
+
+			try {
+				// Subscribe to articles tagged with user's projects
+				subscription = ndk.subscribe(
+					{ kinds: [NDKKind.Article as number], '#a': projectATags },
+					{
+						closeOnEose: false,
+						groupable: false,
+						wrap: true,
+						subId: 'reports-store'
 					},
-					onEvent: (event: NDKArticle) => {
-						this.processSingleEvent(event);
-					},
-					onEose: () => {
-						this.loading = false;
+					{
+						onEvents: (events: NDKEvent[]) => {
+							this.processBulkEvents(events.map(e => NDKArticle.from(e)));
+						},
+						onEvent: (event: NDKEvent) => {
+							this.processSingleEvent(NDKArticle.from(event));
+						},
+						onEose: () => {
+							this.loading = false;
+						}
 					}
-				}
-			);
-		} catch (err) {
-			this.error = err as Error;
-			this.loading = false;
-		}
+				);
+
+				this.subscription = subscription;
+			} catch (err) {
+				this.error = err as Error;
+				this.loading = false;
+			}
+		});
 	}
 
 	/**

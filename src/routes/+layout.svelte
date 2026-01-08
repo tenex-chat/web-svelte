@@ -8,6 +8,7 @@
 	import { inboxStore } from '$lib/stores/inbox.svelte';
 	import { nudgeStore } from '$lib/stores/nudges.svelte';
 	import { reportsStore } from '$lib/stores/reports.svelte';
+	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import LoginModal from '$lib/components/LoginModal.svelte';
 	import WindowManagerOverlay from '$lib/components/window-manager/WindowManagerOverlay.svelte';
@@ -40,6 +41,7 @@
 			agentStore.init();
 			inboxStore.init();
 			nudgeStore.init();
+			projectsStore.init();
 			reportsStore.init();
 		}
 	});

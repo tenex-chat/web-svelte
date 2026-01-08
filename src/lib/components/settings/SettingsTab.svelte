@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
-	import { ndk } from '$lib/ndk.svelte';
+	import { projectsStore } from '$lib/stores/projects.svelte';
 	import GeneralSettings from './GeneralSettings.svelte';
 	import AgentsSettings from './AgentsSettings.svelte';
 	import ToolsSettings from './ToolsSettings.svelte';
@@ -14,19 +14,10 @@
 
 	let { project = $bindable(), projectId, onlineAgents = [] }: Props = $props();
 
-	// Fetch project if projectId provided but project not available
+	// Lookup project from store if projectId provided but project not available
 	$effect(() => {
 		if (projectId && !project) {
-			ndk
-				.fetchEvent({
-					kinds: [31933],
-					'#d': [projectId]
-				})
-				.then((event) => {
-					if (event) {
-						project = new NDKProject(ndk, event.rawEvent());
-					}
-				});
+			project = projectsStore.getByDTag(projectId);
 		}
 	});
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKProject } from '$lib/events/NDKProject';
+	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { openProjects } from '$lib/stores/openProjects.svelte';
 	import { inboxColumnStore } from '$lib/stores/inboxColumn.svelte';
 	import { loginModal } from '$lib/stores/loginModal.svelte';
@@ -10,19 +10,8 @@
 	import ProjectsSidebar from '$lib/components/ProjectsSidebar.svelte';
 	import InboxColumn from '$lib/components/InboxColumn.svelte';
 
-	// Subscribe to user's projects
-	const projectsSubscription = ndk.$subscribe(
-		() =>
-			ndk.$currentPubkey
-				? {
-						filters: [{ kinds: [31933], authors: [ndk.$currentPubkey] }],
-						closeOnEose: false,
-						wrap: true,
-					}
-				: undefined
-	);
-
-	const projects = $derived.by(() => projectsSubscription.events.map(NDKProject.from));
+	// Use centralized projects store
+	const projects = $derived(projectsStore.projects);
 
 	// View mode
 	const viewMode = $derived(viewModeStore.value);
