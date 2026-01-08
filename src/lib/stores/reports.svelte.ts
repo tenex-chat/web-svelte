@@ -292,12 +292,12 @@ class ReportsStore {
 		const allEvents = Array.from(this.eventMap.values());
 
 		// Sort all events by created_at (newest first)
-		this.allReports = allEvents.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+		const sortedEvents = allEvents.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
 
 		// Deduplicate by slug (d tag), keeping only the latest version
 		const slugMap = new Map<string, NDKArticle>();
 
-		for (const report of this.allReports) {
+		for (const report of sortedEvents) {
 			const slug = report.tagValue('d');
 			if (!slug) continue;
 
@@ -307,6 +307,8 @@ class ReportsStore {
 			}
 		}
 
+		// Write to reactive state only once at the end
+		this.allReports = sortedEvents;
 		this.reports = Array.from(slugMap.values());
 	}
 }

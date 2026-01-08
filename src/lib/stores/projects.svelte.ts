@@ -57,12 +57,12 @@ class ProjectsStore {
 		const allEvents = Array.from(this.eventMap.values());
 
 		// Sort all events by created_at (newest first)
-		this.allProjects = allEvents.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+		const sortedEvents = allEvents.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
 
 		// Deduplicate by dTag, keeping only the latest version
 		const dTagMap = new Map<string, NDKProject>();
 
-		for (const project of this.allProjects) {
+		for (const project of sortedEvents) {
 			const dTag = project.dTag;
 			if (!dTag) continue;
 
@@ -72,6 +72,8 @@ class ProjectsStore {
 			}
 		}
 
+		// Write to reactive state only once at the end
+		this.allProjects = sortedEvents;
 		this.projects = Array.from(dTagMap.values());
 	}
 
