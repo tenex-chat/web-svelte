@@ -4,6 +4,7 @@
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { operationsStatusStore } from '$lib/stores/operationsStatus.svelte';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
+	import { reportsStore } from '$lib/stores/reports.svelte';
 	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import LoginModal from '$lib/components/LoginModal.svelte';
 	import WindowManagerOverlay from '$lib/components/window-manager/WindowManagerOverlay.svelte';
@@ -33,6 +34,7 @@
 			projectStatusStore.init();
 			operationsStatusStore.init();
 			conversationMetadataStore.init();
+			reportsStore.init();
 		}
 	});
 </script>
