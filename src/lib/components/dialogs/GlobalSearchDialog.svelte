@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { ndk } from '$lib/ndk.svelte';
+	import { windowManager } from '$lib/stores/windowManager.svelte';
 
 	interface Props {
 		open?: boolean;
@@ -10,15 +12,17 @@
 	let query = $state('');
 	let searchResults = $state<{ type: string; title: string; href: string }[]>([]);
 	let selectedIndex = $state(0);
+	let isLoading = $state(false);
 
 	function handleClose() {
 		open = false;
 		query = '';
 		searchResults = [];
 		selectedIndex = 0;
+		isLoading = false;
 	}
 
-	function handleSearch() {
+	async function handleSearch() {
 		// Simple search implementation - in production, this would search through:
 		// - Projects
 		// - Conversations
@@ -26,7 +30,20 @@
 		// - Settings
 		searchResults = [];
 
-		if (!query.trim()) return;
+		if (!query.trim()) {
+			isLoading = false;
+			return;
+		}
+
+		// Detect 64-character hex conversation ID
+		const trimmedQuery = query.trim();
+		if (/^[a-fA-F0-9]{64}$/.test(trimmedQuery)) {
+			// This looks like a conversation/event ID - try to navigate directly
+			isLoading = true;
+			await navigateToConversation(trimmedQuery);
+			isLoading = false;
+			return;
+		}
 
 		const lowerQuery = query.toLowerCase();
 
@@ -39,6 +56,30 @@
 		];
 
 		searchResults = allItems.filter((item) => item.title.toLowerCase().includes(lowerQuery));
+	}
+
+	async function navigateToConversation(eventId: string) {
+		try {
+			const event = await ndk.fetchEvent(eventId);
+			if (event) {
+				await windowManager.openChatFromEvent(event);
+				handleClose(); // Close the search dialog after opening
+			} else {
+				// Show error message in results
+				searchResults = [{
+					type: 'Error',
+					title: 'Conversation not found',
+					href: ''
+				}];
+			}
+		} catch (error) {
+			console.error('Failed to fetch conversation:', error);
+			searchResults = [{
+				type: 'Error',
+				title: 'Failed to load conversation',
+				href: ''
+			}];
+		}
 	}
 
 	function handleSelect(href: string) {
@@ -107,7 +148,11 @@
 			</div>
 
 			<!-- Results -->
-			{#if searchResults.length > 0}
+			{#if isLoading}
+				<div class="p-8 text-center text-muted-foreground">
+					<p>Loading conversation...</p>
+				</div>
+			{:else if searchResults.length > 0}
 				<div class="max-h-[400px] overflow-y-auto">
 					{#each searchResults as result, index (result.href)}
 						<button
