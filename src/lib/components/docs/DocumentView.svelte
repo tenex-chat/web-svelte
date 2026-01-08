@@ -9,6 +9,7 @@
 	import { formatRelativeTime } from '$lib/utils/time';
 	import DocumentChatSidebar from './DocumentChatSidebar.svelte';
 	import { Streamdown } from 'svelte-streamdown';
+	import { reportsStore } from '$lib/stores/reports.svelte';
 
 	interface Props {
 		document: NDKEvent;
@@ -25,48 +26,45 @@
 	let pendingDocument: NDKEvent | null = $state(null);
 	let previousEventId = $state(document.id);
 
-	// Version history for diff view (session-only storage)
-	let previousVersion: NDKEvent | null = $state(null);
+	// Version history for diff view
 	type ViewMode = 'current' | 'changes';
 	let viewMode = $state<ViewMode>('current');
 
-	// Subscribe to document updates for live refresh
+	// Get document slug for version tracking
+	const slug = $derived(document.tagValue('d') || '');
+
+	// Get previous version from the centralized store
+	const previousVersion = $derived.by(() => {
+		if (!slug) return null;
+		// The store returns NDKArticle which extends NDKEvent
+		return reportsStore.getPreviousVersion(slug, document as any) || null;
+	});
+
+	// Watch for new versions from the store and update the document
 	$effect(() => {
-		const dTag = document.tagValue('d');
-		if (!dTag || !ndk) return;
+		if (!slug) return;
 
-		const sub = ndk.subscribe(
-			{
-				kinds: [30023],
-				authors: [document.pubkey],
-				'#d': [dTag]
-			},
-			{ closeOnEose: false }
-		);
+		// Get the latest version from the store
+		const latestVersion = reportsStore.getBySlug(slug);
 
-		sub.on('event', (event: NDKEvent) => {
-			if (event.created_at && event.created_at > (document.created_at || 0)) {
+		if (latestVersion && latestVersion.id !== document.id) {
+			// Check if the latest is actually newer
+			if ((latestVersion.created_at || 0) > (document.created_at || 0)) {
 				// New version detected - trigger fade transition
-				if (event.id !== previousEventId) {
-					pendingDocument = event;
+				if (latestVersion.id !== previousEventId) {
+					pendingDocument = latestVersion;
 					isTransitioning = true;
 
 					// After fade-out, swap the document and fade-in
 					setTimeout(() => {
-						// Store current version as previous before updating
-						previousVersion = document;
 						document = pendingDocument!;
-						previousEventId = event.id;
+						previousEventId = latestVersion.id;
 						pendingDocument = null;
 						isTransitioning = false;
 					}, 200); // Match the CSS transition duration
-				} else {
-					document = event;
 				}
 			}
-		});
-
-		return () => sub.stop();
+		}
 	});
 
 

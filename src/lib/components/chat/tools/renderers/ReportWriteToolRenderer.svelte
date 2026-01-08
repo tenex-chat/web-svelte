@@ -7,6 +7,7 @@
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
+	import { reportsStore } from '$lib/stores/reports.svelte';
 
 	interface Props {
 		title: string;
@@ -16,10 +17,8 @@
 
 	let { title, documentATag, projectATag }: Props = $props();
 
-	// Pre-fetched data - loaded immediately on render
-	let docEvent = $state<NDKEvent | null>(null);
+	// Project state (still needs fetching as it's not in reportsStore)
 	let project = $state<NDKProject | undefined>(undefined);
-	let fetchError = $state(false);
 
 	/**
 	 * Parse an "a" tag value into its components
@@ -35,50 +34,42 @@
 		};
 	}
 
-	// Fetch document and project immediately on mount
-	$effect(() => {
-		if (!documentATag) return;
-
+	// Parse the document a-tag to get the d-tag (slug)
+	const documentSlug = $derived.by(() => {
+		if (!documentATag) return null;
 		const parsed = parseATag(documentATag);
-		if (!parsed) {
-			console.warn('Invalid document a-tag format:', documentATag);
-			fetchError = true;
-			return;
-		}
+		return parsed?.dTag || null;
+	});
 
-		// Fetch document
-		ndk.fetchEvent({
-			kinds: [parsed.kind],
-			authors: [parsed.pubkey],
-			'#d': [parsed.dTag]
-		}).then((event) => {
-			if (event) {
-				docEvent = event;
-			} else {
-				console.warn('Document not found for:', documentATag);
-				fetchError = true;
-			}
-		}).catch((error) => {
-			console.error('Failed to fetch document:', error);
-			fetchError = true;
-		});
+	// Get document from centralized store
+	const docEvent = $derived.by(() => {
+		if (!documentSlug) return null;
+		return reportsStore.getBySlug(documentSlug) || null;
+	});
 
-		// Fetch project in parallel if available
-		if (projectATag) {
-			const projectParsed = parseATag(projectATag);
-			if (projectParsed) {
-				ndk.fetchEvent({
-					kinds: [NDKKind.Project],
-					authors: [projectParsed.pubkey],
-					'#d': [projectParsed.dTag]
-				}).then((projectEvent) => {
-					if (projectEvent) {
-						project = NDKProject.from(projectEvent);
-					}
-				}).catch((error) => {
-					console.error('Failed to fetch project:', error);
-				});
-			}
+	// Check if document is still loading (store is loading and document not found yet)
+	const isLoading = $derived(reportsStore.loading && !docEvent);
+
+	// Check if there was an error (store finished loading but document not found)
+	const fetchError = $derived(!reportsStore.loading && documentSlug && !docEvent);
+
+	// Fetch project separately (not in reportsStore)
+	$effect(() => {
+		if (!projectATag) return;
+
+		const projectParsed = parseATag(projectATag);
+		if (projectParsed) {
+			ndk.fetchEvent({
+				kinds: [NDKKind.Project],
+				authors: [projectParsed.pubkey],
+				'#d': [projectParsed.dTag]
+			}).then((projectEvent) => {
+				if (projectEvent) {
+					project = NDKProject.from(projectEvent);
+				}
+			}).catch((error) => {
+				console.error('Failed to fetch project:', error);
+			});
 		}
 	});
 
@@ -121,8 +112,8 @@
 				</span>
 				<ExternalLink class="w-3.5 h-3.5 opacity-50 group-hover:opacity-100" />
 			</button>
-		{:else if documentATag && !fetchError}
-			<span>Created report: {title}</span>
+		{:else if documentATag && isLoading}
+			<span>Created report: {title} <span class="text-xs">(loading...)</span></span>
 		{:else}
 			<span>Created report: {title}</span>
 		{/if}

@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { ndk } from '$lib/ndk.svelte';
-	import { FileText, Search, X } from 'lucide-svelte';
+	import { FileText, Search, X, Loader2 } from 'lucide-svelte';
 	import type { NDKProject } from '$lib/events/NDKProject';
-	import type { NDKArticle, NDKEvent } from '@nostr-dev-kit/ndk';
+	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import DocumentItem from './DocumentItem.svelte';
+	import { reportsStore } from '$lib/stores/reports.svelte';
 
 	interface Props {
 		project: NDKProject;
@@ -14,28 +14,16 @@
 
 	let searchQuery = $state('');
 
-	// Subscribe to kind 30023 (long-form articles/documents) for this project
-	const subscription = ndk.$subscribe<NDKArticle>(
-		() => {
-			const filter = project.filter();
-			return {
-				filters: [
-					{
-						...filter,
-						kinds: [30023] // Only documents
-					}
-				],
-				closeOnEose: false,
-				wrap: true
-			};
-		}
-	);
-
-	// Sort documents by timestamp (newest first)
+	// Get documents for this project from the centralized store
 	const sortedDocuments = $derived.by(() => {
-		const events = subscription.events as NDKEvent[];
-		return [...events].sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+		const projectATag = project.tagId();
+		const documents = reportsStore.getByProject(projectATag);
+		// Sort by timestamp (newest first)
+		return [...documents].sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
 	});
+
+	// Loading state from centralized store
+	const isLoading = $derived(reportsStore.loading);
 
 	// Function to check if a document matches the search query
 	function documentMatchesSearch(event: NDKEvent, query: string): boolean {
@@ -116,7 +104,12 @@
 	{/if}
 
 	<!-- Document list or empty states -->
-	{#if sortedDocuments.length === 0}
+	{#if isLoading}
+		<div class="flex flex-col items-center justify-center h-full p-6 text-center">
+			<Loader2 class="h-8 w-8 text-muted-foreground mb-3 animate-spin" />
+			<p class="text-xs text-muted-foreground">Loading documents...</p>
+		</div>
+	{:else if sortedDocuments.length === 0}
 		<div class="flex flex-col items-center justify-center h-full p-6 text-center">
 			<FileText class="h-12 w-12 text-muted-foreground mb-3" />
 			<h3 class="font-semibold text-sm mb-1">No documents yet</h3>
