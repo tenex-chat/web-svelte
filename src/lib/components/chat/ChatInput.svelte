@@ -151,16 +151,71 @@
 		}
 	});
 
-	// Debounced draft saving
+	// Track last save time and pending content for throttled debounce
+	let lastSaveTime = $state(0);
+	let pendingDraftKey = $state<string | undefined>(undefined);
+	let pendingContent = $state<string>('');
+
+	// Throttled debounce draft saving:
+	// - Saves after 2 seconds of inactivity (debounce)
+	// - BUT also saves at least every 5 seconds during continuous typing (throttle/maxWait)
+	// - AND saves immediately on draftKey change or component unmount
 	$effect(() => {
 		if (!draftKey) return;
 
-		const timeoutId = setTimeout(() => {
+		// Track pending save data for cleanup
+		pendingDraftKey = draftKey;
+		pendingContent = messageInput;
+
+		const now = Date.now();
+		const timeSinceLastSave = now - lastSaveTime;
+		const maxWait = 5000; // Save at least every 5 seconds during continuous typing
+
+		// If we've exceeded maxWait, save immediately
+		if (timeSinceLastSave >= maxWait && messageInput.trim()) {
 			draftStore.saveDraft(draftKey, messageInput);
-		}, TIMING.DRAFT_SAVE_DEBOUNCE);
+			lastSaveTime = Date.now();
+			return;
+		}
+
+		// Otherwise, use debounce with remaining maxWait time
+		const debounceDelay = TIMING.DRAFT_SAVE_DEBOUNCE;
+		const remainingMaxWait = Math.max(0, maxWait - timeSinceLastSave);
+		const effectiveDelay = Math.min(debounceDelay, remainingMaxWait);
+
+		const timeoutId = setTimeout(() => {
+			if (pendingDraftKey && pendingContent !== undefined) {
+				draftStore.saveDraft(pendingDraftKey, pendingContent);
+				lastSaveTime = Date.now();
+			}
+		}, effectiveDelay);
 
 		return () => {
 			clearTimeout(timeoutId);
+		};
+	});
+
+	// Save draft immediately when draftKey changes (switching conversations)
+	// This ensures we don't lose work when navigating away
+	let previousDraftKey = $state<string | undefined>(undefined);
+	$effect(() => {
+		const currentKey = draftKey;
+
+		// If draftKey changed and we had pending content for the old key, save it
+		if (previousDraftKey && previousDraftKey !== currentKey && pendingContent.trim()) {
+			draftStore.saveDraft(previousDraftKey, pendingContent);
+		}
+
+		previousDraftKey = currentKey;
+	});
+
+	// Emergency save on component unmount
+	$effect(() => {
+		return () => {
+			// This runs when component is destroyed
+			if (pendingDraftKey && pendingContent.trim()) {
+				draftStore.saveDraft(pendingDraftKey, pendingContent);
+			}
 		};
 	});
 
