@@ -64,7 +64,7 @@
 			}
 
 			await event.sign();
-			await event.publish();
+			event.publish();
 			handleCloseModal();
 		} catch (error) {
 			console.error('Failed to create nudge:', error);
@@ -95,7 +95,7 @@
 			await deletionEvent.sign();
 			await deletionEvent.publish();
 
-			nudges = nudges.filter((n) => n.id !== nudge.id);
+			nudgeStore.removeNudge(nudge.id);
 		} catch (error) {
 			console.error('Failed to delete nudge:', error);
 			alert('Failed to delete nudge');

@@ -54,23 +54,6 @@
 		{agent.description || 'No description provided'}
 	</p>
 
-	<!-- Phases indicator -->
-	{#if agent.phases && agent.phases.length > 0}
-		<div class="flex items-center gap-2">
-			<span class="inline-flex items-center px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded">
-				<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M4 6h16M4 12h16M4 18h16"
-					/>
-				</svg>
-				{agent.phases.length} phase{agent.phases.length !== 1 ? 's' : ''}
-			</span>
-		</div>
-	{/if}
-
 	<!-- Author -->
 	<div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-muted-foreground">
 		<span class="truncate">{agent.pubkey?.slice(0, 16)}...</span>

@@ -31,7 +31,7 @@
 
 	let { open = $bindable(false), forkAgent, cloneMode = false }: Props = $props();
 
-	type WizardStep = 'basics' | 'prompt' | 'preview' | 'tools' | 'phases' | 'criteria';
+	type WizardStep = 'basics' | 'prompt' | 'preview' | 'tools' | 'criteria';
 
 	let currentStep = $state<WizardStep>('basics');
 	let creating = $state(false);
@@ -45,7 +45,6 @@
 	let slug = $state('');
 	let tools = $state<string[]>([]);
 	let mcpServers = $state<string[]>([]);
-	let phases = $state<Array<{ name: string; instructions: string }>>([]);
 	let newTool = $state('');
 	let showAIEditor = $state(false);
 	let toolKeyDownHandler = $state<(e: KeyboardEvent) => boolean>(() => false);
@@ -71,7 +70,6 @@
 				slug = `${baseSlug}-copy-${timestamp}`;
 				tools = [...(forkAgent.tools || [])];
 				mcpServers = [...(forkAgent.mcpServers || [])];
-				phases = [...(forkAgent.phases || [])];
 			} else {
 				const existingVersion = parseInt(forkAgent.version || '1');
 				const newVersion = isNaN(existingVersion) ? 2 : existingVersion + 1;
@@ -85,7 +83,6 @@
 				slug = forkAgent.slug || '';
 				tools = [...(forkAgent.tools || [])];
 				mcpServers = [...(forkAgent.mcpServers || [])];
-				phases = [...(forkAgent.phases || [])];
 			}
 		} else if (open && !forkAgent) {
 			resetForm();
@@ -105,7 +102,6 @@
 		slug = '';
 		tools = [];
 		mcpServers = [];
-		phases = [];
 		currentStep = 'basics';
 	}
 
@@ -155,7 +151,6 @@
 			agent.slug = slug || undefined;
 			agent.tools = tools;
 			agent.mcpServers = mcpServers;
-			agent.phases = phases;
 
 			if (forkAgent?.id && !cloneMode) {
 				agent.tags.push(['e', forkAgent.id]);
@@ -206,9 +201,6 @@
 				currentStep = 'tools';
 				break;
 			case 'tools':
-				currentStep = 'phases';
-				break;
-			case 'phases':
 				currentStep = 'criteria';
 				break;
 			case 'criteria':
@@ -228,11 +220,8 @@
 			case 'tools':
 				currentStep = 'preview';
 				break;
-			case 'phases':
-				currentStep = 'tools';
-				break;
 			case 'criteria':
-				currentStep = 'phases';
+				currentStep = 'tools';
 				break;
 		}
 	}
@@ -247,8 +236,6 @@
 				return 'Preview System Prompt';
 			case 'tools':
 				return 'Tools & MCP Servers';
-			case 'phases':
-				return 'Phase Definitions';
 			case 'criteria':
 				return 'Use Criteria & Version';
 			default:
@@ -266,8 +253,6 @@
 				return 'Review how your system prompt will be displayed';
 			case 'tools':
 				return 'Select tools and MCP servers this agent requires';
-			case 'phases':
-				return 'Define project phases for PM agents (optional)';
 			case 'criteria':
 				return 'Define when this agent should be used and set version';
 			default:
@@ -301,14 +286,6 @@
 			tools = [...tools, tool];
 			newTool = '';
 		}
-	}
-
-	function addPhase() {
-		phases = [...phases, { name: '', instructions: '' }];
-	}
-
-	function removePhase(index: number) {
-		phases = phases.filter((_, i) => i !== index);
 	}
 
 	function renderMarkdown(content: string): string {
@@ -536,87 +513,6 @@
 										</button>
 									</span>
 								{/each}
-							</div>
-						</div>
-					</div>
-				{:else if currentStep === 'phases'}
-					<div class="space-y-4">
-						<div>
-							<label class="block text-sm font-medium mb-1">Phase Definitions</label>
-							<p class="text-sm text-muted-foreground mb-2">
-								Define project phases for PM agents. Each phase has a name and instructions.
-							</p>
-
-							<div class="space-y-3">
-								{#each phases as phase, index}
-									<div class="border border-border rounded-lg p-4 space-y-3">
-										<div class="flex items-start gap-2">
-											<div class="flex-1 space-y-3">
-												<input
-													type="text"
-													bind:value={phase.name}
-													placeholder="Phase name (e.g., Discovery, Development, Testing)"
-													class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-												/>
-												<textarea
-													bind:value={phase.instructions}
-													placeholder="Instructions for this phase..."
-													rows="3"
-													class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-												></textarea>
-											</div>
-											<button
-												onclick={() => removePhase(index)}
-												class="p-2 hover:bg-accent rounded-md transition-colors"
-											>
-												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M6 18L18 6M6 6l12 12"
-													/>
-												</svg>
-											</button>
-										</div>
-									</div>
-								{/each}
-
-								<button
-									onclick={addPhase}
-									class="w-full px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors flex items-center justify-center gap-2"
-								>
-									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M12 4v16m8-8H4"
-										/>
-									</svg>
-									Add Phase
-								</button>
-
-								{#if phases.length === 0}
-									<div class="text-center py-6 border border-dashed border-border rounded-lg">
-										<svg
-											class="w-8 h-8 mx-auto text-muted-foreground mb-2"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M4 6h16M4 12h16M4 18h16"
-											/>
-										</svg>
-										<p class="text-sm text-muted-foreground">
-											No phases defined. Phases are optional and typically used for PM agents.
-										</p>
-									</div>
-								{/if}
 							</div>
 						</div>
 					</div>

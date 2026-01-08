@@ -5,6 +5,7 @@ import { isElectron } from '$lib/utils/electron';
 import { storage } from '$lib/utils/storage.svelte';
 import { ndk } from '$lib/ndk.svelte';
 import { NDKKind } from '$lib/kinds';
+import { inboxStore } from '$lib/stores/inbox.svelte';
 
 export type WindowType = 'chat' | 'settings' | 'agent' | 'document' | 'hashtag' | 'call' | 'debug-events';
 
@@ -236,6 +237,9 @@ class WindowManager {
 				thread = event;
 			}
 		}
+
+		// Mark the original event as viewed in the inbox
+		inboxStore.markEventViewed(event.id);
 
 		return this.openChat(project, thread);
 	}

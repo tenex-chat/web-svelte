@@ -6,7 +6,7 @@
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { cn } from '$lib/utils/cn';
 	import { generateColorFromString } from '$lib/utils/colors';
-	import { MessageSquare, FileText, Bot, Hash, Rss, Settings as SettingsIcon, Plus, Phone } from 'lucide-svelte';
+	import { MessageSquare, FileText, Bot, Hash, Rss, Settings as SettingsIcon, Plus, Phone, Archive } from 'lucide-svelte';
 	import { User } from "$lib/ndk/ui/user";
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKKind } from '$lib/kinds';
@@ -32,6 +32,7 @@
 	// Get global time filter
 	const timeFilter = $derived(globalFilterStore.value);
 	const onlyByMe = $derived(globalFilterStore.onlyByMe);
+	const showArchived = $derived(globalFilterStore.showArchived);
 
 	// Handle status indicator click to start project
 	async function handleStatusClick() {
@@ -49,7 +50,7 @@
 				event.tags.push(['a', projectTag]);
 			}
 
-			await event.publish();
+			event.publish();
 		} catch (error) {
 			console.error('Failed to start project:', error);
 			toastStore.error('Failed to send project start event');
@@ -143,6 +144,18 @@
 				<!-- Add button - shown for conversations and docs tabs -->
 				{#if activeTab === 'conversations'}
 					<button
+						onclick={() => globalFilterStore.toggleShowArchived()}
+						class={cn(
+							"h-6 w-6 flex items-center justify-center rounded hover:bg-muted transition-colors",
+							showArchived ? "text-primary" : "text-muted-foreground hover:text-foreground"
+						)}
+						title={showArchived ? "Hide archived" : "Show archived"}
+						aria-label={showArchived ? "Hide archived" : "Show archived"}
+					>
+						<Archive class="w-3.5 h-3.5" />
+					</button>
+
+					<button
 						onclick={() => windowManager.openChat(project)}
 						class="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground dark:hover:text-foreground rounded hover:bg-muted transition-colors"
 						title="New conversation"
@@ -177,7 +190,7 @@
 	<div class="flex-1 overflow-hidden relative">
 		{#if activeTab === 'conversations'}
 			{#await import('./chat/ConversationsTab.svelte') then { default: ConversationsTab }}
-				<ConversationsTab {project} {onlineAgents} {timeFilter} {onlyByMe} />
+				<ConversationsTab {project} {onlineAgents} {timeFilter} {onlyByMe} {showArchived} />
 			{/await}
 		{:else if activeTab === 'docs'}
 			{#await import('./docs/DocsTab.svelte') then { default: DocsTab }}

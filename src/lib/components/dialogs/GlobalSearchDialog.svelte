@@ -35,8 +35,7 @@
 			{ type: 'Page', title: 'Projects', href: '/projects' },
 			{ type: 'Page', title: 'Agents', href: '/agents' },
 			{ type: 'Page', title: 'MCP Tools', href: '/mcp-tools' },
-			{ type: 'Page', title: 'Settings', href: '/settings' },
-			{ type: 'Page', title: 'Inbox', href: '/inbox' }
+			{ type: 'Page', title: 'Settings', href: '/settings' }
 		];
 
 		searchResults = allItems.filter((item) => item.title.toLowerCase().includes(lowerQuery));

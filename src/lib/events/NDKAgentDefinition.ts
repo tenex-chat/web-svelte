@@ -151,19 +151,4 @@ export class NDKAgentDefinition extends NDKEvent {
 			}
 		});
 	}
-
-	get phases(): Array<{ name: string; instructions: string }> {
-		return this.tags
-			.filter((tag) => tag[0] === 'phase' && tag[1] && tag[2])
-			.map((tag) => ({ name: tag[1], instructions: tag[2] }));
-	}
-
-	set phases(phases: Array<{ name: string; instructions: string }>) {
-		this.tags = this.tags.filter((tag) => tag[0] !== 'phase');
-		phases.forEach((phase) => {
-			if (phase.name && phase.instructions) {
-				this.tags.push(['phase', phase.name, phase.instructions]);
-			}
-		});
-	}
 }

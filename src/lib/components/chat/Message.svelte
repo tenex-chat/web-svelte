@@ -175,11 +175,59 @@
 		<!-- Message Content -->
 		<div class="flex-1 min-w-0">
 			{#if uiSettings.showMessageInfo}
-				<div class="text-xs text-muted-foreground font-mono mb-1">
-					<span class="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-						kind:{message.event.kind}
-					</span>
-					<span class="ml-2">id:{message.event.id.slice(0, 8)}</span>
+				{@const labelColors = ['text-blue-500', 'text-green-500', 'text-purple-500', 'text-orange-500', 'text-pink-500', 'text-cyan-500', 'text-yellow-500', 'text-red-400']}
+				{@const labelMap: Record<string, string> = {
+					'reasoning-tokens': 'reasoning',
+					'cached-input-tokens': 'cached input',
+					'completion-tokens': 'completion',
+					'prompt-tokens': 'prompt',
+					'total-tokens': 'total',
+					'cost-usd': 'cost'
+				}}
+				{@const formatValue = (key: string, value: string) => {
+					// Format tokens > 1000 as "14.5k"
+					if (key.includes('tokens')) {
+						const num = parseFloat(value);
+						if (!isNaN(num) && num >= 1000) {
+							return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+						}
+					}
+					// Format cost with $ prefix
+					if (key === 'cost-usd') {
+						return '$' + value;
+					}
+					return value;
+				}}
+				{@const getColorForKey = (key: string) => {
+					// Deterministic color based on key hash
+					let hash = 0;
+					for (let i = 0; i < key.length; i++) {
+						hash = ((hash << 5) - hash) + key.charCodeAt(i);
+						hash = hash & hash;
+					}
+					return labelColors[Math.abs(hash) % labelColors.length];
+				}}
+				{@const llmTags = message.event.tags
+					.filter((t) => t[0].startsWith('llm-'))
+					.filter((t) => {
+						// Filter out cost-usd if < 0.01
+						if (t[0] === 'llm-cost-usd') {
+							const cost = parseFloat(t[1]);
+							return !isNaN(cost) && cost >= 0.01;
+						}
+						return true;
+					})
+				}
+				<div class="text-xs text-muted-foreground font-mono mb-1 flex flex-wrap gap-x-3">
+					<span>id:{message.event.id.slice(0, 8)}</span>
+					{#each llmTags as tag}
+						{@const rawKey = tag[0].replace('llm-', '')}
+						{@const key = labelMap[rawKey] || rawKey}
+						{@const value = formatValue(rawKey, tag[1])}
+						<span title={tag[0]}>
+							<span class="{getColorForKey(rawKey)} opacity-70">{key}:</span> <span class="text-foreground/70">{value}</span>
+						</span>
+					{/each}
 				</div>
 			{/if}
 			{#if !isConsecutive}

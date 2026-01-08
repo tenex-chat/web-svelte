@@ -4,6 +4,7 @@
 	import CopyThreadMenu from './CopyThreadMenu.svelte';
 	import ChatActionsMenu from './ChatActionsMenu.svelte';
 	import ConversationMetadataDisplay from './ConversationMetadataDisplay.svelte';
+	import ParentConversationLink from './ParentConversationLink.svelte';
 	import { Rows3, MessageSquareText } from 'lucide-svelte';
 
 	interface Props {
@@ -21,6 +22,7 @@
 <div class="border-b border-border px-4 py-3 bg-card">
 	<div class="flex items-center justify-between">
 		<div class="flex-1 min-w-0">
+			<ParentConversationLink {rootEvent} />
 			<ConversationMetadataDisplay
 				conversationId={rootEvent.id}
 				showTitle={true}

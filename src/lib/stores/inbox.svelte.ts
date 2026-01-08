@@ -9,7 +9,6 @@ import { isAskEvent } from '$lib/utils/askTags';
  */
 export const INBOX_EVENT_KINDS = [
 	1, // Regular text notes/mentions
-	1111 // Generic replies (including agent responses)
 ];
 
 /**
@@ -101,9 +100,8 @@ class InboxStore {
 		const allEvents = Array.from(this.eventMap.values());
 		const deduplicated = deduplicateEventsByThread(allEvents);
 		const sorted = sortEventsByTime(deduplicated);
-		const unreadCount = sorted.filter(
-			(e) => e.created_at && e.created_at > this.lastVisit
-		).length;
+		// Count unread events - considering both individual viewing and lastVisit
+		const unreadCount = sorted.filter((e) => this.isEventUnread(e)).length;
 		this.events = sorted;
 		this.unreadCount = unreadCount;
 	}
@@ -114,23 +112,22 @@ class InboxStore {
 		// Clean up any existing subscription
 		this.cleanup();
 
-		const currentUser = ndk.$sessions?.currentUser;
-		if (!currentUser?.pubkey) return;
+		if (!ndk.$currentPubkey) return;
 
 		// Create filter for ask events that p-tag the current user
 		const filter: NDKFilter = {
-			'#p': [currentUser.pubkey],
-			'#t': ['ask'],
+			"#p": [ndk.$currentPubkey],
+			"#t": ["ask"],
 			kinds: INBOX_EVENT_KINDS,
 			// Get events from the last 7 days by default
-			since: Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60
+			since: Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60,
 		};
 
 		// Create subscription using NDK directly (NDKSvelte extends NDK)
 		this.subscription = ndk.subscribe(filter, {
 			closeOnEose: false,
 			groupable: false,
-			subId: 'inbox-events-store',
+			subId: 'inbox',
 			onEvents: (events: NDKEvent[]) => {
 				// Bulk add all events to map, filtering to only include ask events
 				for (const event of events) {
@@ -175,7 +172,21 @@ class InboxStore {
 	}
 
 	isEventUnread(event: NDKEvent): boolean {
+		// If the event has been individually viewed, it's not unread
+		if (storage.isAskEventViewed(event.id)) {
+			return false;
+		}
+		// Otherwise fall back to the lastVisit timestamp
 		return event.created_at ? event.created_at > this.lastVisit : false;
+	}
+
+	/**
+	 * Mark a specific event as viewed
+	 */
+	markEventViewed(eventId: string): void {
+		storage.markAskEventViewed(eventId);
+		// Recalculate unread count
+		this.updateState();
 	}
 
 	cleanup() {

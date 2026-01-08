@@ -49,7 +49,7 @@
 
 			// Sign and publish the event
 			await replyEvent.sign();
-			await replyEvent.publish();
+			replyEvent.publish();
 
 			console.log("Suggestion response sent:", suggestion);
 		} catch (error) {

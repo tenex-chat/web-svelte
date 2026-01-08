@@ -2,10 +2,21 @@
 	import { inboxStore } from '$lib/stores/inbox.svelte';
 	import { inboxColumnStore } from '$lib/stores/inboxColumn.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
+	import { storage } from '$lib/utils/storage.svelte';
 	import { cn } from '$lib/utils/cn';
 	import { Inbox, X } from 'lucide-svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import InboxThreadList from './inbox/InboxThreadList.svelte';
+
+	// Track viewed events for reactive unread count
+	const viewedEventIds = $derived(new Set(Object.keys(storage.getViewedAskEvents())));
+
+	// Compute unread count reactively
+	const unreadCount = $derived(
+		inboxStore.events.filter(e =>
+			!viewedEventIds.has(e.id) && (e.created_at ? e.created_at > inboxStore.lastVisit : false)
+		).length
+	);
 
 	interface Props {
 		class?: string;
@@ -20,25 +31,6 @@
 	async function handleThreadSelect(thread: NDKEvent) {
 		await windowManager.openChatFromEvent(thread);
 	}
-
-	// Mark as read when column opens
-	let markAsReadTimer: ReturnType<typeof setTimeout> | null = null;
-
-	$effect(() => {
-		if (inboxColumnStore.isOpen && inboxStore.unreadCount > 0) {
-			// Mark as read after a small delay to ensure user actually sees the content
-			markAsReadTimer = setTimeout(() => {
-				inboxStore.markAllRead();
-			}, 1500);
-		}
-
-		return () => {
-			if (markAsReadTimer) {
-				clearTimeout(markAsReadTimer);
-				markAsReadTimer = null;
-			}
-		};
-	});
 </script>
 
 <div class={cn('w-96 flex-shrink-0 flex flex-col bg-card border-r border-border relative', className)}>
@@ -64,9 +56,9 @@
 				<h3 class="font-medium text-sm truncate flex-1 text-foreground">Inbox</h3>
 
 				<!-- Unread Badge -->
-				{#if inboxStore.unreadCount > 0}
+				{#if unreadCount > 0}
 					<span class="px-1.5 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded animate-pulse">
-						{inboxStore.unreadCount > 9 ? '9+' : inboxStore.unreadCount}
+						{unreadCount > 9 ? '9+' : unreadCount}
 					</span>
 				{/if}
 

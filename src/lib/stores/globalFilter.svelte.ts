@@ -10,6 +10,7 @@ import { storage } from '$lib/utils/storage.svelte';
 class GlobalFilterStore {
 	private filter = $state<string | null>(null);
 	private _onlyByMe = $state<boolean>(true);
+	private _showArchived = $state<boolean>(false);
 
 	constructor() {
 		if (browser) {
@@ -17,6 +18,9 @@ class GlobalFilterStore {
 			// Default to true if not set
 			const storedOnlyByMe = storage.get('global-filter-only-by-me');
 			this._onlyByMe = storedOnlyByMe ?? true;
+			// Default to false if not set
+			const storedShowArchived = storage.get('global-filter-show-archived');
+			this._showArchived = storedShowArchived ?? false;
 		}
 	}
 
@@ -63,6 +67,28 @@ class GlobalFilterStore {
 	clear() {
 		this.filter = null;
 		storage.set('global-filter', null);
+	}
+
+	/**
+	 * Get the showArchived filter state
+	 */
+	get showArchived(): boolean {
+		return this._showArchived;
+	}
+
+	/**
+	 * Set the showArchived filter
+	 */
+	setShowArchived(value: boolean) {
+		this._showArchived = value;
+		storage.set('global-filter-show-archived', value);
+	}
+
+	/**
+	 * Toggle the showArchived filter
+	 */
+	toggleShowArchived() {
+		this.setShowArchived(!this._showArchived);
 	}
 }
 

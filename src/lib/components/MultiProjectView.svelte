@@ -9,8 +9,6 @@
 	let { projects }: Props = $props();
 </script>
 
-<div class="flex h-full overflow-x-auto">
-	{#each projects as project (project.dTag || project.id)}
-		<ProjectColumn {project} />
-	{/each}
-</div>
+{#each projects as project (project.dTag || project.id)}
+	<ProjectColumn {project} />
+{/each}

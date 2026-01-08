@@ -54,10 +54,10 @@
 	}
 </script>
 
-<div class="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border/50 shadow-sm">
+<div class="sticky top-0 z-50 bg-background/50 backdrop-blur-sm border-b border-border/50 shadow-sm">
 	<button
 		type="button"
-		class="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted/30 transition-colors cursor-pointer"
+		class="w-full px-4 py-4 flex items-center gap-3 hover:bg-muted/30 transition-colors cursor-pointer"
 		onclick={toggleExpanded}
 	>
 		<!-- Expand/Collapse chevron -->

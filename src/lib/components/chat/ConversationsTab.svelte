@@ -10,9 +10,10 @@
 		onlineAgents?: ProjectAgent[];
 		timeFilter?: string | null;
 		onlyByMe?: boolean;
+		showArchived?: boolean;
 	}
 
-	let { project, timeFilter = null, onlyByMe = true }: Props = $props();
+	let { project, timeFilter = null, onlyByMe = true, showArchived = false }: Props = $props();
 
 	function handleThreadSelect(thread: NDKEvent | null) {
 		if (thread) {
@@ -30,5 +31,5 @@
 </script>
 
 <div class="h-full flex flex-col">
-	<ThreadList {project} {timeFilter} {onlyByMe} onThreadSelect={handleThreadSelect} onThreadLongPress={handleThreadLongPress} />
+	<ThreadList {project} {timeFilter} {onlyByMe} {showArchived} onThreadSelect={handleThreadSelect} onThreadLongPress={handleThreadLongPress} />
 </div>

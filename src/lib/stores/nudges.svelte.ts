@@ -74,6 +74,11 @@ class NudgeStore {
 		}
 	}
 
+	removeNudge(nudgeId: string) {
+		this.eventMap.delete(nudgeId);
+		this.updateState();
+	}
+
 	getDisplayNudges(userPubkey?: string): NDKEvent[] {
 		if (!userPubkey) return this.nudges;
 		return this.nudges.filter((nudge) => {

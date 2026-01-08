@@ -165,7 +165,7 @@
 				changeEvent.tags.push(['tool', tool]);
 			}
 
-			await changeEvent.publish();
+			changeEvent.publish();
 			open = false;
 		} catch (error) {
 			console.error('[AgentConfigDialog] Failed to save agent config:', error);

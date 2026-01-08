@@ -96,6 +96,13 @@ export type StorageSchema = {
 	'drawer-width': number;
 	'doc-chat-sidebar-width': number; // percentage width of document chat sidebar
 	'doc-drafts': Record<string, { title: string; content: string; hashtags: string[] }>; // { [projectId]: draft }
+
+	// Inbox event tracking - individual event view status
+	'viewed-ask-events': Record<string, number>; // { [eventId]: timestamp when viewed }
+
+	// Archived conversations - locally hidden conversations
+	'archived-conversations': Record<string, number>; // { [conversationId]: timestamp when archived }
+	'global-filter-show-archived': boolean;
 };
 
 type StorageKey = keyof StorageSchema;
@@ -152,7 +159,10 @@ class StorageService {
 			'drawer-width',
 			'doc-chat-sidebar-width',
 			'doc-drafts',
-			'conversation-nudges'
+			'conversation-nudges',
+			'viewed-ask-events',
+			'archived-conversations',
+			'global-filter-show-archived'
 		];
 
 		for (const key of keys) {
@@ -338,6 +348,78 @@ class StorageService {
 		const nudges = { ...(this.state['conversation-nudges'] ?? {}) };
 		delete nudges[conversationId];
 		this.set('conversation-nudges', nudges);
+	}
+
+	// ========== Viewed ask events tracking ==========
+
+	/**
+	 * Mark an ask event as viewed
+	 */
+	markAskEventViewed(eventId: string): void {
+		const viewed = {
+			...(this.state['viewed-ask-events'] ?? {}),
+			[eventId]: Math.floor(Date.now() / 1000)
+		};
+		this.set('viewed-ask-events', viewed);
+	}
+
+	/**
+	 * Check if an ask event has been viewed
+	 */
+	isAskEventViewed(eventId: string): boolean {
+		return eventId in (this.state['viewed-ask-events'] ?? {});
+	}
+
+	/**
+	 * Get all viewed ask event IDs
+	 */
+	getViewedAskEvents(): Record<string, number> {
+		return this.state['viewed-ask-events'] ?? {};
+	}
+
+	/**
+	 * Clear a viewed ask event (mark as unread again)
+	 */
+	clearViewedAskEvent(eventId: string): void {
+		const viewed = { ...(this.state['viewed-ask-events'] ?? {}) };
+		delete viewed[eventId];
+		this.set('viewed-ask-events', viewed);
+	}
+
+	// ========== Archived conversations ==========
+
+	/**
+	 * Archive a conversation
+	 */
+	archiveConversation(conversationId: string): void {
+		const archived = {
+			...(this.state['archived-conversations'] ?? {}),
+			[conversationId]: Math.floor(Date.now() / 1000)
+		};
+		this.set('archived-conversations', archived);
+	}
+
+	/**
+	 * Unarchive a conversation
+	 */
+	unarchiveConversation(conversationId: string): void {
+		const archived = { ...(this.state['archived-conversations'] ?? {}) };
+		delete archived[conversationId];
+		this.set('archived-conversations', archived);
+	}
+
+	/**
+	 * Check if a conversation is archived
+	 */
+	isConversationArchived(conversationId: string): boolean {
+		return conversationId in (this.state['archived-conversations'] ?? {});
+	}
+
+	/**
+	 * Get all archived conversations
+	 */
+	getArchivedConversations(): Record<string, number> {
+		return this.state['archived-conversations'] ?? {};
 	}
 }
 

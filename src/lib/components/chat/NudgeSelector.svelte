@@ -102,7 +102,7 @@
 				});
 			}
 
-			await event.publish();
+			event.publish();
 			handleCloseModal();
 		} catch (error) {
 			console.error('Failed to create nudge:', error);

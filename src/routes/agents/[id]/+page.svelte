@@ -34,7 +34,6 @@
 	const agentColor = $derived(agent ? generateAgentColor(agent.name || agent.id) : '');
 	const initials = $derived(agent?.name ? agent.name.slice(0, 2).toUpperCase() : 'AG');
 
-	let activeTab = $state<'details' | 'phases'>('details');
 	let forkDialogOpen = $state(false);
 	let cloneDialogOpen = $state(false);
 	let copiedId = $state(false);
@@ -165,23 +164,10 @@
 			<div class="max-w-4xl mx-auto px-4">
 				<div class="flex gap-4">
 					<button
-						onclick={() => (activeTab = 'details')}
-						class="px-4 py-3 border-b-2 {activeTab === 'details'
-							? 'border-blue-600 text-primary'
-							: 'border-transparent text-muted-foreground hover:text-foreground dark:hover:text-muted-foreground'} transition-colors"
+						class="px-4 py-3 border-b-2 border-blue-600 text-primary transition-colors"
 					>
 						Details
 					</button>
-					{#if agent.phases && agent.phases.length > 0}
-						<button
-							onclick={() => (activeTab = 'phases')}
-							class="px-4 py-3 border-b-2 {activeTab === 'phases'
-								? 'border-blue-600 text-primary'
-								: 'border-transparent text-muted-foreground hover:text-foreground dark:hover:text-muted-foreground'} transition-colors"
-						>
-							Phases ({agent.phases.length})
-						</button>
-					{/if}
 				</div>
 			</div>
 		</div>
@@ -189,155 +175,138 @@
 		<!-- Content -->
 		<div class="flex-1 overflow-y-auto bg-background">
 			<div class="max-w-4xl mx-auto p-4 space-y-4">
-				{#if activeTab === 'details'}
-					<!-- Description -->
+				<!-- Description -->
+				<div class="bg-card rounded-lg border border-border p-6">
+					<h3 class="font-semibold text-foreground mb-2">Description</h3>
+					<p class="text-foreground">{agent.description || 'No description provided'}</p>
+				</div>
+
+				<!-- Instructions -->
+				{#if agent.instructions}
 					<div class="bg-card rounded-lg border border-border p-6">
-						<h3 class="font-semibold text-foreground mb-2">Description</h3>
-						<p class="text-foreground">{agent.description || 'No description provided'}</p>
-					</div>
-
-					<!-- Instructions -->
-					{#if agent.instructions}
-						<div class="bg-card rounded-lg border border-border p-6">
-							<h3 class="font-semibold text-foreground mb-2">Instructions</h3>
-							<p class="text-sm text-muted-foreground mb-4">The prompt that defines this agent's behavior</p>
-							<div class="prose prose-sm max-w-none dark:prose-invert">
-								{@html renderMarkdown(agent.instructions)}
-							</div>
+						<h3 class="font-semibold text-foreground mb-2">Instructions</h3>
+						<p class="text-sm text-muted-foreground mb-4">The prompt that defines this agent's behavior</p>
+						<div class="prose prose-sm max-w-none dark:prose-invert">
+							{@html renderMarkdown(agent.instructions)}
 						</div>
-					{/if}
-
-					<!-- Use Criteria -->
-					{#if agent.useCriteria && agent.useCriteria.length > 0}
-						<div class="bg-card rounded-lg border border-border p-6">
-							<h3 class="font-semibold text-foreground mb-2">Use Criteria</h3>
-							<p class="text-sm text-muted-foreground mb-4">When this agent should be used</p>
-							<ul class="space-y-2">
-								{#each agent.useCriteria as criteria}
-									<li class="flex items-start gap-2">
-										<span class="text-muted-foreground">•</span>
-										<span class="text-foreground">{criteria}</span>
-									</li>
-								{/each}
-							</ul>
-						</div>
-					{/if}
-
-					<!-- Tools & MCP Servers -->
-					<div class="bg-card rounded-lg border border-border p-6">
-						<h3 class="font-semibold text-foreground mb-4">Tools & Capabilities</h3>
-
-						<!-- Direct Tools -->
-						<div class="mb-4">
-							<div class="flex items-center gap-2 mb-2">
-								<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-									/>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-									/>
-								</svg>
-								<span class="text-sm font-medium text-foreground">Direct Tools</span>
-							</div>
-							{#if agent.tools.length > 0}
-								<div class="flex flex-wrap gap-2">
-									{#each agent.tools as tool}
-										<span class="px-2 py-1 text-xs bg-muted text-foreground rounded border border-border">
-											{tool}
-										</span>
-									{/each}
-								</div>
-							{:else}
-								<p class="text-sm text-muted-foreground">No direct tools configured</p>
-							{/if}
-						</div>
-
-						<!-- MCP Servers -->
-						<div>
-							<div class="flex items-center gap-2 mb-2">
-								<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
-									/>
-								</svg>
-								<span class="text-sm font-medium text-foreground">MCP Servers</span>
-							</div>
-							{#if mcpTools.length > 0}
-								<div class="space-y-2">
-									{#each mcpTools as mcp}
-										<div class="border border-border rounded-lg p-3 bg-muted">
-											<h4 class="font-medium text-sm text-foreground">
-												{mcp.name || 'Unnamed MCP Server'}
-											</h4>
-											{#if mcp.description}
-												<p class="text-xs text-muted-foreground mt-1">{mcp.description}</p>
-											{/if}
-											{#if mcp.command}
-												<code class="text-xs bg-muted text-foreground px-2 py-0.5 rounded mt-2 inline-block"
-													>{mcp.command}</code
-												>
-											{/if}
-										</div>
-									{/each}
-								</div>
-							{:else}
-								<p class="text-sm text-muted-foreground">No MCP servers configured</p>
-							{/if}
-						</div>
-					</div>
-
-					<!-- Metadata -->
-					<div class="bg-card rounded-lg border border-border p-6">
-						<h3 class="font-semibold text-foreground mb-4">Metadata</h3>
-						<div class="space-y-2 text-sm">
-							<div class="flex justify-between">
-								<span class="text-muted-foreground">Author:</span>
-								<span class="font-mono text-foreground">{agent.pubkey.slice(0, 16)}...</span>
-							</div>
-							<div class="flex justify-between">
-								<span class="text-muted-foreground">Created:</span>
-								<span class="text-foreground">
-									{agent.created_at ? new Date(agent.created_at * 1000).toLocaleString() : 'Unknown'}
-								</span>
-							</div>
-							<div class="flex justify-between">
-								<span class="text-muted-foreground">Event Kind:</span>
-								<span class="text-foreground">{agent.kind}</span>
-							</div>
-							{#if agent.version}
-								<div class="flex justify-between">
-									<span class="text-muted-foreground">Version:</span>
-									<span class="text-foreground">{agent.version}</span>
-								</div>
-							{/if}
-						</div>
-					</div>
-				{:else if activeTab === 'phases' && agent.phases}
-					<!-- Phases Tab -->
-					<div class="space-y-4">
-						{#each agent.phases as phase, index}
-							<div class="bg-card rounded-lg border border-border p-6">
-								<div class="flex items-center gap-2 mb-2">
-									<span class="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">Phase {index + 1}</span>
-									<h3 class="font-semibold text-foreground">{phase.name}</h3>
-								</div>
-								<div class="prose prose-sm max-w-none dark:prose-invert">
-									{@html renderMarkdown(phase.instructions)}
-								</div>
-							</div>
-						{/each}
 					</div>
 				{/if}
+
+				<!-- Use Criteria -->
+				{#if agent.useCriteria && agent.useCriteria.length > 0}
+					<div class="bg-card rounded-lg border border-border p-6">
+						<h3 class="font-semibold text-foreground mb-2">Use Criteria</h3>
+						<p class="text-sm text-muted-foreground mb-4">When this agent should be used</p>
+						<ul class="space-y-2">
+							{#each agent.useCriteria as criteria}
+								<li class="flex items-start gap-2">
+									<span class="text-muted-foreground">•</span>
+									<span class="text-foreground">{criteria}</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
+
+				<!-- Tools & MCP Servers -->
+				<div class="bg-card rounded-lg border border-border p-6">
+					<h3 class="font-semibold text-foreground mb-4">Tools & Capabilities</h3>
+
+					<!-- Direct Tools -->
+					<div class="mb-4">
+						<div class="flex items-center gap-2 mb-2">
+							<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+								/>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+								/>
+							</svg>
+							<span class="text-sm font-medium text-foreground">Direct Tools</span>
+						</div>
+						{#if agent.tools.length > 0}
+							<div class="flex flex-wrap gap-2">
+								{#each agent.tools as tool}
+									<span class="px-2 py-1 text-xs bg-muted text-foreground rounded border border-border">
+										{tool}
+									</span>
+								{/each}
+							</div>
+						{:else}
+							<p class="text-sm text-muted-foreground">No direct tools configured</p>
+						{/if}
+					</div>
+
+					<!-- MCP Servers -->
+					<div>
+						<div class="flex items-center gap-2 mb-2">
+							<svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
+								/>
+							</svg>
+							<span class="text-sm font-medium text-foreground">MCP Servers</span>
+						</div>
+						{#if mcpTools.length > 0}
+							<div class="space-y-2">
+								{#each mcpTools as mcp}
+									<div class="border border-border rounded-lg p-3 bg-muted">
+										<h4 class="font-medium text-sm text-foreground">
+											{mcp.name || 'Unnamed MCP Server'}
+										</h4>
+										{#if mcp.description}
+											<p class="text-xs text-muted-foreground mt-1">{mcp.description}</p>
+										{/if}
+										{#if mcp.command}
+											<code class="text-xs bg-muted text-foreground px-2 py-0.5 rounded mt-2 inline-block"
+												>{mcp.command}</code
+											>
+										{/if}
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<p class="text-sm text-muted-foreground">No MCP servers configured</p>
+						{/if}
+					</div>
+				</div>
+
+				<!-- Metadata -->
+				<div class="bg-card rounded-lg border border-border p-6">
+					<h3 class="font-semibold text-foreground mb-4">Metadata</h3>
+					<div class="space-y-2 text-sm">
+						<div class="flex justify-between">
+							<span class="text-muted-foreground">Author:</span>
+							<span class="font-mono text-foreground">{agent.pubkey.slice(0, 16)}...</span>
+						</div>
+						<div class="flex justify-between">
+							<span class="text-muted-foreground">Created:</span>
+							<span class="text-foreground">
+								{agent.created_at ? new Date(agent.created_at * 1000).toLocaleString() : 'Unknown'}
+							</span>
+						</div>
+						<div class="flex justify-between">
+							<span class="text-muted-foreground">Event Kind:</span>
+							<span class="text-foreground">{agent.kind}</span>
+						</div>
+						{#if agent.version}
+							<div class="flex justify-between">
+								<span class="text-muted-foreground">Version:</span>
+								<span class="text-foreground">{agent.version}</span>
+							</div>
+						{/if}
+					</div>
+				</div>
 			</div>
 		</div>
 	{/if}

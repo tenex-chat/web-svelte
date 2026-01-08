@@ -4,6 +4,10 @@
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { operationsStatusStore } from '$lib/stores/operationsStatus.svelte';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
+	import { agentStore } from '$lib/stores/agents.svelte';
+	import { inboxStore } from '$lib/stores/inbox.svelte';
+	import { nudgeStore } from '$lib/stores/nudges.svelte';
+	import { reportsStore } from '$lib/stores/reports.svelte';
 	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import LoginModal from '$lib/components/LoginModal.svelte';
 	import WindowManagerOverlay from '$lib/components/window-manager/WindowManagerOverlay.svelte';
@@ -27,12 +31,16 @@
 		ready = true;
 	}
 
-	// Initialize stores when component mounts
+	// Initialize all centralized stores when component mounts
 	$effect(() => {
 		if (ready && browser) {
 			projectStatusStore.init();
 			operationsStatusStore.init();
 			conversationMetadataStore.init();
+			agentStore.init();
+			inboxStore.init();
+			nudgeStore.init();
+			reportsStore.init();
 		}
 	});
 </script>

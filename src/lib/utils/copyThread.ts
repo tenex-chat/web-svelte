@@ -8,7 +8,6 @@ interface JSONMessage {
 	timestamp: string;
 	content: string;
 	tags: {
-		phase?: string[];
 		tool?: string[];
 		p?: string[];
 	};
@@ -127,12 +126,6 @@ function extractTags(event: NDKEvent): JSONMessage['tags'] {
 	const tags: JSONMessage['tags'] = {};
 
 	if (!event.tags) return tags;
-
-	// Extract phase tags
-	const phaseTags = event.tags.filter((tag) => tag[0] === 'phase' && tag[1]);
-	if (phaseTags.length > 0) {
-		tags.phase = phaseTags.map((tag) => tag[1]);
-	}
 
 	// Extract tool tags
 	const toolTags = event.tags.filter((tag) => tag[0] === 'tool' && tag[1]);

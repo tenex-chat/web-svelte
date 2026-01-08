@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { AlertCircle } from 'lucide-svelte';
+	import { AlertCircle, X } from 'lucide-svelte';
 	import ConversationMetadataDisplay from './ConversationMetadataDisplay.svelte';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
 	import TimeAgo from '$lib/components/common/TimeAgo.svelte';
@@ -21,9 +21,10 @@
 		threadMetadata: Map<string, ThreadMetadata>;
 		onclick: () => void;
 		onlongpress?: (position: { x: number; y: number }) => void;
+		onarchive?: () => void;
 	}
 
-	const { thread, isSelected, conversationMetadataStore: conversationMetadataStoreProp, threadMetadata, onclick, onlongpress }: Props = $props();
+	const { thread, isSelected, conversationMetadataStore: conversationMetadataStoreProp, threadMetadata, onclick, onlongpress, onarchive }: Props = $props();
 
 	// Long-press detection
 	const LONG_PRESS_DURATION = 500; // ms
@@ -137,7 +138,7 @@
 	onpointerleave={handlePointerCancel}
 	oncontextmenu={(e) => e.preventDefault()}
 	style={!isSelected && backgroundStyle ? backgroundStyle : ''}
-	class="w-full text-left px-3 py-3 hover:bg-muted transition-colors border-b border-border touch-none {isSelected
+	class="w-full text-left px-3 py-3 hover:bg-muted transition-colors border-b border-border touch-none group {isSelected
 		? 'bg-primary/10'
 		: ''}"
 >
@@ -223,5 +224,17 @@
 			</div>
 		{/if}
 		<TimeAgo timestamp={displayTime} class="ml-auto" />
+		{#if onarchive}
+			<button
+				onclick={(e) => { e.stopPropagation(); onarchive(); }}
+				onpointerdown={(e) => e.stopPropagation()}
+				onpointerup={(e) => e.stopPropagation()}
+				class="h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-destructive rounded hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
+				title="Archive conversation"
+				aria-label="Archive conversation"
+			>
+				<X class="h-3 w-3" />
+			</button>
+		{/if}
 	</div>
 </button>

@@ -5,6 +5,7 @@
 	import { MessageSquare } from 'lucide-svelte';
 	import VirtualList from '@humanspeak/svelte-virtual-list';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
+	import { storage } from '$lib/utils/storage.svelte';
 	import ThreadListItem from './ThreadListItem.svelte';
 
 	interface Props {
@@ -14,9 +15,13 @@
 		onThreadLongPress?: (thread: NDKEvent, position: { x: number; y: number }) => void;
 		timeFilter?: string | null;
 		onlyByMe?: boolean;
+		showArchived?: boolean;
 	}
 
-	let { project, selectedThread, onThreadSelect, onThreadLongPress, timeFilter = null, onlyByMe = true }: Props = $props();
+	let { project, selectedThread, onThreadSelect, onThreadLongPress, timeFilter = null, onlyByMe = true, showArchived = false }: Props = $props();
+
+	// Get archived conversation IDs reactively
+	const archivedIds = $derived(new Set(Object.keys(storage.getArchivedConversations())));
 
 	// Subscribe to all kind:1 events for this project
 	const allEventsSubscription = ndk.$subscribe(() => ({
@@ -126,6 +131,11 @@
 			filteredThreads = filteredThreads.filter((thread) => thread.pubkey === ndk.$currentPubkey);
 		}
 
+		// Filter out archived conversations (unless showArchived is true)
+		if (!showArchived) {
+			filteredThreads = filteredThreads.filter((thread) => !archivedIds.has(thread.id));
+		}
+
 		// Apply time filter if set
 		if (timeFilter) {
 			const now = Math.floor(Date.now() / 1000);
@@ -204,6 +214,7 @@
 						{threadMetadata}
 						onclick={() => onThreadSelect?.(thread)}
 						onlongpress={(position) => onThreadLongPress?.(thread, position)}
+						onarchive={() => storage.archiveConversation(thread.id)}
 					/>
 				{/snippet}
 			</VirtualList>

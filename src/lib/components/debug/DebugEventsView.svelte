@@ -142,13 +142,11 @@
 	function getKindName(kind: number): string {
 		const kindNames: Record<number, string> = {
 			1: 'Short Note',
-			1111: 'Generic Reply',
 			4199: 'Agent Definition',
 			513: 'Conversation Metadata',
 			24010: 'Project Status',
-			24111: 'Agent Typing Start',
-			24112: 'Agent Typing Stop',
-			24133: 'Operations Status'
+			24133: 'Operations Status',
+			24134: 'Operations Stop'
 		};
 		return kindNames[kind] || `Kind ${kind}`;
 	}

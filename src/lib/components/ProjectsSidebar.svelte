@@ -7,8 +7,6 @@
 	import { sidebarCollapsedStore } from '$lib/stores/sidebarCollapsed.svelte';
 	import { inboxStore } from '$lib/stores/inbox.svelte';
 	import { inboxColumnStore } from '$lib/stores/inboxColumn.svelte';
-	import { nudgeStore } from '$lib/stores/nudges.svelte';
-	import { agentStore } from '$lib/stores/agents.svelte';
 	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import { cn } from '$lib/utils/cn';
 	import { registerShortcut } from '$lib/utils/keyboardShortcuts';
@@ -138,17 +136,6 @@
 		});
 	});
 
-	// Initialize centralized stores
-	$effect(() => {
-		inboxStore.init();
-		nudgeStore.init();
-		agentStore.init();
-		return () => {
-			inboxStore.destroy();
-			nudgeStore.destroy();
-			agentStore.destroy();
-		};
-	});
 
 	// Keyboard shortcuts
 	$effect(() => {

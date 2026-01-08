@@ -243,7 +243,6 @@ Sections:
   │   └─ Name (large, truncated)
   ├─ Content
   │   ├─ Description (3-line clamp)
-  │   ├─ Phase Count Badge (if has phases)
   │   ├─ Divider line
   │   ├─ Author Avatar + Name
   │   └─ Version Badge

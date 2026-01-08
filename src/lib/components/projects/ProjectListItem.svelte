@@ -130,7 +130,7 @@
 		agentPubkeys.forEach((pk) => event.tags.push(['p', pk]));
 
 		await event.sign();
-		await event.publish();
+		event.publish();
 	}
 </script>
 

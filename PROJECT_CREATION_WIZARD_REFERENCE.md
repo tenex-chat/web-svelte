@@ -228,7 +228,6 @@ Properties:
 - `slug` / `dTag` - Unique identifier (d tag)
 - `pubkey` - Author's public key
 - `picture` - Agent avatar
-- `phases` - Array of agent phases
 - `version` - Version number
 - `created_at` - Timestamp
 - `mcpServers` - Array of MCP server event IDs

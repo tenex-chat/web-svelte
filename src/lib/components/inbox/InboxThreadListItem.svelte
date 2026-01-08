@@ -124,18 +124,10 @@
 
 	<div class={cn("flex items-center gap-2 mb-1", (isUnread || isAsk) && "ml-2")}>
 		<span class="font-medium text-sm text-foreground truncate flex-1">{title}</span>
-		{#if isAsk}
+		{#if isUnread}
 			<span
 				class="px-2 py-0.5 rounded-full text-[10px] font-semibold border whitespace-nowrap flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700/50"
 				title="This conversation has a question waiting for response"
-			>
-				<AlertCircle class="h-3 w-3" />
-				Asking
-			</span>
-		{/if}
-		{#if isUnread}
-			<span
-				class="px-2 py-0.5 text-[10px] font-medium bg-primary text-primary-foreground rounded-full"
 			>
 				New
 			</span>

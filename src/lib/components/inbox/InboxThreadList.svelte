@@ -3,6 +3,7 @@
 	import { Inbox } from 'lucide-svelte';
 	import VirtualList from '@humanspeak/svelte-virtual-list';
 	import { inboxStore } from '$lib/stores/inbox.svelte';
+	import { storage } from '$lib/utils/storage.svelte';
 	import InboxThreadListItem from './InboxThreadListItem.svelte';
 
 	interface Props {
@@ -15,6 +16,22 @@
 
 	// Get events from inbox store (already filtered to ask events)
 	const threads = $derived(inboxStore.events);
+
+	// Access viewed events to ensure reactivity when they change
+	// This creates a dependency that will cause re-renders when viewed events change
+	const viewedEvents = $derived(storage.getViewedAskEvents());
+	const viewedEventIds = $derived(new Set(Object.keys(viewedEvents)));
+
+	// Compute unread status for each thread reactively
+	const threadUnreadStatus = $derived(
+		new Map(threads.map(thread => [
+			thread.id,
+			!viewedEventIds.has(thread.id) && (thread.created_at ? thread.created_at > inboxStore.lastVisit : false)
+		]))
+	);
+
+	// Key that changes when viewed events change, forcing VirtualList to re-render
+	const listKey = $derived(`inbox-${viewedEventIds.size}-${inboxStore.lastVisit}`);
 </script>
 
 <div class="flex flex-col h-full">
@@ -31,17 +48,19 @@
 				</p>
 			</div>
 		{:else}
-			<VirtualList items={threads}>
-				{#snippet renderItem(thread, index)}
-					<InboxThreadListItem
-						{thread}
-						isSelected={selectedThread?.id === thread.id}
-						isUnread={inboxStore.isEventUnread(thread)}
-						onclick={() => onThreadSelect?.(thread)}
-						onlongpress={(position) => onThreadLongPress?.(thread, position)}
-					/>
-				{/snippet}
-			</VirtualList>
+			{#key listKey}
+				<VirtualList items={threads}>
+					{#snippet renderItem(thread, index)}
+						<InboxThreadListItem
+							{thread}
+							isSelected={selectedThread?.id === thread.id}
+							isUnread={threadUnreadStatus.get(thread.id) ?? false}
+							onclick={() => onThreadSelect?.(thread)}
+							onlongpress={(position) => onThreadLongPress?.(thread, position)}
+						/>
+					{/snippet}
+				</VirtualList>
+			{/key}
 		{/if}
 	</div>
 </div>
