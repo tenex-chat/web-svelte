@@ -12,6 +12,7 @@
 	import { generateColorFromString } from '$lib/utils/colors';
 	import { openProjects } from '$lib/stores/openProjects.svelte';
 	import { WINDOW_CONTEXT_KEY } from './ChatView.svelte';
+	import BranchBadge from '$lib/components/BranchBadge.svelte';
 
 	// Get window context to determine if we're in a drawer or detached window
 	const windowContext = getContext<{ windowId?: string; isDetached: boolean } | undefined>(WINDOW_CONTEXT_KEY);
@@ -22,7 +23,6 @@
 
 	let { conversationId }: Props = $props();
 
-	let events = $state<NDKEvent[]>([]);
 	let subscription: NDKSubscription | null = null;
 
 	// Root event (the delegation conversation itself)
@@ -30,6 +30,9 @@
 
 	// Delegated-to agent pubkey (from root event's p-tag)
 	const agentPubkey = $derived(rootEvent?.tags?.find(t => t[0] === 'p')?.[1]);
+
+	// Extract branch tag if present
+	const branch = $derived(rootEvent?.tags?.find(t => t[0] === 'branch')?.[1]);
 
 	// Get metadata from centralized store (reactive per-conversation)
 	const metadata = $derived(conversationMetadataStore.getConversationData(conversationId));
@@ -138,11 +141,8 @@
 		console.log('Subscribing to delegation preview for conversation:', conversationId);
 		if (!conversationId) return;
 
-		events = [];
-
 		const filters: NDKFilter[] = [
-			{ ids: [conversationId] },
-			{ '#e': [conversationId] }
+			{ ids: [conversationId] }
 		];
 
 		subscription = ndk.subscribe(filters, {
@@ -151,14 +151,12 @@
 				if (rootEvent === null && event.id === conversationId) {
 					rootEvent = event;
 				}
-				events = [...events, event];
 			},
 			onEvents: (e: NDKEvent[]) => {
 				if (rootEvent === null) {
 					const root = e.find(ev => ev.id === conversationId) || null;
 					rootEvent = root;
 				}
-				events = e
 			}
 		});
 
@@ -181,6 +179,9 @@
 			<div class="flex flex-row gap-4 items-start">
 				{#if metadata.title}
 					<div class="text-base text-foreground" title={metadata.title}>{metadata.title}</div>
+				{/if}
+				{#if branch}
+					<BranchBadge {branch} />
 				{/if}
 				{#if metadata.statusLabel && statusColor}
 					<span

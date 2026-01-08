@@ -9,6 +9,7 @@
 	import { ChevronDown, ChevronRight } from 'lucide-svelte';
 	import { slide } from 'svelte/transition';
 	import { formatTimestamp } from '$lib/utils/time';
+	import BranchBadge from '$lib/components/BranchBadge.svelte';
 
 	interface Props {
 		messages: MessageType[];
@@ -138,15 +139,6 @@
 		const branchTag = firstMessage?.event.tags.find((tag) => tag[0] === 'branch');
 		return branchTag ? branchTag[1] : null;
 	});
-
-	function getBranchColor(branchName: string): string {
-		let hash = 0;
-		for (let i = 0; i < branchName.length; i++) {
-			hash = branchName.charCodeAt(i) + ((hash << 5) - hash);
-		}
-		const hue = Math.abs(hash % 360);
-		return `hsl(${hue}, 65%, 45%)`;
-	}
 </script>
 
 {#if messages.length > 0}
@@ -175,13 +167,7 @@
 								{timestamp}
 							</button>
 							{#if branchInfo}
-								<span
-									class="px-2 py-0.5 rounded-md text-[10px] font-medium text-white"
-									style="background-color: {getBranchColor(branchInfo)}"
-									title="Branch: {branchInfo}"
-								>
-									{branchInfo}
-								</span>
+								<BranchBadge branch={branchInfo} />
 							{/if}
 						</div>
 					</div>

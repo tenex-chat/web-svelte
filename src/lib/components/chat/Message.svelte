@@ -16,6 +16,7 @@
 	import { formatTimestamp } from '$lib/utils/time';
 	import { isAskEvent, hasAskQuestions, getAskQuestions } from '$lib/utils/askTags';
 	import InlineImage from './InlineImage.svelte';
+	import BranchBadge from '$lib/components/BranchBadge.svelte';
 
 	interface Props {
 		message: Message;
@@ -55,12 +56,6 @@
 		return pTags.map((tag) => tag[1]).filter(Boolean);
 	});
 
-	// Get phase information
-	const phaseInfo = $derived.by(() => {
-		const phaseTag = message.event.tags.find((tag) => tag[0] === 'phase');
-		return phaseTag ? phaseTag[1] : null;
-	});
-
 	// Get branch information
 	const branchInfo = $derived.by(() => {
 		const branchTag = message.event.tags.find((tag) => tag[0] === 'branch');
@@ -78,16 +73,6 @@
 		if (parts.length !== 4) return null;
 		return { traceId: parts[1], spanId: parts[2] };
 	});
-
-	// Generate deterministic color from branch name
-	function getBranchColor(branchName: string): string {
-		let hash = 0;
-		for (let i = 0; i < branchName.length; i++) {
-			hash = branchName.charCodeAt(i) + ((hash << 5) - hash);
-		}
-		const hue = Math.abs(hash % 360);
-		return `hsl(${hue}, 65%, 45%)`;
-	}
 
 	let dropdownOpen = $state(false);
 	let showRawEvent = $state(false);
@@ -213,13 +198,7 @@
 
 					<!-- Branch badge -->
 					{#if branchInfo}
-						<span
-							class="px-2 py-0.5 rounded-md text-[10px] font-medium text-white"
-							style="background-color: {getBranchColor(branchInfo)}"
-							title="Branch: {branchInfo}"
-						>
-							{branchInfo}
-						</span>
+						<BranchBadge branch={branchInfo} />
 					{/if}
 
 					<!-- P-tagged user avatars -->
@@ -232,18 +211,6 @@
 									</div>
 								</User.Root>
 							{/each}
-						</div>
-					{/if}
-
-					<!-- Phase indicator -->
-					{#if phaseInfo}
-						<div class="flex items-center gap-1.5 text-xs">
-							<svg class="w-3 h-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-							</svg>
-							<span class="px-2 py-0.5 rounded bg-green-100 text-green-700 font-medium uppercase text-[10px] tracking-wide">
-								{phaseInfo}
-							</span>
 						</div>
 					{/if}
 
