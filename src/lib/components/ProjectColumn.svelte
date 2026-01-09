@@ -67,6 +67,61 @@
 		{ id: 'hashtags', label: 'Tags', icon: Hash },
 		{ id: 'feed', label: 'Feed', icon: Rss }
 	] as const;
+
+	// Long-press handling for new conversation button
+	const LONG_PRESS_DURATION = 500; // ms
+	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+	let isLongPressing = $state(false);
+	let startPosition = { x: 0, y: 0 };
+
+	function handleNewChatPointerDown(e: PointerEvent) {
+		if (e.button !== 0) return; // Only handle left click
+		startPosition = { x: e.clientX, y: e.clientY };
+		isLongPressing = false;
+
+		longPressTimer = setTimeout(() => {
+			isLongPressing = true;
+			// Open as detached window at pointer position
+			windowManager.openChatDetached(project, undefined, {
+				x: e.clientX + 20,
+				y: Math.max(50, e.clientY - 100)
+			});
+		}, LONG_PRESS_DURATION);
+	}
+
+	function handleNewChatPointerMove(e: PointerEvent) {
+		// Cancel long press if user moves too much (allows accidental movement)
+		const moveThreshold = 10;
+		const dx = Math.abs(e.clientX - startPosition.x);
+		const dy = Math.abs(e.clientY - startPosition.y);
+
+		if (dx > moveThreshold || dy > moveThreshold) {
+			if (longPressTimer) {
+				clearTimeout(longPressTimer);
+				longPressTimer = null;
+			}
+		}
+	}
+
+	function handleNewChatPointerUp() {
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
+		// If not a long press, perform normal click action (open in drawer)
+		if (!isLongPressing) {
+			windowManager.openChat(project);
+		}
+		isLongPressing = false;
+	}
+
+	function handleNewChatPointerCancel() {
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
+		isLongPressing = false;
+	}
 </script>
 
 <div class={cn('w-96 flex-shrink-0 flex flex-col bg-card border-r border-border relative', className)}>
@@ -156,10 +211,14 @@
 					</button>
 
 					<button
-						onclick={() => windowManager.openChat(project)}
+						onpointerdown={handleNewChatPointerDown}
+						onpointermove={handleNewChatPointerMove}
+						onpointerup={handleNewChatPointerUp}
+						onpointercancel={handleNewChatPointerCancel}
+						onpointerleave={handleNewChatPointerCancel}
 						class="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground dark:hover:text-foreground rounded hover:bg-muted transition-colors"
-						title="New conversation"
-						aria-label="New conversation"
+						title="New conversation (long-press for detached window)"
+						aria-label="New conversation (long-press for detached window)"
 					>
 						<Plus class="w-3.5 h-3.5" />
 					</button>
