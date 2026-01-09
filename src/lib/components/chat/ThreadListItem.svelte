@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { AlertCircle, X } from 'lucide-svelte';
+	import { AlertCircle, X, GitBranch, ChevronRight, ChevronDown } from 'lucide-svelte';
 	import ConversationMetadataDisplay from './ConversationMetadataDisplay.svelte';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
 	import TimeAgo from '$lib/components/common/TimeAgo.svelte';
@@ -22,9 +22,28 @@
 		onclick: () => void;
 		onlongpress?: (position: { x: number; y: number }) => void;
 		onarchive?: () => void;
+		/** Nesting depth (0 = root, 1+ = nested) */
+		depth?: number;
+		/** Whether this is the last child at its level */
+		isLastChild?: boolean;
+		/** Whether this item has children */
+		hasChildren?: boolean;
+		/** Number of descendants (children + grandchildren, etc.) */
+		childCount?: number;
+		/** Whether children are collapsed */
+		isCollapsed?: boolean;
+		/** Callback to toggle collapse state */
+		onToggleCollapse?: () => void;
 	}
 
-	const { thread, isSelected, conversationMetadataStore: conversationMetadataStoreProp, threadMetadata, onclick, onlongpress, onarchive }: Props = $props();
+	const { thread, isSelected, conversationMetadataStore: conversationMetadataStoreProp, threadMetadata, onclick, onlongpress, onarchive, depth = 0, isLastChild = false, hasChildren = false, childCount = 0, isCollapsed = false, onToggleCollapse }: Props = $props();
+
+	// Use compact mode for nested threads (depth > 0)
+	const isCompact = $derived(depth > 0);
+
+	// Indentation per nesting level (in pixels)
+	const INDENT_PX = 16;
+	const indentStyle = $derived(depth > 0 ? `padding-left: ${depth * INDENT_PX + 12}px;` : '');
 
 	// Long-press detection
 	const LONG_PRESS_DURATION = 500; // ms
@@ -130,111 +149,237 @@
 	const showSummary = $derived(!isActivityRecent || !statusCurrentActivity);
 </script>
 
-<button
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div
 	onpointerdown={handlePointerDown}
 	onpointerup={handlePointerUp}
 	onpointermove={handlePointerMove}
 	onpointercancel={handlePointerCancel}
 	onpointerleave={handlePointerCancel}
 	oncontextmenu={(e) => e.preventDefault()}
-	style={!isSelected && backgroundStyle ? backgroundStyle : ''}
-	class="w-full text-left px-3 py-3 hover:bg-muted transition-colors border-b border-border touch-none group {isSelected
+	style="{indentStyle}{!isSelected && backgroundStyle ? backgroundStyle : ''}"
+	class="w-full text-left px-3 hover:bg-muted transition-colors border-b border-border touch-none group {isSelected
 		? 'bg-primary/10'
-		: ''}"
+		: ''} {depth > 0 ? 'nested-thread' : ''} {isCompact ? 'py-2' : 'py-3'}"
 >
-	<div class="flex items-center gap-2 mb-1">
-		<span class="font-medium text-sm text-foreground truncate">{title}</span>
-		{#if hasAsk}
-			<span
-				class="px-2 py-0.5 rounded-full text-[10px] font-semibold border whitespace-nowrap flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700/50"
-				title="This conversation has a question waiting for response"
-			>
-				<AlertCircle class="h-3 w-3" />
-				Asking
-			</span>
-		{/if}
-		{#if statusLabel && statusColor}
-			<span
-				class="px-2 py-0.5 rounded-full text-[10px] font-semibold border whitespace-nowrap"
-				style="background-color: {statusColor.replace(')', ', 0.2)')}; color: {statusColor}; border-color: {statusColor.replace(')', ', 0.3)')}"
-			>
-				{statusLabel}
-			</span>
-		{/if}
-	</div>
-	{#if showActivityLine && statusColor}
-		<!-- Recent activity: show current activity -->
-		<div
-			class="flex items-center gap-1.5 text-xs mb-2"
-			style="color: {statusColor}"
-		>
-			<svg class="w-3 h-3 animate-pulse flex-shrink-0" fill="currentColor" viewBox="0 0 8 8">
-				<circle cx="4" cy="4" r="3"/>
-			</svg>
-			<span class="truncate">{statusCurrentActivity}</span>
-		</div>
-	{:else if showSummary}
-		<!-- Stale/no activity: show summary -->
-		<ConversationMetadataDisplay
-			conversationId={thread.id}
-			showSummary={true}
-			summaryClass="text-xs text-muted-foreground italic truncate mb-2"
-		/>
-		{#if !metadata.summary && latestReply}
-			<div class="text-xs text-muted-foreground truncate mb-2">
-				{latestReply.content.slice(0, 80)}{latestReply.content.length > 80 ? '...' : ''}
-			</div>
-		{/if}
-	{/if}
-	<div class="flex items-center gap-3 text-xs text-muted-foreground">
-		<div class="flex items-center gap-1.5">
-			<User.Root {ndk} pubkey={thread.pubkey}>
-				<div class="flex items-center gap-1.5">
-					<User.Avatar class="w-4 h-4 rounded-full" />
-					{#if thread.pubkey !== ndk.$currentPubkey}
-						<User.Name class="truncate max-w-[80px]" />
+	{#if isCompact}
+		<!-- COMPACT MODE: For nested threads -->
+		<div class="flex items-center gap-2">
+			<!-- Collapse/expand toggle for items with children -->
+			{#if hasChildren && onToggleCollapse}
+				<button
+					onclick={(e) => { e.stopPropagation(); onToggleCollapse(); }}
+					onpointerdown={(e) => e.stopPropagation()}
+					onpointerup={(e) => e.stopPropagation()}
+					class="flex-shrink-0 w-4 h-4 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+					title={isCollapsed ? `Expand ${childCount} nested conversation${childCount !== 1 ? 's' : ''}` : 'Collapse nested conversations'}
+				>
+					{#if isCollapsed}
+						<ChevronRight class="w-3 h-3" />
+					{:else}
+						<ChevronDown class="w-3 h-3" />
 					{/if}
+				</button>
+			{:else}
+				<!-- Visual nesting indicator for leaf nodes -->
+				<div class="flex-shrink-0 w-4 h-4 flex items-center justify-center text-muted-foreground opacity-50">
+					<GitBranch class="w-3 h-3 rotate-180" />
 				</div>
-			</User.Root>
-			{#if recipientPubkey}
-				<User.Root {ndk} pubkey={recipientPubkey}>
-					<div class="flex items-center gap-1">
-						<User.Avatar class="w-4 h-4 rounded-full" />
-						<User.Name class="truncate max-w-[80px]" />
-					</div>
-				</User.Root>
 			{/if}
-		</div>
-		{#if hashtags.length > 0}
-			{@const maxHashtags = 3}
-			{@const displayedHashtags = hashtags.slice(0, maxHashtags)}
-			{@const hasMore = hashtags.length > maxHashtags}
-			<div class="flex items-center gap-1 flex-nowrap overflow-hidden">
-				{#each displayedHashtags as tag}
-					<span
-						class="px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap flex-shrink-0"
-						style="background-color: {generateColorFromString(tag, 65, 85)}; color: {generateColorFromString(tag, 65, 25)};"
-					>
-						#{tag}
-					</span>
-				{/each}
-				{#if hasMore}
-					<span class="text-[10px] text-muted-foreground whitespace-nowrap flex-shrink-0">+{hashtags.length - maxHashtags}</span>
+
+			<!-- Avatars: sender and recipient -->
+			<div class="flex items-center gap-1 flex-shrink-0">
+				<User.Root {ndk} pubkey={thread.pubkey}>
+					<User.Avatar class="w-5 h-5 rounded-full" />
+				</User.Root>
+				{#if recipientPubkey}
+					<span class="text-muted-foreground text-xs">→</span>
+					<User.Root {ndk} pubkey={recipientPubkey}>
+						<User.Avatar class="w-5 h-5 rounded-full" />
+					</User.Root>
 				{/if}
 			</div>
-		{/if}
-		<TimeAgo timestamp={displayTime} class="ml-auto" />
-		{#if onarchive}
-			<button
-				onclick={(e) => { e.stopPropagation(); onarchive(); }}
-				onpointerdown={(e) => e.stopPropagation()}
-				onpointerup={(e) => e.stopPropagation()}
-				class="h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-destructive rounded hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
-				title="Archive conversation"
-				aria-label="Archive conversation"
+
+			<!-- Summary or current activity -->
+			<div class="flex-1 min-w-0">
+				{#if showActivityLine && statusColor}
+					<div class="flex items-center gap-1.5 text-xs" style="color: {statusColor}">
+						<svg class="w-2 h-2 animate-pulse flex-shrink-0" fill="currentColor" viewBox="0 0 8 8">
+							<circle cx="4" cy="4" r="3"/>
+						</svg>
+						<span class="truncate">{statusCurrentActivity}</span>
+					</div>
+				{:else if metadata.summary}
+					<span class="text-xs text-muted-foreground italic truncate block">{metadata.summary}</span>
+				{:else}
+					<span class="text-xs text-muted-foreground truncate block">{title}</span>
+				{/if}
+			</div>
+
+			<!-- Badges (hasAsk, status) -->
+			{#if hasAsk}
+				<span
+					class="px-1.5 py-0.5 rounded-full text-[9px] font-semibold border whitespace-nowrap flex items-center gap-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700/50 flex-shrink-0"
+					title="This conversation has a question waiting for response"
+				>
+					<AlertCircle class="h-2.5 w-2.5" />
+				</span>
+			{/if}
+
+			<!-- Collapsed indicator showing child count -->
+			{#if isCollapsed && childCount > 0}
+				<span class="text-[10px] text-muted-foreground flex-shrink-0">
+					+{childCount}
+				</span>
+			{/if}
+
+			<TimeAgo timestamp={displayTime} class="text-[10px] text-muted-foreground flex-shrink-0" />
+		</div>
+	{:else}
+		<!-- FULL MODE: For root threads -->
+		<div class="flex items-center gap-2 mb-1">
+			<!-- Collapse/expand toggle for items with children -->
+			{#if hasChildren && onToggleCollapse}
+				<button
+					onclick={(e) => { e.stopPropagation(); onToggleCollapse(); }}
+					onpointerdown={(e) => e.stopPropagation()}
+					onpointerup={(e) => e.stopPropagation()}
+					class="flex-shrink-0 w-5 h-5 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+					title={isCollapsed ? `Expand ${childCount} nested conversation${childCount !== 1 ? 's' : ''}` : 'Collapse nested conversations'}
+				>
+					{#if isCollapsed}
+						<ChevronRight class="w-4 h-4" />
+					{:else}
+						<ChevronDown class="w-4 h-4" />
+					{/if}
+				</button>
+			{/if}
+			<span class="font-medium text-sm text-foreground truncate">{title}</span>
+			{#if hasAsk}
+				<span
+					class="px-2 py-0.5 rounded-full text-[10px] font-semibold border whitespace-nowrap flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700/50"
+					title="This conversation has a question waiting for response"
+				>
+					<AlertCircle class="h-3 w-3" />
+					Asking
+				</span>
+			{/if}
+			{#if statusLabel && statusColor}
+				<span
+					class="px-2 py-0.5 rounded-full text-[10px] font-semibold border whitespace-nowrap"
+					style="background-color: {statusColor.replace(')', ', 0.2)')}; color: {statusColor}; border-color: {statusColor.replace(')', ', 0.3)')}"
+				>
+					{statusLabel}
+				</span>
+			{/if}
+		</div>
+		{#if showActivityLine && statusColor}
+			<!-- Recent activity: show current activity -->
+			<div
+				class="flex items-center gap-1.5 text-xs mb-2"
+				style="color: {statusColor}"
 			>
-				<X class="h-3 w-3" />
-			</button>
+				<svg class="w-3 h-3 animate-pulse flex-shrink-0" fill="currentColor" viewBox="0 0 8 8">
+					<circle cx="4" cy="4" r="3"/>
+				</svg>
+				<span class="truncate">{statusCurrentActivity}</span>
+			</div>
+		{:else if showSummary}
+			<!-- Stale/no activity: show summary -->
+			<ConversationMetadataDisplay
+				conversationId={thread.id}
+				showSummary={true}
+				summaryClass="text-xs text-muted-foreground italic truncate mb-2"
+			/>
+			{#if !metadata.summary && latestReply}
+				<div class="text-xs text-muted-foreground truncate mb-2">
+					{latestReply.content.slice(0, 80)}{latestReply.content.length > 80 ? '...' : ''}
+				</div>
+			{/if}
 		{/if}
-	</div>
-</button>
+		<div class="flex items-center gap-3 text-xs text-muted-foreground">
+			<div class="flex items-center gap-1.5">
+				<User.Root {ndk} pubkey={thread.pubkey}>
+					<div class="flex items-center gap-1.5">
+						<User.Avatar class="w-4 h-4 rounded-full" />
+						{#if thread.pubkey !== ndk.$currentPubkey}
+							<User.Name class="truncate max-w-[80px]" />
+						{/if}
+					</div>
+				</User.Root>
+				{#if recipientPubkey}
+					<User.Root {ndk} pubkey={recipientPubkey}>
+						<div class="flex items-center gap-1">
+							<User.Avatar class="w-4 h-4 rounded-full" />
+							<User.Name class="truncate max-w-[80px]" />
+						</div>
+					</User.Root>
+				{/if}
+				<!-- Nested conversations indicator (only for root threads with children) -->
+				{#if hasChildren && childCount > 0}
+					<span class="px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap bg-muted text-muted-foreground border border-border">
+						{childCount} nested
+					</span>
+				{/if}
+			</div>
+			{#if hashtags.length > 0}
+				{@const maxHashtags = 3}
+				{@const displayedHashtags = hashtags.slice(0, maxHashtags)}
+				{@const hasMore = hashtags.length > maxHashtags}
+				<div class="flex items-center gap-1 flex-nowrap overflow-hidden">
+					{#each displayedHashtags as tag}
+						<span
+							class="px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap flex-shrink-0"
+							style="background-color: {generateColorFromString(tag, 65, 85)}; color: {generateColorFromString(tag, 65, 25)};"
+						>
+							#{tag}
+						</span>
+					{/each}
+					{#if hasMore}
+						<span class="text-[10px] text-muted-foreground whitespace-nowrap flex-shrink-0">+{hashtags.length - maxHashtags}</span>
+					{/if}
+				</div>
+			{/if}
+			<TimeAgo timestamp={displayTime} class="ml-auto" />
+			{#if onarchive}
+				<span
+					onclick={(e) => { e.stopPropagation(); onarchive(); }}
+					onpointerdown={(e) => e.stopPropagation()}
+					onpointerup={(e) => e.stopPropagation()}
+					onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onarchive(); } }}
+					role="button"
+					tabindex="0"
+					class="h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-destructive rounded hover:bg-muted transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+					title="Archive conversation"
+					aria-label="Archive conversation"
+				>
+					<X class="h-3 w-3" />
+				</span>
+			{/if}
+		</div>
+	{/if}
+</div>
+
+<style>
+	/* Nested thread styling */
+	.nested-thread {
+		position: relative;
+		background-color: hsl(var(--muted) / 0.3);
+	}
+
+	.nested-thread::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 2px;
+		background-color: hsl(var(--primary) / 0.3);
+	}
+
+	.nesting-connector {
+		display: flex;
+		align-items: center;
+	}
+</style>

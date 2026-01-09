@@ -18,7 +18,29 @@
 		showArchived?: boolean;
 	}
 
+	// Hierarchical thread item with depth for nesting
+	interface HierarchicalThread {
+		thread: NDKEvent;
+		depth: number;
+		isLastChild: boolean;
+		hasChildren: boolean;
+		childCount: number;
+	}
+
 	let { project, selectedThread, onThreadSelect, onThreadLongPress, timeFilter = null, onlyByMe = true, showArchived = false }: Props = $props();
+
+	// Track collapsed thread IDs (parent threads whose children are hidden)
+	let collapsedIds = $state<Set<string>>(new Set());
+
+	function toggleCollapse(threadId: string) {
+		const newSet = new Set(collapsedIds);
+		if (newSet.has(threadId)) {
+			newSet.delete(threadId);
+		} else {
+			newSet.add(threadId);
+		}
+		collapsedIds = newSet;
+	}
 
 	// Get archived conversation IDs reactively
 	const archivedIds = $derived(new Set(Object.keys(storage.getArchivedConversations())));
@@ -180,6 +202,86 @@
 		return sorted;
 	});
 
+	// Build parent-child relationships from delegation tags
+	// delegation tag format: ["delegation", "<parent-conversation-id>"]
+	const threadHierarchy = $derived.by(() => {
+		const start = performance.now();
+
+		// Map from child ID -> parent ID (based on delegation tag)
+		const childToParent = new Map<string, string>();
+		// Map from parent ID -> array of child threads
+		const parentToChildren = new Map<string, NDKEvent[]>();
+		// Set of threads that are children (have a parent)
+		const childIds = new Set<string>();
+
+		// Build the mappings
+		for (const thread of sortedThreads) {
+			const delegationTag = thread.tags.find(t => t[0] === 'delegation');
+			if (delegationTag && delegationTag[1]) {
+				const parentId = delegationTag[1];
+				childToParent.set(thread.id, parentId);
+				childIds.add(thread.id);
+
+				if (!parentToChildren.has(parentId)) {
+					parentToChildren.set(parentId, []);
+				}
+				parentToChildren.get(parentId)!.push(thread);
+			}
+		}
+
+		// Sort children by most recent activity (same as parent sorting)
+		for (const [parentId, children] of parentToChildren) {
+			children.sort((a, b) => {
+				const aMeta = threadMetadata.get(a.id);
+				const bMeta = threadMetadata.get(b.id);
+				const aTime = aMeta?.latestReply?.created_at || a.created_at || 0;
+				const bTime = bMeta?.latestReply?.created_at || b.created_at || 0;
+				return bTime - aTime;
+			});
+		}
+
+		// Count all descendants (recursive) for a thread
+		function countDescendants(threadId: string): number {
+			const children = parentToChildren.get(threadId) || [];
+			let count = children.length;
+			for (const child of children) {
+				count += countDescendants(child.id);
+			}
+			return count;
+		}
+
+		// Build flattened hierarchical list with depth information
+		const result: HierarchicalThread[] = [];
+
+		function addThreadWithChildren(thread: NDKEvent, depth: number, isLastChild: boolean) {
+			const children = parentToChildren.get(thread.id) || [];
+			const childCount = countDescendants(thread.id);
+			result.push({
+				thread,
+				depth,
+				isLastChild,
+				hasChildren: children.length > 0,
+				childCount
+			});
+
+			// Only add children if this thread is not collapsed
+			if (!collapsedIds.has(thread.id)) {
+				children.forEach((child, index) => {
+					addThreadWithChildren(child, depth + 1, index === children.length - 1);
+				});
+			}
+		}
+
+		// Start with root threads (those that have no parent in our list)
+		const rootThreads = sortedThreads.filter(t => !childIds.has(t.id));
+		rootThreads.forEach((thread, index) => {
+			addThreadWithChildren(thread, 0, index === rootThreads.length - 1);
+		});
+
+		console.log(`[threadHierarchy] roots: ${rootThreads.length}, children: ${childIds.size}, total: ${result.length}, collapsed: ${collapsedIds.size}, time: ${(performance.now() - start).toFixed(2)}ms`);
+		return result;
+	});
+
 </script>
 
 <div class="flex flex-col h-full">
@@ -205,16 +307,22 @@
 				</p>
 			</div>
 		{:else}
-			<VirtualList items={sortedThreads}>
-				{#snippet renderItem(thread, index)}
+			<VirtualList items={threadHierarchy}>
+				{#snippet renderItem(item, index)}
 					<ThreadListItem
-						{thread}
-						isSelected={selectedThread?.id === thread.id}
+						thread={item.thread}
+						depth={item.depth}
+						isLastChild={item.isLastChild}
+						hasChildren={item.hasChildren}
+						childCount={item.childCount}
+						isCollapsed={collapsedIds.has(item.thread.id)}
+						onToggleCollapse={() => toggleCollapse(item.thread.id)}
+						isSelected={selectedThread?.id === item.thread.id}
 						{conversationMetadataStore}
 						{threadMetadata}
-						onclick={() => onThreadSelect?.(thread)}
-						onlongpress={(position) => onThreadLongPress?.(thread, position)}
-						onarchive={() => storage.archiveConversation(thread.id)}
+						onclick={() => onThreadSelect?.(item.thread)}
+						onlongpress={(position) => onThreadLongPress?.(item.thread, position)}
+						onarchive={() => storage.archiveConversation(item.thread.id)}
 					/>
 				{/snippet}
 			</VirtualList>
