@@ -92,6 +92,7 @@
 	let isUploading = $state(false);
 	let uploadProgress = $state(0);
 	let imageAttachments = $state<ImageAttachment[]>([]);
+	let isDragOver = $state(false);
 
 	// Clean up agent configuration state when dialog closes
 	$effect(() => {
@@ -616,17 +617,85 @@
 	// Handle file selection and upload to Blossom
 	async function handleFileSelect(event: Event) {
 		const input = event.target as HTMLInputElement;
-		const file = input.files?.[0];
+		const files = input.files;
 
-		if (!file || !ndk || !ndk.$currentUser) {
+		if (!files || files.length === 0 || !ndk || !ndk.$currentUser) {
 			return;
 		}
 
-		// Only accept image files
-		if (!file.type.startsWith('image/')) {
-			console.error('Only image files are supported');
+		// Process all selected image files
+		for (const file of Array.from(files)) {
+			if (file.type.startsWith('image/')) {
+				await uploadFile(file);
+			}
+		}
+
+		// Reset file input so same file can be selected again
+		if (input) {
+			input.value = '';
+		}
+	}
+
+	// Handle removing an image attachment
+	function handleRemoveAttachment(index: number) {
+		const attachment = imageAttachments[index];
+		// Revoke blob URL if it's a local file
+		if (attachment.url.startsWith('blob:')) {
+			URL.revokeObjectURL(attachment.url);
+		}
+		imageAttachments = imageAttachments.filter((_, idx) => idx !== index);
+	}
+
+	// Handle drag and drop events
+	function handleDragEnter(e: DragEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		// Only show drag state if we have image files
+		if (e.dataTransfer?.types.includes('Files')) {
+			isDragOver = true;
+		}
+	}
+
+	function handleDragLeave(e: DragEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		// Only reset if we're leaving the container (not entering a child)
+		const relatedTarget = e.relatedTarget as Node | null;
+		const currentTarget = e.currentTarget as Node;
+		if (!currentTarget.contains(relatedTarget)) {
+			isDragOver = false;
+		}
+	}
+
+	function handleDragOver(e: DragEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		if (e.dataTransfer) {
+			e.dataTransfer.dropEffect = 'copy';
+		}
+	}
+
+	async function handleDrop(e: DragEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		isDragOver = false;
+
+		const files = e.dataTransfer?.files;
+		if (!files || files.length === 0 || !ndk || !ndk.$currentUser) {
 			return;
 		}
+
+		// Process all image files from the drop
+		for (const file of Array.from(files)) {
+			if (file.type.startsWith('image/')) {
+				await uploadFile(file);
+			}
+		}
+	}
+
+	// Shared upload logic for both file select and drag-drop
+	async function uploadFile(file: File) {
+		if (!ndk || !ndk.$currentUser) return;
 
 		isUploading = true;
 		uploadProgress = 0;
@@ -683,21 +752,7 @@
 		} finally {
 			isUploading = false;
 			uploadProgress = 0;
-			// Reset file input so same file can be selected again
-			if (input) {
-				input.value = '';
-			}
 		}
-	}
-
-	// Handle removing an image attachment
-	function handleRemoveAttachment(index: number) {
-		const attachment = imageAttachments[index];
-		// Revoke blob URL if it's a local file
-		if (attachment.url.startsWith('blob:')) {
-			URL.revokeObjectURL(attachment.url);
-		}
-		imageAttachments = imageAttachments.filter((_, idx) => idx !== index);
 	}
 
 </script>
@@ -707,7 +762,31 @@
 	<ReplyContextBanner {replyToEvent} {quoteEvent} onCancel={onCancelReply} />
 
 	<!-- Glassy Input Container -->
-	<div class="relative rounded-2xl bg-card/40 backdrop-blur-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
+	<div
+		class={cn(
+			"relative rounded-2xl bg-card/40 backdrop-blur-xl border shadow-sm hover:shadow-md transition-all duration-200",
+			isDragOver
+				? "border-primary border-2 bg-primary/5"
+				: "border-border/50"
+		)}
+		ondragenter={handleDragEnter}
+		ondragleave={handleDragLeave}
+		ondragover={handleDragOver}
+		ondrop={handleDrop}
+		role="region"
+		aria-label="Drop images here to attach"
+	>
+		<!-- Drag Overlay -->
+		{#if isDragOver}
+			<div class="absolute inset-0 flex items-center justify-center bg-primary/10 rounded-2xl z-10 pointer-events-none">
+				<div class="flex flex-col items-center gap-2 text-primary">
+					<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+					</svg>
+					<span class="text-sm font-medium">Drop images here</span>
+				</div>
+			</div>
+		{/if}
 		<div class="flex flex-col p-3">
 			<!-- Image Attachments Preview -->
 			{#if imageAttachments.length > 0}
@@ -812,6 +891,7 @@
 						bind:this={fileInputElement}
 						type="file"
 						accept="image/*"
+						multiple
 						class="hidden"
 						onchange={handleFileSelect}
 					/>
