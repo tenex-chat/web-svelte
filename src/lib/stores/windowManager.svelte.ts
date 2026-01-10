@@ -3,7 +3,7 @@ import type { NDKEvent } from '@nostr-dev-kit/ndk';
 import { NDKProject } from '$lib/events/NDKProject';
 import { isElectron } from '$lib/utils/electron';
 import { storage } from '$lib/utils/storage.svelte';
-import { ndk } from '$lib/ndk.svelte';
+import { ndk, ndkReady } from '$lib/ndk.svelte';
 import { NDKKind } from '$lib/kinds';
 import { inboxStore } from '$lib/stores/inbox.svelte';
 
@@ -22,6 +22,30 @@ export interface WindowConfig {
 	position?: { x: number; y: number };
 	size?: { width: number; height: number };
 	zIndex: number;
+}
+
+interface PersistedWindow {
+	id: string;
+	type: WindowType;
+	title: string;
+	projectTagId?: string;
+	threadId?: string;
+	documentId?: string;
+	rootEventId?: string;
+	agentPubkey?: string;
+	agentName?: string;
+	isDetached: boolean;
+	position?: { x: number; y: number };
+	size?: { width: number; height: number };
+	zIndex?: number;
+}
+
+interface WindowData {
+	thread?: NDKEvent;
+	document?: NDKEvent;
+	rootEvent?: NDKEvent;
+	agentPubkey?: string;
+	agentName?: string;
 }
 
 class WindowManager {
@@ -44,9 +68,8 @@ class WindowManager {
 
 	private loadFromStorage() {
 		const saved = storage.get('tenex-windows');
-		if (saved) {
-			// Don't restore windows on load - start fresh
-			// Could restore detached windows if desired
+		if (Array.isArray(saved) && saved.length > 0) {
+			void this.restoreDetachedWindows(saved as PersistedWindow[]);
 		}
 
 		// Load last detached window size
@@ -66,6 +89,8 @@ class WindowManager {
 			title: w.title,
 			projectTagId: w.project?.tagId(),
 			threadId: w.data?.thread?.id,
+			documentId: w.data?.document?.id,
+			rootEventId: w.data?.rootEvent?.id,
 			agentPubkey: w.data?.agentPubkey,
 			agentName: w.data?.agentName,
 			isDetached: w.isDetached,
@@ -75,6 +100,141 @@ class WindowManager {
 		}));
 
 		storage.set('tenex-windows', serializableWindows);
+	}
+
+	private async restoreDetachedWindows(saved: PersistedWindow[]) {
+		try {
+			await ndkReady;
+
+			const restored: WindowConfig[] = [];
+
+			for (const entry of saved) {
+				const window = await this.rehydrateWindow(entry);
+				if (window) {
+					restored.push(window);
+				}
+			}
+
+			if (restored.length === 0) return;
+
+			const existingIds = new Set(this.windowsArray.map((w) => w.id));
+			const merged = [
+				...this.windowsArray,
+				...restored.filter((w) => !existingIds.has(w.id))
+			];
+
+			this.windowsArray = merged;
+
+			const maxZIndex = merged.reduce(
+				(max, window) => Math.max(max, window.zIndex),
+				this.nextZIndex - 1
+			);
+			this.nextZIndex = maxZIndex + 1;
+		} catch (error) {
+			console.error('[WindowManager] Failed to restore windows:', error);
+		}
+	}
+
+	private async rehydrateWindow(entry: PersistedWindow): Promise<WindowConfig | null> {
+		if (!entry || !entry.id || !entry.type) return null;
+		if (!entry.isDetached) return null;
+
+		let project: NDKProject | undefined;
+		if (entry.projectTagId) {
+			try {
+				project = await this.fetchProjectByTagId(entry.projectTagId);
+			} catch (error) {
+				console.warn('[WindowManager] Failed to load project for window', entry.id, error);
+			}
+		}
+
+		const data: WindowData = {};
+
+		if (entry.threadId) {
+			try {
+				const thread = await ndk.fetchEvent(entry.threadId);
+				if (thread) {
+					data.thread = thread;
+				}
+			} catch (error) {
+				console.warn('[WindowManager] Failed to load thread for window', entry.id, error);
+			}
+		}
+
+		if (entry.documentId) {
+			try {
+				const document = await ndk.fetchEvent(entry.documentId);
+				if (document) {
+					data.document = document;
+				}
+			} catch (error) {
+				console.warn('[WindowManager] Failed to load document for window', entry.id, error);
+			}
+		}
+
+		if (entry.rootEventId) {
+			try {
+				const rootEvent = await ndk.fetchEvent(entry.rootEventId);
+				if (rootEvent) {
+					data.rootEvent = rootEvent;
+				}
+			} catch (error) {
+				console.warn('[WindowManager] Failed to load root event for window', entry.id, error);
+			}
+		}
+
+		if (entry.agentPubkey) {
+			data.agentPubkey = entry.agentPubkey;
+			if (entry.agentName) {
+				data.agentName = entry.agentName;
+			}
+		}
+
+		switch (entry.type) {
+			case 'chat':
+			case 'call':
+			case 'settings':
+				if (!project) return null;
+				break;
+			case 'document':
+				if (!data.document) return null;
+				break;
+			case 'agent':
+				if (!entry.agentPubkey) return null;
+				break;
+			case 'debug-events':
+				if (!data.rootEvent) return null;
+				break;
+			default:
+				return null;
+		}
+
+		const zIndex = typeof entry.zIndex === 'number' ? entry.zIndex : this.nextZIndex++;
+
+		return {
+			id: entry.id,
+			type: entry.type,
+			title: entry.title || 'Window',
+			project,
+			data: Object.keys(data).length > 0 ? data : undefined,
+			isDetached: true,
+			position: entry.position,
+			size: entry.size,
+			zIndex
+		};
+	}
+
+	private async fetchProjectByTagId(tagId: string): Promise<NDKProject | undefined> {
+		const [, pubkey, dTag] = tagId.split(':');
+		if (!pubkey || !dTag) return undefined;
+
+		const projectEvent = await ndk.fetchEvent({
+			kinds: [NDKKind.Project],
+			'#d': [dTag],
+			authors: [pubkey]
+		});
+
+		return projectEvent ? NDKProject.from(projectEvent) : undefined;
 	}
 
 	/**

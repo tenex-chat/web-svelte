@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { toastStore } from '$lib/stores/toast.svelte';
-import type { AIConfig } from '$lib/stores/aiConfig.svelte';
+import type { AIConfig, ImageGenSettings } from '$lib/stores/aiConfig.svelte';
 
 /**
  * Storage schema defining all localStorage keys and their types.
@@ -35,6 +35,7 @@ export type StorageSchema = {
 	'llm-configs': AIConfig['llmConfigs'];
 	'active-llm-config-id': string | null;
 	'ui-llm-configs': AIConfig['uiLLMConfigs'];
+	'image-gen-settings': ImageGenSettings;
 
 	'relay-settings': string[];
 
@@ -87,6 +88,7 @@ export type StorageSchema = {
 		interruptionSensitivity: 'low' | 'medium' | 'high';
 	};
 	'tenex-windows': any[];
+	'tenex-detached-window-size': { width: number; height: number };
 	'last-inbox-visit': number;
 	'saved_nudges': string[];
 	'tenex:inboxColumnOpen': boolean;
@@ -139,6 +141,7 @@ class StorageService {
 			'llm-configs',
 			'active-llm-config-id',
 			'ui-llm-configs',
+			'image-gen-settings',
 			'relay-settings',
 			'message-drafts',
 			'draft-timestamps',
@@ -152,6 +155,7 @@ class StorageService {
 			'blossom-settings',
 			'tenex:call-settings',
 			'tenex-windows',
+			'tenex-detached-window-size',
 			'last-inbox-visit',
 			'saved_nudges',
 			'tenex:inboxColumnOpen',
