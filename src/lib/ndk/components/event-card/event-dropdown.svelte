@@ -29,6 +29,7 @@
   // Dropdown state
   let showMenu = $state(false);
   let showRawEventModal = $state(false);
+  let showCopySubmenu = $state(false);
 
   const isMuted = $derived.by(() => {
     if (!event.author) return false;
@@ -49,9 +50,21 @@
     copyToClipboard(nprofile, 'author nprofile');
   }
 
-  function copyEventId() {
+  function copyBech32EventId() {
     const nevent = event.encode();
-    copyToClipboard(nevent, 'event ID');
+    copyToClipboard(nevent, 'bech32 event ID');
+  }
+
+  function copyRawEvent() {
+    copyToClipboard(event.inspect, 'raw event');
+  }
+
+  function copyMarkdownContent() {
+    copyToClipboard(event.content, 'markdown content');
+  }
+
+  function toggleCopySubmenu() {
+    showCopySubmenu = !showCopySubmenu;
   }
 
   function viewRawEvent() {
@@ -73,6 +86,13 @@
   function handleReport() {
     showMenu = false;
   }
+
+  // Reset submenu when main menu closes
+  $effect(() => {
+    if (!showMenu) {
+      showCopySubmenu = false;
+    }
+  });
 
   // Stop propagation on interactive elements
   function stopPropagation(e: Event) {
@@ -185,20 +205,104 @@
       Copy author (nprofile)
     </button>
 
-    <!-- Copy event ID -->
-    <button
-      onclick={copyEventId}
-      class={cn(
-        'w-full px-3 py-3 text-left text-sm text-foreground',
-        'bg-transparent border-none cursor-pointer',
-        'transition-colors duration-200',
-        'hover:bg-muted',
-        'flex items-center gap-3'
-      )}
-      type="button"
-    >
-      Copy ID (nevent)
-    </button>
+    <!-- Copy event submenu -->
+    <div class="relative">
+      <button
+        onclick={toggleCopySubmenu}
+        class={cn(
+          'w-full px-3 py-3 text-left text-sm text-foreground',
+          'bg-transparent border-none cursor-pointer',
+          'transition-colors duration-200',
+          'hover:bg-muted',
+          'flex items-center justify-between'
+        )}
+        type="button"
+        aria-expanded={showCopySubmenu}
+        aria-haspopup="menu"
+      >
+        <span class="flex items-center gap-3">Copy event</span>
+        <svg
+          class={cn('w-4 h-4 transition-transform duration-200', showCopySubmenu && 'rotate-180')}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M6 9l6 6 6-6"></path>
+        </svg>
+      </button>
+
+      {#if showCopySubmenu}
+        <div
+          class="bg-muted/50 border-l-2 border-border ml-3"
+          role="menu"
+          aria-label="Copy options"
+        >
+          <!-- Copy Bech32 Event ID -->
+          <button
+            onclick={copyBech32EventId}
+            class={cn(
+              'w-full px-3 py-2.5 text-left text-sm text-foreground',
+              'bg-transparent border-none cursor-pointer',
+              'transition-colors duration-200',
+              'hover:bg-muted',
+              'flex items-center gap-3'
+            )}
+            type="button"
+            role="menuitem"
+          >
+            <svg class="w-4 h-4 flex-shrink-0 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Bech32 Event ID
+          </button>
+
+          <!-- Copy Raw Event -->
+          <button
+            onclick={copyRawEvent}
+            class={cn(
+              'w-full px-3 py-2.5 text-left text-sm text-foreground',
+              'bg-transparent border-none cursor-pointer',
+              'transition-colors duration-200',
+              'hover:bg-muted',
+              'flex items-center gap-3'
+            )}
+            type="button"
+            role="menuitem"
+          >
+            <svg class="w-4 h-4 flex-shrink-0 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            Raw Event
+          </button>
+
+          <!-- Copy Markdown Content -->
+          <button
+            onclick={copyMarkdownContent}
+            class={cn(
+              'w-full px-3 py-2.5 text-left text-sm text-foreground',
+              'bg-transparent border-none cursor-pointer',
+              'transition-colors duration-200',
+              'hover:bg-muted',
+              'flex items-center gap-3'
+            )}
+            type="button"
+            role="menuitem"
+          >
+            <svg class="w-4 h-4 flex-shrink-0 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 7V4h16v3"></path>
+              <path d="M9 20h6"></path>
+              <path d="M12 4v16"></path>
+            </svg>
+            Markdown Content
+          </button>
+        </div>
+      {/if}
+    </div>
 
     <!-- View raw event -->
     <button

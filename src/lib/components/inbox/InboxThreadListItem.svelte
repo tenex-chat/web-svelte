@@ -112,13 +112,12 @@
 	<!-- Unread indicator -->
 	{#if isUnread}
 		<div
-			class="absolute left-0 top-0 bottom-0 w-1 bg-primary"
-			style="box-shadow: 0 0 15px rgba(59, 130, 246, 0.8)"
+			class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"
+			style="box-shadow: 0 0 10px rgba(245, 158, 11, 0.6)"
 		></div>
 	{:else if isAsk}
 		<div
-			class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"
-			style="box-shadow: 0 0 10px rgba(245, 158, 11, 0.6)"
+			class="absolute left-0 top-0 bottom-0 w-1"
 		></div>
 	{/if}
 

@@ -3,7 +3,6 @@
 	import { Inbox } from 'lucide-svelte';
 	import VirtualList from '@humanspeak/svelte-virtual-list';
 	import { inboxStore } from '$lib/stores/inbox.svelte';
-	import { storage } from '$lib/utils/storage.svelte';
 	import InboxThreadListItem from './InboxThreadListItem.svelte';
 
 	interface Props {
@@ -17,21 +16,11 @@
 	// Get events from inbox store (already filtered to ask events)
 	const threads = $derived(inboxStore.events);
 
-	// Access viewed events to ensure reactivity when they change
-	// This creates a dependency that will cause re-renders when viewed events change
-	const viewedEvents = $derived(storage.getViewedAskEvents());
-	const viewedEventIds = $derived(new Set(Object.keys(viewedEvents)));
-
 	// Compute unread status for each thread reactively
-	const threadUnreadStatus = $derived(
-		new Map(threads.map(thread => [
-			thread.id,
-			!viewedEventIds.has(thread.id) && (thread.created_at ? thread.created_at > inboxStore.lastVisit : false)
-		]))
-	);
+	const threadUnreadStatus = $derived(inboxStore.threadUnreadStatus);
 
 	// Key that changes when viewed events change, forcing VirtualList to re-render
-	const listKey = $derived(`inbox-${viewedEventIds.size}-${inboxStore.lastVisit}`);
+	const listKey = $derived(`inbox-${inboxStore.viewedEventIds.size}-${inboxStore.lastVisit}`);
 </script>
 
 <div class="flex flex-col h-full">

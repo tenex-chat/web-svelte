@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { ndk } from '$lib/ndk.svelte';
-	import { NDKAgentDefinition } from '$lib/events/NDKAgentDefinition';
+	import { agentStore } from '$lib/stores/agents.svelte';
 	import AgentDefinitionCard from '$lib/components/agents/AgentDefinitionCard.svelte';
 
 	interface Props {
@@ -13,16 +12,8 @@
 
 	let { eventId, isPM, disabled, onSetPM, onRemove }: Props = $props();
 
-	const agentDefinitionEvents = ndk.$fetchEvents<NDKAgentDefinition>(() => eventId ? { ids: [eventId] } : undefined);
-	const agentDefinition = $derived(agentDefinitionEvents[0]);
-	const agent = $derived.by(() => {
-		const def = agentDefinition;
-		if (def) {
-			console.log('fetched agent definition:', def);
-			return NDKAgentDefinition.from(def);
-		}
-		return null;
-	});
+	// Use the centralized agent store instead of making individual fetch requests
+	const agent = $derived(agentStore.getById(eventId) ?? null);
 </script>
 
 {#if agent}

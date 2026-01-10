@@ -4,6 +4,7 @@
 	import { voiceDiscovery } from '$lib/services/voice-discovery';
 	import AddProviderDialog from '../dialogs/AddProviderDialog.svelte';
 	import VoiceSelectionDialog from '../dialogs/VoiceSelectionDialog.svelte';
+	import ImageGenerationSection from './ImageGenerationSection.svelte';
 
 	let showAddProvider = $state(false);
 	let showVoiceSelection = $state(false);
@@ -466,6 +467,9 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- Image Generation Section -->
+	<ImageGenerationSection />
 
 	<!-- Quick Actions -->
 	<div class="bg-card border border-border rounded-lg p-6">

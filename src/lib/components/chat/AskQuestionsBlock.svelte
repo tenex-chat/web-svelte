@@ -2,17 +2,61 @@
 	import type { AskQuestions, QuestionResponse } from '$lib/utils/askTags';
 	import { formatQuestionResponses } from '$lib/utils/askTags';
 	import { cn } from '$lib/utils/cn';
-	import { Send } from 'lucide-svelte';
+	import { Send, CheckCircle } from 'lucide-svelte';
 	import { Streamdown } from 'svelte-streamdown';
+	import type { NDKEvent, NDKSubscription } from '@nostr-dev-kit/ndk';
+	import { ndk } from '$lib/ndk.svelte';
+	import { onDestroy } from 'svelte';
 
 	interface Props {
 		questions: AskQuestions;
 		content?: string;
-		onResponse: (content: string) => void;
+		onResponse?: (content: string) => void;
+		askEvent?: NDKEvent; // Optional: when provided, subscribe to replies to detect if already answered
 		class?: string;
 	}
 
-	let { questions, content, onResponse, class: className }: Props = $props();
+	let { questions, content, onResponse, askEvent, class: className }: Props = $props();
+
+	// Track if this ask event has been replied to
+	let replyEvent = $state<NDKEvent | null>(null);
+	let subscription: NDKSubscription | null = null;
+
+	// Subscribe to replies when askEvent is provided
+	$effect(() => {
+		if (!askEvent) return;
+
+		const filter = {
+			kinds: [1],
+			'#e': [askEvent.id]
+		};
+
+		subscription = ndk.subscribe(filter, {
+			subId: `ask-replies-${askEvent.id.slice(0, 8)}`,
+			closeOnEose: false,
+			onEvent: (event: NDKEvent) => {
+				// Check if this is a reply to our ask event (has root or reply marker pointing to it)
+				const eTag = event.tags.find(t =>
+					t[0] === 'e' && t[1] === askEvent.id
+				);
+				if (eTag) {
+					replyEvent = event;
+				}
+			}
+		});
+
+		return () => {
+			subscription?.stop();
+		};
+	});
+
+	onDestroy(() => {
+		subscription?.stop();
+	});
+
+	// Derive disabled state from reply
+	const isAnswered = $derived(replyEvent !== null);
+	const replyContent = $derived(replyEvent?.content || '');
 
 	// Track responses for each question
 	// For 'question' type: string (single selection or custom text)
@@ -25,7 +69,11 @@
 	// Track if custom input is being used for each question
 	let usingCustomInput = $state<Record<string, boolean>>({});
 
+	// Track active tab (question index)
+	let activeQuestionIndex = $state(0);
+
 	function handleOptionSelect(questionId: string, option: string, isMultiselect: boolean) {
+		if (isAnswered) return; // Don't allow selection when answered
 		// When selecting an option, disable custom input mode
 		usingCustomInput[questionId] = false;
 
@@ -49,6 +97,7 @@
 	}
 
 	function handleCustomInputFocus(questionId: string) {
+		if (isAnswered) return; // Don't allow focus when answered
 		usingCustomInput[questionId] = true;
 		// Clear option selection when using custom input
 		const question = questions.questions.find((q) => q.id === questionId);
@@ -60,6 +109,7 @@
 	}
 
 	function handleCustomInputChange(questionId: string, value: string, isMultiselect: boolean) {
+		if (isAnswered) return; // Don't allow changes when answered
 		customInputs[questionId] = value;
 		if (usingCustomInput[questionId]) {
 			if (isMultiselect) {
@@ -93,6 +143,8 @@
 	}
 
 	function handleSubmit() {
+		if (isAnswered || !onResponse) return; // Don't submit when answered or no handler
+
 		// Only include questions that have responses
 		const questionResponses: QuestionResponse[] = questions.questions
 			.filter((q) => {
@@ -139,12 +191,37 @@
 		</div>
 	{/if}
 
-	<!-- Questions -->
-	{#each questions.questions as question, index (question.id)}
+	<!-- Questions (only show when not answered) -->
+	{#if !isAnswered}
+		<!-- Tabs header (only show if multiple questions) -->
+		{#if questions.questions.length > 1}
+			<div class="flex flex-wrap gap-1 border-b border-border -mx-4 px-4">
+				{#each questions.questions as question, index (question.id)}
+					<button
+						type="button"
+						onclick={() => (activeQuestionIndex = index)}
+						class={cn(
+							'px-3 py-2 text-sm font-medium transition-colors relative',
+							activeQuestionIndex === index
+								? 'text-primary'
+								: 'text-muted-foreground hover:text-foreground'
+						)}
+					>
+						{question.id || `Question ${index + 1}`}
+						{#if activeQuestionIndex === index}
+							<div class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
+						{/if}
+					</button>
+				{/each}
+			</div>
+		{/if}
+
+		<!-- Question content (show active tab or single question) -->
+		{@const question = questions.questions[activeQuestionIndex]}
 		<div class="space-y-2">
 			<!-- Question header with short title -->
 			<div>
-				{#if question.id}
+				{#if question.id && questions.questions.length === 1}
 					<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">
 						{question.id}
 					</p>
@@ -159,15 +236,15 @@
 				{/if}
 			</div>
 
-			<!-- Options in vertical layout -->
+			<!-- Options in flex-wrap layout -->
 			{#if question.options && question.options.length > 0}
-				<div class="flex flex-col gap-1.5">
+				<div class="flex flex-wrap gap-1.5">
 					{#each question.options as option, optIndex (`${question.id}-opt-${optIndex}`)}
 						<button
 							type="button"
 							onclick={() => handleOptionSelect(question.id, option, question.type === 'multiselect')}
 							class={cn(
-								'w-full text-left px-3 py-2 text-sm rounded-md border transition-all',
+								'text-left px-3 py-2 text-sm rounded-md border transition-all',
 								isOptionSelected(question.id, option, question.type === 'multiselect')
 									? 'bg-primary text-primary-foreground border-primary'
 									: 'bg-background text-foreground border-border hover:border-primary/50 hover:bg-muted/50'
@@ -204,28 +281,45 @@
 						: 'border-border focus:border-primary/50'
 				)}
 			/>
+		</div>
 
-			<!-- Separator between questions -->
-			{#if index < questions.questions.length - 1}
-				<hr class="border-border mt-3" />
+		<!-- Submit button (only show when onResponse handler exists) -->
+		{#if onResponse}
+			<div class="flex justify-end pt-2">
+				<button
+					type="button"
+					onclick={handleSubmit}
+					class={cn(
+						'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
+						hasAnyResponse()
+							? 'bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer'
+							: 'bg-primary/60 hover:bg-primary/70 text-primary-foreground cursor-pointer'
+					)}
+				>
+					<Send class="h-4 w-4" />
+					Send Response
+				</button>
+			</div>
+		{/if}
+	{:else}
+		<!-- Answered state - show the response -->
+		<div class="space-y-3">
+			<div class="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+				<CheckCircle class="h-4 w-4" />
+				<span class="font-medium">Response submitted</span>
+			</div>
+			{#if replyContent}
+				<div class="prose prose-sm text-sm max-w-none dark:prose-invert text-foreground bg-muted/50 rounded-md p-3">
+					<Streamdown
+						content={replyContent}
+						class="prose prose-sm text-sm max-w-none dark:prose-invert"
+						parseIncompleteMarkdown={true}
+						animation={{ enabled: false }}
+						baseTheme="shadcn"
+						shikiTheme="github-dark-dimmed"
+					/>
+				</div>
 			{/if}
 		</div>
-	{/each}
-
-	<!-- Submit button - always clickable -->
-	<div class="flex justify-end pt-2">
-		<button
-			type="button"
-			onclick={handleSubmit}
-			class={cn(
-				'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
-				hasAnyResponse()
-					? 'bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer'
-					: 'bg-primary/60 hover:bg-primary/70 text-primary-foreground cursor-pointer'
-			)}
-		>
-			<Send class="h-4 w-4" />
-			Send Response
-		</button>
-	</div>
+	{/if}
 </div>

@@ -4,7 +4,7 @@
 	import Message from './Message.svelte';
 	import AgentMessageBlock from './AgentMessageBlock.svelte';
 	import AgentTodoList from './AgentTodoList.svelte';
-	import StickyTodoHeader from './StickyTodoHeader.svelte';
+	import FloatingTodoHeader from './FloatingTodoHeader.svelte';
 	import { ConversationState } from '$lib/stores/conversation-state.svelte';
 	import { type Message as MessageType, createSimplifiedDisplayModel, type DisplayItem } from '$lib/utils/messageUtils';
 	import { aggregateTodoState, type AggregatedTodoState } from '$lib/utils/todoAggregator';
@@ -167,14 +167,15 @@
 </script>
 
 <div class="relative flex-1">
+	<!-- Floating Todo Header - positioned top-right -->
+	{#if globalTodoState.hasTodos}
+		<FloatingTodoHeader items={globalTodoState.items} />
+	{/if}
+
 	<div
 		bind:this={scrollContainer}
 		class="absolute inset-0 overflow-y-auto pb-48"
 	>
-		<!-- Sticky Todo Header - pinned to top when there are todos -->
-		{#if globalTodoState.hasTodos}
-			<StickyTodoHeader items={globalTodoState.items} />
-		{/if}
 
 		{#if messages.length === 0}
 			<div class="flex items-center justify-center h-full text-muted-foreground text-sm">

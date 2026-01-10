@@ -7,6 +7,7 @@ import { voiceDiscovery } from './voice-discovery';
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 import { generateText } from 'ai';
 import { providerRegistry, type ProviderConfig } from './provider-registry';
+import type { ImageGenSettings } from '$lib/stores/aiConfig.svelte';
 
 export type TTSProvider = 'openai' | 'elevenlabs';
 export type STTProvider = 'whisper' | 'elevenlabs';
@@ -236,6 +237,84 @@ Summary:`,
 			default:
 				return '';
 		}
+	}
+
+	/**
+	 * Generate an image using the configured image generation provider
+	 * Returns the image URL or base64 data
+	 */
+	async generateImage(
+		prompt: string,
+		settings: ImageGenSettings,
+		apiKey: string
+	): Promise<{ url?: string; base64?: string; error?: string }> {
+		if (!settings.model) {
+			return { error: 'No image model configured' };
+		}
+
+		if (!apiKey) {
+			return { error: 'No API key available for image generation' };
+		}
+
+		try {
+			// Currently only OpenRouter is supported
+			if (settings.provider === 'openrouter') {
+				return await this.generateImageWithOpenRouter(prompt, settings, apiKey);
+			}
+
+			return { error: `Unsupported image provider: ${settings.provider}` };
+		} catch (error) {
+			console.error('Image generation error:', error);
+			return { error: error instanceof Error ? error.message : 'Image generation failed' };
+		}
+	}
+
+	/**
+	 * Generate image using OpenRouter API
+	 */
+	private async generateImageWithOpenRouter(
+		prompt: string,
+		settings: ImageGenSettings,
+		apiKey: string
+	): Promise<{ url?: string; base64?: string; error?: string }> {
+		const response = await fetch('https://openrouter.ai/api/v1/images/generations', {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${apiKey}`,
+				'Content-Type': 'application/json',
+				'HTTP-Referer': window.location.origin,
+				'X-Title': 'TENEX'
+			},
+			body: JSON.stringify({
+				model: settings.model,
+				prompt: prompt,
+				size: settings.size || '1024x1024',
+				n: settings.n || 1,
+				...(settings.quality && { quality: settings.quality }),
+				...(settings.style && { style: settings.style })
+			})
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({}));
+			const errorMessage = errorData.error?.message || response.statusText;
+			throw new Error(`OpenRouter image generation failed: ${errorMessage}`);
+		}
+
+		const data = await response.json();
+
+		// OpenRouter returns data in OpenAI-compatible format
+		if (data.data && data.data.length > 0) {
+			const result = data.data[0];
+			if (result.url) {
+				return { url: result.url };
+			}
+			if (result.b64_json) {
+				return { base64: result.b64_json };
+			}
+		}
+
+		return { error: 'No image data in response' };
 	}
 }
 

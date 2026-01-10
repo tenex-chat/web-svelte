@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import type { NDKEvent, NDKSubscription, NDKFilter } from '@nostr-dev-kit/ndk';
+	import { NDKEvent, type NDKSubscription, type NDKFilter } from '@nostr-dev-kit/ndk';
 	import { stopEvent } from '$lib/ndk-events/operations';
 	import { onDestroy, getContext } from 'svelte';
 	import { Circle, Square } from 'lucide-svelte';
@@ -13,6 +13,8 @@
 	import { openProjects } from '$lib/stores/openProjects.svelte';
 	import { WINDOW_CONTEXT_KEY } from './ChatView.svelte';
 	import BranchBadge from '$lib/components/BranchBadge.svelte';
+	import AskQuestionsBlock from './AskQuestionsBlock.svelte';
+	import { isAskEvent, hasAskQuestions, getAskQuestions } from '$lib/utils/askTags';
 
 	// Get window context to determine if we're in a drawer or detached window
 	const windowContext = getContext<{ windowId?: string; isDetached: boolean } | undefined>(WINDOW_CONTEXT_KEY);
@@ -27,6 +29,17 @@
 
 	// Root event (the delegation conversation itself)
 	let rootEvent = $state<NDKEvent | null>(null);
+
+	// All events in the delegated conversation
+	let conversationEvents = $state<NDKEvent[]>([]);
+
+	// Find ask events in the conversation (events with ask tag and questions)
+	const askEvents = $derived(
+		conversationEvents.filter(event => isAskEvent(event) && hasAskQuestions(event))
+	);
+
+	// Check if this delegation has pending ask events (shown inline)
+	const hasAskEvents = $derived(askEvents.length > 0);
 
 	// Delegated-to agent pubkey (from root event's p-tag)
 	const agentPubkey = $derived(rootEvent?.tags?.find(t => t[0] === 'p')?.[1]);
@@ -136,26 +149,39 @@
 	// Extract project ID from root event's 'a' tag
 	const projectId = $derived(rootEvent?.tags?.find(t => t[0] === 'a')?.[1]);
 
-	// Subscribe to conversation events
+	// Subscribe to conversation events (root + all replies)
 	$effect(() => {
 		console.log('Subscribing to delegation preview for conversation:', conversationId);
 		if (!conversationId) return;
 
 		const filters: NDKFilter[] = [
-			{ ids: [conversationId] }
+			{ ids: [conversationId] },
+			{ '#e': [conversationId], kinds: [1] }
 		];
 
 		subscription = ndk.subscribe(filters, {
-			subId: 'delegation-preview',
+			subId: `delegation-preview-${conversationId.slice(0, 8)}`,
+			closeOnEose: false,
 			onEvent: (event: NDKEvent) => {
+				// Set root event if this is the conversation root
 				if (rootEvent === null && event.id === conversationId) {
 					rootEvent = event;
 				}
+				// Add to conversation events if not already present
+				if (!conversationEvents.find(e => e.id === event.id)) {
+					conversationEvents = [...conversationEvents, event];
+				}
 			},
-			onEvents: (e: NDKEvent[]) => {
+			onEvents: (events: NDKEvent[]) => {
 				if (rootEvent === null) {
-					const root = e.find(ev => ev.id === conversationId) || null;
+					const root = events.find(ev => ev.id === conversationId) || null;
 					rootEvent = root;
+				}
+				// Add all events to conversation events
+				for (const event of events) {
+					if (!conversationEvents.find(e => e.id === event.id)) {
+						conversationEvents = [...conversationEvents, event];
+					}
 				}
 			}
 		});
@@ -168,76 +194,123 @@
 	onDestroy(() => {
 		subscription?.stop();
 	});
+
+	/**
+	 * Handle response to an ask event - creates a reply event in the delegated conversation
+	 */
+	async function handleAskResponse(askEvent: NDKEvent, responseContent: string) {
+		const reply = new NDKEvent(ndk);
+		reply.kind = 1;
+		reply.content = responseContent;
+
+		// Copy the a-tag from the ask event (project reference)
+		const aTag = askEvent.tagValue('a');
+		if (aTag) {
+			reply.tags.push(['a', aTag]);
+		}
+
+		// Reference the root conversation
+		reply.tags.push(['e', conversationId, '', 'root']);
+		// Reference the ask event we're replying to
+		reply.tags.push(['e', askEvent.id, '', 'reply']);
+
+		await reply.sign();
+		await reply.publish();
+	}
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="delegation-preview" onclick={handleClick}>
-	<User.Root {ndk} pubkey={agentPubkey}>
-	<div class="content">
-		<div class="flex flex-row w-full justify-between">
-			<div class="flex flex-row gap-4 items-start">
-				{#if metadata.title}
-					<div class="text-base text-foreground" title={metadata.title}>{metadata.title}</div>
-				{/if}
-				{#if branch}
-					<BranchBadge {branch} />
-				{/if}
-				{#if metadata.statusLabel && statusColor}
-					<span
-						class="status-badge"
-						style="background-color: {statusColor.replace(')', ', 0.2)')}; color: {statusColor}; border-color: {statusColor.replace(')', ', 0.3)')}"
-					>
-						{metadata.statusLabel}
-					</span>
-				{:else}
-					<span class="status-badge status-fallback" class:working={status === 'working'}>
-						{status}
-					</span>
-				{/if}
-			</div>
-			<div class="flex flex-col items-end">
-				<div class="flex flex-row gap-2 items-center">
-					<User.Avatar class="w-5 h-5" />
-					<div class="text-xs text-muted-foreground"><User.Name /></div>
-					{#if status === 'working'}
-						<button
-							class="stop-button"
-							onclick={handleStop}
-							title="Stop delegation"
+{#if hasAskEvents}
+	<!-- Render inline ask blocks when there are ask events in the delegation -->
+	<div class="ask-events-container">
+		{#each askEvents as askEvent (askEvent.id)}
+			{@const askQuestions = getAskQuestions(askEvent)}
+			{#if askQuestions}
+				<AskQuestionsBlock
+					questions={askQuestions}
+					content={askEvent.content}
+					{askEvent}
+					onResponse={(content) => handleAskResponse(askEvent, content)}
+				/>
+			{/if}
+		{/each}
+	</div>
+{:else}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="delegation-preview" onclick={handleClick}>
+		<User.Root {ndk} pubkey={agentPubkey}>
+		<div class="content">
+			<div class="flex flex-row w-full justify-between">
+				<div class="flex flex-row gap-4 items-start">
+					{#if metadata.title}
+						<div class="text-base text-foreground" title={metadata.title}>{metadata.title}</div>
+					{/if}
+					{#if branch}
+						<BranchBadge {branch} />
+					{/if}
+					{#if metadata.statusLabel && statusColor}
+						<span
+							class="status-badge"
+							style="background-color: {statusColor.replace(')', ', 0.2)')}; color: {statusColor}; border-color: {statusColor.replace(')', ', 0.3)')}"
 						>
-							<Square class="w-3 h-3" />
-						</button>
+							{metadata.statusLabel}
+						</span>
+					{:else}
+						<span class="status-badge status-fallback" class:working={status === 'working'}>
+							{status}
+						</span>
 					{/if}
 				</div>
-				{#if metadata.statusCurrentActivityTimestamp}
-					<div class="timestamp">{formatRelativeTime(metadata.statusCurrentActivityTimestamp)}</div>
-				{/if}
+				<div class="flex flex-col items-end">
+					<div class="flex flex-row gap-2 items-center">
+						<User.Avatar class="w-5 h-5" />
+						<div class="text-xs text-muted-foreground"><User.Name /></div>
+						{#if status === 'working'}
+							<button
+								class="stop-button"
+								onclick={handleStop}
+								title="Stop delegation"
+							>
+								<Square class="w-3 h-3" />
+							</button>
+						{/if}
+					</div>
+					{#if metadata.statusCurrentActivityTimestamp}
+						<div class="timestamp">{formatRelativeTime(metadata.statusCurrentActivityTimestamp)}</div>
+					{/if}
+				</div>
 			</div>
-		</div>
-		{#if metadata.statusCurrentActivity}
-			<div class="activity-main" style={statusColor ? `color: ${statusColor}` : ''}>
-				{#if status === 'working'}
-					<span class="pulse" style={statusColor ? `background: ${statusColor}` : ''}></span>
+			{#if metadata.statusCurrentActivity}
+				<div class="activity-main" style={statusColor ? `color: ${statusColor}` : ''}>
+					{#if status === 'working'}
+						<span class="pulse" style={statusColor ? `background: ${statusColor}` : ''}></span>
+					{/if}
+					<span class="activity-text">{metadata.statusCurrentActivity}</span>
+				</div>
+				{#if metadata.summary}
+					<div class="summary-muted">{metadata.summary}</div>
 				{/if}
-				<span class="activity-text">{metadata.statusCurrentActivity}</span>
-			</div>
-			{#if metadata.summary}
-				<div class="summary-muted">{metadata.summary}</div>
+			{:else if metadata.summary}
+				<div class="summary-only">{metadata.summary}</div>
+			{:else}
+				<div class="empty-state">
+					<Circle class="w-4 h-4 animate-pulse" />
+					<span>Waiting for activity...</span>
+				</div>
 			{/if}
-		{:else if metadata.summary}
-			<div class="summary-only">{metadata.summary}</div>
-		{:else}
-			<div class="empty-state">
-				<Circle class="w-4 h-4 animate-pulse" />
-				<span>Waiting for activity...</span>
-			</div>
-		{/if}
+		</div>
+		</User.Root>
 	</div>
-	</User.Root>
-</div>
+{/if}
 
 <style>
+	.ask-events-container {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		margin-top: 8px;
+	}
+
 	.delegation-preview {
 		display: flex;
 		flex-direction: row;

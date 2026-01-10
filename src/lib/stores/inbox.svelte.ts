@@ -2,6 +2,7 @@ import { ndk } from '$lib/ndk.svelte';
 import type { NDKEvent, NDKSubscription, NDKFilter } from '@nostr-dev-kit/ndk';
 import { browser } from '$app/environment';
 import { isAskEvent } from '$lib/utils/askTags';
+import { storage } from '$lib/utils/storage.svelte';
 
 /**
  * Event kinds to include in the inbox subscription.
@@ -70,8 +71,6 @@ function sortEventsByTime(events: NDKEvent[], ascending = false): NDKEvent[] {
 	});
 }
 
-import { storage } from '$lib/utils/storage.svelte';
-
 /**
  * Helper to get persisted last visit timestamp
  */
@@ -92,7 +91,12 @@ function persistLastVisit(timestamp: number): void {
 class InboxStore {
 	events = $state<NDKEvent[]>([]);
 	lastVisit = $state<number>(getPersistedLastVisit());
-	unreadCount = $state<number>(0);
+	private viewedEvents = $derived.by(() => storage.getViewedAskEvents());
+	viewedEventIds = $derived.by(() => new Set(Object.keys(this.viewedEvents)));
+	unreadCount = $derived.by(() => this.events.filter((event) => this.isEventUnread(event)).length);
+	threadUnreadStatus = $derived.by(
+		() => new Map(this.events.map((event) => [event.id, this.isEventUnread(event)]))
+	);
 	private subscription: NDKSubscription | null = null;
 	private eventMap = new Map<string, NDKEvent>();
 
@@ -100,10 +104,7 @@ class InboxStore {
 		const allEvents = Array.from(this.eventMap.values());
 		const deduplicated = deduplicateEventsByThread(allEvents);
 		const sorted = sortEventsByTime(deduplicated);
-		// Count unread events - considering both individual viewing and lastVisit
-		const unreadCount = sorted.filter((e) => this.isEventUnread(e)).length;
 		this.events = sorted;
-		this.unreadCount = unreadCount;
 	}
 
 	init() {
@@ -151,29 +152,17 @@ class InboxStore {
 	markAllRead() {
 		const now = Math.floor(Date.now() / 1000);
 		persistLastVisit(now);
-
-		// Recalculate unread count with new timestamp
-		const unreadCount = this.events.filter((e) => e.created_at && e.created_at > now).length;
-
 		this.lastVisit = now;
-		this.unreadCount = unreadCount;
 	}
 
 	updateLastVisit(timestamp: number) {
 		persistLastVisit(timestamp);
-
-		// Recalculate unread count with new timestamp
-		const unreadCount = this.events.filter(
-			(e) => e.created_at && e.created_at > timestamp
-		).length;
-
 		this.lastVisit = timestamp;
-		this.unreadCount = unreadCount;
 	}
 
 	isEventUnread(event: NDKEvent): boolean {
 		// If the event has been individually viewed, it's not unread
-		if (storage.isAskEventViewed(event.id)) {
+		if (this.viewedEventIds.has(event.id)) {
 			return false;
 		}
 		// Otherwise fall back to the lastVisit timestamp
@@ -185,8 +174,6 @@ class InboxStore {
 	 */
 	markEventViewed(eventId: string): void {
 		storage.markAskEventViewed(eventId);
-		// Recalculate unread count
-		this.updateState();
 	}
 
 	cleanup() {
@@ -196,7 +183,6 @@ class InboxStore {
 		}
 		this.eventMap.clear();
 		this.events = [];
-		this.unreadCount = 0;
 	}
 
 	// Alias for consistency with other stores

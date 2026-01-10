@@ -8,6 +8,7 @@
 	import AIAssistedPromptEditor from './AIAssistedPromptEditor.svelte';
 	import ToolAutocomplete from './ToolAutocomplete.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
+	import AvatarUpload from '$lib/components/common/AvatarUpload.svelte';
 
 	type ForkAgentData = Partial<AgentDefType> & {
 		id?: string;
@@ -21,6 +22,7 @@
 		tools?: any[];
 		mcpServers?: any[];
 		phases?: any[];
+		picture?: string;
 	};
 
 	interface Props {
@@ -45,6 +47,7 @@
 	let slug = $state('');
 	let tools = $state<string[]>([]);
 	let mcpServers = $state<string[]>([]);
+	let avatar = $state<string | null>(null);
 	let newTool = $state('');
 	let showAIEditor = $state(false);
 	let toolKeyDownHandler = $state<(e: KeyboardEvent) => boolean>(() => false);
@@ -70,6 +73,7 @@
 				slug = `${baseSlug}-copy-${timestamp}`;
 				tools = [...(forkAgent.tools || [])];
 				mcpServers = [...(forkAgent.mcpServers || [])];
+				avatar = forkAgent.picture || null;
 			} else {
 				const existingVersion = parseInt(forkAgent.version || '1');
 				const newVersion = isNaN(existingVersion) ? 2 : existingVersion + 1;
@@ -83,6 +87,7 @@
 				slug = forkAgent.slug || '';
 				tools = [...(forkAgent.tools || [])];
 				mcpServers = [...(forkAgent.mcpServers || [])];
+				avatar = forkAgent.picture || null;
 			}
 		} else if (open && !forkAgent) {
 			resetForm();
@@ -102,6 +107,7 @@
 		slug = '';
 		tools = [];
 		mcpServers = [];
+		avatar = null;
 		currentStep = 'basics';
 	}
 
@@ -141,6 +147,7 @@
 			agent.description = description;
 			agent.role = role;
 			agent.instructions = instructions;
+			agent.picture = avatar || undefined;
 
 			const criteria = useCriteria
 				.split('\n')
@@ -337,15 +344,26 @@
 			<div class="flex-1 overflow-y-auto px-6 py-4">
 				{#if currentStep === 'basics'}
 					<div class="space-y-4">
-						<div>
-							<label for="name" class="block text-sm font-medium mb-1">Name *</label>
-							<input
-								id="name"
-								type="text"
-								bind:value={name}
-								placeholder="My AI Assistant"
-								class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-							/>
+						<div class="flex items-start gap-4">
+							<div class="flex-shrink-0">
+								<label class="block text-sm font-medium mb-2">Avatar</label>
+								<AvatarUpload
+									avatarUrl={avatar}
+									size={80}
+									placeholder={name}
+									onAvatarChange={(url) => (avatar = url)}
+								/>
+							</div>
+							<div class="flex-1">
+								<label for="name" class="block text-sm font-medium mb-1">Name *</label>
+								<input
+									id="name"
+									type="text"
+									bind:value={name}
+									placeholder="My AI Assistant"
+									class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
 						</div>
 
 						<div>

@@ -139,7 +139,7 @@ export function scrollManager(
 				// Use instant scroll during initial load (opening conversation),
 				// smooth scroll for new messages during active conversation
 				const useSmooth = !isInitialLoad;
-				requestAnimationFrame(() => scrollToBottom(useSmooth));
+				requestAnimationFrame(() => scrollToBottom(false));
 			} else {
 				// User is scrolled up OR actively scrolling, increment unread count
 				unreadMessageCount += newItemsCount;

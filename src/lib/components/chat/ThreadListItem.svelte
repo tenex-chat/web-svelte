@@ -1,14 +1,13 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { AlertCircle, X, GitBranch, ChevronRight, ChevronDown } from 'lucide-svelte';
+	import { X, GitBranch, ChevronRight, ChevronDown } from 'lucide-svelte';
 	import ConversationMetadataDisplay from './ConversationMetadataDisplay.svelte';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
 	import TimeAgo from '$lib/components/common/TimeAgo.svelte';
 	import { generateColorFromString } from '$lib/utils/colors';
 	import { User } from '$lib/ndk/ui/user';
 	import { ndk } from '$lib/ndk.svelte';
-	import { isAskEvent } from '$lib/utils/askTags';
-
+	
 	interface ThreadMetadata {
 		latestReply: NDKEvent | null;
 		participants: Set<string>;
@@ -114,9 +113,6 @@
 	// Get the recipient (first p-tag from the original post)
 	const recipientPubkey = $derived(thread.tags.find((tag) => tag[0] === 'p')?.[1]);
 
-	// Check if thread or latest reply is an ask (needs attention)
-	const hasAsk = $derived(isAskEvent(thread) || (latestReply && isAskEvent(latestReply)));
-
 	// Get the first hashtag for theming
 	const firstHashtag = $derived(hashtags[0]);
 
@@ -188,15 +184,14 @@
 				</div>
 			{/if}
 
-			<!-- Avatars: sender and recipient -->
-			<div class="flex items-center gap-1 flex-shrink-0">
+			<!-- Avatars: sender and recipient (overlapping) -->
+			<div class="flex items-center flex-shrink-0 avatar-stack">
 				<User.Root {ndk} pubkey={thread.pubkey}>
-					<User.Avatar class="w-5 h-5 rounded-full" />
+					<User.Avatar class="w-5 h-5 rounded-full ring-2 ring-background" />
 				</User.Root>
 				{#if recipientPubkey}
-					<span class="text-muted-foreground text-xs">→</span>
 					<User.Root {ndk} pubkey={recipientPubkey}>
-						<User.Avatar class="w-5 h-5 rounded-full" />
+						<User.Avatar class="w-5 h-5 rounded-full ring-2 ring-background -ml-2" />
 					</User.Root>
 				{/if}
 			</div>
@@ -216,16 +211,6 @@
 					<span class="text-xs text-muted-foreground truncate block">{title}</span>
 				{/if}
 			</div>
-
-			<!-- Badges (hasAsk, status) -->
-			{#if hasAsk}
-				<span
-					class="px-1.5 py-0.5 rounded-full text-[9px] font-semibold border whitespace-nowrap flex items-center gap-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700/50 flex-shrink-0"
-					title="This conversation has a question waiting for response"
-				>
-					<AlertCircle class="h-2.5 w-2.5" />
-				</span>
-			{/if}
 
 			<!-- Collapsed indicator showing child count -->
 			{#if isCollapsed && childCount > 0}
@@ -256,15 +241,6 @@
 				</button>
 			{/if}
 			<span class="font-medium text-sm text-foreground truncate">{title}</span>
-			{#if hasAsk}
-				<span
-					class="px-2 py-0.5 rounded-full text-[10px] font-semibold border whitespace-nowrap flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700/50"
-					title="This conversation has a question waiting for response"
-				>
-					<AlertCircle class="h-3 w-3" />
-					Asking
-				</span>
-			{/if}
 			{#if statusLabel && statusColor}
 				<span
 					class="px-2 py-0.5 rounded-full text-[10px] font-semibold border whitespace-nowrap"
@@ -376,10 +352,5 @@
 		bottom: 0;
 		width: 2px;
 		background-color: hsl(var(--primary) / 0.3);
-	}
-
-	.nesting-connector {
-		display: flex;
-		align-items: center;
 	}
 </style>

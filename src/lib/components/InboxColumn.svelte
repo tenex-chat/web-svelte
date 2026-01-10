@@ -2,21 +2,10 @@
 	import { inboxStore } from '$lib/stores/inbox.svelte';
 	import { inboxColumnStore } from '$lib/stores/inboxColumn.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
-	import { storage } from '$lib/utils/storage.svelte';
 	import { cn } from '$lib/utils/cn';
 	import { Inbox, X } from 'lucide-svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import InboxThreadList from './inbox/InboxThreadList.svelte';
-
-	// Track viewed events for reactive unread count
-	const viewedEventIds = $derived(new Set(Object.keys(storage.getViewedAskEvents())));
-
-	// Compute unread count reactively
-	const unreadCount = $derived(
-		inboxStore.events.filter(e =>
-			!viewedEventIds.has(e.id) && (e.created_at ? e.created_at > inboxStore.lastVisit : false)
-		).length
-	);
 
 	interface Props {
 		class?: string;
@@ -56,9 +45,9 @@
 				<h3 class="font-medium text-sm truncate flex-1 text-foreground">Inbox</h3>
 
 				<!-- Unread Badge -->
-				{#if unreadCount > 0}
+				{#if inboxStore.unreadCount > 0}
 					<span class="px-1.5 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded animate-pulse">
-						{unreadCount > 9 ? '9+' : unreadCount}
+						{inboxStore.unreadCount > 9 ? '9+' : inboxStore.unreadCount}
 					</span>
 				{/if}
 

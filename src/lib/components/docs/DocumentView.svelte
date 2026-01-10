@@ -5,7 +5,7 @@
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import { User } from '$lib/ndk/ui/user';
-	import { Clock, Hash, ArrowLeft, Copy, MessageSquare, FileText, FileDiff } from 'lucide-svelte';
+	import { Clock, Hash, ArrowLeft, Copy, MessageSquare, FileText, FileDiff, ChevronDown } from 'lucide-svelte';
 	import { formatRelativeTime } from '$lib/utils/time';
 	import DocumentChatSidebar from './DocumentChatSidebar.svelte';
 	import { Streamdown } from 'svelte-streamdown';
@@ -158,13 +158,51 @@
 	// Check if there are changes to show
 	const hasChanges = $derived(previousVersion !== null);
 
-	async function handleCopyLink() {
+	// Copy dropdown state
+	let copyDropdownOpen = $state(false);
+	let copySuccessMessage = $state<string | null>(null);
+
+	async function handleCopy(type: 'bech32' | 'raw' | 'markdown') {
 		try {
-			const encoded = document.encode();
-			await navigator.clipboard.writeText(encoded);
+			let content: string;
+			let message: string;
+
+			switch (type) {
+				case 'bech32':
+					content = document.encode();
+					message = 'Copied Bech32 Event ID';
+					break;
+				case 'raw':
+					content = document.inspect;
+					message = 'Copied Raw Event';
+					break;
+				case 'markdown':
+					content = document.content || '';
+					message = 'Copied Markdown Content';
+					break;
+			}
+
+			await navigator.clipboard.writeText(content);
+			copySuccessMessage = message;
+			copyDropdownOpen = false;
+
+			// Clear success message after 2 seconds
+			setTimeout(() => {
+				copySuccessMessage = null;
+			}, 2000);
 		} catch (error) {
-			console.error('Failed to copy link:', error);
+			console.error('Failed to copy:', error);
 		}
+	}
+
+	function handleCopyDropdownKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape') {
+			copyDropdownOpen = false;
+		}
+	}
+
+	function closeCopyDropdown() {
+		copyDropdownOpen = false;
 	}
 </script>
 
@@ -222,14 +260,72 @@
 			>
 				<MessageSquare class="h-4 w-4" />
 			</button>
-			<button
-				type="button"
-				onclick={handleCopyLink}
-				class="p-1.5 rounded hover:bg-muted transition-colors"
-				aria-label="Copy link"
-			>
-				<Copy class="h-4 w-4" />
-			</button>
+			<!-- Copy dropdown -->
+			<div class="relative">
+				<button
+					type="button"
+					onclick={() => copyDropdownOpen = !copyDropdownOpen}
+					class="flex items-center gap-0.5 p-1.5 rounded hover:bg-muted transition-colors"
+					aria-label="Copy options"
+					aria-expanded={copyDropdownOpen}
+					aria-haspopup="true"
+				>
+					<Copy class="h-4 w-4" />
+					<ChevronDown class="h-3 w-3" />
+				</button>
+
+				{#if copyDropdownOpen}
+					<!-- Backdrop to close dropdown when clicking outside -->
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<div
+						class="fixed inset-0 z-40"
+						onclick={closeCopyDropdown}
+						onkeydown={handleCopyDropdownKeydown}
+					></div>
+
+					<!-- Dropdown menu -->
+					<div
+						class="absolute right-0 top-full mt-1 z-50 min-w-[200px] bg-popover border border-border rounded-md shadow-md py-1"
+						role="menu"
+						aria-orientation="vertical"
+					>
+						<button
+							type="button"
+							onclick={() => handleCopy('bech32')}
+							class="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2"
+							role="menuitem"
+						>
+							<Copy class="h-4 w-4" />
+							Copy Bech32 Event ID
+						</button>
+						<button
+							type="button"
+							onclick={() => handleCopy('raw')}
+							class="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2"
+							role="menuitem"
+						>
+							<Copy class="h-4 w-4" />
+							Copy Raw Event
+						</button>
+						<button
+							type="button"
+							onclick={() => handleCopy('markdown')}
+							class="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2"
+							role="menuitem"
+						>
+							<Copy class="h-4 w-4" />
+							Copy Markdown Content
+						</button>
+					</div>
+				{/if}
+
+				<!-- Success message toast -->
+				{#if copySuccessMessage}
+					<div class="absolute right-0 top-full mt-1 z-50 px-3 py-2 bg-foreground text-background text-xs rounded-md shadow-md whitespace-nowrap">
+						{copySuccessMessage}
+					</div>
+				{/if}
+			</div>
 		</div>
 	</div>
 	{/if}

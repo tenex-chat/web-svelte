@@ -7,9 +7,157 @@ export interface ModelInfo {
 	contextLength?: number;
 }
 
+export interface ImageModelCapabilities {
+	dimensions?: string[];
+	supportsQuality?: boolean;
+}
+
+export interface ImageModelInfo extends ModelInfo {
+	capabilities: ImageModelCapabilities;
+}
+
 // Simple in-memory cache with 24-hour TTL
 const cache = new Map<string, { models: ModelInfo[]; timestamp: number }>();
+const rawOpenRouterCache = new Map<string, { models: OpenRouterRawModel[]; timestamp: number }>();
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+// Type for raw OpenRouter API response model
+interface OpenRouterRawModel {
+	id: string;
+	name?: string;
+	description?: string;
+	context_length?: number;
+	architecture?: {
+		modality?: string;
+	};
+}
+
+// Known image model ID patterns for fallback detection
+const KNOWN_IMAGE_MODEL_PATTERNS = [
+	'stabilityai/stable-diffusion',
+	'openai/dall-e',
+	'midjourney',
+	'black-forest-labs/flux',
+	'google/gemini',
+	'-image' // Catch any model ending in -image like gemini-2.5-flash-image
+] as const;
+
+/**
+ * Shared internal function to fetch raw models from OpenRouter API with caching
+ */
+async function fetchRawOpenRouterModels(apiKey: string): Promise<OpenRouterRawModel[]> {
+	const cacheKey = `openrouter-raw-${apiKey.slice(-4)}`;
+	const cached = rawOpenRouterCache.get(cacheKey);
+
+	if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+		return cached.models;
+	}
+
+	const response = await fetch('https://openrouter.ai/api/v1/models', {
+		headers: {
+			Authorization: `Bearer ${apiKey}`
+		}
+	});
+
+	if (!response.ok) {
+		throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+	}
+
+	const data: { data: OpenRouterRawModel[] } = await response.json();
+	const models = data.data;
+
+	rawOpenRouterCache.set(cacheKey, { models, timestamp: Date.now() });
+	return models;
+}
+
+/**
+ * Check if a model is an image generation model based on modality or known patterns
+ */
+function isImageModel(model: OpenRouterRawModel): boolean {
+	// Check architecture modality field
+	const modality = model.architecture?.modality;
+	if (modality === '->image' || modality === 'image-generation' || modality === 'text->image') {
+		return true;
+	}
+
+	// Fallback to known model ID patterns
+	const modelId = model.id.toLowerCase();
+	return KNOWN_IMAGE_MODEL_PATTERNS.some((pattern) => modelId.includes(pattern.toLowerCase()));
+}
+
+/**
+ * Infer image generation capabilities based on model ID
+ */
+function inferImageCapabilities(modelId: string): ImageModelCapabilities {
+	const lowerModelId = modelId.toLowerCase();
+
+	// DALL-E 3
+	if (lowerModelId.includes('dall-e-3')) {
+		return {
+			dimensions: ['1024x1024', '1024x1792', '1792x1024'],
+			supportsQuality: true
+		};
+	}
+
+	// DALL-E 2
+	if (lowerModelId.includes('dall-e-2')) {
+		return {
+			dimensions: ['256x256', '512x512', '1024x1024'],
+			supportsQuality: false
+		};
+	}
+
+	// FLUX or SDXL models
+	if (lowerModelId.includes('flux') || lowerModelId.includes('sdxl')) {
+		return {
+			dimensions: ['1024x1024', '1152x896', '896x1152'],
+			supportsQuality: false
+		};
+	}
+
+	// Gemini image models
+	if (lowerModelId.includes('gemini') && lowerModelId.includes('image')) {
+		return {
+			dimensions: ['1024x1024', '1024x1536', '1536x1024'],
+			supportsQuality: false
+		};
+	}
+
+	// Default capabilities
+	return {
+		dimensions: ['1024x1024'],
+		supportsQuality: false
+	};
+}
+
+/**
+ * Normalize a raw OpenRouter model to ImageModelInfo format
+ */
+function normalizeOpenRouterImageModel(model: OpenRouterRawModel): ImageModelInfo {
+	return {
+		id: model.id,
+		name: model.name ?? model.id,
+		description: model.description,
+		capabilities: inferImageCapabilities(model.id)
+	};
+}
+
+/**
+ * Fetch image generation models from a provider
+ */
+export async function fetchImageModels(
+	provider: AIProvider,
+	apiKey: string
+): Promise<ImageModelInfo[]> {
+	// Currently only OpenRouter is supported for image model discovery
+	if (provider !== 'openrouter') {
+		return [];
+	}
+
+	const rawModels = await fetchRawOpenRouterModels(apiKey);
+	const imageModels = rawModels.filter(isImageModel);
+	return imageModels.map(normalizeOpenRouterImageModel);
+}
 
 /**
  * Fetches available models for a given provider
@@ -89,29 +237,19 @@ async function fetchOpenAIModels(apiKey: string, baseUrl?: string): Promise<Mode
 }
 
 /**
- * Fetch models from OpenRouter API
+ * Fetch models from OpenRouter API (uses shared raw model fetcher)
  */
 async function fetchOpenRouterModels(apiKey: string): Promise<ModelInfo[]> {
-	const response = await fetch('https://openrouter.ai/api/v1/models', {
-		headers: {
-			Authorization: `Bearer ${apiKey}`
-		}
-	});
+	const rawModels = await fetchRawOpenRouterModels(apiKey);
 
-	if (!response.ok) {
-		throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
-	}
-
-	const data = await response.json();
-
-	return data.data
-		.map((model: any) => ({
+	return rawModels
+		.map((model): ModelInfo => ({
 			id: model.id,
-			name: model.name || model.id,
+			name: model.name ?? model.id,
 			description: model.description,
 			contextLength: model.context_length
 		}))
-		.sort((a: ModelInfo, b: ModelInfo) => a.id.localeCompare(b.id));
+		.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 /**

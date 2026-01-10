@@ -5,6 +5,7 @@ import { storage } from '$lib/utils/storage.svelte';
 export type AIProvider = 'openai' | 'anthropic' | 'google' | 'openrouter' | 'ollama' | 'custom';
 export type TTSProvider = 'openai' | 'elevenlabs';
 export type STTProvider = 'whisper' | 'elevenlabs';
+export type ImageProvider = 'openai' | 'openrouter' | 'custom';
 
 // LLM Configuration
 export interface LLMConfig {
@@ -33,6 +34,19 @@ export interface STTSettings {
 	model: string;
 }
 
+// Image Generation Configuration
+export interface ImageGenSettings {
+	enabled: boolean;
+	provider: ImageProvider;
+	model: string;
+	size: string;
+	quality?: string;
+	style?: string;
+	n: number;
+	apiKey?: string;
+	baseUrl?: string;
+}
+
 // UI-specific LLM configurations
 export interface UILLMConfigs {
 	titleGeneration?: string;
@@ -45,6 +59,7 @@ export interface AIConfig {
 	activeLLMConfigId: string | null;
 	voiceSettings: VoiceSettings;
 	sttSettings: STTSettings;
+	imageGenSettings: ImageGenSettings;
 	openAIApiKey?: string;
 	uiLLMConfigs: UILLMConfigs;
 }
@@ -53,6 +68,17 @@ const STORAGE_KEY = 'ai-config-v2';
 const LLM_CONFIGS_KEY = 'llm-configs';
 const ACTIVE_LLM_KEY = 'active-llm-config-id';
 const UI_LLM_CONFIGS_KEY = 'ui-llm-configs';
+const IMAGE_GEN_SETTINGS_KEY = 'image-gen-settings';
+
+export const defaultImageSettings: ImageGenSettings = {
+	enabled: false,
+	provider: 'openrouter',
+	model: '',
+	size: '1024x1024',
+	quality: 'standard',
+	style: 'vivid',
+	n: 1
+};
 
 const defaultConfig: AIConfig = {
 	llmConfigs: [],
@@ -69,6 +95,7 @@ const defaultConfig: AIConfig = {
 		provider: 'whisper',
 		model: 'whisper-1'
 	},
+	imageGenSettings: defaultImageSettings,
 	uiLLMConfigs: {}
 };
 
@@ -105,6 +132,12 @@ class AIConfigStore {
 		if (uiLLMConfigsStored) {
 			this.config.uiLLMConfigs = uiLLMConfigsStored;
 		}
+
+		// Load image generation settings
+		const imageGenSettingsStored = storage.get(IMAGE_GEN_SETTINGS_KEY);
+		if (imageGenSettingsStored) {
+			this.config.imageGenSettings = { ...defaultImageSettings, ...imageGenSettingsStored };
+		}
 	}
 
 	private save() {
@@ -116,6 +149,7 @@ class AIConfigStore {
 		storage.set('llm-configs', this.config.llmConfigs);
 		storage.set('active-llm-config-id', this.config.activeLLMConfigId);
 		storage.set('ui-llm-configs', this.config.uiLLMConfigs);
+		storage.set(IMAGE_GEN_SETTINGS_KEY, this.config.imageGenSettings);
 	}
 
 	// LLM Configuration Methods
@@ -162,6 +196,12 @@ class AIConfigStore {
 		this.save();
 	}
 
+	// Image Generation Settings Methods
+	updateImageGenSettings(settings: Partial<ImageGenSettings>) {
+		this.config.imageGenSettings = { ...this.config.imageGenSettings, ...settings };
+		this.save();
+	}
+
 	// OpenAI API Key (shared between LLM and voice)
 	setOpenAIApiKey(key: string) {
 		this.config.openAIApiKey = key;
@@ -182,6 +222,7 @@ class AIConfigStore {
 			storage.remove('llm-configs');
 			storage.remove('active-llm-config-id');
 			storage.remove('ui-llm-configs');
+			storage.remove(IMAGE_GEN_SETTINGS_KEY);
 		}
 	}
 }
