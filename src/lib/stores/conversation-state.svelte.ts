@@ -6,7 +6,6 @@ import { uiSettingsStore } from './uiSettings.svelte';
 
 interface ConversationOptions {
 	viewMode?: ThreadViewMode;
-	directRepliesOnly?: boolean;
 	debug?: boolean;
 }
 
@@ -14,7 +13,6 @@ export class ConversationState {
 	private messages = $state(new SvelteMap<string, Message>());
 	private rootEvent: NDKEvent | null;
 	private viewMode: ThreadViewMode;
-	private directRepliesOnly: boolean;
 	private debug: boolean;
 	private subscription: NDKSubscription | null = null;
 	private isDestroyed = false;
@@ -83,7 +81,6 @@ export class ConversationState {
 	) {
 		this.rootEvent = rootEvent;
 		this.viewMode = options.viewMode ?? 'threaded';
-		this.directRepliesOnly = options.directRepliesOnly ?? false;
 		this.debug = options.debug ?? false;
 	}
 
@@ -96,8 +93,8 @@ export class ConversationState {
 	start(): void {
 		if (!this.rootEvent || this.isDestroyed) return;
 
-		// Add root event to messages (unless directRepliesOnly mode)
-		if (!this.directRepliesOnly && !this.messages.has(this.rootEvent.id)) {
+		// Add root event to messages
+		if (!this.messages.has(this.rootEvent.id)) {
 			this.messages.set(this.rootEvent.id, {
 				id: this.rootEvent.id,
 				event: this.rootEvent
@@ -109,6 +106,7 @@ export class ConversationState {
 
 		this.subscription = this.ndk.subscribe(filters, {
 			closeOnEose: false,
+			cacheUnconstrainFilter: [],
 			onEvents: (events: NDKEvent[]) => {
 				for (const e of events) this.processEvent(e);
 			},
@@ -119,17 +117,10 @@ export class ConversationState {
 	private buildFilters(): NDKFilter[] {
 		if (!this.rootEvent) return [];
 
-		if (this.directRepliesOnly) {
-			return [{
-				kinds: [1],
-				'#e': [this.rootEvent.id],
-				limit: 100
-			}];
-		}
-
 		return [{
 			kinds: [1],
-			'#e': [this.rootEvent.id]
+			'#e': [this.rootEvent.id],
+			limit: 500
 		}];
 	}
 
