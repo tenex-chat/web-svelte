@@ -92,6 +92,7 @@ export type StorageSchema = {
 	'last-inbox-visit': number;
 	'saved_nudges': string[];
 	'tenex:inboxColumnOpen': boolean;
+	'tenex:metadataColumnOpen': boolean;
 
 	// Component-level settings
 	'agent-voice-configs': Record<string, any>; // { [agentPubkey]: voiceConfig }
@@ -159,6 +160,7 @@ class StorageService {
 			'last-inbox-visit',
 			'saved_nudges',
 			'tenex:inboxColumnOpen',
+			'tenex:metadataColumnOpen',
 			'agent-voice-configs',
 			'drawer-width',
 			'doc-chat-sidebar-width',

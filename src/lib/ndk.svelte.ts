@@ -17,7 +17,6 @@ const DEFAULT_RELAYS = ['wss://tenex.chat'];
 const cacheAdapter = browser
 	? new NDKCacheSqliteWasm({
 			dbName: 'tenex-cache',
-			wasmUrl: '/sql-wasm.wasm',
 			workerUrl: '/worker.js'
 		})
 	: undefined;

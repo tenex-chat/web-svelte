@@ -4,6 +4,7 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
+	import { isRootThread, sortByActivity, buildThreadMetadata } from '$lib/stores/threadStore.svelte';
 	import ChatView from '$lib/components/chat/ChatView.svelte';
 	import ThreadListItem from '$lib/components/chat/ThreadListItem.svelte';
 	import { MessageSquare, Plus, X, ArrowLeft } from 'lucide-svelte';
@@ -85,14 +86,16 @@
 		};
 	});
 
-	// Threads state - filtered to only root threads (no e-tags), sorted by newest
+	// Threads and metadata - filtered to only root threads, sorted by activity
 	let threads = $state<NDKEvent[]>([]);
+	let threadMetadata = $state(new Map());
 
 	$effect(() => {
 		const events = [...threadsSubscription.events] as NDKEvent[];
-		threads = events
-			.filter(e => !e.tags.some(t => t[0] === 'e'))
-			.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+		const rootThreads = events.filter(isRootThread);
+		const replies = events.filter(e => !isRootThread(e));
+		threadMetadata = buildThreadMetadata(rootThreads, replies);
+		threads = sortByActivity(rootThreads, threadMetadata);
 	});
 
 	// Get project agents from status store, with document author first
@@ -214,7 +217,7 @@
 							{thread}
 							isSelected={isSelected(thread)}
 							{conversationMetadataStore}
-							threadMetadata={new Map()}
+							{threadMetadata}
 							onclick={() => handleThreadSelect(thread)}
 						/>
 					{/each}

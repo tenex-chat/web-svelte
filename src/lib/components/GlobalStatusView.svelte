@@ -5,6 +5,7 @@
 	import { openProjects } from '$lib/stores/openProjects.svelte';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
+	import { isRootThread, getParentIds } from '$lib/stores/threadStore.svelte';
 	import { generateColorFromString } from '$lib/utils/colors';
 	import { MessageSquare, Circle } from 'lucide-svelte';
 	import TimeAgo from '$lib/components/common/TimeAgo.svelte';
@@ -57,9 +58,7 @@
 					if (!aTag) return;
 					const projectTagId = aTag[1];
 
-					const hasETag = event.tags.some((t) => t[0] === 'e');
-
-					if (!hasETag) {
+					if (isRootThread(event)) {
 						// Root thread
 						const existing = projectThreads.get(projectTagId) || [];
 						if (!existing.find((e) => e.id === event.id)) {
@@ -68,9 +67,7 @@
 						}
 					} else {
 						// Reply - update metadata
-						const eTags = event.tags.filter((t) => t[0] === 'e');
-						for (const eTag of eTags) {
-							const threadId = eTag[1];
+						for (const threadId of getParentIds(event)) {
 							const existing = metadataMap.get(threadId) || { replyCount: 0, latestReplyTime: 0 };
 							existing.replyCount++;
 							if ((event.created_at || 0) > existing.latestReplyTime) {

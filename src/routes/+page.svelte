@@ -3,12 +3,14 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { openProjects } from '$lib/stores/openProjects.svelte';
 	import { inboxColumnStore } from '$lib/stores/inboxColumn.svelte';
+	import { metadataColumnStore } from '$lib/stores/metadataColumn.svelte';
 	import { loginModal } from '$lib/stores/loginModal.svelte';
 	import { viewModeStore } from '$lib/stores/viewMode.svelte';
 	import MultiProjectView from '$lib/components/MultiProjectView.svelte';
 	import GlobalStatusView from '$lib/components/GlobalStatusView.svelte';
 	import ProjectsSidebar from '$lib/components/ProjectsSidebar.svelte';
 	import InboxColumn from '$lib/components/InboxColumn.svelte';
+	import MetadataColumn from '$lib/components/MetadataColumn.svelte';
 
 	// Use centralized projects store
 	const projects = $derived(projectsStore.projects);
@@ -59,6 +61,11 @@
 			{:else}
 				<!-- Multi-Project Column View -->
 				<div class="flex h-full overflow-x-auto">
+					<!-- Metadata Column (when open) -->
+					{#if metadataColumnStore.isOpen}
+						<MetadataColumn />
+					{/if}
+
 					<!-- Inbox Column (when open) -->
 					{#if inboxColumnStore.isOpen}
 						<InboxColumn />

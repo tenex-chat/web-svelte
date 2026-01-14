@@ -7,11 +7,7 @@
 	import { generateColorFromString } from '$lib/utils/colors';
 	import { User } from '$lib/ndk/ui/user';
 	import { ndk } from '$lib/ndk.svelte';
-	
-	interface ThreadMetadata {
-		latestReply: NDKEvent | null;
-		participants: Set<string>;
-	}
+	import type { ThreadMetadata } from '$lib/stores/threadStore.svelte';
 
 	interface Props {
 		thread: NDKEvent;

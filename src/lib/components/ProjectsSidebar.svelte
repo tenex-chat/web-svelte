@@ -7,6 +7,8 @@
 	import { sidebarCollapsedStore } from '$lib/stores/sidebarCollapsed.svelte';
 	import { inboxStore } from '$lib/stores/inbox.svelte';
 	import { inboxColumnStore } from '$lib/stores/inboxColumn.svelte';
+	import { metadataColumnStore } from '$lib/stores/metadataColumn.svelte';
+	import { metadataFeedStore } from '$lib/stores/metadataFeed.svelte';
 	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import { cn } from '$lib/utils/cn';
 	import { registerShortcut } from '$lib/utils/keyboardShortcuts';
@@ -35,7 +37,8 @@
 		UserCircle,
 		Check,
 		LayoutGrid,
-		Columns
+		Columns,
+		Activity
 	} from 'lucide-svelte';
 	import { viewModeStore } from '$lib/stores/viewMode.svelte';
 	import { globalFilterStore } from '$lib/stores/globalFilter.svelte';
@@ -143,6 +146,10 @@
 		const cleanupInbox = registerShortcut('i', () => inboxColumnStore.toggle(), {
 			metaKey: true
 		});
+		const cleanupMetadata = registerShortcut('s', () => metadataColumnStore.toggle(), {
+			metaKey: true,
+			shiftKey: true
+		});
 		const cleanupSidebar = registerShortcut('b', () => sidebarCollapsedStore.toggle(), {
 			metaKey: true
 		});
@@ -150,6 +157,7 @@
 		return () => {
 			cleanupSearch();
 			cleanupInbox();
+			cleanupMetadata();
 			cleanupSidebar();
 		};
 	});
@@ -414,8 +422,45 @@
 		</div>
 	</div>
 
-	<!-- Inbox Section -->
-	<div class="border-t border-border px-3 py-2 relative z-10">
+	<!-- Status & Inbox Section -->
+	<div class="border-t border-border px-3 py-2 relative z-10 flex flex-col gap-1">
+		<!-- Status Button (on top) -->
+		<button
+			onclick={() => metadataColumnStore.toggle()}
+			class={cn(
+				'flex items-center rounded transition-colors text-foreground',
+				collapsed ? 'w-10 h-10 justify-center' : 'w-full gap-2 px-3 py-2',
+				metadataColumnStore.isOpen ? 'bg-emerald-500/10 border border-emerald-500/20' : 'hover:bg-muted'
+			)}
+			aria-label="Toggle Status"
+			aria-pressed={metadataColumnStore.isOpen}
+		>
+			<div class="relative">
+				<Activity class={cn('w-5 h-5', metadataColumnStore.isOpen && 'text-emerald-500')} />
+				{#if metadataFeedStore.items.length > 0}
+					<div
+						class="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg"
+					>
+						{metadataFeedStore.items.length > 9 ? '9+' : metadataFeedStore.items.length}
+					</div>
+				{/if}
+			</div>
+			{#if !collapsed}
+				<span class="flex-1 text-left text-sm">Status</span>
+				{#if metadataFeedStore.items.length > 0}
+					<span class="px-1.5 py-0.5 text-xs font-medium bg-muted text-foreground rounded">
+						{metadataFeedStore.items.length}
+					</span>
+				{/if}
+				<kbd
+					class="px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground bg-muted border border-border rounded"
+				>
+					⇧⌘S
+				</kbd>
+			{/if}
+		</button>
+
+		<!-- Inbox Button -->
 		<button
 			onclick={() => inboxColumnStore.toggle()}
 			class={cn(

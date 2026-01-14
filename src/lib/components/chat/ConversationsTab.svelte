@@ -1,19 +1,14 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import type { NDKProject } from '$lib/events/NDKProject';
-	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import ThreadList from './ThreadList.svelte';
 
 	interface Props {
 		project: NDKProject;
-		onlineAgents?: ProjectAgent[];
-		timeFilter?: string | null;
-		onlyByMe?: boolean;
-		showArchived?: boolean;
 	}
 
-	let { project, timeFilter = null, onlyByMe = true, showArchived = false }: Props = $props();
+	let { project }: Props = $props();
 
 	function handleThreadSelect(thread: NDKEvent | null) {
 		if (thread) {
@@ -31,5 +26,5 @@
 </script>
 
 <div class="h-full flex flex-col">
-	<ThreadList {project} {timeFilter} {onlyByMe} {showArchived} onThreadSelect={handleThreadSelect} onThreadLongPress={handleThreadLongPress} />
+	<ThreadList {project} onThreadSelect={handleThreadSelect} onThreadLongPress={handleThreadLongPress} />
 </div>

@@ -9,6 +9,7 @@
 	import { nudgeStore } from '$lib/stores/nudges.svelte';
 	import { reportsStore } from '$lib/stores/reports.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { threadStore } from '$lib/stores/threadStore.svelte';
 	import { uiSettingsStore } from '$lib/stores/uiSettings.svelte';
 	import LoginModal from '$lib/components/LoginModal.svelte';
 	import WindowManagerOverlay from '$lib/components/window-manager/WindowManagerOverlay.svelte';
@@ -43,6 +44,7 @@
 			nudgeStore.init();
 			projectsStore.init();
 			reportsStore.init();
+			threadStore.init();
 		}
 	});
 </script>

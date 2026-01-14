@@ -29,9 +29,7 @@
 	const isOnline = $derived(projectStatusStore.isProjectOnline(projectId));
 	const onlineAgents = $derived(projectStatusStore.getOnlineAgents(projectId));
 
-	// Get global time filter
-	const timeFilter = $derived(globalFilterStore.value);
-	const onlyByMe = $derived(globalFilterStore.onlyByMe);
+	// Get global filter state for UI display
 	const showArchived = $derived(globalFilterStore.showArchived);
 
 	// Handle status indicator click to start project
@@ -249,7 +247,7 @@
 	<div class="flex-1 overflow-hidden relative">
 		{#if activeTab === 'conversations'}
 			{#await import('./chat/ConversationsTab.svelte') then { default: ConversationsTab }}
-				<ConversationsTab {project} {onlineAgents} {timeFilter} {onlyByMe} {showArchived} />
+				<ConversationsTab {project} />
 			{/await}
 		{:else if activeTab === 'docs'}
 			{#await import('./docs/DocsTab.svelte') then { default: DocsTab }}
