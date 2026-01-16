@@ -195,10 +195,18 @@ class ReportsStore {
 		this.error = null;
 
 		let subscription: NDKSubscription | undefined;
+		let lastProjectATagsKey = '';
 
 		// React to project changes and re-subscribe
 		$effect(() => {
 			const projectATags = projectsStore.projectATags;
+
+			// Only restart subscription if project tags actually changed (prevents reactivity loop)
+			const newKey = projectATags.join(',');
+			if (newKey === lastProjectATagsKey) {
+				return;
+			}
+			lastProjectATagsKey = newKey;
 
 			// Clean up previous subscription
 			if (subscription) {

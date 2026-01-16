@@ -89,7 +89,13 @@ export const openProjects = (() => {
 					resolvedProjects.push(project);
 				}
 			}
-			projects = resolvedProjects;
+
+			// Only update if array contents actually changed (prevents reactivity loop)
+			const currentIds = projects.map((p) => p.id).join(',');
+			const newIds = resolvedProjects.map((p) => p.id).join(',');
+			if (currentIds !== newIds) {
+				projects = resolvedProjects;
+			}
 		}
 	};
 })();
