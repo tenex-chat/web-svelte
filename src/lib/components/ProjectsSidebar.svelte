@@ -18,6 +18,7 @@
 	import GlobalSearchDialog from './dialogs/GlobalSearchDialog.svelte';
 	import ProjectStatusDebug from './debug/ProjectStatusDebug.svelte';
 	import ProjectListItem from './projects/ProjectListItem.svelte';
+	import ViewSwitcher from './ViewSwitcher.svelte';
 	import {
 		Plus,
 		Bot,
@@ -34,13 +35,8 @@
 		Pin,
 		Filter,
 		Clock,
-		UserCircle,
-		Check,
-		LayoutGrid,
-		Columns,
 		Activity
 	} from 'lucide-svelte';
-	import { viewModeStore } from '$lib/stores/viewMode.svelte';
 	import { globalFilterStore } from '$lib/stores/globalFilter.svelte';
 	import {
 		projectGroupsStore,
@@ -98,10 +94,6 @@
 
 	// Get current global filter
 	const currentFilter = $derived(globalFilterStore.value);
-	const onlyByMe = $derived(globalFilterStore.onlyByMe);
-
-	// View mode
-	const viewMode = $derived(viewModeStore.value);
 
 	// Helper to get filter label
 	function getFilterLabel(filter: string | null): string {
@@ -231,22 +223,8 @@
 				'flex gap-1',
 				collapsed ? 'flex-col items-center' : 'items-center'
 			)}>
-				<!-- View Mode Toggle -->
-				<button
-					onclick={() => viewModeStore.toggle()}
-					class={cn(
-						'w-8 h-8 flex items-center justify-center rounded hover:bg-muted transition-colors',
-						viewMode === 'status' ? 'text-primary' : 'text-foreground'
-					)}
-					aria-label={viewMode === 'status' ? 'Switch to projects view' : 'Switch to status dashboard'}
-					title={viewMode === 'status' ? 'Switch to projects view' : 'Switch to status dashboard'}
-				>
-					{#if viewMode === 'status'}
-						<Columns class="w-4 h-4" />
-					{:else}
-						<LayoutGrid class="w-4 h-4" />
-					{/if}
-				</button>
+				<!-- View Mode Switcher -->
+				<ViewSwitcher {collapsed} />
 
 				<button
 					onclick={() => sidebarCollapsedStore.toggle()}
@@ -563,14 +541,6 @@
 							<span>All conversations</span>
 							{#if !currentFilter}
 								<span class="ml-auto">✓</span>
-							{/if}
-						</DropdownMenu.Item>
-						<DropdownMenu.Separator />
-						<DropdownMenu.Item onclick={() => globalFilterStore.toggleOnlyByMe()}>
-							<UserCircle class="mr-2 h-4 w-4" />
-							<span>Only by me</span>
-							{#if onlyByMe}
-								<Check class="ml-auto h-4 w-4" />
 							{/if}
 						</DropdownMenu.Item>
 						<DropdownMenu.Separator />

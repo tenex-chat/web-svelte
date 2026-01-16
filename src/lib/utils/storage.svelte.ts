@@ -48,10 +48,9 @@ export type StorageSchema = {
 
 	// Project management
 	'tenex:openProjects': string[];
-	'tenex:viewMode': 'projects' | 'status';
+	'tenex:viewMode': 'projects' | 'status' | 'graph';
 	'project-filters': Record<string, string | null>;
 	'global-filter': string | null;
-	'global-filter-only-by-me': boolean;
 	'tenex:projectGroups': Array<{
 		id: string;
 		name: string;
@@ -150,7 +149,6 @@ class StorageService {
 			'tenex:viewMode',
 			'project-filters',
 			'global-filter',
-			'global-filter-only-by-me',
 			'tenex:projectGroups',
 			'tenex:selectedProjectGroup',
 			'blossom-settings',

@@ -5,10 +5,21 @@
 	import { openProjects } from '$lib/stores/openProjects.svelte';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
+	import { globalFilterStore } from '$lib/stores/globalFilter.svelte';
 	import { isRootThread, getParentIds } from '$lib/stores/threadStore.svelte';
 	import { generateColorFromString } from '$lib/utils/colors';
+	import { storage } from '$lib/utils/storage.svelte';
 	import { MessageSquare, Circle } from 'lucide-svelte';
 	import TimeAgo from '$lib/components/common/TimeAgo.svelte';
+
+	// Time filter thresholds in seconds
+	const TIME_THRESHOLDS: Record<string, number> = {
+		'1h': 3600,
+		'4h': 14400,
+		'1d': 86400,
+		'3d': 259200,
+		'7d': 604800
+	};
 
 	interface ConversationWithProject {
 		thread: NDKEvent;
@@ -114,11 +125,33 @@
 		return result;
 	});
 
+	// Get archived conversation IDs
+	const archivedIds = $derived(new Set(Object.keys(storage.getArchivedConversations())));
+
+	// Apply global filters to conversations
+	const filteredConversations = $derived.by(() => {
+		let result = conversationsWithStatus;
+
+		// Time filter
+		const threshold = TIME_THRESHOLDS[globalFilterStore.value ?? ''];
+		if (threshold) {
+			const now = Math.floor(Date.now() / 1000);
+			result = result.filter((c) => now - c.latestReplyTime <= threshold);
+		}
+
+		// Archived filter
+		if (!globalFilterStore.showArchived) {
+			result = result.filter((c) => !archivedIds.has(c.thread.id));
+		}
+
+		return result;
+	});
+
 	// Dynamically discover all unique status labels and group conversations
 	const groupedByStatus = $derived.by(() => {
 		const groups = new Map<string, ConversationWithProject[]>();
 
-		for (const conv of conversationsWithStatus) {
+		for (const conv of filteredConversations) {
 			if (!conv.statusLabel) continue;
 
 			const existing = groups.get(conv.statusLabel) || [];
@@ -136,7 +169,7 @@
 
 	// Get uncategorized conversations (no status label)
 	const uncategorizedConversations = $derived.by(() => {
-		return conversationsWithStatus
+		return filteredConversations
 			.filter((conv) => !conv.statusLabel)
 			.sort((a, b) => b.latestReplyTime - a.latestReplyTime);
 	});
@@ -173,12 +206,14 @@
 		</p>
 	</div>
 
-	{#if conversationsWithStatus.length === 0}
+	{#if filteredConversations.length === 0}
 		<div class="flex-1 flex items-center justify-center">
 			<div class="text-center">
 				<Circle class="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-				<h2 class="text-xl font-semibold text-foreground mb-2">No conversations yet</h2>
-				<p class="text-muted-foreground">Open some projects to see their conversations here</p>
+				<h2 class="text-xl font-semibold text-foreground mb-2">No conversations</h2>
+				<p class="text-muted-foreground">
+					{conversationsWithStatus.length > 0 ? 'No conversations match current filters' : 'Open some projects to see their conversations here'}
+				</p>
 			</div>
 		</div>
 	{:else}

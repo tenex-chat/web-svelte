@@ -8,9 +8,11 @@
 	import { viewModeStore } from '$lib/stores/viewMode.svelte';
 	import MultiProjectView from '$lib/components/MultiProjectView.svelte';
 	import GlobalStatusView from '$lib/components/GlobalStatusView.svelte';
+	import DelegationGraphView from '$lib/components/DelegationGraphView.svelte';
 	import ProjectsSidebar from '$lib/components/ProjectsSidebar.svelte';
 	import InboxColumn from '$lib/components/InboxColumn.svelte';
 	import MetadataColumn from '$lib/components/MetadataColumn.svelte';
+	import { Network } from 'lucide-svelte';
 
 	// Use centralized projects store
 	const projects = $derived(projectsStore.projects);
@@ -58,8 +60,21 @@
 						</div>
 					</div>
 				{/if}
+			{:else if viewMode === 'graph'}
+				<!-- Delegation Graph View -->
+				{#if openProjects.projects.length > 0}
+					<DelegationGraphView />
+				{:else}
+					<div class="flex-1 flex items-center justify-center">
+						<div class="text-center">
+							<Network class="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+							<h2 class="text-xl font-semibold text-foreground mb-2">No projects open</h2>
+							<p class="text-muted-foreground">Open projects to see delegation graph</p>
+						</div>
+					</div>
+				{/if}
 			{:else}
-				<!-- Multi-Project Column View -->
+				<!-- Multi-Project Column View (default) -->
 				<div class="flex h-full overflow-x-auto">
 					<!-- Metadata Column (when open) -->
 					{#if metadataColumnStore.isOpen}

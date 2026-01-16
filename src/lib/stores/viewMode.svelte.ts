@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { storage } from '$lib/utils/storage.svelte';
 
-export type ViewMode = 'projects' | 'status';
+export type ViewMode = 'projects' | 'status' | 'graph';
 
 class ViewModeStore {
 	private mode = $state<ViewMode>('projects');
@@ -21,10 +21,6 @@ class ViewModeStore {
 		if (browser) {
 			storage.set('tenex:viewMode', mode);
 		}
-	}
-
-	toggle() {
-		this.set(this.mode === 'projects' ? 'status' : 'projects');
 	}
 }
 

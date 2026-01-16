@@ -145,11 +145,6 @@ class ThreadStore {
 			result = result.filter(t => getProjectTagId(t) === projectTagId);
 		}
 
-		// Filter: only by me
-		if (globalFilterStore.onlyByMe && ndk.$currentPubkey) {
-			result = result.filter(t => t.pubkey === ndk.$currentPubkey);
-		}
-
 		// Filter: archived
 		if (!globalFilterStore.showArchived) {
 			result = result.filter(t => !this.archivedIds.has(t.id));
