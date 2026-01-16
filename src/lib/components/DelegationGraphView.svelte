@@ -197,17 +197,27 @@
 					latestReplyTime
 				});
 				nodeIds.add(thread.id);
+			}
 
-				// Find q-tags (delegations to other conversations)
-				const qTags = thread.getMatchingTags('q');
+			// Find delegation q-tags and ask events in replies
+			for (const reply of replies) {
+				// Check for delegation q-tags (reply contains q-tag pointing to delegated conversation)
+				const qTags = reply.getMatchingTags('q');
 				for (const qTag of qTags) {
-					const targetId = qTag[1];
-					if (targetId) {
-						graphLinks.push({
-							source: thread.id,
-							target: targetId,
-							type: 'delegation'
-						});
+					const targetConvId = qTag[1];
+					if (targetConvId) {
+						// Find which conversation this reply belongs to
+						const parentIds = getParentIds(reply);
+						for (const parentId of parentIds) {
+							if (nodeIds.has(parentId)) {
+								graphLinks.push({
+									source: parentId,
+									target: targetConvId,
+									type: 'delegation'
+								});
+								break;
+							}
+						}
 					}
 				}
 			}
