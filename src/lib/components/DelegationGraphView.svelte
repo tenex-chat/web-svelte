@@ -1,15 +1,14 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { ndk } from '$lib/ndk.svelte';
-	import { NDKSubscriptionCacheUsage, type NDKEvent } from '@nostr-dev-kit/ndk';
+	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import type { NDKProject } from '$lib/events/NDKProject';
 	import { openProjects } from '$lib/stores/openProjects.svelte';
 	import { conversationMetadataStore } from '$lib/stores/conversationMetadata.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
-	import { globalFilterStore } from '$lib/stores/globalFilter.svelte';
-	import { isRootThread, getParentIds } from '$lib/stores/threadStore.svelte';
-	import { isAskEvent, hasAskQuestions, parseAskQuestions } from '$lib/utils/askTags';
+	import { threadStore, getProjectTagId } from '$lib/stores/threadStore.svelte';
+	import { parseAskQuestions } from '$lib/utils/askTags';
 	import { generateColorFromString } from '$lib/utils/colors';
-	import { storage } from '$lib/utils/storage.svelte';
 	import { User } from '$lib/ndk/ui/user';
 	import { cn } from '$lib/utils/cn';
 	import * as d3 from 'd3';
@@ -17,18 +16,9 @@
 	import TimeAgo from '$lib/components/common/TimeAgo.svelte';
 	import AskQuestionsBlock from '$lib/components/chat/AskQuestionsBlock.svelte';
 
-	// Time filter thresholds in seconds
-	const TIME_THRESHOLDS: Record<string, number> = {
-		'1h': 3600,
-		'4h': 14400,
-		'1d': 86400,
-		'3d': 259200,
-		'7d': 604800
-	};
-
 	// Layout constants
 	const NODE_WIDTH = 240;
-	const NODE_HEIGHT = 100;
+	const NODE_HEIGHT = 160;
 	const ASK_NODE_WIDTH = 200;
 	const ASK_NODE_HEIGHT = 80;
 	const ZOOM_MIN = 0.2;
@@ -40,19 +30,19 @@
 		event: NDKEvent;
 		project?: NDKProject;
 		title: string;
-		agentPubkey?: string;
+		summary?: string;
+		senderPubkey?: string;
+		recipientPubkey?: string;
 		statusLabel?: string;
 		isAnswered?: boolean;
 		latestReplyTime: number;
 		x?: number;
 		y?: number;
-		fx?: number | null;
-		fy?: number | null;
 	}
 
 	interface GraphLink {
-		source: string | GraphNode;
-		target: string | GraphNode;
+		source: string;
+		target: string;
 		type: 'delegation' | 'ask';
 	}
 
@@ -62,244 +52,126 @@
 
 	// State
 	let transform = $state('translate(0, 0) scale(1)');
-	let zoomBehavior = $state<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
-	let simulation = $state<d3.Simulation<GraphNode, GraphLink> | null>(null);
 	let nodes = $state<GraphNode[]>([]);
 	let links = $state<GraphLink[]>([]);
+
+	// Derived lookup for O(1) node access
+	const nodeById = $derived.by(() => {
+		const map: Record<string, GraphNode> = {};
+		for (const n of nodes) map[n.id] = n;
+		return map;
+	});
+
+	// Non-reactive D3 objects - must NOT be $state to avoid reactivity issues
+	let zoomBehavior: d3.ZoomBehavior<SVGSVGElement, unknown> | null = null;
+	let isInitialized = false;
 
 	// Ask modal state
 	let askModalOpen = $state(false);
 	let selectedAskEvent = $state<NDKEvent | null>(null);
 
-	// Subscribe to threads from all opened projects
-	let allThreads = $state<Map<string, NDKEvent[]>>(new Map());
-	let allReplies = $state<Map<string, NDKEvent[]>>(new Map());
-	let threadMetadataMap = $state<Map<string, { replyCount: number; latestReplyTime: number }>>(
-		new Map()
-	);
-
-	$effect(() => {
-		const projects = openProjects.projects;
-		const projectTagIds = projects.map((p) => p.tagId()).filter((id): id is string => !!id);
-
-		if (projectTagIds.length === 0) {
-			allThreads = new Map();
-			allReplies = new Map();
-			threadMetadataMap = new Map();
-			return;
+	// Build project lookup map for filtered threads
+	const projectByTagId = $derived.by(() => {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- rebuilt each derivation
+		const map = new Map<string, NDKProject>();
+		for (const project of openProjects.projects) {
+			const tagId = project.tagId();
+			if (tagId) map.set(tagId, project);
 		}
-
-		const projectThreads = new Map<string, NDKEvent[]>();
-		const projectReplies = new Map<string, NDKEvent[]>();
-		const metadataMap = new Map<string, { replyCount: number; latestReplyTime: number }>();
-
-		const subscription = ndk.subscribe(
-			[
-				{
-					kinds: [1],
-					'#a': projectTagIds,
-					limit: 500
-				}
-			],
-			{
-				cacheUsage: NDKSubscriptionCacheUsage.ONLY_CACHE,
-				groupable: false,
-				subId: 'delegation-graph',
-				cacheUnconstrainFilter: []
-			},
-			{
-				onEvent: (event: NDKEvent) => {
-					const aTag = event.tags.find((t) => t[0] === 'a' && projectTagIds.includes(t[1]));
-					if (!aTag) return;
-					const projectTagId = aTag[1];
-
-					if (isRootThread(event)) {
-						const existing = projectThreads.get(projectTagId) || [];
-						if (!existing.find((e) => e.id === event.id)) {
-							projectThreads.set(projectTagId, [...existing, event]);
-							allThreads = new Map(projectThreads);
-						}
-					} else {
-						// Reply
-						const existing = projectReplies.get(projectTagId) || [];
-						if (!existing.find((e) => e.id === event.id)) {
-							projectReplies.set(projectTagId, [...existing, event]);
-							allReplies = new Map(projectReplies);
-						}
-
-						for (const threadId of getParentIds(event)) {
-							const existingMeta = metadataMap.get(threadId) || {
-								replyCount: 0,
-								latestReplyTime: 0
-							};
-							existingMeta.replyCount++;
-							if ((event.created_at || 0) > existingMeta.latestReplyTime) {
-								existingMeta.latestReplyTime = event.created_at || 0;
-							}
-							metadataMap.set(threadId, existingMeta);
-							threadMetadataMap = new Map(metadataMap);
-						}
-					}
-				}
-			}
-		);
-
-		return () => subscription.stop();
+		return map;
 	});
 
-	// Get archived conversation IDs
-	const archivedIds = $derived(new Set(Object.keys(storage.getArchivedConversations())));
-
-	// Build graph data
+	// Build graph data from threadStore
 	$effect(() => {
-		const projects = openProjects.projects;
+		const filteredThreads = threadStore.filteredThreads;
+		const delegationLinks = threadStore.delegationLinks;
+		const askEvents = threadStore.askEvents;
+		const metadata = threadStore.threadMetadata;
+
 		const graphNodes: GraphNode[] = [];
 		const graphLinks: GraphLink[] = [];
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local variable rebuilt each effect run
 		const nodeIds = new Set<string>();
 
-		// Build conversation nodes
-		for (const project of projects) {
-			const projectTagId = project.tagId();
-			if (!projectTagId) continue;
+		// Build conversation nodes from filtered threads
+		for (const thread of filteredThreads) {
+			const projectTagId = getProjectTagId(thread);
+			const project = projectTagId ? projectByTagId.get(projectTagId) : undefined;
 
-			const threads = allThreads.get(projectTagId) || [];
-			const replies = allReplies.get(projectTagId) || [];
+			const convMetadata = conversationMetadataStore.getConversationData(thread.id);
+			const threadMeta = metadata.get(thread.id);
+			const latestReplyTime = threadMeta?.latestReply?.created_at || thread.created_at || 0;
 
-			for (const thread of threads) {
-				// Apply filters
-				const threadMeta = threadMetadataMap.get(thread.id);
-				const latestReplyTime = threadMeta?.latestReplyTime || thread.created_at || 0;
+			graphNodes.push({
+				id: thread.id,
+				type: 'conversation',
+				event: thread,
+				project,
+				title:
+					convMetadata.title ||
+					thread.tagValue('title') ||
+					thread.content?.slice(0, 50) ||
+					'Untitled',
+				summary: convMetadata.summary,
+				senderPubkey: thread.pubkey,
+				recipientPubkey: thread.tags.find((t) => t[0] === 'p')?.[1],
+				statusLabel: convMetadata.statusLabel,
+				latestReplyTime
+			});
+			nodeIds.add(thread.id);
+		}
 
-				// Time filter
-				const threshold = TIME_THRESHOLDS[globalFilterStore.value ?? ''];
-				if (threshold) {
-					const now = Math.floor(Date.now() / 1000);
-					if (now - latestReplyTime > threshold) continue;
-				}
-
-				// Archived filter
-				if (!globalFilterStore.showArchived && archivedIds.has(thread.id)) continue;
-
-				const metadata = conversationMetadataStore.getConversationData(thread.id);
-
-				graphNodes.push({
-					id: thread.id,
-					type: 'conversation',
-					event: thread,
-					project,
-					title:
-						metadata.title ||
-						thread.tagValue('title') ||
-						thread.content?.slice(0, 50) ||
-						'Untitled',
-					agentPubkey: thread.pubkey,
-					statusLabel: metadata.statusLabel,
-					latestReplyTime
+		// Build delegation links from threadStore
+		for (const [sourceId, targetIds] of delegationLinks) {
+			if (!nodeIds.has(sourceId)) continue;
+			for (const targetId of targetIds) {
+				graphLinks.push({
+					source: sourceId,
+					target: targetId,
+					type: 'delegation'
 				});
-				nodeIds.add(thread.id);
 			}
+		}
 
-			// Find delegation q-tags and ask events in replies
-			for (const reply of replies) {
-				// Check for delegation q-tags (reply contains q-tag pointing to delegated conversation)
-				const qTags = reply.getMatchingTags('q');
-				for (const qTag of qTags) {
-					const targetConvId = qTag[1];
-					if (targetConvId) {
-						// Find which conversation this reply belongs to
-						const parentIds = getParentIds(reply);
-						for (const parentId of parentIds) {
-							if (nodeIds.has(parentId)) {
-								graphLinks.push({
-									source: parentId,
-									target: targetConvId,
-									type: 'delegation'
-								});
-								break;
-							}
-						}
-					}
-				}
-			}
+		// Build ask nodes from threadStore
+		for (const askInfo of askEvents) {
+			if (!nodeIds.has(askInfo.parentConversationId)) continue;
 
-			// Find ask events in replies
-			for (const reply of replies) {
-				if (isAskEvent(reply) && hasAskQuestions(reply)) {
-					// Check if answered by looking for replies to this ask
-					const askReplies = replies.filter((r) =>
-						r.tags.some((t) => t[0] === 'e' && t[1] === reply.id)
-					);
-					const isAnswered = askReplies.length > 0;
+			graphNodes.push({
+				id: askInfo.event.id,
+				type: 'ask',
+				event: askInfo.event,
+				title: askInfo.title,
+				senderPubkey: askInfo.event.pubkey,
+				isAnswered: askInfo.isAnswered,
+				latestReplyTime: askInfo.event.created_at || 0
+			});
+			nodeIds.add(askInfo.event.id);
 
-					const questions = parseAskQuestions(reply);
-
-					graphNodes.push({
-						id: reply.id,
-						type: 'ask',
-						event: reply,
-						title: questions?.title || 'Question',
-						agentPubkey: reply.pubkey,
-						isAnswered,
-						latestReplyTime: reply.created_at || 0
-					});
-					nodeIds.add(reply.id);
-
-					// Link ask to its parent conversation
-					const parentIds = getParentIds(reply);
-					for (const parentId of parentIds) {
-						if (nodeIds.has(parentId) || threads.some((t) => t.id === parentId)) {
-							graphLinks.push({
-								source: parentId,
-								target: reply.id,
-								type: 'ask'
-							});
-						}
-					}
-				}
-			}
+			// Link ask to its parent conversation
+			graphLinks.push({
+				source: askInfo.parentConversationId,
+				target: askInfo.event.id,
+				type: 'ask'
+			});
 		}
 
 		// Filter links to only include those with valid nodes
 		const validLinks = graphLinks.filter(
-			(link) =>
-				nodeIds.has(typeof link.source === 'string' ? link.source : link.source.id) &&
-				nodeIds.has(typeof link.target === 'string' ? link.target : link.target.id)
+			(link) => nodeIds.has(link.source) && nodeIds.has(link.target)
 		);
 
 		nodes = graphNodes;
 		links = validLinks;
 	});
 
-	// Setup D3 force simulation
+	// Setup zoom behavior once when SVG is available
 	$effect(() => {
-		if (!svgElement || !containerElement || nodes.length === 0) return;
+		if (!svgElement || !containerElement || isInitialized) return;
 
 		const width = containerElement.clientWidth;
 		const height = containerElement.clientHeight;
 
-		// Create simulation
-		const sim = d3
-			.forceSimulation<GraphNode>(nodes)
-			.force(
-				'link',
-				d3
-					.forceLink<GraphNode, GraphLink>(links)
-					.id((d) => d.id)
-					.distance(200)
-			)
-			.force('charge', d3.forceManyBody().strength(-500))
-			.force('center', d3.forceCenter(width / 2, height / 2))
-			.force(
-				'collision',
-				d3.forceCollide<GraphNode>().radius((d) => (d.type === 'ask' ? 60 : 80))
-			)
-			.on('tick', () => {
-				nodes = [...nodes];
-			});
-
-		simulation = sim;
-
-		// Setup zoom
 		const svg = d3.select(svgElement);
 		const zoom = d3
 			.zoom<SVGSVGElement, unknown>()
@@ -311,11 +183,115 @@
 		svg.call(zoom);
 		svg.call(zoom.transform, d3.zoomIdentity.translate(width / 2, height / 2).scale(0.8));
 		zoomBehavior = zoom;
+		isInitialized = true;
 
 		return () => {
-			sim.stop();
 			svg.on('.zoom', null);
+			isInitialized = false;
+			zoomBehavior = null;
 		};
+	});
+
+	// Derive a structural key that changes only when graph structure changes
+	const layoutKey = $derived(
+		nodes.map((n) => n.id).join(',') + '|' + links.map((l) => `${l.source}-${l.target}`).join(',')
+	);
+
+	// Compute static tree layout when structure changes
+	$effect(() => {
+		const key = layoutKey; // Track structural changes only
+		if (!containerElement || !key) return;
+
+		// Use untrack to read/write nodes without creating a dependency cycle
+		untrack(() => {
+			if (nodes.length === 0) return;
+			const width = containerElement!.clientWidth;
+
+			// Build parent map from links
+			const parentMap: Record<string, string> = {};
+			for (const link of links) {
+				parentMap[link.target] = link.source;
+			}
+
+			// Find root nodes (no parent)
+			const roots = nodes.filter((n) => !(n.id in parentMap));
+
+			// If no roots found, treat all conversation nodes as roots
+			const effectiveRoots =
+				roots.length > 0 ? roots : nodes.filter((n) => n.type === 'conversation');
+
+			if (effectiveRoots.length === 0) return;
+
+			// Build hierarchy data for d3.stratify
+			// Add a virtual root if multiple roots exist
+			const hierarchyData: { id: string; parentId: string | null; node?: GraphNode }[] = [];
+
+			if (effectiveRoots.length > 1) {
+				// Virtual root to connect multiple trees
+				hierarchyData.push({ id: '__root__', parentId: null });
+				for (const root of effectiveRoots) {
+					hierarchyData.push({ id: root.id, parentId: '__root__', node: root });
+				}
+			} else {
+				hierarchyData.push({ id: effectiveRoots[0].id, parentId: null, node: effectiveRoots[0] });
+			}
+
+			// Add remaining nodes with their parents
+			for (const node of nodes) {
+				if (effectiveRoots.includes(node)) continue;
+				const parentId = parentMap[node.id];
+				if (parentId) {
+					hierarchyData.push({ id: node.id, parentId, node });
+				}
+			}
+
+			// Create hierarchy using stratify
+			const stratify = d3
+				.stratify<{ id: string; parentId: string | null; node?: GraphNode }>()
+				.id((d) => d.id)
+				.parentId((d) => d.parentId);
+
+			let root;
+			try {
+				root = stratify(hierarchyData);
+			} catch {
+				// If stratify fails (cycles, missing parents), fall back to simple grid
+				const cols = Math.ceil(Math.sqrt(nodes.length));
+				for (let i = 0; i < nodes.length; i++) {
+					nodes[i].x = (i % cols) * (NODE_WIDTH + 50) + NODE_WIDTH;
+					nodes[i].y = Math.floor(i / cols) * (NODE_HEIGHT + 50) + NODE_HEIGHT;
+				}
+				nodes = [...nodes];
+				return;
+			}
+
+			// Create tree layout
+			const treeLayout = d3
+				.tree<{ id: string; parentId: string | null; node?: GraphNode }>()
+				.nodeSize([NODE_WIDTH + 60, NODE_HEIGHT + 80]);
+
+			treeLayout(root);
+
+			// Apply positions from tree layout to our nodes
+			const localNodeById: Record<string, GraphNode> = {};
+			for (const n of nodes) localNodeById[n.id] = n;
+
+			for (const d of root.descendants()) {
+				const dx = d.x;
+				const dy = d.y;
+				if (d.data.node && d.data.id !== '__root__' && dx !== undefined && dy !== undefined) {
+					const node = localNodeById[d.data.id];
+					if (node) {
+						// Tree layout gives x as horizontal spread, y as depth
+						node.x = dx + width / 2;
+						node.y = dy + 100;
+					}
+				}
+			}
+
+			// Trigger reactivity for rendering
+			nodes = [...nodes];
+		});
 	});
 
 	function handleZoomIn() {
@@ -357,8 +333,8 @@
 	}
 
 	function getLinkPath(link: GraphLink): string {
-		const source = typeof link.source === 'string' ? nodes.find((n) => n.id === link.source) : link.source;
-		const target = typeof link.target === 'string' ? nodes.find((n) => n.id === link.target) : link.target;
+		const source = nodeById[link.source];
+		const target = nodeById[link.target];
 		if (!source || !target) return '';
 
 		const sx = source.x ?? 0;
@@ -366,10 +342,9 @@
 		const tx = target.x ?? 0;
 		const ty = target.y ?? 0;
 
-		const midX = (sx + tx) / 2;
+		// Curved path from source to target
 		const midY = (sy + ty) / 2;
-
-		return `M ${sx} ${sy} Q ${midX} ${midY - 50}, ${tx} ${ty}`;
+		return `M ${sx} ${sy} Q ${sx} ${midY}, ${tx} ${ty}`;
 	}
 </script>
 
@@ -474,7 +449,7 @@
 
 				<g {transform}>
 					<!-- Links -->
-					{#each links as link (`${typeof link.source === 'string' ? link.source : link.source.id}-${typeof link.target === 'string' ? link.target : link.target.id}`)}
+					{#each links as link (`${link.source}-${link.target}`)}
 						<path
 							d={getLinkPath(link)}
 							fill="none"
@@ -487,7 +462,6 @@
 
 					<!-- Nodes -->
 					{#each nodes as node (node.id)}
-						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<g
 							transform="translate({getNodeX(node)}, {getNodeY(node)})"
 							class="cursor-pointer"
@@ -525,17 +499,24 @@
 									</div>
 								</foreignObject>
 
-								<!-- Agent avatar and status -->
+								<!-- Sender and recipient avatars -->
 								<foreignObject x="12" y="36" width={NODE_WIDTH - 24} height="32">
 									<div class="flex items-center gap-2">
-										{#if node.agentPubkey}
-											<User.Root ndk={ndk} pubkey={node.agentPubkey}>
-												<User.Avatar class="w-6 h-6 rounded-full" />
-											</User.Root>
-										{/if}
+										<div class="flex items-center flex-shrink-0">
+											{#if node.senderPubkey}
+												<User.Root ndk={ndk} pubkey={node.senderPubkey}>
+													<User.Avatar class="w-6 h-6 rounded-full ring-2 ring-card" />
+												</User.Root>
+											{/if}
+											{#if node.recipientPubkey}
+												<User.Root ndk={ndk} pubkey={node.recipientPubkey}>
+													<User.Avatar class="w-6 h-6 rounded-full ring-2 ring-card -ml-2" />
+												</User.Root>
+											{/if}
+										</div>
 										{#if node.statusLabel}
 											<span
-												class="text-xs px-2 py-0.5 rounded-full"
+												class="text-xs px-2 py-0.5 rounded-full truncate"
 												style="background-color: {generateColorFromString(node.statusLabel).replace(')', ', 0.2)')}; color: {generateColorFromString(node.statusLabel)}"
 											>
 												{node.statusLabel}
@@ -543,6 +524,15 @@
 										{/if}
 									</div>
 								</foreignObject>
+
+								<!-- Summary (up to 4 lines) -->
+								{#if node.summary}
+									<foreignObject x="12" y="72" width={NODE_WIDTH - 24} height="64">
+										<div class="text-xs text-muted-foreground italic line-clamp-4">
+											{node.summary}
+										</div>
+									</foreignObject>
+								{/if}
 
 								<!-- Time -->
 								<foreignObject x="12" y={NODE_HEIGHT - 24} width={NODE_WIDTH - 24} height="20">
