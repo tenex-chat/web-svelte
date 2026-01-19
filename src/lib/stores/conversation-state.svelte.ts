@@ -1,18 +1,16 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { NDKEvent, type NDKSubscription, type NDKFilter } from '@nostr-dev-kit/ndk';
 import type { NDKSvelte } from '@nostr-dev-kit/svelte';
-import type { Message, ThreadViewMode } from '$lib/utils/messageUtils';
+import type { Message } from '$lib/utils/messageUtils';
 import { uiSettingsStore } from './uiSettings.svelte';
 
 interface ConversationOptions {
-	viewMode?: ThreadViewMode;
 	debug?: boolean;
 }
 
 export class ConversationState {
 	private messages = $state(new SvelteMap<string, Message>());
 	private rootEvent: NDKEvent | null;
-	private viewMode: ThreadViewMode;
 	private debug: boolean;
 	private subscription: NDKSubscription | null = null;
 	private isDestroyed = false;
@@ -55,32 +53,12 @@ export class ConversationState {
 		return filtered;
 	});
 
-	// Map of replies indexed by parent event ID for O(1) lookups
-	repliesByParent = $derived.by(() => {
-		const map = new Map<string, Message[]>();
-
-		for (const message of this.displayMessages) {
-			const eTags = message.event.getMatchingTags('e');
-			for (const tag of eTags) {
-				const parentId = tag[1];
-				if (parentId) {
-					const replies = map.get(parentId) || [];
-					replies.push(message);
-					map.set(parentId, replies);
-				}
-			}
-		}
-
-		return map;
-	});
-
 	constructor(
 		private ndk: NDKSvelte,
 		rootEvent: NDKEvent | null,
 		options: ConversationOptions = {}
 	) {
 		this.rootEvent = rootEvent;
-		this.viewMode = options.viewMode ?? 'threaded';
 		this.debug = options.debug ?? false;
 	}
 
@@ -128,18 +106,7 @@ export class ConversationState {
 		// Skip operations events
 		if (event.kind === 24133 || event.kind === 24134) return;
 
-		// Apply view mode filtering
-		if (this.viewMode === 'threaded' && !this.belongsToConversation(event)) return;
-
 		this.messages.set(event.id, { id: event.id, event });
-	}
-
-	private belongsToConversation(event: NDKEvent): boolean {
-		if (!this.rootEvent) return true;
-		if (event.id === this.rootEvent.id) return true;
-
-		const eTags = event.getMatchingTags('e');
-		return eTags.some((tag) => tag[1] === this.rootEvent!.id);
 	}
 
 	destroy(): void {

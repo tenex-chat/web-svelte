@@ -1,20 +1,16 @@
 <script lang="ts">
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
-	import { type ChatViewMode, type Message } from '$lib/utils/messageUtils';
-	import CopyThreadMenu from './CopyThreadMenu.svelte';
+	import type { Message } from '$lib/utils/messageUtils';
 	import ChatActionsMenu from './ChatActionsMenu.svelte';
 	import ConversationMetadataDisplay from './ConversationMetadataDisplay.svelte';
 	import ParentConversationLink from './ParentConversationLink.svelte';
-	import { Rows3, MessageSquareText } from 'lucide-svelte';
 
 	interface Props {
 		rootEvent: NDKEvent;
 		messages: Message[];
-		viewMode: ChatViewMode;
-		onViewModeChange: (mode: ChatViewMode) => void;
 	}
 
-	const { rootEvent, messages, viewMode, onViewModeChange }: Props = $props();
+	const { rootEvent, messages }: Props = $props();
 
 	const fallbackTitle = $derived(rootEvent.tagValue('title') || 'Conversation');
 </script>
@@ -33,27 +29,9 @@
 		</div>
 
 		<div class="flex items-center gap-2 ml-2">
-			<!-- View Mode Toggle -->
-			<button
-				class="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
-				onclick={() => onViewModeChange(viewMode === 'delegation' ? 'threaded' : 'delegation')}
-				aria-label={viewMode === 'delegation' ? 'Switch to thread view' : 'Switch to swimlane view'}
-				title={viewMode === 'delegation' ? 'Switch to thread view' : 'Switch to swimlane view'}
-			>
-				{#if viewMode === 'delegation'}
-					<MessageSquareText class="h-5 w-5" />
-				{:else}
-					<Rows3 class="h-5 w-5" />
-				{/if}
-			</button>
-
-			<!-- Chat Actions Menu -->
 			{#if messages.length > 0}
 				<ChatActionsMenu {rootEvent} {messages} />
 			{/if}
-
-			<!-- Copy Thread Menu -->
-			<CopyThreadMenu {messages} {rootEvent} />
 		</div>
 	</div>
 </div>

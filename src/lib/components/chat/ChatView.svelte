@@ -7,12 +7,11 @@
 	import { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKProject } from '$lib/events/NDKProject';
 	import type { ProjectAgent } from '$lib/events/NDKProjectStatus';
-	import { type ChatViewMode, type Message } from '$lib/utils/messageUtils';
+	import type { Message } from '$lib/utils/messageUtils';
 	import { ndk } from '$lib/ndk.svelte';
 	import MessageList from './MessageList.svelte';
 	import ChatInput from './ChatInput.svelte';
 	import ChatHeader from './ChatHeader.svelte';
-	import SwimlaneDelegationView from './SwimlaneDelegationView.svelte';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
 	import { setContext } from 'svelte';
 
@@ -23,14 +22,13 @@
 		threadId?: string;
 		onlineAgents?: ProjectAgent[];
 		onThreadCreated?: (thread: NDKEvent) => void;
-		viewMode?: ChatViewMode;
 		hideHeader?: boolean;
 		messages?: Message[];
 		windowId?: string;
 		documentRef?: string;
 	}
 
-	let { project = $bindable(), projectId, rootEvent = $bindable(null), threadId, onlineAgents = [], onThreadCreated, viewMode = $bindable<ChatViewMode>('threaded'), hideHeader = false, messages = $bindable([]), windowId, documentRef }: Props = $props();
+	let { project = $bindable(), projectId, rootEvent = $bindable(null), threadId, onlineAgents = [], onThreadCreated, hideHeader = false, messages = $bindable([]), windowId, documentRef }: Props = $props();
 
 	// Set window context for child components (like DelegationPreview) to know if they're in a drawer or detached window
 	setContext(WINDOW_CONTEXT_KEY, {
@@ -102,14 +100,6 @@
 		localRootEvent = event;
 	}
 
-	function handleNavigateBack() {
-		if (navigationStack.length > 0) {
-			const parent = navigationStack[navigationStack.length - 1];
-			navigationStack = navigationStack.slice(0, -1);
-			localRootEvent = parent;
-		}
-	}
-
 	/**
 	 * Handle "send again in new conversation" action.
 	 * Creates a new kind:1 event copying all tags from the original except:
@@ -148,8 +138,6 @@
 			console.error('Failed to send again in new conversation:', error);
 		}
 	}
-
-	const parentEvent = $derived(navigationStack.length > 0 ? navigationStack[navigationStack.length - 1] : null);
 </script>
 
 <div class="flex flex-col h-full relative">
@@ -158,33 +146,17 @@
 			<ChatHeader
 				rootEvent={localRootEvent}
 				{messages}
-				viewMode={viewMode}
-				onViewModeChange={(mode) => (viewMode = mode)}
 			/>
 		{/if}
 
-		<!-- Messages - MessageList always runs for subscription management -->
-		<div class={viewMode === 'delegation' ? 'hidden' : 'contents'}>
-			<MessageList
-				rootEvent={localRootEvent}
-				viewMode={viewMode === 'flattened' ? 'flattened' : 'threaded'}
-				onReply={handleReply}
-				onQuote={handleQuote}
-				onTimeClick={handleTimeClick}
-				onSendAgain={handleSendAgain}
-				bind:messages
-			/>
-		</div>
-
-		{#if viewMode === 'delegation'}
-			<SwimlaneDelegationView
-				rootEvent={localRootEvent}
-				{messages}
-				onNodeClick={handleTimeClick}
-				{parentEvent}
-				onNavigateBack={handleNavigateBack}
-			/>
-		{/if}
+		<MessageList
+			rootEvent={localRootEvent}
+			onReply={handleReply}
+			onQuote={handleQuote}
+			onTimeClick={handleTimeClick}
+			onSendAgain={handleSendAgain}
+			bind:messages
+		/>
 
 		<!-- Input -->
 		<div class="absolute left-0 right-0 bottom-0 z-[100]">

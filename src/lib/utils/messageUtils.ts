@@ -1,8 +1,5 @@
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
 
-export type ThreadViewMode = 'threaded' | 'flattened';
-export type ChatViewMode = 'threaded' | 'flattened' | 'delegation';
-
 export interface Message {
 	id: string;
 	event: NDKEvent;

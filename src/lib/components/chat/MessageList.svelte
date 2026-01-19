@@ -23,7 +23,6 @@
 
 	interface Props {
 		rootEvent: NDKEvent;
-		viewMode?: 'threaded' | 'flattened';
 		onReply?: (message: MessageType) => void;
 		onQuote?: (message: MessageType) => void;
 		onTimeClick?: (event: NDKEvent) => void;
@@ -33,7 +32,6 @@
 
 	let {
 		rootEvent,
-		viewMode = 'threaded',
 		onReply,
 		onQuote,
 		onTimeClick,
@@ -69,7 +67,6 @@
 			// Create new state with current rootEvent
 			if (rootEvent) {
 				conversationState = new ConversationState(ndk, rootEvent, {
-					viewMode,
 					debug: true
 				});
 

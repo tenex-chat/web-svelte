@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { MoreHorizontal, FileText, Bug, ExternalLink } from 'lucide-svelte';
+	import { MoreHorizontal, FileText, Bug, ExternalLink, Copy } from 'lucide-svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import type { Message } from '$lib/utils/messageUtils';
 	import { ndk } from '$lib/ndk.svelte';
@@ -10,6 +10,7 @@
 	import type { ProviderConfig } from '$lib/services/provider-registry';
 	import { clickOutside } from '$lib/utils/clickOutside';
 	import { windowManager } from '$lib/stores/windowManager.svelte';
+	import { formatThreadAsJSONL } from '$lib/utils/copyThread';
 
 	interface Props {
 		rootEvent: NDKEvent;
@@ -20,6 +21,37 @@
 
 	let isSummarizing = $state(false);
 	let isOpen = $state(false);
+	let copiedJSONL = $state(false);
+
+	// Subscribe to ALL thread replies for copying functionality
+	const allThreadReplies = ndk.$subscribe(() =>
+		rootEvent && messages.length > 0
+			? {
+					filters: [
+						{
+							kinds: [1],
+							'#e': [rootEvent.id]
+						}
+					],
+					closeOnEose: false
+				}
+			: undefined
+	);
+
+	async function handleCopyJSONL() {
+		try {
+			const allEvents = allThreadReplies?.events || [];
+			const content = await formatThreadAsJSONL(messages, rootEvent, allEvents);
+			await navigator.clipboard.writeText(content);
+			copiedJSONL = true;
+			setTimeout(() => {
+				copiedJSONL = false;
+			}, 2000);
+		} catch (error) {
+			console.error('Failed to copy thread as JSONL:', error);
+			toastStore.error('Failed to copy thread');
+		}
+	}
 
 	// Special config IDs that mean "use active config"
 	const USE_ACTIVE_CONFIG_IDS = ['active', 'default'];
@@ -189,6 +221,14 @@
 			use:clickOutside={handleClickOutside}
 			class="absolute right-0 top-full mt-1 w-48 bg-popover border border-border rounded-lg shadow-lg overflow-hidden z-50"
 		>
+			<button
+				type="button"
+				onclick={handleCopyJSONL}
+				class="w-full text-left px-3 py-2 hover:bg-muted transition-colors flex items-center gap-2 text-sm"
+			>
+				<Copy class="w-4 h-4" />
+				<span class="flex-1">{copiedJSONL ? 'Copied!' : 'Copy as JSONL'}</span>
+			</button>
 			<button
 				type="button"
 				onclick={handleSummarize}

@@ -9,7 +9,7 @@
 	import ConversationMetadataDisplay from '../chat/ConversationMetadataDisplay.svelte';
 	import DebugEventsView from '../debug/DebugEventsView.svelte';
 	import { projectStatusStore } from '$lib/stores/projectStatus.svelte';
-	import type { ChatViewMode, Message } from '$lib/utils/messageUtils';
+	import type { Message } from '$lib/utils/messageUtils';
 	import { storage } from '$lib/utils/storage.svelte';
 	import { MessageSquare, Copy } from 'lucide-svelte';
 
@@ -19,7 +19,6 @@
 
 	let { window }: Props = $props();
 
-	let viewMode = $state<ChatViewMode>('threaded');
 	let messages = $state<Message[]>([]);
 	let documentSidebarOpen = $state(false);
 
@@ -182,7 +181,6 @@
 				<ChatHeaderActions
 					rootEvent={window.data?.thread}
 					{messages}
-					bind:viewMode
 				/>
 			{:else if window.type === 'document'}
 				<button
@@ -253,7 +251,6 @@
 							thread.tagValue('title') || 'Conversation'
 						);
 					}}
-					bind:viewMode
 					hideHeader={true}
 					bind:messages
 					windowId={window.id}

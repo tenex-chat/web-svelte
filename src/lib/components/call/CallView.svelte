@@ -129,7 +129,6 @@
 			// Create new state with current localRootEvent
 			if (localRootEvent) {
 				conversationState = new ConversationState(ndk, localRootEvent, {
-					viewMode: 'flattened',
 					debug: true
 				});
 
