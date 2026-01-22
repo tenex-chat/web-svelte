@@ -83,12 +83,15 @@
 	let contentRef: HTMLDivElement | null = $state(null);
 	let needsTruncation = $state(false);
 
-	// Check if content exceeds 40vh and needs truncation
+	// Check if content exceeds 40vh and needs truncation (using ResizeObserver to avoid forced reflow)
 	$effect(() => {
-		if (contentRef) {
-			const maxHeight = window.innerHeight * 0.4; // 40vh
-			needsTruncation = contentRef.scrollHeight > maxHeight;
-		}
+		if (!contentRef) return;
+		const maxHeight = window.innerHeight * 0.4; // 40vh
+		const observer = new ResizeObserver((entries) => {
+			needsTruncation = entries[0].contentRect.height > maxHeight;
+		});
+		observer.observe(contentRef);
+		return () => observer.disconnect();
 	});
 
 	function closeRawEventDialog() {

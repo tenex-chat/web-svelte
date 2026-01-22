@@ -10,6 +10,7 @@ import { NDKProjectStatus } from '$lib/events/NDKProjectStatus';
 import { NDKTask } from '$lib/events/NDKTask';
 import { NDKMCPTool } from '$lib/events/NDKMCPTool';
 import { NDKAgentLesson } from '$lib/events/NDKAgentLesson';
+import { perfProfiler } from '$lib/perf-profiler';
 
 const DEFAULT_RELAYS = ['wss://tenex.chat'];
 
@@ -63,6 +64,30 @@ export const ndkReady = (async () => {
 		const SigVerifyWorker = (await import('@nostr-dev-kit/ndk/workers/sig-verification?worker')).default;
 		sigVerifyWorker = new SigVerifyWorker();
 		ndk.signatureVerificationWorker = sigVerifyWorker;
+
+		// Add performance tracking for NDK events
+		let eventCount = 0;
+		let lastLogTime = Date.now();
+		ndk.on('event', () => {
+			eventCount++;
+			perfProfiler.trackSubscription('event');
+			const now = Date.now();
+			if (now - lastLogTime > 5000) {
+				console.log(`[PERF NDK] Received ${eventCount} events in last 5s`);
+				eventCount = 0;
+				lastLogTime = now;
+			}
+		});
+
+		ndk.on('subscription:start', (sub: any) => {
+			perfProfiler.trackSubscription('start');
+			console.log(`[PERF NDK] Subscription started:`, sub.filters?.slice(0, 2));
+		});
+
+		ndk.on('subscription:close', () => {
+			perfProfiler.trackSubscription('stop');
+		});
+
 		ndk.connect();
 	} catch (error) {
 		console.error('❌ Failed to initialize cache:', error);
