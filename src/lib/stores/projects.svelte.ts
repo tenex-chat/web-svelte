@@ -89,8 +89,10 @@ class ProjectsStore {
 		let subscription: NDKSubscription | undefined;
 
 		// React to user changes and re-subscribe
+		// Use ndk.$currentPubkey which is backed by $state and properly reactive
+		// (ndk.$sessions.currentUser is NOT reactive - it's a plain getter)
 		$effect(() => {
-			const currentUser = ndk.$sessions.currentUser;
+			const pubkey = ndk.$currentPubkey;
 
 			// Clean up previous subscription
 			if (subscription) {
@@ -102,14 +104,14 @@ class ProjectsStore {
 			this.updateState();
 
 			// Only subscribe if user is logged in
-			if (!currentUser?.pubkey) {
+			if (!pubkey) {
 				this.loading = false;
 				return;
 			}
 
 			// Subscribe to user's projects
 			subscription = ndk.subscribe(
-				{ kinds: [31933], authors: [currentUser.pubkey] },
+				{ kinds: [31933], authors: [pubkey] },
 				{
 					closeOnEose: false,
 					groupable: false,

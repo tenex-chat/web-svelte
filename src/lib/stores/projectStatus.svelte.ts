@@ -28,8 +28,10 @@ class ProjectStatusStore {
     let subscription: NDKSubscription | undefined;
 
     // React to user changes and re-subscribe
+    // Use ndk.$currentPubkey which is backed by $state and properly reactive
+    // (ndk.$sessions.currentUser is NOT reactive - it's a plain getter)
     $effect(() => {
-      const currentUser = ndk.$sessions.currentUser;
+      const pubkey = ndk.$currentPubkey;
 
       // Clean up previous subscription
       if (subscription) {
@@ -37,9 +39,9 @@ class ProjectStatusStore {
       }
 
       // Create filters based on current user
-      const filters = !currentUser?.pubkey
+      const filters = !pubkey
         ? [{ kinds: [24010], limit: 0 }]
-        : [{ kinds: [24010], "#p": [currentUser.pubkey], limit: 0 }];
+        : [{ kinds: [24010], "#p": [pubkey], limit: 0 }];
 
       // Subscribe with incremental event processing
       subscription = ndk.subscribe(

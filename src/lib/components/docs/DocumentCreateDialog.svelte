@@ -92,8 +92,7 @@
 	}
 
 	async function handlePublish() {
-		const currentUser = ndk.$sessions.currentUser;
-		if (!currentUser || !title || !content) {
+		if (!title || !content) {
 			return;
 		}
 
