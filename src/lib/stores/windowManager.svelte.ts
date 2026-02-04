@@ -1,7 +1,6 @@
 import { browser } from '$app/environment';
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
 import { NDKProject } from '$lib/events/NDKProject';
-import { isElectron } from '$lib/utils/electron';
 import { storage } from '$lib/utils/storage.svelte';
 import { ndk, ndkReady } from '$lib/ndk.svelte';
 import { NDKKind } from '$lib/kinds';
@@ -540,21 +539,6 @@ class WindowManager {
 		if (index === -1) return;
 
 		const window = this.windowsArray[index];
-
-		// In Electron, create a native window
-		if (isElectron() && globalThis.window?.electron) {
-			const { ipcRenderer } = globalThis.window.electron;
-			const url = this.buildWindowUrl(window);
-			ipcRenderer.send('open-window', {
-				url,
-				title: window.title,
-				width: window.size?.width || 800,
-				height: window.size?.height || 600
-			});
-			// Close the drawer since it's now a native window
-			this.close(id);
-			return;
-		}
 
 		// Remove from drawer stack since it's becoming detached
 		this.drawerStack = this.drawerStack.filter((wid) => wid !== id);

@@ -194,8 +194,7 @@
 <div
 	class={cn(
 		'bg-card border-r border-border flex flex-col transition-all duration-300 relative overflow-hidden',
-		collapsed ? 'w-16' : 'w-64',
-		browser && window.electron ? 'pt-10' : ''
+		collapsed ? 'w-16' : 'w-64'
 	)}
 	data-collapsed={collapsed}
 >
@@ -204,10 +203,6 @@
 		class="absolute top-0 left-0 right-0 bottom-0 pointer-events-none z-0 transition-opacity duration-300"
 		style={backgroundStyle}
 	></div>
-	<!-- Electron Title Bar Drag Region (only in sidebar) -->
-	{#if browser && window.electron}
-		<div class="electron-titlebar-sidebar"></div>
-	{/if}
 
 	<!-- Header -->
 	<div class="border-b border-border px-3 py-3 relative z-10">
