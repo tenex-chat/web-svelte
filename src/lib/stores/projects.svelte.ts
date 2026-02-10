@@ -88,11 +88,14 @@ class ProjectsStore {
 
 		let subscription: NDKSubscription | undefined;
 
-		// React to user changes and re-subscribe
-		// Use ndk.$currentPubkey which is backed by $state and properly reactive
-		// (ndk.$sessions.currentUser is NOT reactive - it's a plain getter)
-		$effect(() => {
-			const pubkey = ndk.$currentPubkey;
+		// Use $effect.root for effects that may be created outside component lifecycle
+		// This ensures the effect has its own reactive context
+		$effect.root(() => {
+			// React to user changes and re-subscribe
+			// Use ndk.$currentPubkey which is backed by $state and properly reactive
+			// (ndk.$sessions.currentUser is NOT reactive - it's a plain getter)
+			$effect(() => {
+				const pubkey = ndk.$currentPubkey;
 
 			// Clean up previous subscription
 			if (subscription) {
@@ -136,6 +139,7 @@ class ProjectsStore {
 			);
 
 			this.subscription = subscription;
+			});
 		});
 	}
 

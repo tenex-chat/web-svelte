@@ -13,6 +13,9 @@ const inFlightRequests = new SvelteMap<
 	Promise<NDKUserProfile | null>
 >();
 
+// Cache of already-fetched profiles to prevent re-fetching after in-flight completes
+const fetchedProfiles = new SvelteMap<string, NDKUserProfile | null>();
+
 export interface ProfileFetcherState {
 	profile: NDKUserProfile | null;
 	user: NDKUser | null;
@@ -82,10 +85,23 @@ export function createProfileFetcher(
 
 			const pubkey = ndkUser.pubkey;
 
-			// Check if profile already cached
+			// Check if profile already cached on the NDKUser instance
 			if (ndkUser.profile) {
 				state.profile = ndkUser.profile;
 				state.user = ndkUser;
+				state.loading = false;
+				return;
+			}
+
+			// Check if we already fetched this profile in this session
+			if (fetchedProfiles.has(pubkey)) {
+				const cachedProfile = fetchedProfiles.get(pubkey);
+				state.profile = cachedProfile ?? null;
+				state.user = ndkUser;
+				// Also populate the NDKUser instance for consistency
+				if (cachedProfile) {
+					ndkUser.profile = cachedProfile;
+				}
 				state.loading = false;
 				return;
 			}
@@ -96,10 +112,19 @@ export function createProfileFetcher(
 			if (!fetchPromise) {
 				// No in-flight request, create a new one
 				fetchPromise = ndkUser
-					.fetchProfile({
-						closeOnEose: true,
-						groupable: true,
-						groupableDelay: 250,
+					.fetchProfile(
+						{
+							closeOnEose: true,
+							groupable: true,
+							groupableDelay: 250,
+							subId: `profile-${pubkey.substring(0, 8)}`,
+						},
+						true, // storeProfileEvent: save to cache for future lookups
+					)
+					.then((profile) => {
+						// Store in our session cache
+						fetchedProfiles.set(pubkey, profile);
+						return profile;
 					})
 					.finally(() => {
 						// Remove from in-flight requests when complete
@@ -109,7 +134,7 @@ export function createProfileFetcher(
 				inFlightRequests.set(pubkey, fetchPromise);
 			}
 
-			// Fetch profile
+			// Wait for profile
 			const fetchedProfile = await fetchPromise;
 			state.profile = fetchedProfile || null;
 			state.user = ndkUser;

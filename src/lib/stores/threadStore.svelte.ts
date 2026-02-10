@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { ndk } from '$lib/ndk.svelte';
-import type { NDKEvent } from '@nostr-dev-kit/ndk';
+import type { NDKEvent, NDKSubscription } from '@nostr-dev-kit/ndk';
 import { openProjects } from './openProjects.svelte';
 import { globalFilterStore } from './globalFilter.svelte';
 import { storage } from '$lib/utils/storage.svelte';
@@ -74,10 +74,19 @@ const TIME_THRESHOLDS: Record<string, number> = {
  * Recreates subscription when open projects change.
  */
 class ThreadStore {
-	private debouncedEvents = $state<NDKEvent[]>([]);
-	private debounceTimer: ReturnType<typeof setTimeout> | null = null;
+	private eventMap = new Map<string, NDKEvent>();
+	private allEvents = $state<NDKEvent[]>([]);
 	private _collapsedIds = $state<Set<string>>(new Set());
 	private initialized = false;
+	private subscription: NDKSubscription | null = null;
+	private debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+	private updateState() {
+		if (this.debounceTimer) clearTimeout(this.debounceTimer);
+		this.debounceTimer = setTimeout(() => {
+			this.allEvents = Array.from(this.eventMap.values());
+		}, 150);
+	}
 
 	/**
 	 * Initialize the store - MUST be called from a component context
@@ -87,36 +96,88 @@ class ThreadStore {
 		if (this.initialized || !browser) return;
 		this.initialized = true;
 
-		// Subscribe reactively to open projects
-		const sub = ndk.$subscribe(() => {
-			const projectTagIds = openProjects.projects.map(p => p.tagId());
+		// Use $effect.root for effects that may be created outside component lifecycle
+		$effect.root(() => {
+			// React to open projects changes
+			$effect(() => {
+				const projectTagIds = openProjects.projects.map(p => p.tagId());
 
-			// If no projects open, return empty filter that won't match anything
-			if (projectTagIds.length === 0) {
-				return {
-					filters: [],
-					closeOnEose: false
-				};
-			}
+				// Clean up previous subscription
+				if (this.subscription) {
+					this.subscription.stop();
+					this.subscription = null;
+				}
 
-			return {
-				filters: [{ kinds: [1], '#a': projectTagIds, limit: 501 }],
-				cacheUnconstrainFilter: [],
-				closeOnEose: false
-			};
-		});
+				// Clear state when projects change
+				this.eventMap.clear();
+				this.allEvents = [];
 
-		$effect(() => {
-			const events = sub.events;
-			if (this.debounceTimer) clearTimeout(this.debounceTimer);
-			this.debounceTimer = setTimeout(() => { this.debouncedEvents = events; }, 150);
+				// If no projects open, nothing to subscribe to
+				if (projectTagIds.length === 0) {
+					return;
+				}
+
+				// Subscribe to threads for open projects
+				this.subscription = ndk.subscribe(
+					{ kinds: [1], '#a': projectTagIds, limit: 501 },
+					{
+						closeOnEose: false,
+						groupable: false,
+						subId: 'thread-store'
+					},
+					{
+						onEvents: (events: NDKEvent[]) => {
+							for (const event of events) {
+								this.eventMap.set(event.id, event);
+							}
+							this.updateState();
+						},
+						onEvent: (event: NDKEvent) => {
+							this.eventMap.set(event.id, event);
+							this.updateState();
+						}
+					}
+				);
+			});
 		});
 	}
 
 	// Threads = root events (no e-tags), Replies = events with e-tags
-	private threads = $derived(this.debouncedEvents.filter(e => !e.tags.some(t => t[0] === 'e')));
-	private replies = $derived(this.debouncedEvents.filter(e => e.tags.some(t => t[0] === 'e')));
+	private threads = $derived(this.allEvents.filter(e => !e.tags.some(t => t[0] === 'e')));
+	private replies = $derived(this.allEvents.filter(e => e.tags.some(t => t[0] === 'e')));
 	private archivedIds = $derived(new Set(Object.keys(storage.getArchivedConversations())));
+
+	/** All filtered threads (for DelegationGraphView) */
+	readonly filteredThreads = $derived.by(() => this.getFilteredThreads());
+
+	/** Delegation links between threads (Map<parentId, childIds[]>) */
+	readonly delegationLinks = $derived.by(() => {
+		const map = new Map<string, string[]>();
+		for (const thread of this.threads) {
+			const parentId = thread.tags.find(t => t[0] === 'delegation')?.[1];
+			if (parentId) {
+				if (!map.has(parentId)) map.set(parentId, []);
+				map.get(parentId)!.push(thread.id);
+			}
+		}
+		return map;
+	});
+
+	/** Ask events with metadata for DelegationGraphView */
+	readonly askEvents = $derived.by(() => {
+		return this.allEvents
+			.filter(e => e.tags.some(t => t[0] === 'ask'))
+			.map(event => {
+				const parentConversationId = event.tags.find(t => t[0] === 'e')?.[1];
+				const title = event.tagValue('title') || event.content?.slice(0, 50) || 'Question';
+				// Check if answered by looking for replies to this ask event
+				const isAnswered = this.replies.some(r =>
+					r.tags.some(t => t[0] === 'e' && t[1] === event.id)
+				);
+				return { event, parentConversationId, title, isAnswered };
+			})
+			.filter(a => a.parentConversationId); // Only include asks with valid parent
+	});
 
 	/** Map of thread ID -> latest reply */
 	readonly threadMetadata = $derived.by(() => {

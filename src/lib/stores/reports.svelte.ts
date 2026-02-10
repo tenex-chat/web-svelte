@@ -226,10 +226,9 @@ class ReportsStore {
 			try {
 				// Subscribe to articles tagged with user's projects
 				subscription = ndk.subscribe(
-					{ kinds: [NDKKind.Article as number], '#a': projectATags },
+					{ kinds: [NDKKind.Article], '#a': projectATags },
 					{
 						closeOnEose: false,
-						groupable: false,
 						wrap: true,
 						subId: 'reports-store'
 					},

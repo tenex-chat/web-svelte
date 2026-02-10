@@ -27,8 +27,11 @@
 	let isResizing = $state(false);
 	let sidebarElement: HTMLDivElement;
 
-	// Load persisted width on mount
+	// Load persisted width on mount (run once)
+	let hasLoadedWidth = false;
 	$effect(() => {
+		if (hasLoadedWidth) return;
+		hasLoadedWidth = true;
 		const stored = storage.get('doc-chat-sidebar-width');
 		if (stored && stored >= MIN_WIDTH_PERCENT && stored <= MAX_WIDTH_PERCENT) {
 			widthPercent = stored;
@@ -71,8 +74,20 @@
 	let selectedThread = $state<NDKEvent | null>(null);
 	let showNewConversation = $state(false);
 
-	// Document tag reference for creating new threads
-	const documentTagId = $derived(document.tagId());
+	// Document tag reference for creating new threads - cache the string value
+	// to avoid re-triggering subscriptions when document object changes
+	let cachedDocumentTagId = $state<string | undefined>(undefined);
+
+	$effect(() => {
+		const newTagId = document.tagId();
+		// Only update if the string value actually changed
+		if (newTagId !== cachedDocumentTagId) {
+			cachedDocumentTagId = newTagId;
+		}
+	});
+
+	// Use the cached tag ID for the subscription to ensure stability
+	const documentTagId = $derived(cachedDocumentTagId);
 
 	// Subscribe to threads: all conversations about this document
 	const threadsSubscription = ndk.$subscribe<NDKEvent>(() => {
@@ -86,16 +101,18 @@
 		};
 	});
 
-	// Threads and metadata - filtered to only root threads, sorted by activity
-	let threads = $state<NDKEvent[]>([]);
-	let threadMetadata = $state(new Map());
-
-	$effect(() => {
-		const events = [...threadsSubscription.events] as NDKEvent[];
+	// Threads and metadata - computed from subscription events
+	const threadMetadata = $derived.by(() => {
+		const events = threadsSubscription.events as NDKEvent[];
 		const rootThreads = events.filter(isRootThread);
 		const replies = events.filter(e => !isRootThread(e));
-		threadMetadata = buildThreadMetadata(rootThreads, replies);
-		threads = sortByActivity(rootThreads, threadMetadata);
+		return buildThreadMetadata(rootThreads, replies);
+	});
+
+	const threads = $derived.by(() => {
+		const events = threadsSubscription.events as NDKEvent[];
+		const rootThreads = events.filter(isRootThread);
+		return sortByActivity(rootThreads, threadMetadata);
 	});
 
 	// Get project agents from status store, with document author first

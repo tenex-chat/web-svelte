@@ -27,42 +27,45 @@ class ProjectStatusStore {
 
     let subscription: NDKSubscription | undefined;
 
-    // React to user changes and re-subscribe
-    // Use ndk.$currentPubkey which is backed by $state and properly reactive
-    // (ndk.$sessions.currentUser is NOT reactive - it's a plain getter)
-    $effect(() => {
-      const pubkey = ndk.$currentPubkey;
+    // Use $effect.root for effects that may be created outside component lifecycle
+    $effect.root(() => {
+      // React to user changes and re-subscribe
+      // Use ndk.$currentPubkey which is backed by $state and properly reactive
+      // (ndk.$sessions.currentUser is NOT reactive - it's a plain getter)
+      $effect(() => {
+        const pubkey = ndk.$currentPubkey;
 
-      // Clean up previous subscription
-      if (subscription) {
-        subscription.stop();
-      }
+        // Clean up previous subscription
+        if (subscription) {
+          subscription.stop();
+        }
 
-      // Create filters based on current user
-      const filters = !pubkey
-        ? [{ kinds: [24010], limit: 0 }]
-        : [{ kinds: [24010], "#p": [pubkey], limit: 0 }];
+        // Create filters based on current user
+        const filters = !pubkey
+          ? [{ kinds: [24010], limit: 0 }]
+          : [{ kinds: [24010], "#p": [pubkey], limit: 0 }];
 
-      // Subscribe with incremental event processing
-      subscription = ndk.subscribe(
-        filters,
-        {
-          cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY,
-          subId: "project-status-store",
-          closeOnEose: false,
-          wrap: true
-        },
-        {
-          onEvents: (events: NDKEvent[]) => {
-            for (const event of events) {
+        // Subscribe with incremental event processing
+        subscription = ndk.subscribe(
+          filters,
+          {
+            cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY,
+            subId: "project-status-store",
+            closeOnEose: false,
+            wrap: true
+          },
+          {
+            onEvents: (events: NDKEvent[]) => {
+              for (const event of events) {
+                this.processStatusEvent(event);
+              }
+            },
+            onEvent: (event: NDKEvent) => {
               this.processStatusEvent(event);
             }
-          },
-          onEvent: (event: NDKEvent) => {
-            this.processStatusEvent(event);
           }
-        }
-      );
+        );
+      });
     });
   }
 

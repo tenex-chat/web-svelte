@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { ndk } from '$lib/ndk.svelte';
 	import type { Message } from '$lib/utils/messageUtils';
 	import { Streamdown } from 'svelte-streamdown';
@@ -82,16 +83,30 @@
 	let isExpanded = $state(false);
 	let contentRef: HTMLDivElement | null = $state(null);
 	let needsTruncation = $state(false);
+	let measuredScrollHeight = $state(0);
 
-	// Check if content exceeds 40vh and needs truncation (using ResizeObserver to avoid forced reflow)
+	// Track scroll height changes (using ResizeObserver to avoid forced reflow)
 	$effect(() => {
 		if (!contentRef) return;
-		const maxHeight = window.innerHeight * 0.4; // 40vh
-		const observer = new ResizeObserver((entries) => {
-			needsTruncation = entries[0].contentRect.height > maxHeight;
+		const observer = new ResizeObserver(() => {
+			// Use scrollHeight to get natural content height, not the constrained height
+			measuredScrollHeight = contentRef!.scrollHeight;
 		});
 		observer.observe(contentRef);
 		return () => observer.disconnect();
+	});
+
+	// Derive truncation need from measured height with hysteresis
+	$effect(() => {
+		const maxHeight = window.innerHeight * 0.4; // 40vh
+		const hysteresis = 20; // pixels of buffer to prevent flickering at threshold
+		const currentlyTruncated = untrack(() => needsTruncation);
+		// Only turn ON if over threshold, only turn OFF if well below
+		if (!currentlyTruncated && measuredScrollHeight > maxHeight) {
+			needsTruncation = true;
+		} else if (currentlyTruncated && measuredScrollHeight < maxHeight - hysteresis) {
+			needsTruncation = false;
+		}
 	});
 
 	function closeRawEventDialog() {
