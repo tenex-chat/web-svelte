@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import ndk from '$lib/ndk.svelte';
+import { normalizeRelayUrl, NDKRelayStatus } from '@nostr-dev-kit/ndk';
 import { storage } from '$lib/utils/storage.svelte';
 
 class RelaySettingsStore {
@@ -41,19 +42,31 @@ class RelaySettingsStore {
 		this.relays = this.relays.filter((r) => r !== url);
 		storage.set('relay-settings', this.relays);
 
-		const relay = ndk.pool.relays.get(url);
+		const normalized = normalizeRelayUrl(url);
+		const relay = ndk.pool.relays.get(normalized);
 		if (relay) {
 			relay.disconnect();
-			ndk.pool.relays.delete(url);
+			ndk.pool.relays.delete(normalized);
 		}
 	}
 
 	getRelayStatus(url: string): 'connected' | 'connecting' | 'disconnected' {
-		const relay = ndk.pool.relays.get(url);
+		const normalized = normalizeRelayUrl(url);
+		const relay = ndk.pool.relays.get(normalized);
 		if (!relay) return 'disconnected';
 
-		if (relay.connectivity.status === 1) return 'connected';
-		if (relay.connectivity.status === 0) return 'connecting';
+		const status = relay.connectivity.status;
+		if (
+			status === NDKRelayStatus.CONNECTED ||
+			status === NDKRelayStatus.AUTH_REQUESTED ||
+			status === NDKRelayStatus.AUTHENTICATING ||
+			status === NDKRelayStatus.AUTHENTICATED
+		) {
+			return 'connected';
+		}
+		if (status === NDKRelayStatus.CONNECTING || status === NDKRelayStatus.RECONNECTING) {
+			return 'connecting';
+		}
 		return 'disconnected';
 	}
 }
