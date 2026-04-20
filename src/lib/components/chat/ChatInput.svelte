@@ -19,7 +19,7 @@
 	import SelectedNudgesPills from './SelectedNudgesPills.svelte';
 	import MentionAutocomplete from './MentionAutocomplete.svelte';
 	import NudgeAutocomplete from './NudgeAutocomplete.svelte';
-    import { cn } from '$lib/ndk/utils/cn';
+    import { cn } from '$lib/utils/cn';
 	import { HashtagStore } from '$lib/stores/hashtags.svelte';
 	import NDKBlossom from '@nostr-dev-kit/blossom';
 	import ImageAttachmentPreview from './ImageAttachmentPreview.svelte';
