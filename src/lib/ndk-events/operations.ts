@@ -56,7 +56,7 @@ export function parseKind24133(ev: NDKEvent): Kind24133Snapshot | null {
  * Tags: a = project id, e (1..n) = target event ids
  * Content must be empty
  */
-export async function publishKind24134(
+async function publishKind24134(
   ndk: NDK,
   { projectId, eIds }: { projectId: string; eIds: string[] },
 ): Promise<void> {
@@ -77,23 +77,6 @@ export async function publishKind24134(
 
   await event.sign();
   await event.publish();
-}
-
-/**
- * Simple function to stop an event's operations
- */
-export async function stopEvent(
-  ndk: NDK,
-  projectId: string,
-  eventId: string,
-): Promise<void> {
-  if (!ndk || !projectId || !eventId) return;
-
-  try {
-    await publishKind24134(ndk, { projectId, eIds: [eventId] });
-  } catch (error) {
-    console.warn("Failed to publish stop request:", error);
-  }
 }
 
 /**
